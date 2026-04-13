@@ -2,13 +2,25 @@
 
 # Schema: `UpdateTableRequest`
 
+## Example
+
+```json
+{
+  "comment": "example",
+  "owner": "example",
+  "properties": {
+    "key": "example"
+  }
+}
+```
+
 - Type: `object`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `comment` | `string` | `false` | - |
-| `owner` | `string` | `false` | - |
-| `properties` | `object` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `comment` | `string` | `false` | - | "example" |
+| `owner` | `string` | `false` | - | "example" |
+| `properties` | `object` | `false` | - | { "key": "example" } |
 

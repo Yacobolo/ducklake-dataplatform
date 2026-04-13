@@ -2,22 +2,40 @@
 
 # Schema: `Project`
 
+## Example
+
+```json
+{
+  "created_at": "2026-01-02T15:04:05Z",
+  "default_branch": "example",
+  "description": "example",
+  "id": "example",
+  "kind": "personal",
+  "name": "example",
+  "owner_principal": "example",
+  "owner_team_id": "example",
+  "product_id": "example",
+  "updated_at": "2026-01-02T15:04:05Z",
+  "workspace_id": "example"
+}
+```
+
 - Type: `object`
 - Required fields: `kind`, `name`, `workspace_id`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `created_at` | `string` | `false` | - |
-| `default_branch` | `string` | `false` | - |
-| `description` | `string` | `false` | - |
-| `id` | `string` | `false` | - |
-| `kind` | `ProjectKind` | `true` | - |
-| `name` | `string` | `true` | - |
-| `owner_principal` | `string` | `false` | - |
-| `owner_team_id` | `string` | `false` | - |
-| `product_id` | `string` | `false` | - |
-| `updated_at` | `string` | `false` | - |
-| `workspace_id` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `created_at` | `string` | `false` | - | "2026-01-02T15:04:05Z" |
+| `default_branch` | `string` | `false` | - | "example" |
+| `description` | `string` | `false` | - | "example" |
+| `id` | `string` | `false` | - | "example" |
+| `kind` | `ProjectKind` | `true` | - | "personal" |
+| `name` | `string` | `true` | - | "example" |
+| `owner_principal` | `string` | `false` | - | "example" |
+| `owner_team_id` | `string` | `false` | - | "example" |
+| `product_id` | `string` | `false` | - | "example" |
+| `updated_at` | `string` | `false` | - | "2026-01-02T15:04:05Z" |
+| `workspace_id` | `string` | `true` | - | "example" |
 

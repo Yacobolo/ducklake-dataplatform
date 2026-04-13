@@ -2,19 +2,37 @@
 
 # Schema: `AssetFreshnessStatus`
 
+## Example
+
+```json
+{
+  "asset_id": "example",
+  "asset_key": "example",
+  "asset_type": "TABLE",
+  "basis": [
+    "example"
+  ],
+  "effective_max_lag_seconds": 1,
+  "freshness_status": "example",
+  "last_materialized_at": "2026-01-02T15:04:05Z",
+  "reason": "example",
+  "stale_since": "2026-01-02T15:04:05Z"
+}
+```
+
 - Type: `object`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `asset_id` | `string` | `false` | - |
-| `asset_key` | `string` | `false` | - |
-| `asset_type` | `AssetType` | `false` | - |
-| `basis` | `array[string]` | `false` | - |
-| `effective_max_lag_seconds` | `integer` | `false` | - |
-| `freshness_status` | `string` | `false` | - |
-| `last_materialized_at` | `string` | `false` | - |
-| `reason` | `string` | `false` | - |
-| `stale_since` | `string` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `asset_id` | `string` | `false` | - | "example" |
+| `asset_key` | `string` | `false` | - | "example" |
+| `asset_type` | `AssetType` | `false` | - | "TABLE" |
+| `basis` | `array[string]` | `false` | - | [ "example" ] |
+| `effective_max_lag_seconds` | `integer` | `false` | - | 1 |
+| `freshness_status` | `string` | `false` | - | "example" |
+| `last_materialized_at` | `string` | `false` | - | "2026-01-02T15:04:05Z" |
+| `reason` | `string` | `false` | - | "example" |
+| `stale_since` | `string` | `false` | - | "2026-01-02T15:04:05Z" |
 

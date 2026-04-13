@@ -12,11 +12,11 @@ List dashboards
 
 ### Query Parameters
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `max_results` | `integer` | `false` | - |
-| `owner` | `string` | `false` | - |
-| `page_token` | `string` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `max_results` | `integer` | `false` | - | 1 |
+| `owner` | `string` | `false` | - | "example" |
+| `page_token` | `string` | `false` | - | "example" |
 
 ### Responses
 
@@ -27,6 +27,90 @@ List dashboards
 | `401` | Access is unauthorized. |
 | `429` | Client error |
 | `500` | Server error |
+
+#### `200` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "data": [
+    {
+      "compute": {
+        "endpoint_name": "example",
+        "fallback_local": true,
+        "mode": "example"
+      },
+      "created_at": "2026-01-02T15:04:05Z",
+      "description": "example",
+      "folder_id": "example",
+      "id": "example",
+      "name": "example",
+      "owner": "example",
+      "semantic_model_name": "example",
+      "semantic_project_name": "example",
+      "updated_at": "2026-01-02T15:04:05Z"
+    }
+  ],
+  "next_page_token": "example"
+}
+```
+
+#### `400` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `401` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `429` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `500` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
 
 ## `POST /dashboards`
 
@@ -39,6 +123,26 @@ Create dashboard
 - Required: `true`
 - Content types: `application/json`
 
+### Request Examples
+
+- Content type: `application/json`
+
+```json
+{
+  "compute": {
+    "endpoint_name": "example",
+    "fallback_local": true,
+    "mode": "example"
+  },
+  "description": "example",
+  "folder_id": "example",
+  "name": "example",
+  "owner": "example",
+  "semantic_model_name": "example",
+  "semantic_project_name": "example"
+}
+```
+
 ### Responses
 
 | Code | Description |
@@ -49,6 +153,99 @@ Create dashboard
 | `403` | Access is forbidden. |
 | `429` | Client error |
 | `500` | Server error |
+
+#### `201` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "compute": {
+    "endpoint_name": "example",
+    "fallback_local": true,
+    "mode": "example"
+  },
+  "created_at": "2026-01-02T15:04:05Z",
+  "description": "example",
+  "folder_id": "example",
+  "id": "example",
+  "name": "example",
+  "owner": "example",
+  "semantic_model_name": "example",
+  "semantic_project_name": "example",
+  "updated_at": "2026-01-02T15:04:05Z"
+}
+```
+
+#### `400` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `401` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `403` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `429` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `500` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
 
 ## `GET /dashboards/{dashboard_id}`
 
@@ -58,9 +255,9 @@ Get dashboard
 
 ### Path Parameters
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `dashboard_id` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `dashboard_id` | `string` | `true` | - | "example" |
 
 ### Responses
 
@@ -74,6 +271,195 @@ Get dashboard
 | `429` | Client error |
 | `500` | Server error |
 
+#### `200` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "dashboard": {
+    "compute": {
+      "endpoint_name": "example",
+      "fallback_local": true,
+      "mode": "example"
+    },
+    "created_at": "2026-01-02T15:04:05Z",
+    "description": "example",
+    "folder_id": "example",
+    "id": "example",
+    "name": "example",
+    "owner": "example",
+    "semantic_model_name": "example",
+    "semantic_project_name": "example",
+    "updated_at": "2026-01-02T15:04:05Z"
+  },
+  "widgets": [
+    {
+      "created_at": "2026-01-02T15:04:05Z",
+      "dashboard_id": "example",
+      "description": "example",
+      "id": "example",
+      "key": "example",
+      "layout": {
+        "h": 1,
+        "w": 1,
+        "x": 1,
+        "y": 1
+      },
+      "name": "example",
+      "page_name": "example",
+      "source": {
+        "kind": "sql_query",
+        "notebook_cell": {
+          "cell_id": "example",
+          "notebook_id": "example"
+        },
+        "semantic_query": {
+          "dimensions": [
+            "example"
+          ],
+          "filters": [
+            "example"
+          ],
+          "limit": 1,
+          "metrics": [
+            "example"
+          ],
+          "order_by": [
+            "example"
+          ],
+          "relationship_names": [
+            "example"
+          ],
+          "semantic_model_id": "example",
+          "time_grain": "example"
+        },
+        "sql_query": {
+          "catalog": "example",
+          "schema": "example",
+          "sql": "example"
+        }
+      },
+      "updated_at": "2026-01-02T15:04:05Z",
+      "visual_spec": {
+        "chart_type": "bar",
+        "color_palette": "example",
+        "encodings": {
+          "label": {
+            "field": "example"
+          },
+          "secondary": {
+            "field": "example"
+          },
+          "series": {
+            "field": "example"
+          },
+          "value": {
+            "field": "example"
+          },
+          "x": {
+            "field": "example"
+          },
+          "y": {
+            "field": "example"
+          }
+        },
+        "kind": "table",
+        "legend": true,
+        "legend_position": "top",
+        "stacked": true,
+        "subtitle": "example",
+        "title": "example"
+      }
+    }
+  ]
+}
+```
+
+#### `400` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `401` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `403` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `404` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `429` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `500` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
 ## `PATCH /dashboards/{dashboard_id}`
 
 Update dashboard
@@ -82,14 +468,34 @@ Update dashboard
 
 ### Path Parameters
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `dashboard_id` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `dashboard_id` | `string` | `true` | - | "example" |
 
 ### Request Body
 
 - Required: `true`
 - Content types: `application/json`
+
+### Request Examples
+
+- Content type: `application/json`
+
+```json
+{
+  "compute": {
+    "endpoint_name": "example",
+    "fallback_local": true,
+    "mode": "example"
+  },
+  "description": "example",
+  "folder_id": "example",
+  "name": "example",
+  "owner": "example",
+  "semantic_model_name": "example",
+  "semantic_project_name": "example"
+}
+```
 
 ### Responses
 
@@ -102,6 +508,99 @@ Update dashboard
 | `429` | Client error |
 | `500` | Server error |
 
+#### `200` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "compute": {
+    "endpoint_name": "example",
+    "fallback_local": true,
+    "mode": "example"
+  },
+  "created_at": "2026-01-02T15:04:05Z",
+  "description": "example",
+  "folder_id": "example",
+  "id": "example",
+  "name": "example",
+  "owner": "example",
+  "semantic_model_name": "example",
+  "semantic_project_name": "example",
+  "updated_at": "2026-01-02T15:04:05Z"
+}
+```
+
+#### `400` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `401` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `403` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `429` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `500` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
 ## `DELETE /dashboards/{dashboard_id}`
 
 Delete dashboard
@@ -110,9 +609,9 @@ Delete dashboard
 
 ### Path Parameters
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `dashboard_id` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `dashboard_id` | `string` | `true` | - | "example" |
 
 ### Responses
 
@@ -125,6 +624,76 @@ Delete dashboard
 | `429` | Client error |
 | `500` | Server error |
 
+#### `400` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `401` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `403` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `429` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `500` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
 ## `GET /dashboards/{dashboard_id}/rendered`
 
 Get rendered dashboard
@@ -133,15 +702,15 @@ Get rendered dashboard
 
 ### Path Parameters
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `dashboard_id` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `dashboard_id` | `string` | `true` | - | "example" |
 
 ### Query Parameters
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `filters` | `array[string]` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `filters` | `array[string]` | `false` | - | [ "example" ] |
 
 ### Responses
 
@@ -154,6 +723,207 @@ Get rendered dashboard
 | `404` | The server cannot find the requested resource. |
 | `429` | Client error |
 | `500` | Server error |
+
+#### `200` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "dashboard": {
+    "compute": {
+      "endpoint_name": "example",
+      "fallback_local": true,
+      "mode": "example"
+    },
+    "created_at": "2026-01-02T15:04:05Z",
+    "description": "example",
+    "folder_id": "example",
+    "id": "example",
+    "name": "example",
+    "owner": "example",
+    "semantic_model_name": "example",
+    "semantic_project_name": "example",
+    "updated_at": "2026-01-02T15:04:05Z"
+  },
+  "widgets": [
+    {
+      "columns": [
+        "example"
+      ],
+      "generated_sql": "example",
+      "row_count": 1,
+      "rows": [
+        [
+          "example"
+        ]
+      ],
+      "widget": {
+        "created_at": "2026-01-02T15:04:05Z",
+        "dashboard_id": "example",
+        "description": "example",
+        "id": "example",
+        "key": "example",
+        "layout": {
+          "h": 1,
+          "w": 1,
+          "x": 1,
+          "y": 1
+        },
+        "name": "example",
+        "page_name": "example",
+        "source": {
+          "kind": "sql_query",
+          "notebook_cell": {
+            "cell_id": "example",
+            "notebook_id": "example"
+          },
+          "semantic_query": {
+            "dimensions": [
+              "example"
+            ],
+            "filters": [
+              "example"
+            ],
+            "limit": 1,
+            "metrics": [
+              "example"
+            ],
+            "order_by": [
+              "example"
+            ],
+            "relationship_names": [
+              "example"
+            ],
+            "semantic_model_id": "example",
+            "time_grain": "example"
+          },
+          "sql_query": {
+            "catalog": "example",
+            "schema": "example",
+            "sql": "example"
+          }
+        },
+        "updated_at": "2026-01-02T15:04:05Z",
+        "visual_spec": {
+          "chart_type": "bar",
+          "color_palette": "example",
+          "encodings": {
+            "label": {
+              "field": "example"
+            },
+            "secondary": {
+              "field": "example"
+            },
+            "series": {
+              "field": "example"
+            },
+            "value": {
+              "field": "example"
+            },
+            "x": {
+              "field": "example"
+            },
+            "y": {
+              "field": "example"
+            }
+          },
+          "kind": "table",
+          "legend": true,
+          "legend_position": "top",
+          "stacked": true,
+          "subtitle": "example",
+          "title": "example"
+        }
+      }
+    }
+  ]
+}
+```
+
+#### `400` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `401` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `403` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `404` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `429` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `500` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
 
 ## `GET /dashboards/{dashboard_id}/widgets`
 
@@ -163,9 +933,9 @@ List dashboard widgets
 
 ### Path Parameters
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `dashboard_id` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `dashboard_id` | `string` | `true` | - | "example" |
 
 ### Responses
 
@@ -179,6 +949,177 @@ List dashboard widgets
 | `429` | Client error |
 | `500` | Server error |
 
+#### `200` Example
+
+- Content type: `application/json`
+
+```json
+[
+  {
+    "created_at": "2026-01-02T15:04:05Z",
+    "dashboard_id": "example",
+    "description": "example",
+    "id": "example",
+    "key": "example",
+    "layout": {
+      "h": 1,
+      "w": 1,
+      "x": 1,
+      "y": 1
+    },
+    "name": "example",
+    "page_name": "example",
+    "source": {
+      "kind": "sql_query",
+      "notebook_cell": {
+        "cell_id": "example",
+        "notebook_id": "example"
+      },
+      "semantic_query": {
+        "dimensions": [
+          "example"
+        ],
+        "filters": [
+          "example"
+        ],
+        "limit": 1,
+        "metrics": [
+          "example"
+        ],
+        "order_by": [
+          "example"
+        ],
+        "relationship_names": [
+          "example"
+        ],
+        "semantic_model_id": "example",
+        "time_grain": "example"
+      },
+      "sql_query": {
+        "catalog": "example",
+        "schema": "example",
+        "sql": "example"
+      }
+    },
+    "updated_at": "2026-01-02T15:04:05Z",
+    "visual_spec": {
+      "chart_type": "bar",
+      "color_palette": "example",
+      "encodings": {
+        "label": {
+          "field": "example"
+        },
+        "secondary": {
+          "field": "example"
+        },
+        "series": {
+          "field": "example"
+        },
+        "value": {
+          "field": "example"
+        },
+        "x": {
+          "field": "example"
+        },
+        "y": {
+          "field": "example"
+        }
+      },
+      "kind": "table",
+      "legend": true,
+      "legend_position": "top",
+      "stacked": true,
+      "subtitle": "example",
+      "title": "example"
+    }
+  }
+]
+```
+
+#### `400` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `401` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `403` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `404` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `429` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `500` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
 ## `POST /dashboards/{dashboard_id}/widgets`
 
 Create dashboard widget
@@ -187,14 +1128,95 @@ Create dashboard widget
 
 ### Path Parameters
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `dashboard_id` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `dashboard_id` | `string` | `true` | - | "example" |
 
 ### Request Body
 
 - Required: `true`
 - Content types: `application/json`
+
+### Request Examples
+
+- Content type: `application/json`
+
+```json
+{
+  "description": "example",
+  "key": "example",
+  "layout": {
+    "h": 1,
+    "w": 1,
+    "x": 1,
+    "y": 1
+  },
+  "name": "example",
+  "page_name": "example",
+  "source": {
+    "kind": "sql_query",
+    "notebook_cell": {
+      "cell_id": "example",
+      "notebook_id": "example"
+    },
+    "semantic_query": {
+      "dimensions": [
+        "example"
+      ],
+      "filters": [
+        "example"
+      ],
+      "limit": 1,
+      "metrics": [
+        "example"
+      ],
+      "order_by": [
+        "example"
+      ],
+      "relationship_names": [
+        "example"
+      ],
+      "semantic_model_id": "example",
+      "time_grain": "example"
+    },
+    "sql_query": {
+      "catalog": "example",
+      "schema": "example",
+      "sql": "example"
+    }
+  },
+  "visual_spec": {
+    "chart_type": "bar",
+    "color_palette": "example",
+    "encodings": {
+      "label": {
+        "field": "example"
+      },
+      "secondary": {
+        "field": "example"
+      },
+      "series": {
+        "field": "example"
+      },
+      "value": {
+        "field": "example"
+      },
+      "x": {
+        "field": "example"
+      },
+      "y": {
+        "field": "example"
+      }
+    },
+    "kind": "table",
+    "legend": true,
+    "legend_position": "top",
+    "stacked": true,
+    "subtitle": "example",
+    "title": "example"
+  }
+}
+```
 
 ### Responses
 
@@ -207,6 +1229,161 @@ Create dashboard widget
 | `429` | Client error |
 | `500` | Server error |
 
+#### `201` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "created_at": "2026-01-02T15:04:05Z",
+  "dashboard_id": "example",
+  "description": "example",
+  "id": "example",
+  "key": "example",
+  "layout": {
+    "h": 1,
+    "w": 1,
+    "x": 1,
+    "y": 1
+  },
+  "name": "example",
+  "page_name": "example",
+  "source": {
+    "kind": "sql_query",
+    "notebook_cell": {
+      "cell_id": "example",
+      "notebook_id": "example"
+    },
+    "semantic_query": {
+      "dimensions": [
+        "example"
+      ],
+      "filters": [
+        "example"
+      ],
+      "limit": 1,
+      "metrics": [
+        "example"
+      ],
+      "order_by": [
+        "example"
+      ],
+      "relationship_names": [
+        "example"
+      ],
+      "semantic_model_id": "example",
+      "time_grain": "example"
+    },
+    "sql_query": {
+      "catalog": "example",
+      "schema": "example",
+      "sql": "example"
+    }
+  },
+  "updated_at": "2026-01-02T15:04:05Z",
+  "visual_spec": {
+    "chart_type": "bar",
+    "color_palette": "example",
+    "encodings": {
+      "label": {
+        "field": "example"
+      },
+      "secondary": {
+        "field": "example"
+      },
+      "series": {
+        "field": "example"
+      },
+      "value": {
+        "field": "example"
+      },
+      "x": {
+        "field": "example"
+      },
+      "y": {
+        "field": "example"
+      }
+    },
+    "kind": "table",
+    "legend": true,
+    "legend_position": "top",
+    "stacked": true,
+    "subtitle": "example",
+    "title": "example"
+  }
+}
+```
+
+#### `400` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `401` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `403` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `429` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `500` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
 ## `GET /dashboards/{dashboard_id}/widgets/{widget_id}`
 
 Get dashboard widget
@@ -215,10 +1392,10 @@ Get dashboard widget
 
 ### Path Parameters
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `dashboard_id` | `string` | `true` | - |
-| `widget_id` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `dashboard_id` | `string` | `true` | - | "example" |
+| `widget_id` | `string` | `true` | - | "example" |
 
 ### Responses
 
@@ -232,6 +1409,175 @@ Get dashboard widget
 | `429` | Client error |
 | `500` | Server error |
 
+#### `200` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "created_at": "2026-01-02T15:04:05Z",
+  "dashboard_id": "example",
+  "description": "example",
+  "id": "example",
+  "key": "example",
+  "layout": {
+    "h": 1,
+    "w": 1,
+    "x": 1,
+    "y": 1
+  },
+  "name": "example",
+  "page_name": "example",
+  "source": {
+    "kind": "sql_query",
+    "notebook_cell": {
+      "cell_id": "example",
+      "notebook_id": "example"
+    },
+    "semantic_query": {
+      "dimensions": [
+        "example"
+      ],
+      "filters": [
+        "example"
+      ],
+      "limit": 1,
+      "metrics": [
+        "example"
+      ],
+      "order_by": [
+        "example"
+      ],
+      "relationship_names": [
+        "example"
+      ],
+      "semantic_model_id": "example",
+      "time_grain": "example"
+    },
+    "sql_query": {
+      "catalog": "example",
+      "schema": "example",
+      "sql": "example"
+    }
+  },
+  "updated_at": "2026-01-02T15:04:05Z",
+  "visual_spec": {
+    "chart_type": "bar",
+    "color_palette": "example",
+    "encodings": {
+      "label": {
+        "field": "example"
+      },
+      "secondary": {
+        "field": "example"
+      },
+      "series": {
+        "field": "example"
+      },
+      "value": {
+        "field": "example"
+      },
+      "x": {
+        "field": "example"
+      },
+      "y": {
+        "field": "example"
+      }
+    },
+    "kind": "table",
+    "legend": true,
+    "legend_position": "top",
+    "stacked": true,
+    "subtitle": "example",
+    "title": "example"
+  }
+}
+```
+
+#### `400` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `401` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `403` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `404` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `429` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `500` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
 ## `PATCH /dashboards/{dashboard_id}/widgets/{widget_id}`
 
 Update dashboard widget
@@ -240,15 +1586,96 @@ Update dashboard widget
 
 ### Path Parameters
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `dashboard_id` | `string` | `true` | - |
-| `widget_id` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `dashboard_id` | `string` | `true` | - | "example" |
+| `widget_id` | `string` | `true` | - | "example" |
 
 ### Request Body
 
 - Required: `true`
 - Content types: `application/json`
+
+### Request Examples
+
+- Content type: `application/json`
+
+```json
+{
+  "description": "example",
+  "key": "example",
+  "layout": {
+    "h": 1,
+    "w": 1,
+    "x": 1,
+    "y": 1
+  },
+  "name": "example",
+  "page_name": "example",
+  "source": {
+    "kind": "sql_query",
+    "notebook_cell": {
+      "cell_id": "example",
+      "notebook_id": "example"
+    },
+    "semantic_query": {
+      "dimensions": [
+        "example"
+      ],
+      "filters": [
+        "example"
+      ],
+      "limit": 1,
+      "metrics": [
+        "example"
+      ],
+      "order_by": [
+        "example"
+      ],
+      "relationship_names": [
+        "example"
+      ],
+      "semantic_model_id": "example",
+      "time_grain": "example"
+    },
+    "sql_query": {
+      "catalog": "example",
+      "schema": "example",
+      "sql": "example"
+    }
+  },
+  "visual_spec": {
+    "chart_type": "bar",
+    "color_palette": "example",
+    "encodings": {
+      "label": {
+        "field": "example"
+      },
+      "secondary": {
+        "field": "example"
+      },
+      "series": {
+        "field": "example"
+      },
+      "value": {
+        "field": "example"
+      },
+      "x": {
+        "field": "example"
+      },
+      "y": {
+        "field": "example"
+      }
+    },
+    "kind": "table",
+    "legend": true,
+    "legend_position": "top",
+    "stacked": true,
+    "subtitle": "example",
+    "title": "example"
+  }
+}
+```
 
 ### Responses
 
@@ -261,6 +1688,161 @@ Update dashboard widget
 | `429` | Client error |
 | `500` | Server error |
 
+#### `200` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "created_at": "2026-01-02T15:04:05Z",
+  "dashboard_id": "example",
+  "description": "example",
+  "id": "example",
+  "key": "example",
+  "layout": {
+    "h": 1,
+    "w": 1,
+    "x": 1,
+    "y": 1
+  },
+  "name": "example",
+  "page_name": "example",
+  "source": {
+    "kind": "sql_query",
+    "notebook_cell": {
+      "cell_id": "example",
+      "notebook_id": "example"
+    },
+    "semantic_query": {
+      "dimensions": [
+        "example"
+      ],
+      "filters": [
+        "example"
+      ],
+      "limit": 1,
+      "metrics": [
+        "example"
+      ],
+      "order_by": [
+        "example"
+      ],
+      "relationship_names": [
+        "example"
+      ],
+      "semantic_model_id": "example",
+      "time_grain": "example"
+    },
+    "sql_query": {
+      "catalog": "example",
+      "schema": "example",
+      "sql": "example"
+    }
+  },
+  "updated_at": "2026-01-02T15:04:05Z",
+  "visual_spec": {
+    "chart_type": "bar",
+    "color_palette": "example",
+    "encodings": {
+      "label": {
+        "field": "example"
+      },
+      "secondary": {
+        "field": "example"
+      },
+      "series": {
+        "field": "example"
+      },
+      "value": {
+        "field": "example"
+      },
+      "x": {
+        "field": "example"
+      },
+      "y": {
+        "field": "example"
+      }
+    },
+    "kind": "table",
+    "legend": true,
+    "legend_position": "top",
+    "stacked": true,
+    "subtitle": "example",
+    "title": "example"
+  }
+}
+```
+
+#### `400` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `401` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `403` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `429` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `500` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
 ## `DELETE /dashboards/{dashboard_id}/widgets/{widget_id}`
 
 Delete dashboard widget
@@ -269,10 +1851,10 @@ Delete dashboard widget
 
 ### Path Parameters
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `dashboard_id` | `string` | `true` | - |
-| `widget_id` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `dashboard_id` | `string` | `true` | - | "example" |
+| `widget_id` | `string` | `true` | - | "example" |
 
 ### Responses
 
@@ -284,4 +1866,74 @@ Delete dashboard widget
 | `403` | Access is forbidden. |
 | `429` | Client error |
 | `500` | Server error |
+
+#### `400` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `401` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `403` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `429` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `500` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
 

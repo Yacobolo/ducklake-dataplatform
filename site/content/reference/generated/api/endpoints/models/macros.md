@@ -12,10 +12,10 @@ List macros
 
 ### Query Parameters
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `max_results` | `integer` | `false` | - |
-| `page_token` | `string` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `max_results` | `integer` | `false` | - | 1 |
+| `page_token` | `string` | `false` | - | "example" |
 
 ### Responses
 
@@ -26,6 +26,98 @@ List macros
 | `401` | Access is unauthorized. |
 | `429` | Client error |
 | `500` | Server error |
+
+#### `200` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "data": [
+    {
+      "body": "example",
+      "catalog_name": "example",
+      "created_at": "2026-01-02T15:04:05Z",
+      "created_by": "example",
+      "description": "example",
+      "id": "example",
+      "macro_type": "SCALAR",
+      "name": "example",
+      "owner": "example",
+      "parameters": [
+        "example"
+      ],
+      "project_name": "example",
+      "properties": {
+        "key": "example"
+      },
+      "status": "ACTIVE",
+      "tags": [
+        "example"
+      ],
+      "updated_at": "2026-01-02T15:04:05Z",
+      "visibility": "project"
+    }
+  ],
+  "next_page_token": "example"
+}
+```
+
+#### `400` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `401` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `429` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `500` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
 
 ## `POST /macros`
 
@@ -38,6 +130,33 @@ Create macro
 - Required: `true`
 - Content types: `application/json`
 
+### Request Examples
+
+- Content type: `application/json`
+
+```json
+{
+  "body": "example",
+  "catalog_name": "example",
+  "description": "example",
+  "macro_type": "SCALAR",
+  "name": "example",
+  "owner": "example",
+  "parameters": [
+    "example"
+  ],
+  "project_name": "example",
+  "properties": {
+    "key": "example"
+  },
+  "status": "ACTIVE",
+  "tags": [
+    "example"
+  ],
+  "visibility": "project"
+}
+```
+
 ### Responses
 
 | Code | Description |
@@ -49,6 +168,107 @@ Create macro
 | `429` | Client error |
 | `500` | Server error |
 
+#### `201` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "body": "example",
+  "catalog_name": "example",
+  "created_at": "2026-01-02T15:04:05Z",
+  "created_by": "example",
+  "description": "example",
+  "id": "example",
+  "macro_type": "SCALAR",
+  "name": "example",
+  "owner": "example",
+  "parameters": [
+    "example"
+  ],
+  "project_name": "example",
+  "properties": {
+    "key": "example"
+  },
+  "status": "ACTIVE",
+  "tags": [
+    "example"
+  ],
+  "updated_at": "2026-01-02T15:04:05Z",
+  "visibility": "project"
+}
+```
+
+#### `400` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `401` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `403` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `429` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `500` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
 ## `GET /macros/{macro_name}`
 
 Get macro
@@ -57,9 +277,9 @@ Get macro
 
 ### Path Parameters
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `macro_name` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `macro_name` | `string` | `true` | - | "example" |
 
 ### Responses
 
@@ -73,6 +293,121 @@ Get macro
 | `429` | Client error |
 | `500` | Server error |
 
+#### `200` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "body": "example",
+  "catalog_name": "example",
+  "created_at": "2026-01-02T15:04:05Z",
+  "created_by": "example",
+  "description": "example",
+  "id": "example",
+  "macro_type": "SCALAR",
+  "name": "example",
+  "owner": "example",
+  "parameters": [
+    "example"
+  ],
+  "project_name": "example",
+  "properties": {
+    "key": "example"
+  },
+  "status": "ACTIVE",
+  "tags": [
+    "example"
+  ],
+  "updated_at": "2026-01-02T15:04:05Z",
+  "visibility": "project"
+}
+```
+
+#### `400` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `401` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `403` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `404` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `429` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `500` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
 ## `PATCH /macros/{macro_name}`
 
 Update macro
@@ -81,14 +416,39 @@ Update macro
 
 ### Path Parameters
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `macro_name` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `macro_name` | `string` | `true` | - | "example" |
 
 ### Request Body
 
 - Required: `true`
 - Content types: `application/json`
+
+### Request Examples
+
+- Content type: `application/json`
+
+```json
+{
+  "body": "example",
+  "catalog_name": "example",
+  "description": "example",
+  "owner": "example",
+  "parameters": [
+    "example"
+  ],
+  "project_name": "example",
+  "properties": {
+    "key": "example"
+  },
+  "status": "ACTIVE",
+  "tags": [
+    "example"
+  ],
+  "visibility": "project"
+}
+```
 
 ### Responses
 
@@ -101,6 +461,107 @@ Update macro
 | `429` | Client error |
 | `500` | Server error |
 
+#### `200` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "body": "example",
+  "catalog_name": "example",
+  "created_at": "2026-01-02T15:04:05Z",
+  "created_by": "example",
+  "description": "example",
+  "id": "example",
+  "macro_type": "SCALAR",
+  "name": "example",
+  "owner": "example",
+  "parameters": [
+    "example"
+  ],
+  "project_name": "example",
+  "properties": {
+    "key": "example"
+  },
+  "status": "ACTIVE",
+  "tags": [
+    "example"
+  ],
+  "updated_at": "2026-01-02T15:04:05Z",
+  "visibility": "project"
+}
+```
+
+#### `400` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `401` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `403` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `429` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `500` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
 ## `DELETE /macros/{macro_name}`
 
 Delete macro
@@ -109,9 +570,9 @@ Delete macro
 
 ### Path Parameters
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `macro_name` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `macro_name` | `string` | `true` | - | "example" |
 
 ### Responses
 
@@ -124,6 +585,76 @@ Delete macro
 | `429` | Client error |
 | `500` | Server error |
 
+#### `400` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `401` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `403` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `429` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `500` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
 ## `GET /macros/{macro_name}/impacts`
 
 Get macro impact
@@ -132,16 +663,16 @@ Get macro impact
 
 ### Path Parameters
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `macro_name` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `macro_name` | `string` | `true` | - | "example" |
 
 ### Query Parameters
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `max_results` | `integer` | `false` | - |
-| `page_token` | `string` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `max_results` | `integer` | `false` | - | 1 |
+| `page_token` | `string` | `false` | - | "example" |
 
 ### Responses
 
@@ -154,6 +685,108 @@ Get macro impact
 | `404` | The server cannot find the requested resource. |
 | `429` | Client error |
 | `500` | Server error |
+
+#### `200` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "data": [
+    {
+      "last_seen_at": "2026-01-02T15:04:05Z",
+      "model_name": "example",
+      "target_schema": "example",
+      "target_table": "example"
+    }
+  ],
+  "next_page_token": "example"
+}
+```
+
+#### `400` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `401` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `403` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `404` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `429` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `500` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
 
 ## `GET /macros/{macro_name}/revision-diffs`
 
@@ -163,16 +796,16 @@ Diff macro revisions
 
 ### Path Parameters
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `macro_name` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `macro_name` | `string` | `true` | - | "example" |
 
 ### Query Parameters
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `from_version` | `integer` | `true` | - |
-| `to_version` | `integer` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `from_version` | `integer` | `true` | - | 1 |
+| `to_version` | `integer` | `true` | - | 1 |
 
 ### Responses
 
@@ -185,6 +818,146 @@ Diff macro revisions
 | `404` | The server cannot find the requested resource. |
 | `429` | Client error |
 | `500` | Server error |
+
+#### `200` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "body_changed": true,
+  "changed": true,
+  "description_changed": true,
+  "from_body": "example",
+  "from_content_hash": "example",
+  "from_description": "example",
+  "from_parameters": [
+    "example"
+  ],
+  "from_status": "ACTIVE",
+  "from_version": 1,
+  "impact_changed": true,
+  "impacted_models_added": [
+    {
+      "last_seen_at": "2026-01-02T15:04:05Z",
+      "model_name": "example",
+      "target_schema": "example",
+      "target_table": "example"
+    }
+  ],
+  "impacted_models_removed": [
+    {
+      "last_seen_at": "2026-01-02T15:04:05Z",
+      "model_name": "example",
+      "target_schema": "example",
+      "target_table": "example"
+    }
+  ],
+  "impacted_models_unchanged": [
+    {
+      "last_seen_at": "2026-01-02T15:04:05Z",
+      "model_name": "example",
+      "target_schema": "example",
+      "target_table": "example"
+    }
+  ],
+  "macro_name": "example",
+  "parameters_changed": true,
+  "status_changed": true,
+  "to_body": "example",
+  "to_content_hash": "example",
+  "to_description": "example",
+  "to_parameters": [
+    "example"
+  ],
+  "to_status": "ACTIVE",
+  "to_version": 1
+}
+```
+
+#### `400` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `401` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `403` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `404` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `429` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `500` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
 
 ## `GET /macros/{macro_name}/revisions`
 
@@ -194,9 +967,9 @@ List macro revisions
 
 ### Path Parameters
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `macro_name` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `macro_name` | `string` | `true` | - | "example" |
 
 ### Responses
 
@@ -209,4 +982,113 @@ List macro revisions
 | `404` | The server cannot find the requested resource. |
 | `429` | Client error |
 | `500` | Server error |
+
+#### `200` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "data": [
+    {
+      "body": "example",
+      "content_hash": "example",
+      "created_at": "2026-01-02T15:04:05Z",
+      "created_by": "example",
+      "description": "example",
+      "id": "example",
+      "macro_name": "example",
+      "parameters": [
+        "example"
+      ],
+      "status": "ACTIVE",
+      "version": 1
+    }
+  ]
+}
+```
+
+#### `400` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `401` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `403` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `404` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `429` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `500` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
 

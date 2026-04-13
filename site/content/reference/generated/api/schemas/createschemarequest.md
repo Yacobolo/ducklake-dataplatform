@@ -2,15 +2,28 @@
 
 # Schema: `CreateSchemaRequest`
 
+## Example
+
+```json
+{
+  "comment": "example",
+  "location_name": "example",
+  "name": "example",
+  "properties": {
+    "key": "example"
+  }
+}
+```
+
 - Type: `object`
 - Required fields: `name`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `comment` | `string` | `false` | - |
-| `location_name` | `string` | `false` | - |
-| `name` | `string` | `true` | - |
-| `properties` | `object` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `comment` | `string` | `false` | - | "example" |
+| `location_name` | `string` | `false` | - | "example" |
+| `name` | `string` | `true` | - | "example" |
+| `properties` | `object` | `false` | - | { "key": "example" } |
 

@@ -2,13 +2,22 @@
 
 # Schema: `DashboardNotebookCellSource`
 
+## Example
+
+```json
+{
+  "cell_id": "example",
+  "notebook_id": "example"
+}
+```
+
 - Type: `object`
 - Required fields: `cell_id`, `notebook_id`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `cell_id` | `string` | `true` | - |
-| `notebook_id` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `cell_id` | `string` | `true` | - | "example" |
+| `notebook_id` | `string` | `true` | - | "example" |
 

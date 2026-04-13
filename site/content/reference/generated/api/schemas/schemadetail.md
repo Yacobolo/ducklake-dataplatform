@@ -2,20 +2,46 @@
 
 # Schema: `SchemaDetail`
 
+## Example
+
+```json
+{
+  "catalog_name": "example",
+  "comment": "example",
+  "created_at": "2026-01-02T15:04:05Z",
+  "name": "example",
+  "owner": "example",
+  "properties": {
+    "key": "example"
+  },
+  "schema_id": "example",
+  "tags": [
+    {
+      "created_at": "2026-01-02T15:04:05Z",
+      "created_by": "example",
+      "id": "example",
+      "key": "example",
+      "value": "example"
+    }
+  ],
+  "updated_at": "2026-01-02T15:04:05Z"
+}
+```
+
 - Type: `object`
 - Required fields: `catalog_name`, `name`, `schema_id`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `catalog_name` | `string` | `true` | - |
-| `comment` | `string` | `false` | - |
-| `created_at` | `string` | `false` | - |
-| `name` | `string` | `true` | - |
-| `owner` | `string` | `false` | - |
-| `properties` | `object` | `false` | - |
-| `schema_id` | `string` | `true` | - |
-| `tags` | `array[Tag]` | `false` | - |
-| `updated_at` | `string` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `catalog_name` | `string` | `true` | - | "example" |
+| `comment` | `string` | `false` | - | "example" |
+| `created_at` | `string` | `false` | - | "2026-01-02T15:04:05Z" |
+| `name` | `string` | `true` | - | "example" |
+| `owner` | `string` | `false` | - | "example" |
+| `properties` | `object` | `false` | - | { "key": "example" } |
+| `schema_id` | `string` | `true` | - | "example" |
+| `tags` | `array[Tag]` | `false` | - | [ { "created_at": "2026-01-02T15:04:05Z", "created_by": "example", "id": "example", "key": "example", "value": "example" } ] |
+| `updated_at` | `string` | `false` | - | "2026-01-02T15:04:05Z" |
 

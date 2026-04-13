@@ -14,10 +14,10 @@ Lists registered catalogs and returns a paginated catalog registration view for 
 
 ### Query Parameters
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `max_results` | `integer` | `false` | - |
-| `page_token` | `string` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `max_results` | `integer` | `false` | - | 1 |
+| `page_token` | `string` | `false` | - | "example" |
 
 ### Responses
 
@@ -29,6 +29,102 @@ Lists registered catalogs and returns a paginated catalog registration view for 
 | `403` | Access is forbidden. |
 | `429` | Client error |
 | `500` | Server error |
+
+#### `200` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "catalogs": [
+    {
+      "comment": "example",
+      "created_at": "2026-01-02T15:04:05Z",
+      "data_path": "example",
+      "dsn": "example",
+      "id": "example",
+      "is_default": true,
+      "metastore_type": "sqlite",
+      "name": "example",
+      "status": "ACTIVE",
+      "system_managed": true,
+      "updated_at": "2026-01-02T15:04:05Z"
+    }
+  ],
+  "next_page_token": "example",
+  "total_count": 1
+}
+```
+
+#### `400` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `401` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `403` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `429` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `500` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
 
 ## `POST /catalogs`
 
@@ -41,6 +137,20 @@ Register catalog
 - Required: `true`
 - Content types: `application/json`
 
+### Request Examples
+
+- Content type: `application/json`
+
+```json
+{
+  "comment": "example",
+  "data_path": "example",
+  "dsn": "example",
+  "metastore_type": "sqlite",
+  "name": "example"
+}
+```
+
 ### Responses
 
 | Code | Description |
@@ -51,6 +161,96 @@ Register catalog
 | `403` | Access is forbidden. |
 | `429` | Client error |
 | `500` | Server error |
+
+#### `201` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "comment": "example",
+  "created_at": "2026-01-02T15:04:05Z",
+  "data_path": "example",
+  "dsn": "example",
+  "id": "example",
+  "is_default": true,
+  "metastore_type": "sqlite",
+  "name": "example",
+  "status": "ACTIVE",
+  "system_managed": true,
+  "updated_at": "2026-01-02T15:04:05Z"
+}
+```
+
+#### `400` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `401` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `403` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `429` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `500` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
 
 ## `GET /catalogs/search`
 
@@ -60,13 +260,13 @@ Search catalog
 
 ### Query Parameters
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `catalog` | `string` | `false` | - |
-| `max_results` | `integer` | `false` | - |
-| `page_token` | `string` | `false` | - |
-| `query` | `string` | `true` | - |
-| `type` | `string` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `catalog` | `string` | `false` | - | "example" |
+| `max_results` | `integer` | `false` | - | 1 |
+| `page_token` | `string` | `false` | - | "example" |
+| `query` | `string` | `true` | - | "example" |
+| `type` | `string` | `false` | - | "example" |
 
 ### Responses
 
@@ -77,6 +277,82 @@ Search catalog
 | `401` | Access is unauthorized. |
 | `429` | Client error |
 | `500` | Server error |
+
+#### `200` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "data": [
+    {
+      "comment": "example",
+      "match_field": "example",
+      "name": "example",
+      "schema_name": "example",
+      "table_name": "example",
+      "type": "example"
+    }
+  ],
+  "next_page_token": "example"
+}
+```
+
+#### `400` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `401` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `429` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `500` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
 
 ## `GET /catalogs/{catalog_name}`
 
@@ -86,9 +362,9 @@ Get catalog
 
 ### Path Parameters
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `catalog_name` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `catalog_name` | `string` | `true` | - | "example" |
 
 ### Responses
 
@@ -101,6 +377,110 @@ Get catalog
 | `404` | The server cannot find the requested resource. |
 | `429` | Client error |
 | `500` | Server error |
+
+#### `200` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "comment": "example",
+  "created_at": "2026-01-02T15:04:05Z",
+  "data_path": "example",
+  "dsn": "example",
+  "id": "example",
+  "is_default": true,
+  "metastore_type": "sqlite",
+  "name": "example",
+  "status": "ACTIVE",
+  "system_managed": true,
+  "updated_at": "2026-01-02T15:04:05Z"
+}
+```
+
+#### `400` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `401` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `403` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `404` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `429` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `500` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
 
 ## `PATCH /catalogs/{catalog_name}`
 
@@ -110,14 +490,25 @@ Update catalog registration
 
 ### Path Parameters
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `catalog_name` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `catalog_name` | `string` | `true` | - | "example" |
 
 ### Request Body
 
 - Required: `true`
 - Content types: `application/json`
+
+### Request Examples
+
+- Content type: `application/json`
+
+```json
+{
+  "comment": "example",
+  "data_path": "example"
+}
+```
 
 ### Responses
 
@@ -130,6 +521,110 @@ Update catalog registration
 | `404` | The server cannot find the requested resource. |
 | `429` | Client error |
 | `500` | Server error |
+
+#### `200` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "comment": "example",
+  "created_at": "2026-01-02T15:04:05Z",
+  "data_path": "example",
+  "dsn": "example",
+  "id": "example",
+  "is_default": true,
+  "metastore_type": "sqlite",
+  "name": "example",
+  "status": "ACTIVE",
+  "system_managed": true,
+  "updated_at": "2026-01-02T15:04:05Z"
+}
+```
+
+#### `400` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `401` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `403` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `404` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `429` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `500` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
 
 ## `DELETE /catalogs/{catalog_name}`
 
@@ -139,9 +634,9 @@ Delete catalog registration
 
 ### Path Parameters
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `catalog_name` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `catalog_name` | `string` | `true` | - | "example" |
 
 ### Responses
 
@@ -154,6 +649,90 @@ Delete catalog registration
 | `404` | The server cannot find the requested resource. |
 | `429` | Client error |
 | `500` | Server error |
+
+#### `400` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `401` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `403` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `404` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `429` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `500` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
 
 ## `PUT /catalogs/{catalog_name}/default`
 
@@ -163,14 +742,22 @@ Set default catalog
 
 ### Path Parameters
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `catalog_name` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `catalog_name` | `string` | `true` | - | "example" |
 
 ### Request Body
 
 - Required: `true`
 - Content types: `application/json`
+
+### Request Examples
+
+- Content type: `application/json`
+
+```json
+{}
+```
 
 ### Responses
 
@@ -182,6 +769,96 @@ Set default catalog
 | `403` | Access is forbidden. |
 | `429` | Client error |
 | `500` | Server error |
+
+#### `200` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "comment": "example",
+  "created_at": "2026-01-02T15:04:05Z",
+  "data_path": "example",
+  "dsn": "example",
+  "id": "example",
+  "is_default": true,
+  "metastore_type": "sqlite",
+  "name": "example",
+  "status": "ACTIVE",
+  "system_managed": true,
+  "updated_at": "2026-01-02T15:04:05Z"
+}
+```
+
+#### `400` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `401` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `403` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `429` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `500` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
 
 ## `GET /catalogs/{catalog_name}/history`
 
@@ -191,18 +868,18 @@ List catalog history
 
 ### Path Parameters
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `catalog_name` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `catalog_name` | `string` | `true` | - | "example" |
 
 ### Query Parameters
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `entity_type` | `string` | `false` | - |
-| `limit` | `integer` | `false` | - |
-| `schema_name` | `string` | `false` | - |
-| `table_name` | `string` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `entity_type` | `string` | `false` | - | "example" |
+| `limit` | `integer` | `false` | - | 1 |
+| `schema_name` | `string` | `false` | - | "example" |
+| `table_name` | `string` | `false` | - | "example" |
 
 ### Responses
 
@@ -215,6 +892,114 @@ List catalog history
 | `404` | The server cannot find the requested resource. |
 | `429` | Client error |
 | `500` | Server error |
+
+#### `200` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "data": [
+    {
+      "begin_snapshot_id": 1,
+      "column_name": "example",
+      "end_snapshot_id": 1,
+      "entity_type": "example",
+      "has_history": true,
+      "is_active": true,
+      "latest_snapshot_id": 1,
+      "object_id": "example",
+      "object_name": "example",
+      "schema_name": "example",
+      "table_name": "example"
+    }
+  ]
+}
+```
+
+#### `400` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `401` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `403` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `404` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `429` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `500` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
 
 ## `GET /catalogs/{catalog_name}/metastore/summary`
 
@@ -224,9 +1009,9 @@ Get metastore summary
 
 ### Path Parameters
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `catalog_name` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `catalog_name` | `string` | `true` | - | "example" |
 
 ### Responses
 
@@ -239,6 +1024,105 @@ Get metastore summary
 | `404` | The server cannot find the requested resource. |
 | `429` | Client error |
 | `500` | Server error |
+
+#### `200` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "catalog_name": "example",
+  "data_path": "example",
+  "metastore_type": "example",
+  "schema_count": 1,
+  "storage_backend": "example",
+  "table_count": 1
+}
+```
+
+#### `400` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `401` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `403` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `404` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `429` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `500` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
 
 ## `GET /catalogs/{catalog_name}/schemas`
 
@@ -248,16 +1132,16 @@ List schemas
 
 ### Path Parameters
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `catalog_name` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `catalog_name` | `string` | `true` | - | "example" |
 
 ### Query Parameters
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `max_results` | `integer` | `false` | - |
-| `page_token` | `string` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `max_results` | `integer` | `false` | - | 1 |
+| `page_token` | `string` | `false` | - | "example" |
 
 ### Responses
 
@@ -270,6 +1154,123 @@ List schemas
 | `404` | The server cannot find the requested resource. |
 | `429` | Client error |
 | `500` | Server error |
+
+#### `200` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "data": [
+    {
+      "catalog_name": "example",
+      "comment": "example",
+      "created_at": "2026-01-02T15:04:05Z",
+      "name": "example",
+      "owner": "example",
+      "properties": {
+        "key": "example"
+      },
+      "schema_id": "example",
+      "tags": [
+        {
+          "created_at": "2026-01-02T15:04:05Z",
+          "created_by": "example",
+          "id": "example",
+          "key": "example",
+          "value": "example"
+        }
+      ],
+      "updated_at": "2026-01-02T15:04:05Z"
+    }
+  ],
+  "next_page_token": "example"
+}
+```
+
+#### `400` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `401` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `403` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `404` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `429` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `500` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
 
 ## `POST /catalogs/{catalog_name}/schemas`
 
@@ -279,14 +1280,29 @@ Create schema
 
 ### Path Parameters
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `catalog_name` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `catalog_name` | `string` | `true` | - | "example" |
 
 ### Request Body
 
 - Required: `true`
 - Content types: `application/json`
+
+### Request Examples
+
+- Content type: `application/json`
+
+```json
+{
+  "comment": "example",
+  "location_name": "example",
+  "name": "example",
+  "properties": {
+    "key": "example"
+  }
+}
+```
 
 ### Responses
 
@@ -298,6 +1314,104 @@ Create schema
 | `403` | Access is forbidden. |
 | `429` | Client error |
 | `500` | Server error |
+
+#### `201` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "catalog_name": "example",
+  "comment": "example",
+  "created_at": "2026-01-02T15:04:05Z",
+  "name": "example",
+  "owner": "example",
+  "properties": {
+    "key": "example"
+  },
+  "schema_id": "example",
+  "tags": [
+    {
+      "created_at": "2026-01-02T15:04:05Z",
+      "created_by": "example",
+      "id": "example",
+      "key": "example",
+      "value": "example"
+    }
+  ],
+  "updated_at": "2026-01-02T15:04:05Z"
+}
+```
+
+#### `400` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `401` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `403` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `429` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `500` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
 
 ## `GET /catalogs/{catalog_name}/schemas/{schema_name}`
 
@@ -307,10 +1421,10 @@ Get schema
 
 ### Path Parameters
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `catalog_name` | `string` | `true` | - |
-| `schema_name` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `catalog_name` | `string` | `true` | - | "example" |
+| `schema_name` | `string` | `true` | - | "example" |
 
 ### Responses
 
@@ -323,6 +1437,118 @@ Get schema
 | `404` | The server cannot find the requested resource. |
 | `429` | Client error |
 | `500` | Server error |
+
+#### `200` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "catalog_name": "example",
+  "comment": "example",
+  "created_at": "2026-01-02T15:04:05Z",
+  "name": "example",
+  "owner": "example",
+  "properties": {
+    "key": "example"
+  },
+  "schema_id": "example",
+  "tags": [
+    {
+      "created_at": "2026-01-02T15:04:05Z",
+      "created_by": "example",
+      "id": "example",
+      "key": "example",
+      "value": "example"
+    }
+  ],
+  "updated_at": "2026-01-02T15:04:05Z"
+}
+```
+
+#### `400` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `401` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `403` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `404` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `429` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `500` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
 
 ## `PATCH /catalogs/{catalog_name}/schemas/{schema_name}`
 
@@ -332,15 +1558,28 @@ Update schema
 
 ### Path Parameters
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `catalog_name` | `string` | `true` | - |
-| `schema_name` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `catalog_name` | `string` | `true` | - | "example" |
+| `schema_name` | `string` | `true` | - | "example" |
 
 ### Request Body
 
 - Required: `true`
 - Content types: `application/json`
+
+### Request Examples
+
+- Content type: `application/json`
+
+```json
+{
+  "comment": "example",
+  "properties": {
+    "key": "example"
+  }
+}
+```
 
 ### Responses
 
@@ -352,6 +1591,104 @@ Update schema
 | `403` | Access is forbidden. |
 | `429` | Client error |
 | `500` | Server error |
+
+#### `200` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "catalog_name": "example",
+  "comment": "example",
+  "created_at": "2026-01-02T15:04:05Z",
+  "name": "example",
+  "owner": "example",
+  "properties": {
+    "key": "example"
+  },
+  "schema_id": "example",
+  "tags": [
+    {
+      "created_at": "2026-01-02T15:04:05Z",
+      "created_by": "example",
+      "id": "example",
+      "key": "example",
+      "value": "example"
+    }
+  ],
+  "updated_at": "2026-01-02T15:04:05Z"
+}
+```
+
+#### `400` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `401` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `403` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `429` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `500` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
 
 ## `DELETE /catalogs/{catalog_name}/schemas/{schema_name}`
 
@@ -361,16 +1698,16 @@ Delete schema
 
 ### Path Parameters
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `catalog_name` | `string` | `true` | - |
-| `schema_name` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `catalog_name` | `string` | `true` | - | "example" |
+| `schema_name` | `string` | `true` | - | "example" |
 
 ### Query Parameters
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `force` | `boolean` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `force` | `boolean` | `false` | - | true |
 
 ### Responses
 
@@ -382,6 +1719,76 @@ Delete schema
 | `403` | Access is forbidden. |
 | `429` | Client error |
 | `500` | Server error |
+
+#### `400` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `401` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `403` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `429` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `500` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
 
 ## `GET /catalogs/{catalog_name}/schemas/{schema_name}/tables`
 
@@ -391,17 +1798,17 @@ List tables
 
 ### Path Parameters
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `catalog_name` | `string` | `true` | - |
-| `schema_name` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `catalog_name` | `string` | `true` | - | "example" |
+| `schema_name` | `string` | `true` | - | "example" |
 
 ### Query Parameters
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `max_results` | `integer` | `false` | - |
-| `page_token` | `string` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `max_results` | `integer` | `false` | - | 1 |
+| `page_token` | `string` | `false` | - | "example" |
 
 ### Responses
 
@@ -414,6 +1821,141 @@ List tables
 | `404` | The server cannot find the requested resource. |
 | `429` | Client error |
 | `500` | Server error |
+
+#### `200` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "data": [
+    {
+      "catalog_name": "example",
+      "columns": [
+        {
+          "comment": "example",
+          "name": "example",
+          "nullable": true,
+          "position": 1,
+          "type": "example"
+        }
+      ],
+      "comment": "example",
+      "created_at": "2026-01-02T15:04:05Z",
+      "name": "example",
+      "owner": "example",
+      "properties": {
+        "key": "example"
+      },
+      "schema_name": "example",
+      "statistics": {
+        "column_count": 1,
+        "last_profiled_at": "2026-01-02T15:04:05Z",
+        "profiled_by": "example",
+        "row_count": 1,
+        "size_bytes": 1
+      },
+      "table_id": "example",
+      "table_type": "example",
+      "tags": [
+        {
+          "created_at": "2026-01-02T15:04:05Z",
+          "created_by": "example",
+          "id": "example",
+          "key": "example",
+          "value": "example"
+        }
+      ],
+      "updated_at": "2026-01-02T15:04:05Z"
+    }
+  ],
+  "next_page_token": "example"
+}
+```
+
+#### `400` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `401` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `403` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `404` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `429` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `500` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
 
 ## `POST /catalogs/{catalog_name}/schemas/{schema_name}/tables`
 
@@ -423,15 +1965,34 @@ Create table
 
 ### Path Parameters
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `catalog_name` | `string` | `true` | - |
-| `schema_name` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `catalog_name` | `string` | `true` | - | "example" |
+| `schema_name` | `string` | `true` | - | "example" |
 
 ### Request Body
 
 - Required: `true`
 - Content types: `application/json`
+
+### Request Examples
+
+- Content type: `application/json`
+
+```json
+{
+  "columns": [
+    {
+      "comment": "example",
+      "name": "example",
+      "nullable": true,
+      "type": "example"
+    }
+  ],
+  "comment": "example",
+  "name": "example"
+}
+```
 
 ### Responses
 
@@ -443,6 +2004,122 @@ Create table
 | `403` | Access is forbidden. |
 | `429` | Client error |
 | `500` | Server error |
+
+#### `201` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "catalog_name": "example",
+  "columns": [
+    {
+      "comment": "example",
+      "name": "example",
+      "nullable": true,
+      "position": 1,
+      "type": "example"
+    }
+  ],
+  "comment": "example",
+  "created_at": "2026-01-02T15:04:05Z",
+  "name": "example",
+  "owner": "example",
+  "properties": {
+    "key": "example"
+  },
+  "schema_name": "example",
+  "statistics": {
+    "column_count": 1,
+    "last_profiled_at": "2026-01-02T15:04:05Z",
+    "profiled_by": "example",
+    "row_count": 1,
+    "size_bytes": 1
+  },
+  "table_id": "example",
+  "table_type": "example",
+  "tags": [
+    {
+      "created_at": "2026-01-02T15:04:05Z",
+      "created_by": "example",
+      "id": "example",
+      "key": "example",
+      "value": "example"
+    }
+  ],
+  "updated_at": "2026-01-02T15:04:05Z"
+}
+```
+
+#### `400` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `401` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `403` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `429` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `500` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
 
 ## `GET /catalogs/{catalog_name}/schemas/{schema_name}/tables/{table_name}`
 
@@ -452,11 +2129,11 @@ Get table
 
 ### Path Parameters
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `catalog_name` | `string` | `true` | - |
-| `schema_name` | `string` | `true` | - |
-| `table_name` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `catalog_name` | `string` | `true` | - | "example" |
+| `schema_name` | `string` | `true` | - | "example" |
+| `table_name` | `string` | `true` | - | "example" |
 
 ### Responses
 
@@ -469,6 +2146,136 @@ Get table
 | `404` | The server cannot find the requested resource. |
 | `429` | Client error |
 | `500` | Server error |
+
+#### `200` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "catalog_name": "example",
+  "columns": [
+    {
+      "comment": "example",
+      "name": "example",
+      "nullable": true,
+      "position": 1,
+      "type": "example"
+    }
+  ],
+  "comment": "example",
+  "created_at": "2026-01-02T15:04:05Z",
+  "name": "example",
+  "owner": "example",
+  "properties": {
+    "key": "example"
+  },
+  "schema_name": "example",
+  "statistics": {
+    "column_count": 1,
+    "last_profiled_at": "2026-01-02T15:04:05Z",
+    "profiled_by": "example",
+    "row_count": 1,
+    "size_bytes": 1
+  },
+  "table_id": "example",
+  "table_type": "example",
+  "tags": [
+    {
+      "created_at": "2026-01-02T15:04:05Z",
+      "created_by": "example",
+      "id": "example",
+      "key": "example",
+      "value": "example"
+    }
+  ],
+  "updated_at": "2026-01-02T15:04:05Z"
+}
+```
+
+#### `400` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `401` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `403` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `404` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `429` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `500` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
 
 ## `PATCH /catalogs/{catalog_name}/schemas/{schema_name}/tables/{table_name}`
 
@@ -478,16 +2285,30 @@ Update table
 
 ### Path Parameters
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `catalog_name` | `string` | `true` | - |
-| `schema_name` | `string` | `true` | - |
-| `table_name` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `catalog_name` | `string` | `true` | - | "example" |
+| `schema_name` | `string` | `true` | - | "example" |
+| `table_name` | `string` | `true` | - | "example" |
 
 ### Request Body
 
 - Required: `true`
 - Content types: `application/json`
+
+### Request Examples
+
+- Content type: `application/json`
+
+```json
+{
+  "comment": "example",
+  "owner": "example",
+  "properties": {
+    "key": "example"
+  }
+}
+```
 
 ### Responses
 
@@ -499,6 +2320,122 @@ Update table
 | `403` | Access is forbidden. |
 | `429` | Client error |
 | `500` | Server error |
+
+#### `200` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "catalog_name": "example",
+  "columns": [
+    {
+      "comment": "example",
+      "name": "example",
+      "nullable": true,
+      "position": 1,
+      "type": "example"
+    }
+  ],
+  "comment": "example",
+  "created_at": "2026-01-02T15:04:05Z",
+  "name": "example",
+  "owner": "example",
+  "properties": {
+    "key": "example"
+  },
+  "schema_name": "example",
+  "statistics": {
+    "column_count": 1,
+    "last_profiled_at": "2026-01-02T15:04:05Z",
+    "profiled_by": "example",
+    "row_count": 1,
+    "size_bytes": 1
+  },
+  "table_id": "example",
+  "table_type": "example",
+  "tags": [
+    {
+      "created_at": "2026-01-02T15:04:05Z",
+      "created_by": "example",
+      "id": "example",
+      "key": "example",
+      "value": "example"
+    }
+  ],
+  "updated_at": "2026-01-02T15:04:05Z"
+}
+```
+
+#### `400` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `401` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `403` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `429` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `500` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
 
 ## `DELETE /catalogs/{catalog_name}/schemas/{schema_name}/tables/{table_name}`
 
@@ -508,11 +2445,11 @@ Delete table
 
 ### Path Parameters
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `catalog_name` | `string` | `true` | - |
-| `schema_name` | `string` | `true` | - |
-| `table_name` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `catalog_name` | `string` | `true` | - | "example" |
+| `schema_name` | `string` | `true` | - | "example" |
+| `table_name` | `string` | `true` | - | "example" |
 
 ### Responses
 
@@ -524,6 +2461,76 @@ Delete table
 | `403` | Access is forbidden. |
 | `429` | Client error |
 | `500` | Server error |
+
+#### `400` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `401` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `403` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `429` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `500` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
 
 ## `GET /catalogs/{catalog_name}/schemas/{schema_name}/tables/{table_name}/columns`
 
@@ -533,18 +2540,18 @@ List table columns
 
 ### Path Parameters
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `catalog_name` | `string` | `true` | - |
-| `schema_name` | `string` | `true` | - |
-| `table_name` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `catalog_name` | `string` | `true` | - | "example" |
+| `schema_name` | `string` | `true` | - | "example" |
+| `table_name` | `string` | `true` | - | "example" |
 
 ### Query Parameters
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `max_results` | `integer` | `false` | - |
-| `page_token` | `string` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `max_results` | `integer` | `false` | - | 1 |
+| `page_token` | `string` | `false` | - | "example" |
 
 ### Responses
 
@@ -557,6 +2564,109 @@ List table columns
 | `404` | The server cannot find the requested resource. |
 | `429` | Client error |
 | `500` | Server error |
+
+#### `200` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "data": [
+    {
+      "comment": "example",
+      "name": "example",
+      "nullable": true,
+      "position": 1,
+      "type": "example"
+    }
+  ],
+  "next_page_token": "example"
+}
+```
+
+#### `400` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `401` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `403` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `404` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `429` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `500` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
 
 ## `PATCH /catalogs/{catalog_name}/schemas/{schema_name}/tables/{table_name}/columns/{column_name}`
 
@@ -566,17 +2676,28 @@ Update column
 
 ### Path Parameters
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `catalog_name` | `string` | `true` | - |
-| `column_name` | `string` | `true` | - |
-| `schema_name` | `string` | `true` | - |
-| `table_name` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `catalog_name` | `string` | `true` | - | "example" |
+| `column_name` | `string` | `true` | - | "example" |
+| `schema_name` | `string` | `true` | - | "example" |
+| `table_name` | `string` | `true` | - | "example" |
 
 ### Request Body
 
 - Required: `true`
 - Content types: `application/json`
+
+### Request Examples
+
+- Content type: `application/json`
+
+```json
+{
+  "comment": "example",
+  "nullable": true
+}
+```
 
 ### Responses
 
@@ -588,6 +2709,90 @@ Update column
 | `403` | Access is forbidden. |
 | `429` | Client error |
 | `500` | Server error |
+
+#### `200` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "comment": "example",
+  "name": "example",
+  "nullable": true,
+  "position": 1,
+  "type": "example"
+}
+```
+
+#### `400` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `401` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `403` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `429` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `500` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
 
 ## `POST /catalogs/{catalog_name}/schemas/{schema_name}/tables/{table_name}/ingestion-commits`
 
@@ -597,16 +2802,32 @@ Commit table ingestion
 
 ### Path Parameters
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `catalog_name` | `string` | `true` | - |
-| `schema_name` | `string` | `true` | - |
-| `table_name` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `catalog_name` | `string` | `true` | - | "example" |
+| `schema_name` | `string` | `true` | - | "example" |
+| `table_name` | `string` | `true` | - | "example" |
 
 ### Request Body
 
 - Required: `true`
 - Content types: `application/json`
+
+### Request Examples
+
+- Content type: `application/json`
+
+```json
+{
+  "options": {
+    "allow_missing_columns": true,
+    "ignore_extra_columns": true
+  },
+  "s3_keys": [
+    "example"
+  ]
+}
+```
 
 ### Responses
 
@@ -618,6 +2839,89 @@ Commit table ingestion
 | `403` | Access is forbidden. |
 | `429` | Client error |
 | `500` | Server error |
+
+#### `200` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "files_registered": 1,
+  "files_skipped": 1,
+  "schema": "example",
+  "table": "example"
+}
+```
+
+#### `400` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `401` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `403` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `429` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `500` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
 
 ## `POST /catalogs/{catalog_name}/schemas/{schema_name}/tables/{table_name}/ingestion-loads`
 
@@ -627,16 +2931,32 @@ Load table external files
 
 ### Path Parameters
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `catalog_name` | `string` | `true` | - |
-| `schema_name` | `string` | `true` | - |
-| `table_name` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `catalog_name` | `string` | `true` | - | "example" |
+| `schema_name` | `string` | `true` | - | "example" |
+| `table_name` | `string` | `true` | - | "example" |
 
 ### Request Body
 
 - Required: `true`
 - Content types: `application/json`
+
+### Request Examples
+
+- Content type: `application/json`
+
+```json
+{
+  "options": {
+    "allow_missing_columns": true,
+    "ignore_extra_columns": true
+  },
+  "paths": [
+    "example"
+  ]
+}
+```
 
 ### Responses
 
@@ -648,6 +2968,89 @@ Load table external files
 | `403` | Access is forbidden. |
 | `429` | Client error |
 | `500` | Server error |
+
+#### `200` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "files_registered": 1,
+  "files_skipped": 1,
+  "schema": "example",
+  "table": "example"
+}
+```
+
+#### `400` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `401` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `403` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `429` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `500` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
 
 ## `GET /catalogs/{catalog_name}/schemas/{schema_name}/tables/{table_name}/manifest`
 
@@ -657,11 +3060,11 @@ Get table manifest
 
 ### Path Parameters
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `catalog_name` | `string` | `true` | - |
-| `schema_name` | `string` | `true` | - |
-| `table_name` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `catalog_name` | `string` | `true` | - | "example" |
+| `schema_name` | `string` | `true` | - | "example" |
+| `table_name` | `string` | `true` | - | "example" |
 
 ### Responses
 
@@ -674,6 +3077,117 @@ Get table manifest
 | `404` | The server cannot find the requested resource. |
 | `429` | Client error |
 | `500` | Server error |
+
+#### `200` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "column_masks": {
+    "key": "example"
+  },
+  "columns": [
+    {
+      "name": "example",
+      "type": "example"
+    }
+  ],
+  "expires_at": "2026-01-02T15:04:05Z",
+  "files": [
+    "example"
+  ],
+  "row_filters": [
+    "example"
+  ],
+  "schema": "example",
+  "table": "example"
+}
+```
+
+#### `400` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `401` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `403` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `404` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `429` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `500` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
 
 ## `POST /catalogs/{catalog_name}/schemas/{schema_name}/tables/{table_name}/profiles`
 
@@ -683,11 +3197,11 @@ Profile table
 
 ### Path Parameters
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `catalog_name` | `string` | `true` | - |
-| `schema_name` | `string` | `true` | - |
-| `table_name` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `catalog_name` | `string` | `true` | - | "example" |
+| `schema_name` | `string` | `true` | - | "example" |
+| `table_name` | `string` | `true` | - | "example" |
 
 ### Responses
 
@@ -699,6 +3213,90 @@ Profile table
 | `403` | Access is forbidden. |
 | `429` | Client error |
 | `500` | Server error |
+
+#### `200` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "column_count": 1,
+  "last_profiled_at": "2026-01-02T15:04:05Z",
+  "profiled_by": "example",
+  "row_count": 1,
+  "size_bytes": 1
+}
+```
+
+#### `400` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `401` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `403` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `429` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `500` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
 
 ## `POST /catalogs/{catalog_name}/schemas/{schema_name}/tables/{table_name}/upload-urls`
 
@@ -708,16 +3306,26 @@ Create upload URL
 
 ### Path Parameters
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `catalog_name` | `string` | `true` | - |
-| `schema_name` | `string` | `true` | - |
-| `table_name` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `catalog_name` | `string` | `true` | - | "example" |
+| `schema_name` | `string` | `true` | - | "example" |
+| `table_name` | `string` | `true` | - | "example" |
 
 ### Request Body
 
 - Required: `true`
 - Content types: `application/json`
+
+### Request Examples
+
+- Content type: `application/json`
+
+```json
+{
+  "filename": "example"
+}
+```
 
 ### Responses
 
@@ -729,6 +3337,88 @@ Create upload URL
 | `403` | Access is forbidden. |
 | `429` | Client error |
 | `500` | Server error |
+
+#### `200` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "expires_at": "2026-01-02T15:04:05Z",
+  "s3_key": "example",
+  "upload_url": "example"
+}
+```
+
+#### `400` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `401` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `403` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `429` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `500` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
 
 ## `GET /catalogs/{catalog_name}/schemas/{schema_name}/views`
 
@@ -738,17 +3428,17 @@ List views
 
 ### Path Parameters
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `catalog_name` | `string` | `true` | - |
-| `schema_name` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `catalog_name` | `string` | `true` | - | "example" |
+| `schema_name` | `string` | `true` | - | "example" |
 
 ### Query Parameters
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `max_results` | `integer` | `false` | - |
-| `page_token` | `string` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `max_results` | `integer` | `false` | - | 1 |
+| `page_token` | `string` | `false` | - | "example" |
 
 ### Responses
 
@@ -761,6 +3451,117 @@ List views
 | `404` | The server cannot find the requested resource. |
 | `429` | Client error |
 | `500` | Server error |
+
+#### `200` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "data": [
+    {
+      "catalog_name": "example",
+      "comment": "example",
+      "created_at": "2026-01-02T15:04:05Z",
+      "id": "example",
+      "name": "example",
+      "owner": "example",
+      "schema_id": "example",
+      "schema_name": "example",
+      "source_tables": [
+        "example"
+      ],
+      "updated_at": "2026-01-02T15:04:05Z",
+      "view_definition": "example"
+    }
+  ],
+  "next_page_token": "example"
+}
+```
+
+#### `400` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `401` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `403` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `404` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `429` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `500` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
 
 ## `POST /catalogs/{catalog_name}/schemas/{schema_name}/views`
 
@@ -770,15 +3571,27 @@ Create view
 
 ### Path Parameters
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `catalog_name` | `string` | `true` | - |
-| `schema_name` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `catalog_name` | `string` | `true` | - | "example" |
+| `schema_name` | `string` | `true` | - | "example" |
 
 ### Request Body
 
 - Required: `true`
 - Content types: `application/json`
+
+### Request Examples
+
+- Content type: `application/json`
+
+```json
+{
+  "comment": "example",
+  "name": "example",
+  "view_definition": "example"
+}
+```
 
 ### Responses
 
@@ -790,6 +3603,98 @@ Create view
 | `403` | Access is forbidden. |
 | `429` | Client error |
 | `500` | Server error |
+
+#### `201` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "catalog_name": "example",
+  "comment": "example",
+  "created_at": "2026-01-02T15:04:05Z",
+  "id": "example",
+  "name": "example",
+  "owner": "example",
+  "schema_id": "example",
+  "schema_name": "example",
+  "source_tables": [
+    "example"
+  ],
+  "updated_at": "2026-01-02T15:04:05Z",
+  "view_definition": "example"
+}
+```
+
+#### `400` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `401` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `403` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `429` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `500` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
 
 ## `GET /catalogs/{catalog_name}/schemas/{schema_name}/views/{view_name}`
 
@@ -799,11 +3704,11 @@ Get view
 
 ### Path Parameters
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `catalog_name` | `string` | `true` | - |
-| `schema_name` | `string` | `true` | - |
-| `view_name` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `catalog_name` | `string` | `true` | - | "example" |
+| `schema_name` | `string` | `true` | - | "example" |
+| `view_name` | `string` | `true` | - | "example" |
 
 ### Responses
 
@@ -817,6 +3722,112 @@ Get view
 | `429` | Client error |
 | `500` | Server error |
 
+#### `200` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "catalog_name": "example",
+  "comment": "example",
+  "created_at": "2026-01-02T15:04:05Z",
+  "id": "example",
+  "name": "example",
+  "owner": "example",
+  "schema_id": "example",
+  "schema_name": "example",
+  "source_tables": [
+    "example"
+  ],
+  "updated_at": "2026-01-02T15:04:05Z",
+  "view_definition": "example"
+}
+```
+
+#### `400` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `401` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `403` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `404` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `429` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `500` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
 ## `PATCH /catalogs/{catalog_name}/schemas/{schema_name}/views/{view_name}`
 
 Update view
@@ -825,16 +3836,27 @@ Update view
 
 ### Path Parameters
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `catalog_name` | `string` | `true` | - |
-| `schema_name` | `string` | `true` | - |
-| `view_name` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `catalog_name` | `string` | `true` | - | "example" |
+| `schema_name` | `string` | `true` | - | "example" |
+| `view_name` | `string` | `true` | - | "example" |
 
 ### Request Body
 
 - Required: `true`
 - Content types: `application/json`
+
+### Request Examples
+
+- Content type: `application/json`
+
+```json
+{
+  "comment": "example",
+  "view_definition": "example"
+}
+```
 
 ### Responses
 
@@ -847,6 +3869,98 @@ Update view
 | `429` | Client error |
 | `500` | Server error |
 
+#### `200` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "catalog_name": "example",
+  "comment": "example",
+  "created_at": "2026-01-02T15:04:05Z",
+  "id": "example",
+  "name": "example",
+  "owner": "example",
+  "schema_id": "example",
+  "schema_name": "example",
+  "source_tables": [
+    "example"
+  ],
+  "updated_at": "2026-01-02T15:04:05Z",
+  "view_definition": "example"
+}
+```
+
+#### `400` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `401` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `403` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `429` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `500` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
 ## `DELETE /catalogs/{catalog_name}/schemas/{schema_name}/views/{view_name}`
 
 Delete view
@@ -855,11 +3969,11 @@ Delete view
 
 ### Path Parameters
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `catalog_name` | `string` | `true` | - |
-| `schema_name` | `string` | `true` | - |
-| `view_name` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `catalog_name` | `string` | `true` | - | "example" |
+| `schema_name` | `string` | `true` | - | "example" |
+| `view_name` | `string` | `true` | - | "example" |
 
 ### Responses
 
@@ -872,6 +3986,76 @@ Delete view
 | `429` | Client error |
 | `500` | Server error |
 
+#### `400` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `401` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `403` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `429` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `500` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
 ## `GET /catalogs/{catalog_name}/schemas/{schema_name}/volumes`
 
 List volumes
@@ -880,17 +4064,17 @@ List volumes
 
 ### Path Parameters
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `catalog_name` | `string` | `true` | - |
-| `schema_name` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `catalog_name` | `string` | `true` | - | "example" |
+| `schema_name` | `string` | `true` | - | "example" |
 
 ### Query Parameters
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `max_results` | `integer` | `false` | - |
-| `page_token` | `string` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `max_results` | `integer` | `false` | - | 1 |
+| `page_token` | `string` | `false` | - | "example" |
 
 ### Responses
 
@@ -904,6 +4088,114 @@ List volumes
 | `429` | Client error |
 | `500` | Server error |
 
+#### `200` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "data": [
+    {
+      "catalog_name": "example",
+      "comment": "example",
+      "created_at": "2026-01-02T15:04:05Z",
+      "id": "example",
+      "name": "example",
+      "owner": "example",
+      "schema_name": "example",
+      "storage_location": "example",
+      "updated_at": "2026-01-02T15:04:05Z",
+      "volume_type": "example"
+    }
+  ],
+  "next_page_token": "example"
+}
+```
+
+#### `400` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `401` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `403` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `404` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `429` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `500` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
 ## `POST /catalogs/{catalog_name}/schemas/{schema_name}/volumes`
 
 Create volume
@@ -912,15 +4204,28 @@ Create volume
 
 ### Path Parameters
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `catalog_name` | `string` | `true` | - |
-| `schema_name` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `catalog_name` | `string` | `true` | - | "example" |
+| `schema_name` | `string` | `true` | - | "example" |
 
 ### Request Body
 
 - Required: `true`
 - Content types: `application/json`
+
+### Request Examples
+
+- Content type: `application/json`
+
+```json
+{
+  "comment": "example",
+  "name": "example",
+  "storage_location": "example",
+  "volume_type": "example"
+}
+```
 
 ### Responses
 
@@ -933,6 +4238,95 @@ Create volume
 | `429` | Client error |
 | `500` | Server error |
 
+#### `201` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "catalog_name": "example",
+  "comment": "example",
+  "created_at": "2026-01-02T15:04:05Z",
+  "id": "example",
+  "name": "example",
+  "owner": "example",
+  "schema_name": "example",
+  "storage_location": "example",
+  "updated_at": "2026-01-02T15:04:05Z",
+  "volume_type": "example"
+}
+```
+
+#### `400` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `401` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `403` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `429` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `500` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
 ## `GET /catalogs/{catalog_name}/schemas/{schema_name}/volumes/{volume_name}`
 
 Get volume
@@ -941,11 +4335,11 @@ Get volume
 
 ### Path Parameters
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `catalog_name` | `string` | `true` | - |
-| `schema_name` | `string` | `true` | - |
-| `volume_name` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `catalog_name` | `string` | `true` | - | "example" |
+| `schema_name` | `string` | `true` | - | "example" |
+| `volume_name` | `string` | `true` | - | "example" |
 
 ### Responses
 
@@ -959,6 +4353,109 @@ Get volume
 | `429` | Client error |
 | `500` | Server error |
 
+#### `200` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "catalog_name": "example",
+  "comment": "example",
+  "created_at": "2026-01-02T15:04:05Z",
+  "id": "example",
+  "name": "example",
+  "owner": "example",
+  "schema_name": "example",
+  "storage_location": "example",
+  "updated_at": "2026-01-02T15:04:05Z",
+  "volume_type": "example"
+}
+```
+
+#### `400` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `401` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `403` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `404` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `429` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `500` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
 ## `PATCH /catalogs/{catalog_name}/schemas/{schema_name}/volumes/{volume_name}`
 
 Update volume
@@ -967,16 +4464,28 @@ Update volume
 
 ### Path Parameters
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `catalog_name` | `string` | `true` | - |
-| `schema_name` | `string` | `true` | - |
-| `volume_name` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `catalog_name` | `string` | `true` | - | "example" |
+| `schema_name` | `string` | `true` | - | "example" |
+| `volume_name` | `string` | `true` | - | "example" |
 
 ### Request Body
 
 - Required: `true`
 - Content types: `application/json`
+
+### Request Examples
+
+- Content type: `application/json`
+
+```json
+{
+  "comment": "example",
+  "new_name": "example",
+  "storage_location": "example"
+}
+```
 
 ### Responses
 
@@ -989,6 +4498,95 @@ Update volume
 | `429` | Client error |
 | `500` | Server error |
 
+#### `200` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "catalog_name": "example",
+  "comment": "example",
+  "created_at": "2026-01-02T15:04:05Z",
+  "id": "example",
+  "name": "example",
+  "owner": "example",
+  "schema_name": "example",
+  "storage_location": "example",
+  "updated_at": "2026-01-02T15:04:05Z",
+  "volume_type": "example"
+}
+```
+
+#### `400` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `401` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `403` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `429` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `500` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
 ## `DELETE /catalogs/{catalog_name}/schemas/{schema_name}/volumes/{volume_name}`
 
 Delete volume
@@ -997,11 +4595,11 @@ Delete volume
 
 ### Path Parameters
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `catalog_name` | `string` | `true` | - |
-| `schema_name` | `string` | `true` | - |
-| `volume_name` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `catalog_name` | `string` | `true` | - | "example" |
+| `schema_name` | `string` | `true` | - | "example" |
+| `volume_name` | `string` | `true` | - | "example" |
 
 ### Responses
 
@@ -1014,6 +4612,76 @@ Delete volume
 | `429` | Client error |
 | `500` | Server error |
 
+#### `400` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `401` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `403` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `429` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `500` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
 ## `GET /catalogs/{catalog_name}/version-summary`
 
 Get catalog version summary
@@ -1022,9 +4690,9 @@ Get catalog version summary
 
 ### Path Parameters
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `catalog_name` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `catalog_name` | `string` | `true` | - | "example" |
 
 ### Responses
 
@@ -1037,4 +4705,124 @@ Get catalog version summary
 | `404` | The server cannot find the requested resource. |
 | `429` | Client error |
 | `500` | Server error |
+
+#### `200` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "catalog_name": "example",
+  "columns": {
+    "active_count": 1,
+    "has_history": true,
+    "historical_count": 1,
+    "latest_snapshot_id": 1,
+    "total_count": 1
+  },
+  "created_by": "example",
+  "data_path": "example",
+  "encrypted": true,
+  "latest_snapshot_id": 1,
+  "schemas": {
+    "active_count": 1,
+    "has_history": true,
+    "historical_count": 1,
+    "latest_snapshot_id": 1,
+    "total_count": 1
+  },
+  "tables": {
+    "active_count": 1,
+    "has_history": true,
+    "historical_count": 1,
+    "latest_snapshot_id": 1,
+    "total_count": 1
+  },
+  "version": "example"
+}
+```
+
+#### `400` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `401` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `403` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `404` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `429` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `500` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
 

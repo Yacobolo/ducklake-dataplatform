@@ -12,10 +12,10 @@ Run all cells asynchronously
 
 ### Path Parameters
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `notebook_id` | `string` | `true` | - |
-| `session_id` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `notebook_id` | `string` | `true` | - | "example" |
+| `session_id` | `string` | `true` | - | "example" |
 
 ### Responses
 
@@ -28,4 +28,105 @@ Run all cells asynchronously
 | `404` | The server cannot find the requested resource. |
 | `429` | Client error |
 | `500` | Server error |
+
+#### `202` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "created_at": "2026-01-02T15:04:05Z",
+  "error": "example",
+  "id": "example",
+  "notebook_id": "example",
+  "result": "example",
+  "session_id": "example",
+  "state": "pending",
+  "updated_at": "2026-01-02T15:04:05Z"
+}
+```
+
+#### `400` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `401` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `403` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `404` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `429` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `500` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
 

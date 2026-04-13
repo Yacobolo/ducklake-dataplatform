@@ -2,20 +2,39 @@
 
 # Schema: `MacroRevision`
 
+## Example
+
+```json
+{
+  "body": "example",
+  "content_hash": "example",
+  "created_at": "2026-01-02T15:04:05Z",
+  "created_by": "example",
+  "description": "example",
+  "id": "example",
+  "macro_name": "example",
+  "parameters": [
+    "example"
+  ],
+  "status": "ACTIVE",
+  "version": 1
+}
+```
+
 - Type: `object`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `body` | `string` | `false` | - |
-| `content_hash` | `string` | `false` | - |
-| `created_at` | `string` | `false` | - |
-| `created_by` | `string` | `false` | - |
-| `description` | `string` | `false` | - |
-| `id` | `string` | `false` | - |
-| `macro_name` | `string` | `false` | - |
-| `parameters` | `array[string]` | `false` | - |
-| `status` | `MacroStatus` | `false` | - |
-| `version` | `integer` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `body` | `string` | `false` | - | "example" |
+| `content_hash` | `string` | `false` | - | "example" |
+| `created_at` | `string` | `false` | - | "2026-01-02T15:04:05Z" |
+| `created_by` | `string` | `false` | - | "example" |
+| `description` | `string` | `false` | - | "example" |
+| `id` | `string` | `false` | - | "example" |
+| `macro_name` | `string` | `false` | - | "example" |
+| `parameters` | `array[string]` | `false` | - | [ "example" ] |
+| `status` | `MacroStatus` | `false` | - | "ACTIVE" |
+| `version` | `integer` | `false` | - | 1 |
 

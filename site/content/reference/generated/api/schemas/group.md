@@ -2,15 +2,26 @@
 
 # Schema: `Group`
 
+## Example
+
+```json
+{
+  "created_at": "2026-01-02T15:04:05Z",
+  "description": "example",
+  "id": "example",
+  "name": "example"
+}
+```
+
 - Type: `object`
 - Required fields: `id`, `name`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `created_at` | `string` | `false` | - |
-| `description` | `string` | `false` | - |
-| `id` | `string` | `true` | - |
-| `name` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `created_at` | `string` | `false` | - | "2026-01-02T15:04:05Z" |
+| `description` | `string` | `false` | - | "example" |
+| `id` | `string` | `true` | - | "example" |
+| `name` | `string` | `true` | - | "example" |
 

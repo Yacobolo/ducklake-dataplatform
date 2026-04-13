@@ -2,13 +2,23 @@
 
 # Schema: `DashboardSQLQuerySourceUpdate`
 
+## Example
+
+```json
+{
+  "catalog": "example",
+  "schema": "example",
+  "sql": "example"
+}
+```
+
 - Type: `object`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `catalog` | `string` | `false` | - |
-| `schema` | `string` | `false` | - |
-| `sql` | `string` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `catalog` | `string` | `false` | - | "example" |
+| `schema` | `string` | `false` | - | "example" |
+| `sql` | `string` | `false` | - | "example" |
 

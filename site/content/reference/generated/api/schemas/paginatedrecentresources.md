@@ -2,13 +2,32 @@
 
 # Schema: `PaginatedRecentResources`
 
+## Example
+
+```json
+{
+  "data": [
+    {
+      "accessed_at": "2026-01-02T15:04:05Z",
+      "display_name": "example",
+      "href": "example",
+      "resource_key": "example",
+      "resource_path": "example",
+      "resource_type": "example",
+      "section": "example"
+    }
+  ],
+  "next_page_token": "example"
+}
+```
+
 - Type: `object`
 - Required fields: `data`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `data` | `array[RecentResource]` | `true` | - |
-| `next_page_token` | `string` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `data` | `array[RecentResource]` | `true` | - | [ { "accessed_at": "2026-01-02T15:04:05Z", "display_name": "example", "href": "example", "resource_key": "example", "resource_path": "example", "resource_type": "example", "section": "example" } ] |
+| `next_page_token` | `string` | `false` | - | "example" |
 

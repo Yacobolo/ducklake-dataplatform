@@ -2,18 +2,43 @@
 
 # Schema: `ManifestResponse`
 
+## Example
+
+```json
+{
+  "column_masks": {
+    "key": "example"
+  },
+  "columns": [
+    {
+      "name": "example",
+      "type": "example"
+    }
+  ],
+  "expires_at": "2026-01-02T15:04:05Z",
+  "files": [
+    "example"
+  ],
+  "row_filters": [
+    "example"
+  ],
+  "schema": "example",
+  "table": "example"
+}
+```
+
 - Type: `object`
 - Required fields: `table`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `column_masks` | `object` | `false` | - |
-| `columns` | `array[ManifestColumn]` | `false` | - |
-| `expires_at` | `string` | `false` | - |
-| `files` | `array[string]` | `false` | - |
-| `row_filters` | `array[string]` | `false` | - |
-| `schema` | `string` | `false` | - |
-| `table` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `column_masks` | `object` | `false` | - | { "key": "example" } |
+| `columns` | `array[ManifestColumn]` | `false` | - | [ { "name": "example", "type": "example" } ] |
+| `expires_at` | `string` | `false` | - | "2026-01-02T15:04:05Z" |
+| `files` | `array[string]` | `false` | - | [ "example" ] |
+| `row_filters` | `array[string]` | `false` | - | [ "example" ] |
+| `schema` | `string` | `false` | - | "example" |
+| `table` | `string` | `true` | - | "example" |
 

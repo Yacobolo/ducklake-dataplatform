@@ -2,13 +2,36 @@
 
 # Schema: `PaginatedProjects`
 
+## Example
+
+```json
+{
+  "data": [
+    {
+      "created_at": "2026-01-02T15:04:05Z",
+      "default_branch": "example",
+      "description": "example",
+      "id": "example",
+      "kind": "personal",
+      "name": "example",
+      "owner_principal": "example",
+      "owner_team_id": "example",
+      "product_id": "example",
+      "updated_at": "2026-01-02T15:04:05Z",
+      "workspace_id": "example"
+    }
+  ],
+  "next_page_token": "example"
+}
+```
+
 - Type: `object`
 - Required fields: `data`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `data` | `array[Project]` | `true` | - |
-| `next_page_token` | `string` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `data` | `array[Project]` | `true` | - | [ { "created_at": "2026-01-02T15:04:05Z", "default_branch": "example", "description": "example", "id": "example", "kind": "personal", "name": "example", "owner_principal": "example", "owner_team_id": "example", "product_id": "example", "updated_at": "2026-01-02T15:04:05Z", "workspace_id": "example" } ] |
+| `next_page_token` | `string` | `false` | - | "example" |
 

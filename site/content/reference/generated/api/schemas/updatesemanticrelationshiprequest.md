@@ -2,14 +2,25 @@
 
 # Schema: `UpdateSemanticRelationshipRequest`
 
+## Example
+
+```json
+{
+  "cost": 1,
+  "join_sql": "example",
+  "max_hops": 1,
+  "relationship_type": "ONE_TO_ONE"
+}
+```
+
 - Type: `object`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `cost` | `integer` | `false` | - |
-| `join_sql` | `string` | `false` | - |
-| `max_hops` | `integer` | `false` | - |
-| `relationship_type` | `SemanticRelationshipRelationshipType` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `cost` | `integer` | `false` | - | 1 |
+| `join_sql` | `string` | `false` | - | "example" |
+| `max_hops` | `integer` | `false` | - | 1 |
+| `relationship_type` | `SemanticRelationshipRelationshipType` | `false` | - | "ONE_TO_ONE" |
 

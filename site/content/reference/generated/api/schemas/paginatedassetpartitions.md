@@ -2,13 +2,31 @@
 
 # Schema: `PaginatedAssetPartitions`
 
+## Example
+
+```json
+{
+  "data": [
+    {
+      "asset_id": "example",
+      "created_at": "2026-01-02T15:04:05Z",
+      "id": "example",
+      "partition_key": "example",
+      "status": "example",
+      "updated_at": "2026-01-02T15:04:05Z"
+    }
+  ],
+  "next_page_token": "example"
+}
+```
+
 - Type: `object`
 - Required fields: `data`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `data` | `array[AssetPartition]` | `true` | - |
-| `next_page_token` | `string` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `data` | `array[AssetPartition]` | `true` | - | [ { "asset_id": "example", "created_at": "2026-01-02T15:04:05Z", "id": "example", "partition_key": "example", "status": "example", "updated_at": "2026-01-02T15:04:05Z" } ] |
+| `next_page_token` | `string` | `false` | - | "example" |
 

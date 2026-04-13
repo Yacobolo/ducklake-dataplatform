@@ -2,17 +2,33 @@
 
 # Schema: `AssetAutoMaterializePolicy`
 
+## Example
+
+```json
+{
+  "downtime_windows_cron_expr": [
+    "example"
+  ],
+  "min_interval_seconds": 1,
+  "mode": "example",
+  "on_freshness_breach": true,
+  "on_upstream_materialized": true,
+  "require_all_upstreams": true,
+  "respect_downtime_windows": true
+}
+```
+
 - Type: `object`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `downtime_windows_cron_expr` | `array[string]` | `false` | - |
-| `min_interval_seconds` | `integer` | `false` | - |
-| `mode` | `string` | `false` | - |
-| `on_freshness_breach` | `boolean` | `false` | - |
-| `on_upstream_materialized` | `boolean` | `false` | - |
-| `require_all_upstreams` | `boolean` | `false` | - |
-| `respect_downtime_windows` | `boolean` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `downtime_windows_cron_expr` | `array[string]` | `false` | - | [ "example" ] |
+| `min_interval_seconds` | `integer` | `false` | - | 1 |
+| `mode` | `string` | `false` | - | "example" |
+| `on_freshness_breach` | `boolean` | `false` | - | true |
+| `on_upstream_materialized` | `boolean` | `false` | - | true |
+| `require_all_upstreams` | `boolean` | `false` | - | true |
+| `respect_downtime_windows` | `boolean` | `false` | - | true |
 

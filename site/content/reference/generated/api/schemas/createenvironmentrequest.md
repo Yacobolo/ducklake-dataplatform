@@ -2,20 +2,40 @@
 
 # Schema: `CreateEnvironmentRequest`
 
+## Example
+
+```json
+{
+  "compute_endpoint": "example",
+  "defer_to_environment": "example",
+  "description": "example",
+  "kind": "development",
+  "name": "example",
+  "source_overrides": {
+    "key": "example"
+  },
+  "target_catalog": "example",
+  "target_schema": "example",
+  "variables": {
+    "key": "example"
+  }
+}
+```
+
 - Type: `object`
 - Required fields: `name`, `target_catalog`, `target_schema`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `compute_endpoint` | `string` | `false` | - |
-| `defer_to_environment` | `string` | `false` | - |
-| `description` | `string` | `false` | - |
-| `kind` | `EnvironmentKind` | `false` | - |
-| `name` | `string` | `true` | - |
-| `source_overrides` | `object` | `false` | - |
-| `target_catalog` | `string` | `true` | - |
-| `target_schema` | `string` | `true` | - |
-| `variables` | `object` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `compute_endpoint` | `string` | `false` | - | "example" |
+| `defer_to_environment` | `string` | `false` | - | "example" |
+| `description` | `string` | `false` | - | "example" |
+| `kind` | `EnvironmentKind` | `false` | - | "development" |
+| `name` | `string` | `true` | - | "example" |
+| `source_overrides` | `object` | `false` | - | { "key": "example" } |
+| `target_catalog` | `string` | `true` | - | "example" |
+| `target_schema` | `string` | `true` | - | "example" |
+| `variables` | `object` | `false` | - | { "key": "example" } |
 

@@ -15,6 +15,7 @@ package api
 
 #SchemaProperty: {
 	description?: string
+	example?: _
 	schema: #SchemaRef
 }
 
@@ -22,6 +23,7 @@ package api
 	type: string
 	title?: string
 	description?: string
+	example?: _
 	properties?: [string]: #SchemaProperty
 	property_order?: [...string]
 	required?: [...string]
@@ -41,6 +43,7 @@ package api
 	description: string
 	headers?: [...#Header]
 	content_type?: string
+	example?: _
 	schema?: #SchemaRef
 	extensions?: [string]: _
 }
@@ -50,6 +53,7 @@ package api
 	in: string
 	required?: bool
 	description?: string
+	example?: _
 	explode?: bool
 	schema: #SchemaRef
 }
@@ -58,6 +62,7 @@ package api
 	required?: bool
 	description?: string
 	content_type?: string
+	example?: _
 	schema: #SchemaRef
 }
 

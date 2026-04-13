@@ -2,14 +2,24 @@
 
 # Schema: `CreateViewRequest`
 
+## Example
+
+```json
+{
+  "comment": "example",
+  "name": "example",
+  "view_definition": "example"
+}
+```
+
 - Type: `object`
 - Required fields: `name`, `view_definition`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `comment` | `string` | `false` | - |
-| `name` | `string` | `true` | - |
-| `view_definition` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `comment` | `string` | `false` | - | "example" |
+| `name` | `string` | `true` | - | "example" |
+| `view_definition` | `string` | `true` | - | "example" |
 

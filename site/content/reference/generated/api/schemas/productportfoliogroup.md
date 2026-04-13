@@ -2,16 +2,28 @@
 
 # Schema: `ProductPortfolioGroup`
 
+## Example
+
+```json
+{
+  "average_completeness_pct": 1,
+  "certified_count": 1,
+  "name": "example",
+  "product_count": 1,
+  "published_count": 1
+}
+```
+
 - Type: `object`
 - Required fields: `average_completeness_pct`, `certified_count`, `name`, `product_count`, `published_count`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `average_completeness_pct` | `integer` | `true` | - |
-| `certified_count` | `integer` | `true` | - |
-| `name` | `string` | `true` | - |
-| `product_count` | `integer` | `true` | - |
-| `published_count` | `integer` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `average_completeness_pct` | `integer` | `true` | - | 1 |
+| `certified_count` | `integer` | `true` | - | 1 |
+| `name` | `string` | `true` | - | "example" |
+| `product_count` | `integer` | `true` | - | 1 |
+| `published_count` | `integer` | `true` | - | 1 |
 

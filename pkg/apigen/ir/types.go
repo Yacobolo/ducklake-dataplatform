@@ -81,6 +81,7 @@ type Parameter struct {
 	In          string    `json:"in"`
 	Required    bool      `json:"required,omitempty"`
 	Description string    `json:"description,omitempty"`
+	Example     any       `json:"example,omitempty"`
 	Explode     *bool     `json:"explode,omitempty"`
 	Schema      SchemaRef `json:"schema"`
 }
@@ -90,6 +91,7 @@ type RequestBody struct {
 	Required    bool      `json:"required,omitempty"`
 	Description string    `json:"description,omitempty"`
 	ContentType string    `json:"content_type,omitempty"`
+	Example     any       `json:"example,omitempty"`
 	Schema      SchemaRef `json:"schema"`
 }
 
@@ -99,6 +101,7 @@ type Response struct {
 	Description string         `json:"description"`
 	Headers     []Header       `json:"headers,omitempty"`
 	ContentType string         `json:"content_type,omitempty"`
+	Example     any            `json:"example,omitempty"`
 	Schema      *SchemaRef     `json:"schema,omitempty"`
 	AnyOf       []SchemaRef    `json:"any_of,omitempty"`
 	Extensions  map[string]any `json:"extensions,omitempty"`
@@ -141,6 +144,7 @@ type Schema struct {
 	Type          string                    `json:"type"`
 	Title         string                    `json:"title,omitempty"`
 	Description   string                    `json:"description,omitempty"`
+	Example       any                       `json:"example,omitempty"`
 	Properties    map[string]SchemaProperty `json:"properties,omitempty"`
 	PropertyOrder []string                  `json:"property_order,omitempty"`
 	Required      []string                  `json:"required,omitempty"`
@@ -151,5 +155,6 @@ type Schema struct {
 // SchemaProperty describes one schema property.
 type SchemaProperty struct {
 	Description string    `json:"description,omitempty"`
+	Example     any       `json:"example,omitempty"`
 	Schema      SchemaRef `json:"schema"`
 }

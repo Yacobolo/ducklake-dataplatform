@@ -2,14 +2,24 @@
 
 # Schema: `CreateTagAssignmentRequest`
 
+## Example
+
+```json
+{
+  "column_name": "example",
+  "securable_id": "example",
+  "securable_type": "schema"
+}
+```
+
 - Type: `object`
 - Required fields: `securable_id`, `securable_type`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `column_name` | `string` | `false` | - |
-| `securable_id` | `string` | `true` | - |
-| `securable_type` | `TagAssignmentSecurableType` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `column_name` | `string` | `false` | - | "example" |
+| `securable_id` | `string` | `true` | - | "example" |
+| `securable_type` | `TagAssignmentSecurableType` | `true` | - | "schema" |
 

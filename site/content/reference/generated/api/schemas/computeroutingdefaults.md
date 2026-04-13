@@ -2,13 +2,23 @@
 
 # Schema: `ComputeRoutingDefaults`
 
+## Example
+
+```json
+{
+  "interactive_mode": "example",
+  "notebook_mode": "example",
+  "scheduled_mode": "example"
+}
+```
+
 - Type: `object`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `interactive_mode` | `string` | `false` | - |
-| `notebook_mode` | `string` | `false` | - |
-| `scheduled_mode` | `string` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `interactive_mode` | `string` | `false` | - | "example" |
+| `notebook_mode` | `string` | `false` | - | "example" |
+| `scheduled_mode` | `string` | `false` | - | "example" |
 

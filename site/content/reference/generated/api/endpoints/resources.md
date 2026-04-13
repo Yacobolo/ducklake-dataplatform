@@ -14,10 +14,10 @@ Lists the authenticated principal's recent UUID-backed resources for personalize
 
 ### Query Parameters
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `max_results` | `integer` | `false` | - |
-| `page_token` | `string` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `max_results` | `integer` | `false` | - | 1 |
+| `page_token` | `string` | `false` | - | "example" |
 
 ### Responses
 
@@ -29,6 +29,97 @@ Lists the authenticated principal's recent UUID-backed resources for personalize
 | `403` | Access is forbidden. |
 | `429` | Client error |
 | `500` | Server error |
+
+#### `200` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "data": [
+    {
+      "accessed_at": "2026-01-02T15:04:05Z",
+      "display_name": "example",
+      "href": "example",
+      "resource_key": "example",
+      "resource_path": "example",
+      "resource_type": "example",
+      "section": "example"
+    }
+  ],
+  "next_page_token": "example"
+}
+```
+
+#### `400` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `401` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `403` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `429` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `500` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
 
 ## `GET /me/saved-resources`
 
@@ -40,10 +131,10 @@ Lists the authenticated principal's saved UUID-backed resources.
 
 ### Query Parameters
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `max_results` | `integer` | `false` | - |
-| `page_token` | `string` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `max_results` | `integer` | `false` | - | 1 |
+| `page_token` | `string` | `false` | - | "example" |
 
 ### Responses
 
@@ -55,6 +146,98 @@ Lists the authenticated principal's saved UUID-backed resources.
 | `403` | Access is forbidden. |
 | `429` | Client error |
 | `500` | Server error |
+
+#### `200` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "data": [
+    {
+      "display_name": "example",
+      "href": "example",
+      "last_accessed_at": "2026-01-02T15:04:05Z",
+      "resource_key": "example",
+      "resource_path": "example",
+      "resource_type": "example",
+      "saved_at": "2026-01-02T15:04:05Z",
+      "section": "example"
+    }
+  ],
+  "next_page_token": "example"
+}
+```
+
+#### `400` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `401` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `403` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `429` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `500` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
 
 ## `POST /me/saved-resources`
 
@@ -69,6 +252,20 @@ Saves a UUID-backed resource for the authenticated principal.
 - Required: `true`
 - Content types: `application/json`
 
+### Request Examples
+
+- Content type: `application/json`
+
+```json
+{
+  "display_name": "example",
+  "resource_key": "example",
+  "resource_path": "example",
+  "resource_type": "example",
+  "section": "example"
+}
+```
+
 ### Responses
 
 | Code | Description |
@@ -80,6 +277,93 @@ Saves a UUID-backed resource for the authenticated principal.
 | `429` | Client error |
 | `500` | Server error |
 
+#### `201` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "display_name": "example",
+  "href": "example",
+  "last_accessed_at": "2026-01-02T15:04:05Z",
+  "resource_key": "example",
+  "resource_path": "example",
+  "resource_type": "example",
+  "saved_at": "2026-01-02T15:04:05Z",
+  "section": "example"
+}
+```
+
+#### `400` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `401` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `403` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `429` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `500` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
 ## `DELETE /me/saved-resources/{resource_type}/{resource_key}`
 
 Delete saved resource
@@ -90,10 +374,10 @@ Removes a saved resource for the authenticated principal.
 
 ### Path Parameters
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `resource_key` | `string` | `true` | - |
-| `resource_type` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `resource_key` | `string` | `true` | - | "example" |
+| `resource_type` | `string` | `true` | - | "example" |
 
 ### Responses
 
@@ -105,4 +389,74 @@ Removes a saved resource for the authenticated principal.
 | `403` | Access is forbidden. |
 | `429` | Client error |
 | `500` | Server error |
+
+#### `400` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `401` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `403` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `429` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `500` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
 

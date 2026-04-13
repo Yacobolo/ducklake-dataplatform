@@ -2,16 +2,29 @@
 
 # Schema: `NotebookSession`
 
+## Example
+
+```json
+{
+  "created_at": "2026-01-02T15:04:05Z",
+  "id": "example",
+  "last_used_at": "2026-01-02T15:04:05Z",
+  "notebook_id": "example",
+  "principal": "example",
+  "state": "active"
+}
+```
+
 - Type: `object`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `created_at` | `string` | `false` | - |
-| `id` | `string` | `false` | - |
-| `last_used_at` | `string` | `false` | - |
-| `notebook_id` | `string` | `false` | - |
-| `principal` | `string` | `false` | - |
-| `state` | `NotebookSessionState` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `created_at` | `string` | `false` | - | "2026-01-02T15:04:05Z" |
+| `id` | `string` | `false` | - | "example" |
+| `last_used_at` | `string` | `false` | - | "2026-01-02T15:04:05Z" |
+| `notebook_id` | `string` | `false` | - | "example" |
+| `principal` | `string` | `false` | - | "example" |
+| `state` | `NotebookSessionState` | `false` | - | "active" |
 

@@ -2,17 +2,30 @@
 
 # Schema: `ProductTeam`
 
+## Example
+
+```json
+{
+  "contact_channel": "example",
+  "created_at": "2026-01-02T15:04:05Z",
+  "domain_id": "example",
+  "id": "example",
+  "name": "example",
+  "updated_at": "2026-01-02T15:04:05Z"
+}
+```
+
 - Type: `object`
 - Required fields: `contact_channel`, `domain_id`, `id`, `name`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `contact_channel` | `string` | `true` | - |
-| `created_at` | `string` | `false` | - |
-| `domain_id` | `string` | `true` | - |
-| `id` | `string` | `true` | - |
-| `name` | `string` | `true` | - |
-| `updated_at` | `string` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `contact_channel` | `string` | `true` | - | "example" |
+| `created_at` | `string` | `false` | - | "2026-01-02T15:04:05Z" |
+| `domain_id` | `string` | `true` | - | "example" |
+| `id` | `string` | `true` | - | "example" |
+| `name` | `string` | `true` | - | "example" |
+| `updated_at` | `string` | `false` | - | "2026-01-02T15:04:05Z" |
 

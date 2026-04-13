@@ -2,13 +2,22 @@
 
 # Schema: `SubmitQueryRequest`
 
+## Example
+
+```json
+{
+  "request_id": "example",
+  "sql": "example"
+}
+```
+
 - Type: `object`
 - Required fields: `sql`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `request_id` | `string` | `false` | - |
-| `sql` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `request_id` | `string` | `false` | - | "example" |
+| `sql` | `string` | `true` | - | "example" |
 

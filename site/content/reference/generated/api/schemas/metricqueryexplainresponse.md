@@ -2,11 +2,44 @@
 
 # Schema: `MetricQueryExplainResponse`
 
+## Example
+
+```json
+{
+  "plan": {
+    "base_model_name": "example",
+    "base_relation": "example",
+    "dimensions": [
+      "example"
+    ],
+    "freshness_basis": [
+      "example"
+    ],
+    "freshness_status": "example",
+    "generated_sql": "example",
+    "join_path": [
+      {
+        "from_model": "example",
+        "join_sql": "example",
+        "relationship_name": "example",
+        "relationship_type": "example",
+        "to_model": "example"
+      }
+    ],
+    "metrics": [
+      "example"
+    ],
+    "selected_pre_aggregation": "example",
+    "time_grain": "example"
+  }
+}
+```
+
 - Type: `object`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `plan` | `MetricQueryPlan` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `plan` | `MetricQueryPlan` | `false` | - | { "base_model_name": "example", "base_relation": "example", "dimensions": [ "example" ], "freshness_basis": [ "example" ], "freshness_status": "example", "generated_sql": "example", "join_path": [ { "from_model": "example", "join_sql": "example", "relationship_name": "example", "relationship_type": "example", "to_model": "example" } ], "metrics": [ "example" ], "selected_pre_aggregation": "example", "time_grain": "example" } |
 

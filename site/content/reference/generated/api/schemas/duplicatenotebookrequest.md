@@ -2,14 +2,24 @@
 
 # Schema: `DuplicateNotebookRequest`
 
+## Example
+
+```json
+{
+  "folder_id": "example",
+  "git_path": "example",
+  "name": "example"
+}
+```
+
 - Type: `object`
 - Required fields: `folder_id`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `folder_id` | `string` | `true` | - |
-| `git_path` | `string` | `false` | - |
-| `name` | `string` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `folder_id` | `string` | `true` | - | "example" |
+| `git_path` | `string` | `false` | - | "example" |
+| `name` | `string` | `false` | - | "example" |
 

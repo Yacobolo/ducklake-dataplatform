@@ -2,5 +2,11 @@
 
 # Schema: `ComputeAssignmentPrincipalType`
 
+## Example
+
+```json
+"user"
+```
+
 - Type: `string`
 

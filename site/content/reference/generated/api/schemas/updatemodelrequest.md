@@ -2,17 +2,51 @@
 
 # Schema: `UpdateModelRequest`
 
+## Example
+
+```json
+{
+  "config": {
+    "incremental_strategy": "example",
+    "on_schema_change": "ignore",
+    "unique_key": [
+      "example"
+    ]
+  },
+  "contract": {
+    "columns": [
+      {
+        "name": "example",
+        "nullable": true,
+        "type": "example"
+      }
+    ],
+    "enforce": true
+  },
+  "description": "example",
+  "freshness_policy": {
+    "cron_schedule": "example",
+    "max_lag_seconds": 1
+  },
+  "materialization": "VIEW",
+  "sql": "example",
+  "tags": [
+    "example"
+  ]
+}
+```
+
 - Type: `object`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `config` | `ModelConfig` | `false` | - |
-| `contract` | `ModelContract` | `false` | - |
-| `description` | `string` | `false` | - |
-| `freshness_policy` | `FreshnessPolicy` | `false` | - |
-| `materialization` | `ModelMaterialization` | `false` | - |
-| `sql` | `string` | `false` | - |
-| `tags` | `array[string]` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `config` | `ModelConfig` | `false` | - | { "incremental_strategy": "example", "on_schema_change": "ignore", "unique_key": [ "example" ] } |
+| `contract` | `ModelContract` | `false` | - | { "columns": [ { "name": "example", "nullable": true, "type": "example" } ], "enforce": true } |
+| `description` | `string` | `false` | - | "example" |
+| `freshness_policy` | `FreshnessPolicy` | `false` | - | { "cron_schedule": "example", "max_lag_seconds": 1 } |
+| `materialization` | `ModelMaterialization` | `false` | - | "VIEW" |
+| `sql` | `string` | `false` | - | "example" |
+| `tags` | `array[string]` | `false` | - | [ "example" ] |
 

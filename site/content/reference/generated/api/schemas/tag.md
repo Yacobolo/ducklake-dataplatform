@@ -2,15 +2,27 @@
 
 # Schema: `Tag`
 
+## Example
+
+```json
+{
+  "created_at": "2026-01-02T15:04:05Z",
+  "created_by": "example",
+  "id": "example",
+  "key": "example",
+  "value": "example"
+}
+```
+
 - Type: `object`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `created_at` | `string` | `false` | - |
-| `created_by` | `string` | `false` | - |
-| `id` | `string` | `false` | - |
-| `key` | `string` | `false` | - |
-| `value` | `string` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `created_at` | `string` | `false` | - | "2026-01-02T15:04:05Z" |
+| `created_by` | `string` | `false` | - | "example" |
+| `id` | `string` | `false` | - | "example" |
+| `key` | `string` | `false` | - | "example" |
+| `value` | `string` | `false` | - | "example" |
 

@@ -2,12 +2,28 @@
 
 # Schema: `ProductSemanticEntrypointList`
 
+## Example
+
+```json
+{
+  "data": [
+    {
+      "created_at": "2026-01-02T15:04:05Z",
+      "id": "example",
+      "model_name": "example",
+      "product_version_id": "example",
+      "semantic_model_id": "example"
+    }
+  ]
+}
+```
+
 - Type: `object`
 - Required fields: `data`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `data` | `array[ProductSemanticEntrypoint]` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `data` | `array[ProductSemanticEntrypoint]` | `true` | - | [ { "created_at": "2026-01-02T15:04:05Z", "id": "example", "model_name": "example", "product_version_id": "example", "semantic_model_id": "example" } ] |
 

@@ -2,20 +2,36 @@
 
 # Schema: `CreateBuildRequest`
 
+## Example
+
+```json
+{
+  "commit_sha": "example",
+  "compile_diagnostics": "example",
+  "compile_manifest": "example",
+  "environment_name": "example",
+  "git_ref": "example",
+  "selector": "example",
+  "source_model_run_id": "example",
+  "target_catalog": "example",
+  "target_schema": "example"
+}
+```
+
 - Type: `object`
 - Required fields: `compile_manifest`, `environment_name`, `git_ref`, `target_catalog`, `target_schema`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `commit_sha` | `string` | `false` | - |
-| `compile_diagnostics` | `string` | `false` | - |
-| `compile_manifest` | `string` | `true` | - |
-| `environment_name` | `string` | `true` | - |
-| `git_ref` | `string` | `true` | - |
-| `selector` | `string` | `false` | - |
-| `source_model_run_id` | `string` | `false` | - |
-| `target_catalog` | `string` | `true` | - |
-| `target_schema` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `commit_sha` | `string` | `false` | - | "example" |
+| `compile_diagnostics` | `string` | `false` | - | "example" |
+| `compile_manifest` | `string` | `true` | - | "example" |
+| `environment_name` | `string` | `true` | - | "example" |
+| `git_ref` | `string` | `true` | - | "example" |
+| `selector` | `string` | `false` | - | "example" |
+| `source_model_run_id` | `string` | `false` | - | "example" |
+| `target_catalog` | `string` | `true` | - | "example" |
+| `target_schema` | `string` | `true` | - | "example" |
 

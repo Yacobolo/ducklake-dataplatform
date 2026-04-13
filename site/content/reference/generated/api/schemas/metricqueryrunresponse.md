@@ -2,12 +2,59 @@
 
 # Schema: `MetricQueryRunResponse`
 
+## Example
+
+```json
+{
+  "plan": {
+    "base_model_name": "example",
+    "base_relation": "example",
+    "dimensions": [
+      "example"
+    ],
+    "freshness_basis": [
+      "example"
+    ],
+    "freshness_status": "example",
+    "generated_sql": "example",
+    "join_path": [
+      {
+        "from_model": "example",
+        "join_sql": "example",
+        "relationship_name": "example",
+        "relationship_type": "example",
+        "to_model": "example"
+      }
+    ],
+    "metrics": [
+      "example"
+    ],
+    "selected_pre_aggregation": "example",
+    "time_grain": "example"
+  },
+  "result": {
+    "columns": [
+      {
+        "name": "example"
+      }
+    ],
+    "next_page_token": "example",
+    "row_count": 1,
+    "rows": [
+      {
+        "key": "value"
+      }
+    ]
+  }
+}
+```
+
 - Type: `object`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `plan` | `MetricQueryPlan` | `false` | - |
-| `result` | `QueryResult` | `false` | Contains result-set columns, row data, and an optional continuation token when additional rows are available. |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `plan` | `MetricQueryPlan` | `false` | - | { "base_model_name": "example", "base_relation": "example", "dimensions": [ "example" ], "freshness_basis": [ "example" ], "freshness_status": "example", "generated_sql": "example", "join_path": [ { "from_model": "example", "join_sql": "example", "relationship_name": "example", "relationship_type": "example", "to_model": "example" } ], "metrics": [ "example" ], "selected_pre_aggregation": "example", "time_grain": "example" } |
+| `result` | `QueryResult` | `false` | Contains result-set columns, row data, and an optional continuation token when additional rows are available. | { "columns": [ { "name": "example" } ], "next_page_token": "example", "row_count": 1, "rows": [ { "key": "value" } ] } |
 

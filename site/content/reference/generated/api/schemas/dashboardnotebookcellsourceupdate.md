@@ -2,12 +2,21 @@
 
 # Schema: `DashboardNotebookCellSourceUpdate`
 
+## Example
+
+```json
+{
+  "cell_id": "example",
+  "notebook_id": "example"
+}
+```
+
 - Type: `object`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `cell_id` | `string` | `false` | - |
-| `notebook_id` | `string` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `cell_id` | `string` | `false` | - | "example" |
+| `notebook_id` | `string` | `false` | - | "example" |
 

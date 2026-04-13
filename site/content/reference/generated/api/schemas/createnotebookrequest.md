@@ -2,15 +2,26 @@
 
 # Schema: `CreateNotebookRequest`
 
+## Example
+
+```json
+{
+  "description": "example",
+  "folder_id": "example",
+  "name": "example",
+  "source": "example"
+}
+```
+
 - Type: `object`
 - Required fields: `name`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `description` | `string` | `false` | - |
-| `folder_id` | `string` | `false` | - |
-| `name` | `string` | `true` | - |
-| `source` | `string` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `description` | `string` | `false` | - | "example" |
+| `folder_id` | `string` | `false` | - | "example" |
+| `name` | `string` | `true` | - | "example" |
+| `source` | `string` | `false` | - | "example" |
 

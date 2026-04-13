@@ -2,5 +2,11 @@
 
 # Schema: `BuildState`
 
+## Example
+
+```json
+"draft"
+```
+
 - Type: `string`
 

@@ -2,13 +2,25 @@
 
 # Schema: `ModelConfig`
 
+## Example
+
+```json
+{
+  "incremental_strategy": "example",
+  "on_schema_change": "ignore",
+  "unique_key": [
+    "example"
+  ]
+}
+```
+
 - Type: `object`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `incremental_strategy` | `string` | `false` | - |
-| `on_schema_change` | `ModelConfigOnSchemaChange` | `false` | - |
-| `unique_key` | `array[string]` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `incremental_strategy` | `string` | `false` | - | "example" |
+| `on_schema_change` | `ModelConfigOnSchemaChange` | `false` | - | "ignore" |
+| `unique_key` | `array[string]` | `false` | - | [ "example" ] |
 

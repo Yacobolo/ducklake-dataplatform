@@ -2,21 +2,38 @@
 
 # Schema: `StorageCredential`
 
+## Example
+
+```json
+{
+  "comment": "example",
+  "created_at": "2026-01-02T15:04:05Z",
+  "credential_type": "S3",
+  "endpoint": "example",
+  "id": "example",
+  "name": "example",
+  "owner": "example",
+  "region": "example",
+  "updated_at": "2026-01-02T15:04:05Z",
+  "url_style": "path"
+}
+```
+
 - Type: `object`
 - Required fields: `id`, `name`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `comment` | `string` | `false` | - |
-| `created_at` | `string` | `false` | - |
-| `credential_type` | `StorageCredentialType` | `false` | - |
-| `endpoint` | `string` | `false` | - |
-| `id` | `string` | `true` | - |
-| `name` | `string` | `true` | - |
-| `owner` | `string` | `false` | - |
-| `region` | `string` | `false` | - |
-| `updated_at` | `string` | `false` | - |
-| `url_style` | `URLStyle` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `comment` | `string` | `false` | - | "example" |
+| `created_at` | `string` | `false` | - | "2026-01-02T15:04:05Z" |
+| `credential_type` | `StorageCredentialType` | `false` | - | "S3" |
+| `endpoint` | `string` | `false` | - | "example" |
+| `id` | `string` | `true` | - | "example" |
+| `name` | `string` | `true` | - | "example" |
+| `owner` | `string` | `false` | - | "example" |
+| `region` | `string` | `false` | - | "example" |
+| `updated_at` | `string` | `false` | - | "2026-01-02T15:04:05Z" |
+| `url_style` | `URLStyle` | `false` | - | "path" |
 

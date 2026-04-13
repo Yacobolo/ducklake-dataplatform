@@ -2,17 +2,31 @@
 
 # Schema: `SourceFreshnessStatus`
 
+## Example
+
+```json
+{
+  "is_fresh": true,
+  "last_loaded_at": "2026-01-02T15:04:05Z",
+  "max_lag_seconds": 1,
+  "source_schema": "example",
+  "source_table": "example",
+  "stale_since": "2026-01-02T15:04:05Z",
+  "timestamp_column": "example"
+}
+```
+
 - Type: `object`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `is_fresh` | `boolean` | `false` | - |
-| `last_loaded_at` | `string` | `false` | - |
-| `max_lag_seconds` | `integer` | `false` | - |
-| `source_schema` | `string` | `false` | - |
-| `source_table` | `string` | `false` | - |
-| `stale_since` | `string` | `false` | - |
-| `timestamp_column` | `string` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `is_fresh` | `boolean` | `false` | - | true |
+| `last_loaded_at` | `string` | `false` | - | "2026-01-02T15:04:05Z" |
+| `max_lag_seconds` | `integer` | `false` | - | 1 |
+| `source_schema` | `string` | `false` | - | "example" |
+| `source_table` | `string` | `false` | - | "example" |
+| `stale_since` | `string` | `false` | - | "2026-01-02T15:04:05Z" |
+| `timestamp_column` | `string` | `false` | - | "example" |
 

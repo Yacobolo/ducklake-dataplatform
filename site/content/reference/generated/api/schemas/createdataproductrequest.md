@@ -2,29 +2,84 @@
 
 # Schema: `CreateDataProductRequest`
 
+## Example
+
+```json
+{
+  "access_request_path": "example",
+  "business_definitions": {
+    "key": "example"
+  },
+  "consumer_audience": "example",
+  "contact_channel": "example",
+  "contract": {
+    "breaking_change_policy": "example",
+    "data_grain": "example",
+    "dimensions": [
+      "example"
+    ],
+    "join_keys": [
+      "example"
+    ],
+    "measures": [
+      "example"
+    ],
+    "primary_keys": [
+      "example"
+    ],
+    "quality_expectations": [
+      "example"
+    ],
+    "retention_window": "example",
+    "sample_queries": [
+      "example"
+    ],
+    "update_cadence": "example"
+  },
+  "created_by": "example",
+  "description": "example",
+  "docs_url": "example",
+  "domain_name": "example",
+  "name": "example",
+  "primary_asset_key": "example",
+  "producing_build_id": "example",
+  "semantic_model_refs": [
+    "example"
+  ],
+  "slo": {
+    "freshness_slo": "example",
+    "latency_slo": "example"
+  },
+  "slug": "example",
+  "steward_principal": "example",
+  "team_name": "example",
+  "visibility": "example"
+}
+```
+
 - Type: `object`
 - Required fields: `contact_channel`, `domain_name`, `name`, `slug`, `steward_principal`, `team_name`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `access_request_path` | `string` | `false` | - |
-| `business_definitions` | `object` | `false` | - |
-| `consumer_audience` | `string` | `false` | - |
-| `contact_channel` | `string` | `true` | - |
-| `contract` | `ProductContract` | `false` | - |
-| `created_by` | `string` | `false` | - |
-| `description` | `string` | `false` | - |
-| `docs_url` | `string` | `false` | - |
-| `domain_name` | `string` | `true` | - |
-| `name` | `string` | `true` | - |
-| `primary_asset_key` | `string` | `false` | - |
-| `producing_build_id` | `string` | `false` | - |
-| `semantic_model_refs` | `array[string]` | `false` | - |
-| `slo` | `ProductSLO` | `false` | - |
-| `slug` | `string` | `true` | - |
-| `steward_principal` | `string` | `true` | - |
-| `team_name` | `string` | `true` | - |
-| `visibility` | `string` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `access_request_path` | `string` | `false` | - | "example" |
+| `business_definitions` | `object` | `false` | - | { "key": "example" } |
+| `consumer_audience` | `string` | `false` | - | "example" |
+| `contact_channel` | `string` | `true` | - | "example" |
+| `contract` | `ProductContract` | `false` | - | { "breaking_change_policy": "example", "data_grain": "example", "dimensions": [ "example" ], "join_keys": [ "example" ], "measures": [ "example" ], "primary_keys": [ "example" ], "quality_expectations": [ "example" ], "retention_window": "example", "sample_queries": [ "example" ], "update_cadence": "example" } |
+| `created_by` | `string` | `false` | - | "example" |
+| `description` | `string` | `false` | - | "example" |
+| `docs_url` | `string` | `false` | - | "example" |
+| `domain_name` | `string` | `true` | - | "example" |
+| `name` | `string` | `true` | - | "example" |
+| `primary_asset_key` | `string` | `false` | - | "example" |
+| `producing_build_id` | `string` | `false` | - | "example" |
+| `semantic_model_refs` | `array[string]` | `false` | - | [ "example" ] |
+| `slo` | `ProductSLO` | `false` | - | { "freshness_slo": "example", "latency_slo": "example" } |
+| `slug` | `string` | `true` | - | "example" |
+| `steward_principal` | `string` | `true` | - | "example" |
+| `team_name` | `string` | `true` | - | "example" |
+| `visibility` | `string` | `false` | - | "example" |
 

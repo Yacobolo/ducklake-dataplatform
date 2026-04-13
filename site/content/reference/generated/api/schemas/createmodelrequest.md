@@ -2,20 +2,56 @@
 
 # Schema: `CreateModelRequest`
 
+## Example
+
+```json
+{
+  "config": {
+    "incremental_strategy": "example",
+    "on_schema_change": "ignore",
+    "unique_key": [
+      "example"
+    ]
+  },
+  "contract": {
+    "columns": [
+      {
+        "name": "example",
+        "nullable": true,
+        "type": "example"
+      }
+    ],
+    "enforce": true
+  },
+  "description": "example",
+  "freshness_policy": {
+    "cron_schedule": "example",
+    "max_lag_seconds": 1
+  },
+  "materialization": "VIEW",
+  "name": "example",
+  "project_name": "example",
+  "sql": "example",
+  "tags": [
+    "example"
+  ]
+}
+```
+
 - Type: `object`
 - Required fields: `name`, `project_name`, `sql`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `config` | `ModelConfig` | `false` | - |
-| `contract` | `ModelContract` | `false` | - |
-| `description` | `string` | `false` | - |
-| `freshness_policy` | `FreshnessPolicy` | `false` | - |
-| `materialization` | `ModelMaterialization` | `false` | - |
-| `name` | `string` | `true` | - |
-| `project_name` | `string` | `true` | - |
-| `sql` | `string` | `true` | - |
-| `tags` | `array[string]` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `config` | `ModelConfig` | `false` | - | { "incremental_strategy": "example", "on_schema_change": "ignore", "unique_key": [ "example" ] } |
+| `contract` | `ModelContract` | `false` | - | { "columns": [ { "name": "example", "nullable": true, "type": "example" } ], "enforce": true } |
+| `description` | `string` | `false` | - | "example" |
+| `freshness_policy` | `FreshnessPolicy` | `false` | - | { "cron_schedule": "example", "max_lag_seconds": 1 } |
+| `materialization` | `ModelMaterialization` | `false` | - | "VIEW" |
+| `name` | `string` | `true` | - | "example" |
+| `project_name` | `string` | `true` | - | "example" |
+| `sql` | `string` | `true` | - | "example" |
+| `tags` | `array[string]` | `false` | - | [ "example" ] |
 

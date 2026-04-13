@@ -2,11 +2,19 @@
 
 # Schema: `BootstrapTokenRequest`
 
+## Example
+
+```json
+{
+  "ttl_seconds": 1
+}
+```
+
 - Type: `object`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `ttl_seconds` | `integer` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `ttl_seconds` | `integer` | `false` | - | 1 |
 

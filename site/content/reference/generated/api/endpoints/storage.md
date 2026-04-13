@@ -12,10 +12,10 @@ List external locations
 
 ### Query Parameters
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `max_results` | `integer` | `false` | - |
-| `page_token` | `string` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `max_results` | `integer` | `false` | - | 1 |
+| `page_token` | `string` | `false` | - | "example" |
 
 ### Responses
 
@@ -26,6 +26,86 @@ List external locations
 | `401` | Access is unauthorized. |
 | `429` | Client error |
 | `500` | Server error |
+
+#### `200` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "data": [
+    {
+      "comment": "example",
+      "created_at": "2026-01-02T15:04:05Z",
+      "credential_name": "example",
+      "id": "example",
+      "name": "example",
+      "owner": "example",
+      "read_only": true,
+      "storage_type": "S3",
+      "updated_at": "2026-01-02T15:04:05Z",
+      "url": "example"
+    }
+  ],
+  "next_page_token": "example"
+}
+```
+
+#### `400` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `401` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `429` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `500` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
 
 ## `POST /external-locations`
 
@@ -40,6 +120,21 @@ Creates a new external location and configures DuckDB with the associated creden
 - Required: `true`
 - Content types: `application/json`
 
+### Request Examples
+
+- Content type: `application/json`
+
+```json
+{
+  "comment": "example",
+  "credential_name": "example",
+  "name": "example",
+  "read_only": true,
+  "storage_type": "S3",
+  "url": "example"
+}
+```
+
 ### Responses
 
 | Code | Description |
@@ -51,6 +146,95 @@ Creates a new external location and configures DuckDB with the associated creden
 | `429` | Client error |
 | `500` | Server error |
 
+#### `201` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "comment": "example",
+  "created_at": "2026-01-02T15:04:05Z",
+  "credential_name": "example",
+  "id": "example",
+  "name": "example",
+  "owner": "example",
+  "read_only": true,
+  "storage_type": "S3",
+  "updated_at": "2026-01-02T15:04:05Z",
+  "url": "example"
+}
+```
+
+#### `400` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `401` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `403` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `429` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `500` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
 ## `GET /external-locations/{location_name}`
 
 Get external location
@@ -59,9 +243,9 @@ Get external location
 
 ### Path Parameters
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `location_name` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `location_name` | `string` | `true` | - | "example" |
 
 ### Responses
 
@@ -74,6 +258,109 @@ Get external location
 | `404` | The server cannot find the requested resource. |
 | `429` | Client error |
 | `500` | Server error |
+
+#### `200` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "comment": "example",
+  "created_at": "2026-01-02T15:04:05Z",
+  "credential_name": "example",
+  "id": "example",
+  "name": "example",
+  "owner": "example",
+  "read_only": true,
+  "storage_type": "S3",
+  "updated_at": "2026-01-02T15:04:05Z",
+  "url": "example"
+}
+```
+
+#### `400` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `401` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `403` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `404` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `429` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `500` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
 
 ## `PATCH /external-locations/{location_name}`
 
@@ -83,14 +370,27 @@ Update external location
 
 ### Path Parameters
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `location_name` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `location_name` | `string` | `true` | - | "example" |
 
 ### Request Body
 
 - Required: `true`
 - Content types: `application/json`
+
+### Request Examples
+
+- Content type: `application/json`
+
+```json
+{
+  "comment": "example",
+  "credential_name": "example",
+  "read_only": true,
+  "url": "example"
+}
+```
 
 ### Responses
 
@@ -104,6 +404,109 @@ Update external location
 | `429` | Client error |
 | `500` | Server error |
 
+#### `200` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "comment": "example",
+  "created_at": "2026-01-02T15:04:05Z",
+  "credential_name": "example",
+  "id": "example",
+  "name": "example",
+  "owner": "example",
+  "read_only": true,
+  "storage_type": "S3",
+  "updated_at": "2026-01-02T15:04:05Z",
+  "url": "example"
+}
+```
+
+#### `400` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `401` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `403` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `404` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `429` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `500` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
 ## `DELETE /external-locations/{location_name}`
 
 Delete external location
@@ -112,9 +515,9 @@ Delete external location
 
 ### Path Parameters
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `location_name` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `location_name` | `string` | `true` | - | "example" |
 
 ### Responses
 
@@ -128,6 +531,90 @@ Delete external location
 | `429` | Client error |
 | `500` | Server error |
 
+#### `400` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `401` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `403` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `404` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `429` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `500` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
 ## `GET /storage-credentials`
 
 List storage credentials
@@ -136,10 +623,10 @@ List storage credentials
 
 ### Query Parameters
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `max_results` | `integer` | `false` | - |
-| `page_token` | `string` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `max_results` | `integer` | `false` | - | 1 |
+| `page_token` | `string` | `false` | - | "example" |
 
 ### Responses
 
@@ -150,6 +637,86 @@ List storage credentials
 | `401` | Access is unauthorized. |
 | `429` | Client error |
 | `500` | Server error |
+
+#### `200` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "data": [
+    {
+      "comment": "example",
+      "created_at": "2026-01-02T15:04:05Z",
+      "credential_type": "S3",
+      "endpoint": "example",
+      "id": "example",
+      "name": "example",
+      "owner": "example",
+      "region": "example",
+      "updated_at": "2026-01-02T15:04:05Z",
+      "url_style": "path"
+    }
+  ],
+  "next_page_token": "example"
+}
+```
+
+#### `400` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `401` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `429` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `500` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
 
 ## `POST /storage-credentials`
 
@@ -164,6 +731,23 @@ Creates a reusable storage credential that can be referenced by external locatio
 - Required: `true`
 - Content types: `application/json`
 
+### Request Examples
+
+- Content type: `application/json`
+
+```json
+{
+  "comment": "example",
+  "credential_type": "S3",
+  "endpoint": "example",
+  "key_id": "example",
+  "name": "example",
+  "region": "example",
+  "secret": "example",
+  "url_style": "path"
+}
+```
+
 ### Responses
 
 | Code | Description |
@@ -175,6 +759,95 @@ Creates a reusable storage credential that can be referenced by external locatio
 | `429` | Client error |
 | `500` | Server error |
 
+#### `201` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "comment": "example",
+  "created_at": "2026-01-02T15:04:05Z",
+  "credential_type": "S3",
+  "endpoint": "example",
+  "id": "example",
+  "name": "example",
+  "owner": "example",
+  "region": "example",
+  "updated_at": "2026-01-02T15:04:05Z",
+  "url_style": "path"
+}
+```
+
+#### `400` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `401` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `403` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `429` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `500` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
 ## `GET /storage-credentials/{credential_name}`
 
 Get storage credential
@@ -183,9 +856,9 @@ Get storage credential
 
 ### Path Parameters
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `credential_name` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `credential_name` | `string` | `true` | - | "example" |
 
 ### Responses
 
@@ -198,6 +871,109 @@ Get storage credential
 | `404` | The server cannot find the requested resource. |
 | `429` | Client error |
 | `500` | Server error |
+
+#### `200` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "comment": "example",
+  "created_at": "2026-01-02T15:04:05Z",
+  "credential_type": "S3",
+  "endpoint": "example",
+  "id": "example",
+  "name": "example",
+  "owner": "example",
+  "region": "example",
+  "updated_at": "2026-01-02T15:04:05Z",
+  "url_style": "path"
+}
+```
+
+#### `400` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `401` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `403` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `404` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `429` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `500` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
 
 ## `PATCH /storage-credentials/{credential_name}`
 
@@ -207,14 +983,29 @@ Update storage credential
 
 ### Path Parameters
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `credential_name` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `credential_name` | `string` | `true` | - | "example" |
 
 ### Request Body
 
 - Required: `true`
 - Content types: `application/json`
+
+### Request Examples
+
+- Content type: `application/json`
+
+```json
+{
+  "comment": "example",
+  "endpoint": "example",
+  "key_id": "example",
+  "region": "example",
+  "secret": "example",
+  "url_style": "path"
+}
+```
 
 ### Responses
 
@@ -228,6 +1019,109 @@ Update storage credential
 | `429` | Client error |
 | `500` | Server error |
 
+#### `200` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "comment": "example",
+  "created_at": "2026-01-02T15:04:05Z",
+  "credential_type": "S3",
+  "endpoint": "example",
+  "id": "example",
+  "name": "example",
+  "owner": "example",
+  "region": "example",
+  "updated_at": "2026-01-02T15:04:05Z",
+  "url_style": "path"
+}
+```
+
+#### `400` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `401` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `403` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `404` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `429` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `500` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
 ## `DELETE /storage-credentials/{credential_name}`
 
 Delete storage credential
@@ -236,9 +1130,9 @@ Delete storage credential
 
 ### Path Parameters
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `credential_name` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `credential_name` | `string` | `true` | - | "example" |
 
 ### Responses
 
@@ -251,4 +1145,88 @@ Delete storage credential
 | `404` | The server cannot find the requested resource. |
 | `429` | Client error |
 | `500` | Server error |
+
+#### `400` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `401` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `403` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `404` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `429` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `500` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
 

@@ -2,21 +2,39 @@
 
 # Schema: `ComputeEndpoint`
 
+## Example
+
+```json
+{
+  "created_at": "2026-01-02T15:04:05Z",
+  "external_id": "example",
+  "id": "example",
+  "max_memory_gb": 1,
+  "name": "example",
+  "owner": "example",
+  "size": "SMALL",
+  "status": "ACTIVE",
+  "type": "LOCAL",
+  "updated_at": "2026-01-02T15:04:05Z",
+  "url": "example"
+}
+```
+
 - Type: `object`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `created_at` | `string` | `false` | - |
-| `external_id` | `string` | `false` | - |
-| `id` | `string` | `false` | - |
-| `max_memory_gb` | `integer` | `false` | - |
-| `name` | `string` | `false` | - |
-| `owner` | `string` | `false` | - |
-| `size` | `ComputeEndpointSize` | `false` | - |
-| `status` | `ComputeEndpointStatus` | `false` | - |
-| `type` | `ComputeEndpointType` | `false` | - |
-| `updated_at` | `string` | `false` | - |
-| `url` | `string` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `created_at` | `string` | `false` | - | "2026-01-02T15:04:05Z" |
+| `external_id` | `string` | `false` | - | "example" |
+| `id` | `string` | `false` | - | "example" |
+| `max_memory_gb` | `integer` | `false` | - | 1 |
+| `name` | `string` | `false` | - | "example" |
+| `owner` | `string` | `false` | - | "example" |
+| `size` | `ComputeEndpointSize` | `false` | - | "SMALL" |
+| `status` | `ComputeEndpointStatus` | `false` | - | "ACTIVE" |
+| `type` | `ComputeEndpointType` | `false` | - | "LOCAL" |
+| `updated_at` | `string` | `false` | - | "2026-01-02T15:04:05Z" |
+| `url` | `string` | `false` | - | "example" |
 

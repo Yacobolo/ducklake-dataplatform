@@ -2,14 +2,24 @@
 
 # Schema: `CreateAssetBackfillRequest`
 
+## Example
+
+```json
+{
+  "max_parallelism": 1,
+  "partition_from": "example",
+  "partition_to": "example"
+}
+```
+
 - Type: `object`
 - Required fields: `partition_from`, `partition_to`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `max_parallelism` | `integer` | `false` | - |
-| `partition_from` | `string` | `true` | - |
-| `partition_to` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `max_parallelism` | `integer` | `false` | - | 1 |
+| `partition_from` | `string` | `true` | - | "example" |
+| `partition_to` | `string` | `true` | - | "example" |
 

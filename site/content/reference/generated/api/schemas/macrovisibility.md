@@ -2,5 +2,11 @@
 
 # Schema: `MacroVisibility`
 
+## Example
+
+```json
+"project"
+```
+
 - Type: `string`
 

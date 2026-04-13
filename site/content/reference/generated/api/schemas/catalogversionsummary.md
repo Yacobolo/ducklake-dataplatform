@@ -2,19 +2,53 @@
 
 # Schema: `CatalogVersionSummary`
 
+## Example
+
+```json
+{
+  "catalog_name": "example",
+  "columns": {
+    "active_count": 1,
+    "has_history": true,
+    "historical_count": 1,
+    "latest_snapshot_id": 1,
+    "total_count": 1
+  },
+  "created_by": "example",
+  "data_path": "example",
+  "encrypted": true,
+  "latest_snapshot_id": 1,
+  "schemas": {
+    "active_count": 1,
+    "has_history": true,
+    "historical_count": 1,
+    "latest_snapshot_id": 1,
+    "total_count": 1
+  },
+  "tables": {
+    "active_count": 1,
+    "has_history": true,
+    "historical_count": 1,
+    "latest_snapshot_id": 1,
+    "total_count": 1
+  },
+  "version": "example"
+}
+```
+
 - Type: `object`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `catalog_name` | `string` | `false` | - |
-| `columns` | `VersionedObjectSummary` | `false` | - |
-| `created_by` | `string` | `false` | - |
-| `data_path` | `string` | `false` | - |
-| `encrypted` | `boolean` | `false` | - |
-| `latest_snapshot_id` | `integer` | `false` | - |
-| `schemas` | `VersionedObjectSummary` | `false` | - |
-| `tables` | `VersionedObjectSummary` | `false` | - |
-| `version` | `string` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `catalog_name` | `string` | `false` | - | "example" |
+| `columns` | `VersionedObjectSummary` | `false` | - | { "active_count": 1, "has_history": true, "historical_count": 1, "latest_snapshot_id": 1, "total_count": 1 } |
+| `created_by` | `string` | `false` | - | "example" |
+| `data_path` | `string` | `false` | - | "example" |
+| `encrypted` | `boolean` | `false` | - | true |
+| `latest_snapshot_id` | `integer` | `false` | - | 1 |
+| `schemas` | `VersionedObjectSummary` | `false` | - | { "active_count": 1, "has_history": true, "historical_count": 1, "latest_snapshot_id": 1, "total_count": 1 } |
+| `tables` | `VersionedObjectSummary` | `false` | - | { "active_count": 1, "has_history": true, "historical_count": 1, "latest_snapshot_id": 1, "total_count": 1 } |
+| `version` | `string` | `false` | - | "example" |
 

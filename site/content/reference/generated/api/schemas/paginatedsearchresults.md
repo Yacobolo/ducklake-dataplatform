@@ -2,13 +2,31 @@
 
 # Schema: `PaginatedSearchResults`
 
+## Example
+
+```json
+{
+  "data": [
+    {
+      "comment": "example",
+      "match_field": "example",
+      "name": "example",
+      "schema_name": "example",
+      "table_name": "example",
+      "type": "example"
+    }
+  ],
+  "next_page_token": "example"
+}
+```
+
 - Type: `object`
 - Required fields: `data`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `data` | `array[SearchResult]` | `true` | - |
-| `next_page_token` | `string` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `data` | `array[SearchResult]` | `true` | - | [ { "comment": "example", "match_field": "example", "name": "example", "schema_name": "example", "table_name": "example", "type": "example" } ] |
+| `next_page_token` | `string` | `false` | - | "example" |
 

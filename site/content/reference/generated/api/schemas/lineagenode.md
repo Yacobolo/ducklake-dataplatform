@@ -2,13 +2,45 @@
 
 # Schema: `LineageNode`
 
+## Example
+
+```json
+{
+  "downstream": [
+    {
+      "created_at": "2026-01-02T15:04:05Z",
+      "edge_type": "example",
+      "id": "example",
+      "principal_name": "example",
+      "source_schema": "example",
+      "source_table": "example",
+      "target_schema": "example",
+      "target_table": "example"
+    }
+  ],
+  "table_name": "example",
+  "upstream": [
+    {
+      "created_at": "2026-01-02T15:04:05Z",
+      "edge_type": "example",
+      "id": "example",
+      "principal_name": "example",
+      "source_schema": "example",
+      "source_table": "example",
+      "target_schema": "example",
+      "target_table": "example"
+    }
+  ]
+}
+```
+
 - Type: `object`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `downstream` | `array[LineageEdge]` | `false` | - |
-| `table_name` | `string` | `false` | - |
-| `upstream` | `array[LineageEdge]` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `downstream` | `array[LineageEdge]` | `false` | - | [ { "created_at": "2026-01-02T15:04:05Z", "edge_type": "example", "id": "example", "principal_name": "example", "source_schema": "example", "source_table": "example", "target_schema": "example", "target_table": "example" } ] |
+| `table_name` | `string` | `false` | - | "example" |
+| `upstream` | `array[LineageEdge]` | `false` | - | [ { "created_at": "2026-01-02T15:04:05Z", "edge_type": "example", "id": "example", "principal_name": "example", "source_schema": "example", "source_table": "example", "target_schema": "example", "target_table": "example" } ] |
 

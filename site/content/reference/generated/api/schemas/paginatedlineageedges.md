@@ -2,13 +2,33 @@
 
 # Schema: `PaginatedLineageEdges`
 
+## Example
+
+```json
+{
+  "data": [
+    {
+      "created_at": "2026-01-02T15:04:05Z",
+      "edge_type": "example",
+      "id": "example",
+      "principal_name": "example",
+      "source_schema": "example",
+      "source_table": "example",
+      "target_schema": "example",
+      "target_table": "example"
+    }
+  ],
+  "next_page_token": "example"
+}
+```
+
 - Type: `object`
 - Required fields: `data`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `data` | `array[LineageEdge]` | `true` | - |
-| `next_page_token` | `string` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `data` | `array[LineageEdge]` | `true` | - | [ { "created_at": "2026-01-02T15:04:05Z", "edge_type": "example", "id": "example", "principal_name": "example", "source_schema": "example", "source_table": "example", "target_schema": "example", "target_table": "example" } ] |
+| `next_page_token` | `string` | `false` | - | "example" |
 

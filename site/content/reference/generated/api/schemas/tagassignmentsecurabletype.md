@@ -2,5 +2,11 @@
 
 # Schema: `TagAssignmentSecurableType`
 
+## Example
+
+```json
+"schema"
+```
+
 - Type: `string`
 

@@ -2,5 +2,11 @@
 
 # Schema: `CellRole`
 
+## Example
+
+```json
+"transform"
+```
+
 - Type: `string`
 

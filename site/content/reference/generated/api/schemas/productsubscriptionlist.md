@@ -2,12 +2,29 @@
 
 # Schema: `ProductSubscriptionList`
 
+## Example
+
+```json
+{
+  "data": [
+    {
+      "channel": "example",
+      "created_at": "2026-01-02T15:04:05Z",
+      "event_type": "example",
+      "id": "example",
+      "principal_name": "example",
+      "product_id": "example"
+    }
+  ]
+}
+```
+
 - Type: `object`
 - Required fields: `data`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `data` | `array[ProductSubscription]` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `data` | `array[ProductSubscription]` | `true` | - | [ { "channel": "example", "created_at": "2026-01-02T15:04:05Z", "event_type": "example", "id": "example", "principal_name": "example", "product_id": "example" } ] |
 

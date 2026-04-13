@@ -2,20 +2,39 @@
 
 # Schema: `SemanticModel`
 
+## Example
+
+```json
+{
+  "base_model_ref": "example",
+  "created_at": "2026-01-02T15:04:05Z",
+  "created_by": "example",
+  "default_time_dimension": "example",
+  "description": "example",
+  "id": "example",
+  "name": "example",
+  "owner": "example",
+  "tags": [
+    "example"
+  ],
+  "updated_at": "2026-01-02T15:04:05Z"
+}
+```
+
 - Type: `object`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `base_model_ref` | `string` | `false` | - |
-| `created_at` | `string` | `false` | - |
-| `created_by` | `string` | `false` | - |
-| `default_time_dimension` | `string` | `false` | - |
-| `description` | `string` | `false` | - |
-| `id` | `string` | `false` | - |
-| `name` | `string` | `false` | - |
-| `owner` | `string` | `false` | - |
-| `tags` | `array[string]` | `false` | - |
-| `updated_at` | `string` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `base_model_ref` | `string` | `false` | - | "example" |
+| `created_at` | `string` | `false` | - | "2026-01-02T15:04:05Z" |
+| `created_by` | `string` | `false` | - | "example" |
+| `default_time_dimension` | `string` | `false` | - | "example" |
+| `description` | `string` | `false` | - | "example" |
+| `id` | `string` | `false` | - | "example" |
+| `name` | `string` | `false` | - | "example" |
+| `owner` | `string` | `false` | - | "example" |
+| `tags` | `array[string]` | `false` | - | [ "example" ] |
+| `updated_at` | `string` | `false` | - | "2026-01-02T15:04:05Z" |
 

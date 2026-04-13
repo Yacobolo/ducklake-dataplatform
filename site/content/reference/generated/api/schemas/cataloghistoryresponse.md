@@ -2,12 +2,34 @@
 
 # Schema: `CatalogHistoryResponse`
 
+## Example
+
+```json
+{
+  "data": [
+    {
+      "begin_snapshot_id": 1,
+      "column_name": "example",
+      "end_snapshot_id": 1,
+      "entity_type": "example",
+      "has_history": true,
+      "is_active": true,
+      "latest_snapshot_id": 1,
+      "object_id": "example",
+      "object_name": "example",
+      "schema_name": "example",
+      "table_name": "example"
+    }
+  ]
+}
+```
+
 - Type: `object`
 - Required fields: `data`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `data` | `array[CatalogHistoryEntry]` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `data` | `array[CatalogHistoryEntry]` | `true` | - | [ { "begin_snapshot_id": 1, "column_name": "example", "end_snapshot_id": 1, "entity_type": "example", "has_history": true, "is_active": true, "latest_snapshot_id": 1, "object_id": "example", "object_name": "example", "schema_name": "example", "table_name": "example" } ] |
 

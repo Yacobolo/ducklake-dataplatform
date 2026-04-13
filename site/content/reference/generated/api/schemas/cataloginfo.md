@@ -2,16 +2,28 @@
 
 # Schema: `CatalogInfo`
 
+## Example
+
+```json
+{
+  "comment": "example",
+  "created_at": "2026-01-02T15:04:05Z",
+  "name": "example",
+  "system_managed": true,
+  "updated_at": "2026-01-02T15:04:05Z"
+}
+```
+
 - Type: `object`
 - Required fields: `name`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `comment` | `string` | `false` | - |
-| `created_at` | `string` | `false` | - |
-| `name` | `string` | `true` | - |
-| `system_managed` | `boolean` | `false` | - |
-| `updated_at` | `string` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `comment` | `string` | `false` | - | "example" |
+| `created_at` | `string` | `false` | - | "2026-01-02T15:04:05Z" |
+| `name` | `string` | `true` | - | "example" |
+| `system_managed` | `boolean` | `false` | - | true |
+| `updated_at` | `string` | `false` | - | "2026-01-02T15:04:05Z" |
 

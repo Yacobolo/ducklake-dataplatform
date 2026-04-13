@@ -2,24 +2,74 @@
 
 # Schema: `CreateAssetRequest`
 
+## Example
+
+```json
+{
+  "asset_key": "example",
+  "asset_type": "TABLE",
+  "auto_materialize_policy": {
+    "downtime_windows_cron_expr": [
+      "example"
+    ],
+    "min_interval_seconds": 1,
+    "mode": "example",
+    "on_freshness_breach": true,
+    "on_upstream_materialized": true,
+    "require_all_upstreams": true,
+    "respect_downtime_windows": true
+  },
+  "checks": [
+    {
+      "check_type": "example",
+      "config_json": {
+        "key": "value"
+      },
+      "enabled": true,
+      "name": "example",
+      "severity": "ERROR"
+    }
+  ],
+  "description": "example",
+  "freshness_policy": {
+    "cron_schedule": "example",
+    "max_lag_seconds": 1
+  },
+  "io_profile": "example",
+  "is_active": true,
+  "materialization_policy": {
+    "allow_concurrent": true,
+    "mode": "example"
+  },
+  "owner": "example",
+  "product_slug": "example",
+  "tags": [
+    "example"
+  ],
+  "upstream_asset_keys": [
+    "example"
+  ]
+}
+```
+
 - Type: `object`
 - Required fields: `asset_key`, `asset_type`, `owner`, `product_slug`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `asset_key` | `string` | `true` | - |
-| `asset_type` | `AssetType` | `true` | - |
-| `auto_materialize_policy` | `AssetAutoMaterializePolicy` | `false` | - |
-| `checks` | `array[AssetCheckInput]` | `false` | - |
-| `description` | `string` | `false` | - |
-| `freshness_policy` | `AssetFreshnessPolicy` | `false` | - |
-| `io_profile` | `string` | `false` | - |
-| `is_active` | `boolean` | `false` | - |
-| `materialization_policy` | `AssetMaterializationPolicy` | `false` | - |
-| `owner` | `string` | `true` | - |
-| `product_slug` | `string` | `true` | - |
-| `tags` | `array[string]` | `false` | - |
-| `upstream_asset_keys` | `array[string]` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `asset_key` | `string` | `true` | - | "example" |
+| `asset_type` | `AssetType` | `true` | - | "TABLE" |
+| `auto_materialize_policy` | `AssetAutoMaterializePolicy` | `false` | - | { "downtime_windows_cron_expr": [ "example" ], "min_interval_seconds": 1, "mode": "example", "on_freshness_breach": true, "on_upstream_materialized": true, "require_all_upstreams": true, "respect_downtime_windows": true } |
+| `checks` | `array[AssetCheckInput]` | `false` | - | [ { "check_type": "example", "config_json": { "key": "value" }, "enabled": true, "name": "example", "severity": "ERROR" } ] |
+| `description` | `string` | `false` | - | "example" |
+| `freshness_policy` | `AssetFreshnessPolicy` | `false` | - | { "cron_schedule": "example", "max_lag_seconds": 1 } |
+| `io_profile` | `string` | `false` | - | "example" |
+| `is_active` | `boolean` | `false` | - | true |
+| `materialization_policy` | `AssetMaterializationPolicy` | `false` | - | { "allow_concurrent": true, "mode": "example" } |
+| `owner` | `string` | `true` | - | "example" |
+| `product_slug` | `string` | `true` | - | "example" |
+| `tags` | `array[string]` | `false` | - | [ "example" ] |
+| `upstream_asset_keys` | `array[string]` | `false` | - | [ "example" ] |
 

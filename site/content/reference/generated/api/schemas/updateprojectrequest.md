@@ -2,13 +2,23 @@
 
 # Schema: `UpdateProjectRequest`
 
+## Example
+
+```json
+{
+  "default_branch": "example",
+  "description": "example",
+  "product_id": "example"
+}
+```
+
 - Type: `object`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `default_branch` | `string` | `false` | - |
-| `description` | `string` | `false` | - |
-| `product_id` | `string` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `default_branch` | `string` | `false` | - | "example" |
+| `description` | `string` | `false` | - | "example" |
+| `product_id` | `string` | `false` | - | "example" |
 

@@ -2,13 +2,22 @@
 
 # Schema: `CreateGroupMemberRequest`
 
+## Example
+
+```json
+{
+  "member_id": "example",
+  "member_type": "user"
+}
+```
+
 - Type: `object`
 - Required fields: `member_id`, `member_type`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `member_id` | `string` | `true` | - |
-| `member_type` | `PrincipalType` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `member_id` | `string` | `true` | - | "example" |
+| `member_type` | `PrincipalType` | `true` | - | "user" |
 

@@ -2,20 +2,43 @@
 
 # Schema: `UpdateMacroRequest`
 
+## Example
+
+```json
+{
+  "body": "example",
+  "catalog_name": "example",
+  "description": "example",
+  "owner": "example",
+  "parameters": [
+    "example"
+  ],
+  "project_name": "example",
+  "properties": {
+    "key": "example"
+  },
+  "status": "ACTIVE",
+  "tags": [
+    "example"
+  ],
+  "visibility": "project"
+}
+```
+
 - Type: `object`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `body` | `string` | `false` | - |
-| `catalog_name` | `string` | `false` | - |
-| `description` | `string` | `false` | - |
-| `owner` | `string` | `false` | - |
-| `parameters` | `array[string]` | `false` | - |
-| `project_name` | `string` | `false` | - |
-| `properties` | `object` | `false` | - |
-| `status` | `MacroStatus` | `false` | - |
-| `tags` | `array[string]` | `false` | - |
-| `visibility` | `MacroVisibility` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `body` | `string` | `false` | - | "example" |
+| `catalog_name` | `string` | `false` | - | "example" |
+| `description` | `string` | `false` | - | "example" |
+| `owner` | `string` | `false` | - | "example" |
+| `parameters` | `array[string]` | `false` | - | [ "example" ] |
+| `project_name` | `string` | `false` | - | "example" |
+| `properties` | `object` | `false` | - | { "key": "example" } |
+| `status` | `MacroStatus` | `false` | - | "ACTIVE" |
+| `tags` | `array[string]` | `false` | - | [ "example" ] |
+| `visibility` | `MacroVisibility` | `false` | - | "project" |
 

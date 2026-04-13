@@ -2,5 +2,11 @@
 
 # Schema: `PrincipalType`
 
+## Example
+
+```json
+"user"
+```
+
 - Type: `string`
 

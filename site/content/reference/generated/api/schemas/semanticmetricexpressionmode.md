@@ -2,5 +2,11 @@
 
 # Schema: `SemanticMetricExpressionMode`
 
+## Example
+
+```json
+"DSL"
+```
+
 - Type: `string`
 

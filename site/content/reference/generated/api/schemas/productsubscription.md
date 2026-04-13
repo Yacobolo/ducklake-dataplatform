@@ -2,17 +2,30 @@
 
 # Schema: `ProductSubscription`
 
+## Example
+
+```json
+{
+  "channel": "example",
+  "created_at": "2026-01-02T15:04:05Z",
+  "event_type": "example",
+  "id": "example",
+  "principal_name": "example",
+  "product_id": "example"
+}
+```
+
 - Type: `object`
 - Required fields: `channel`, `event_type`, `id`, `principal_name`, `product_id`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `channel` | `string` | `true` | - |
-| `created_at` | `string` | `false` | - |
-| `event_type` | `string` | `true` | - |
-| `id` | `string` | `true` | - |
-| `principal_name` | `string` | `true` | - |
-| `product_id` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `channel` | `string` | `true` | - | "example" |
+| `created_at` | `string` | `false` | - | "2026-01-02T15:04:05Z" |
+| `event_type` | `string` | `true` | - | "example" |
+| `id` | `string` | `true` | - | "example" |
+| `principal_name` | `string` | `true` | - | "example" |
+| `product_id` | `string` | `true` | - | "example" |
 

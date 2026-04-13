@@ -2,13 +2,38 @@
 
 # Schema: `PaginatedViewDetails`
 
+## Example
+
+```json
+{
+  "data": [
+    {
+      "catalog_name": "example",
+      "comment": "example",
+      "created_at": "2026-01-02T15:04:05Z",
+      "id": "example",
+      "name": "example",
+      "owner": "example",
+      "schema_id": "example",
+      "schema_name": "example",
+      "source_tables": [
+        "example"
+      ],
+      "updated_at": "2026-01-02T15:04:05Z",
+      "view_definition": "example"
+    }
+  ],
+  "next_page_token": "example"
+}
+```
+
 - Type: `object`
 - Required fields: `data`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `data` | `array[ViewDetail]` | `true` | - |
-| `next_page_token` | `string` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `data` | `array[ViewDetail]` | `true` | - | [ { "catalog_name": "example", "comment": "example", "created_at": "2026-01-02T15:04:05Z", "id": "example", "name": "example", "owner": "example", "schema_id": "example", "schema_name": "example", "source_tables": [ "example" ], "updated_at": "2026-01-02T15:04:05Z", "view_definition": "example" } ] |
+| `next_page_token` | `string` | `false` | - | "example" |
 

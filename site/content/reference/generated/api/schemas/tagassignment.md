@@ -2,17 +2,31 @@
 
 # Schema: `TagAssignment`
 
+## Example
+
+```json
+{
+  "assigned_at": "2026-01-02T15:04:05Z",
+  "assigned_by": "example",
+  "column_name": "example",
+  "id": "example",
+  "securable_id": "example",
+  "securable_type": "schema",
+  "tag_id": "example"
+}
+```
+
 - Type: `object`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `assigned_at` | `string` | `false` | - |
-| `assigned_by` | `string` | `false` | - |
-| `column_name` | `string` | `false` | - |
-| `id` | `string` | `false` | - |
-| `securable_id` | `string` | `false` | - |
-| `securable_type` | `TagAssignmentSecurableType` | `false` | - |
-| `tag_id` | `string` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `assigned_at` | `string` | `false` | - | "2026-01-02T15:04:05Z" |
+| `assigned_by` | `string` | `false` | - | "example" |
+| `column_name` | `string` | `false` | - | "example" |
+| `id` | `string` | `false` | - | "example" |
+| `securable_id` | `string` | `false` | - | "example" |
+| `securable_type` | `TagAssignmentSecurableType` | `false` | - | "schema" |
+| `tag_id` | `string` | `false` | - | "example" |
 

@@ -2,13 +2,22 @@
 
 # Schema: `CreateProductTeamRequest`
 
+## Example
+
+```json
+{
+  "contact_channel": "example",
+  "name": "example"
+}
+```
+
 - Type: `object`
 - Required fields: `name`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `contact_channel` | `string` | `false` | - |
-| `name` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `contact_channel` | `string` | `false` | - | "example" |
+| `name` | `string` | `true` | - | "example" |
 

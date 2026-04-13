@@ -2,13 +2,33 @@
 
 # Schema: `PaginatedSavedResources`
 
+## Example
+
+```json
+{
+  "data": [
+    {
+      "display_name": "example",
+      "href": "example",
+      "last_accessed_at": "2026-01-02T15:04:05Z",
+      "resource_key": "example",
+      "resource_path": "example",
+      "resource_type": "example",
+      "saved_at": "2026-01-02T15:04:05Z",
+      "section": "example"
+    }
+  ],
+  "next_page_token": "example"
+}
+```
+
 - Type: `object`
 - Required fields: `data`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `data` | `array[SavedResource]` | `true` | - |
-| `next_page_token` | `string` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `data` | `array[SavedResource]` | `true` | - | [ { "display_name": "example", "href": "example", "last_accessed_at": "2026-01-02T15:04:05Z", "resource_key": "example", "resource_path": "example", "resource_type": "example", "saved_at": "2026-01-02T15:04:05Z", "section": "example" } ] |
+| `next_page_token` | `string` | `false` | - | "example" |
 

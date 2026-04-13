@@ -2,21 +2,38 @@
 
 # Schema: `ProductAdoptionSummary`
 
+## Example
+
+```json
+{
+  "adoption_score": 1,
+  "domain_name": "example",
+  "downstream_product_count": 1,
+  "output_count": 1,
+  "product_id": "example",
+  "product_name": "example",
+  "product_slug": "example",
+  "semantic_entrypoint_count": 1,
+  "subscriber_count": 1,
+  "team_name": "example"
+}
+```
+
 - Type: `object`
 - Required fields: `adoption_score`, `domain_name`, `downstream_product_count`, `output_count`, `product_id`, `product_name`, `product_slug`, `semantic_entrypoint_count`, `subscriber_count`, `team_name`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `adoption_score` | `integer` | `true` | - |
-| `domain_name` | `string` | `true` | - |
-| `downstream_product_count` | `integer` | `true` | - |
-| `output_count` | `integer` | `true` | - |
-| `product_id` | `string` | `true` | - |
-| `product_name` | `string` | `true` | - |
-| `product_slug` | `string` | `true` | - |
-| `semantic_entrypoint_count` | `integer` | `true` | - |
-| `subscriber_count` | `integer` | `true` | - |
-| `team_name` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `adoption_score` | `integer` | `true` | - | 1 |
+| `domain_name` | `string` | `true` | - | "example" |
+| `downstream_product_count` | `integer` | `true` | - | 1 |
+| `output_count` | `integer` | `true` | - | 1 |
+| `product_id` | `string` | `true` | - | "example" |
+| `product_name` | `string` | `true` | - | "example" |
+| `product_slug` | `string` | `true` | - | "example" |
+| `semantic_entrypoint_count` | `integer` | `true` | - | 1 |
+| `subscriber_count` | `integer` | `true` | - | 1 |
+| `team_name` | `string` | `true` | - | "example" |
 

@@ -2,15 +2,26 @@
 
 # Schema: `CreateGitRepoRequest`
 
+## Example
+
+```json
+{
+  "auth_token": "example",
+  "branch": "example",
+  "path": "example",
+  "url": "example"
+}
+```
+
 - Type: `object`
 - Required fields: `branch`, `url`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `auth_token` | `string` | `false` | - |
-| `branch` | `string` | `true` | - |
-| `path` | `string` | `false` | - |
-| `url` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `auth_token` | `string` | `false` | - | "example" |
+| `branch` | `string` | `true` | - | "example" |
+| `path` | `string` | `false` | - | "example" |
+| `url` | `string` | `true` | - | "example" |
 

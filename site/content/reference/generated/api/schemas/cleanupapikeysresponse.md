@@ -2,12 +2,20 @@
 
 # Schema: `CleanupAPIKeysResponse`
 
+## Example
+
+```json
+{
+  "deleted_count": 1
+}
+```
+
 - Type: `object`
 - Required fields: `deleted_count`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `deleted_count` | `integer` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `deleted_count` | `integer` | `true` | - | 1 |
 

@@ -2,13 +2,28 @@
 
 # Schema: `PaginatedGroupMembers`
 
+## Example
+
+```json
+{
+  "data": [
+    {
+      "group_id": "example",
+      "member_id": "example",
+      "member_type": "user"
+    }
+  ],
+  "next_page_token": "example"
+}
+```
+
 - Type: `object`
 - Required fields: `data`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `data` | `array[GroupMember]` | `true` | - |
-| `next_page_token` | `string` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `data` | `array[GroupMember]` | `true` | - | [ { "group_id": "example", "member_id": "example", "member_type": "user" } ] |
+| `next_page_token` | `string` | `false` | - | "example" |
 

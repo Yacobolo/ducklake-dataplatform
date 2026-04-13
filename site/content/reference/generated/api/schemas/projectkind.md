@@ -2,5 +2,11 @@
 
 # Schema: `ProjectKind`
 
+## Example
+
+```json
+"personal"
+```
+
 - Type: `string`
 

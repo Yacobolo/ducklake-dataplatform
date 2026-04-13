@@ -184,10 +184,12 @@ func cloneSchema(in ir.Schema) ir.Schema {
 		for key, value := range in.Properties {
 			out.Properties[key] = ir.SchemaProperty{
 				Description: value.Description,
+				Example:     cloneAny(value.Example),
 				Schema:      cloneSchemaRef(value.Schema),
 			}
 		}
 	}
+	out.Example = cloneAny(in.Example)
 	return out
 }
 
@@ -233,6 +235,7 @@ func cloneEndpoint(in ir.Endpoint) ir.Endpoint {
 		out.Parameters = make([]ir.Parameter, len(in.Parameters))
 		for i, parameter := range in.Parameters {
 			out.Parameters[i] = parameter
+			out.Parameters[i].Example = cloneAny(parameter.Example)
 			out.Parameters[i].Schema = cloneSchemaRef(parameter.Schema)
 			if parameter.Explode != nil {
 				value := *parameter.Explode
@@ -242,6 +245,7 @@ func cloneEndpoint(in ir.Endpoint) ir.Endpoint {
 	}
 	if in.RequestBody != nil {
 		body := *in.RequestBody
+		body.Example = cloneAny(in.RequestBody.Example)
 		body.Schema = cloneSchemaRef(in.RequestBody.Schema)
 		out.RequestBody = &body
 	}
@@ -249,6 +253,7 @@ func cloneEndpoint(in ir.Endpoint) ir.Endpoint {
 		out.Responses = make([]ir.Response, len(in.Responses))
 		for i, response := range in.Responses {
 			out.Responses[i] = response
+			out.Responses[i].Example = cloneAny(response.Example)
 			if response.Schema != nil {
 				schema := cloneSchemaRef(*response.Schema)
 				out.Responses[i].Schema = &schema
@@ -542,6 +547,7 @@ const schemaFile = `package api
 
 #SchemaProperty: {
 	description?: string
+	example?: _
 	schema: #SchemaRef
 }
 
@@ -549,6 +555,7 @@ const schemaFile = `package api
 	type: string
 	title?: string
 	description?: string
+	example?: _
 	properties?: [string]: #SchemaProperty
 	property_order?: [...string]
 	required?: [...string]
@@ -568,6 +575,7 @@ const schemaFile = `package api
 	description: string
 	headers?: [...#Header]
 	content_type?: string
+	example?: _
 	schema?: #SchemaRef
 	any_of?: [...#SchemaRef]
 	extensions?: [string]: _
@@ -578,6 +586,7 @@ const schemaFile = `package api
 	in: string
 	required?: bool
 	description?: string
+	example?: _
 	explode?: bool
 	schema: #SchemaRef
 }
@@ -586,6 +595,7 @@ const schemaFile = `package api
 	required?: bool
 	description?: string
 	content_type?: string
+	example?: _
 	schema: #SchemaRef
 }
 

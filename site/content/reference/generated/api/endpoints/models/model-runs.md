@@ -12,11 +12,11 @@ List model runs
 
 ### Query Parameters
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `max_results` | `integer` | `false` | - |
-| `page_token` | `string` | `false` | - |
-| `status` | `string` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `max_results` | `integer` | `false` | - | 1 |
+| `page_token` | `string` | `false` | - | "example" |
+| `status` | `string` | `false` | - | "example" |
 
 ### Responses
 
@@ -27,6 +27,100 @@ List model runs
 | `401` | Access is unauthorized. |
 | `429` | Client error |
 | `500` | Server error |
+
+#### `200` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "data": [
+    {
+      "build_id": "example",
+      "compile_diagnostics": {
+        "errors": [
+          "example"
+        ],
+        "warnings": [
+          "example"
+        ]
+      },
+      "compile_manifest": "example",
+      "created_at": "2026-01-02T15:04:05Z",
+      "environment_name": "example",
+      "error_message": "example",
+      "finished_at": "2026-01-02T15:04:05Z",
+      "full_refresh": true,
+      "id": "example",
+      "model_names": [
+        "example"
+      ],
+      "project_name": "example",
+      "started_at": "2026-01-02T15:04:05Z",
+      "status": "example",
+      "trigger_type": "example",
+      "triggered_by": "example"
+    }
+  ],
+  "next_page_token": "example"
+}
+```
+
+#### `400` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `401` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `429` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `500` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
 
 ## `POST /model-runs`
 
@@ -39,6 +133,21 @@ Trigger model run
 - Required: `true`
 - Content types: `application/json`
 
+### Request Examples
+
+- Content type: `application/json`
+
+```json
+{
+  "environment_name": "example",
+  "full_refresh": true,
+  "model_names": [
+    "example"
+  ],
+  "project_name": "example"
+}
+```
+
 ### Responses
 
 | Code | Description |
@@ -50,6 +159,109 @@ Trigger model run
 | `429` | Client error |
 | `500` | Server error |
 
+#### `201` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "build_id": "example",
+  "compile_diagnostics": {
+    "errors": [
+      "example"
+    ],
+    "warnings": [
+      "example"
+    ]
+  },
+  "compile_manifest": "example",
+  "created_at": "2026-01-02T15:04:05Z",
+  "environment_name": "example",
+  "error_message": "example",
+  "finished_at": "2026-01-02T15:04:05Z",
+  "full_refresh": true,
+  "id": "example",
+  "model_names": [
+    "example"
+  ],
+  "project_name": "example",
+  "started_at": "2026-01-02T15:04:05Z",
+  "status": "example",
+  "trigger_type": "example",
+  "triggered_by": "example"
+}
+```
+
+#### `400` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `401` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `403` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `429` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `500` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
 ## `GET /model-runs/{run_id}`
 
 Get model run
@@ -58,9 +270,9 @@ Get model run
 
 ### Path Parameters
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `run_id` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `run_id` | `string` | `true` | - | "example" |
 
 ### Responses
 
@@ -73,6 +285,123 @@ Get model run
 | `404` | The server cannot find the requested resource. |
 | `429` | Client error |
 | `500` | Server error |
+
+#### `200` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "build_id": "example",
+  "compile_diagnostics": {
+    "errors": [
+      "example"
+    ],
+    "warnings": [
+      "example"
+    ]
+  },
+  "compile_manifest": "example",
+  "created_at": "2026-01-02T15:04:05Z",
+  "environment_name": "example",
+  "error_message": "example",
+  "finished_at": "2026-01-02T15:04:05Z",
+  "full_refresh": true,
+  "id": "example",
+  "model_names": [
+    "example"
+  ],
+  "project_name": "example",
+  "started_at": "2026-01-02T15:04:05Z",
+  "status": "example",
+  "trigger_type": "example",
+  "triggered_by": "example"
+}
+```
+
+#### `400` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `401` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `403` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `404` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `429` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `500` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
 
 ## `POST /model-runs/{run_id}/cancellations`
 
@@ -82,9 +411,9 @@ Cancel model run
 
 ### Path Parameters
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `run_id` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `run_id` | `string` | `true` | - | "example" |
 
 ### Responses
 
@@ -96,6 +425,109 @@ Cancel model run
 | `403` | Access is forbidden. |
 | `429` | Client error |
 | `500` | Server error |
+
+#### `200` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "build_id": "example",
+  "compile_diagnostics": {
+    "errors": [
+      "example"
+    ],
+    "warnings": [
+      "example"
+    ]
+  },
+  "compile_manifest": "example",
+  "created_at": "2026-01-02T15:04:05Z",
+  "environment_name": "example",
+  "error_message": "example",
+  "finished_at": "2026-01-02T15:04:05Z",
+  "full_refresh": true,
+  "id": "example",
+  "model_names": [
+    "example"
+  ],
+  "project_name": "example",
+  "started_at": "2026-01-02T15:04:05Z",
+  "status": "example",
+  "trigger_type": "example",
+  "triggered_by": "example"
+}
+```
+
+#### `400` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `401` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `403` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `429` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `500` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
 
 ## `GET /model-runs/{run_id}/steps`
 
@@ -105,9 +537,9 @@ List model run steps
 
 ### Path Parameters
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `run_id` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `run_id` | `string` | `true` | - | "example" |
 
 ### Responses
 
@@ -120,6 +552,123 @@ List model run steps
 | `404` | The server cannot find the requested resource. |
 | `429` | Client error |
 | `500` | Server error |
+
+#### `200` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "data": [
+    {
+      "compiled_hash": "example",
+      "compiled_sql": "example",
+      "created_at": "2026-01-02T15:04:05Z",
+      "depends_on": [
+        "example"
+      ],
+      "error_message": "example",
+      "finished_at": "2026-01-02T15:04:05Z",
+      "id": "example",
+      "macros_used": [
+        "example"
+      ],
+      "model_name": "example",
+      "rows_affected": 1,
+      "run_id": "example",
+      "started_at": "2026-01-02T15:04:05Z",
+      "status": "example",
+      "vars_used": [
+        "example"
+      ]
+    }
+  ]
+}
+```
+
+#### `400` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `401` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `403` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `404` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `429` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `500` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
 
 ## `GET /model-runs/{run_id}/steps/{step_id}/test-results`
 
@@ -129,10 +678,10 @@ List model test results
 
 ### Path Parameters
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `run_id` | `string` | `true` | - |
-| `step_id` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `run_id` | `string` | `true` | - | "example" |
+| `step_id` | `string` | `true` | - | "example" |
 
 ### Responses
 
@@ -145,4 +694,109 @@ List model test results
 | `404` | The server cannot find the requested resource. |
 | `429` | Client error |
 | `500` | Server error |
+
+#### `200` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "data": [
+    {
+      "created_at": "2026-01-02T15:04:05Z",
+      "error_message": "example",
+      "id": "example",
+      "rows_returned": 1,
+      "run_step_id": "example",
+      "status": "PASS",
+      "test_id": "example",
+      "test_name": "example"
+    }
+  ]
+}
+```
+
+#### `400` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `401` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `403` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `404` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `429` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `500` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
 

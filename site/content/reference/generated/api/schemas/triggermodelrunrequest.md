@@ -2,15 +2,28 @@
 
 # Schema: `TriggerModelRunRequest`
 
+## Example
+
+```json
+{
+  "environment_name": "example",
+  "full_refresh": true,
+  "model_names": [
+    "example"
+  ],
+  "project_name": "example"
+}
+```
+
 - Type: `object`
 - Required fields: `project_name`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `environment_name` | `string` | `false` | - |
-| `full_refresh` | `boolean` | `false` | - |
-| `model_names` | `array[string]` | `false` | - |
-| `project_name` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `environment_name` | `string` | `false` | - | "example" |
+| `full_refresh` | `boolean` | `false` | - | true |
+| `model_names` | `array[string]` | `false` | - | [ "example" ] |
+| `project_name` | `string` | `true` | - | "example" |
 

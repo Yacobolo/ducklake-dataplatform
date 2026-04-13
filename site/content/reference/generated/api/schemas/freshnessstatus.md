@@ -2,14 +2,25 @@
 
 # Schema: `FreshnessStatus`
 
+## Example
+
+```json
+{
+  "is_fresh": true,
+  "last_run_at": "2026-01-02T15:04:05Z",
+  "max_lag_seconds": 1,
+  "stale_since": "2026-01-02T15:04:05Z"
+}
+```
+
 - Type: `object`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `is_fresh` | `boolean` | `false` | - |
-| `last_run_at` | `string` | `false` | - |
-| `max_lag_seconds` | `integer` | `false` | - |
-| `stale_since` | `string` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `is_fresh` | `boolean` | `false` | - | true |
+| `last_run_at` | `string` | `false` | - | "2026-01-02T15:04:05Z" |
+| `max_lag_seconds` | `integer` | `false` | - | 1 |
+| `stale_since` | `string` | `false` | - | "2026-01-02T15:04:05Z" |
 

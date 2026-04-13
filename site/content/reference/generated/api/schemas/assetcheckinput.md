@@ -2,16 +2,30 @@
 
 # Schema: `AssetCheckInput`
 
+## Example
+
+```json
+{
+  "check_type": "example",
+  "config_json": {
+    "key": "value"
+  },
+  "enabled": true,
+  "name": "example",
+  "severity": "ERROR"
+}
+```
+
 - Type: `object`
 - Required fields: `check_type`, `name`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `check_type` | `string` | `true` | - |
-| `config_json` | `object` | `false` | - |
-| `enabled` | `boolean` | `false` | - |
-| `name` | `string` | `true` | - |
-| `severity` | `AssetCheckSeverity` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `check_type` | `string` | `true` | - | "example" |
+| `config_json` | `object` | `false` | - | { "key": "value" } |
+| `enabled` | `boolean` | `false` | - | true |
+| `name` | `string` | `true` | - | "example" |
+| `severity` | `AssetCheckSeverity` | `false` | - | "ERROR" |
 

@@ -2,13 +2,22 @@
 
 # Schema: `ManifestColumn`
 
+## Example
+
+```json
+{
+  "name": "example",
+  "type": "example"
+}
+```
+
 - Type: `object`
 - Required fields: `name`, `type`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `name` | `string` | `true` | - |
-| `type` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `name` | `string` | `true` | - | "example" |
+| `type` | `string` | `true` | - | "example" |
 

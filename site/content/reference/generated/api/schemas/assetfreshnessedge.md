@@ -2,13 +2,23 @@
 
 # Schema: `AssetFreshnessEdge`
 
+## Example
+
+```json
+{
+  "dependency_type": "example",
+  "from_asset_key": "example",
+  "to_asset_key": "example"
+}
+```
+
 - Type: `object`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `dependency_type` | `string` | `false` | - |
-| `from_asset_key` | `string` | `false` | - |
-| `to_asset_key` | `string` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `dependency_type` | `string` | `false` | - | "example" |
+| `from_asset_key` | `string` | `false` | - | "example" |
+| `to_asset_key` | `string` | `false` | - | "example" |
 

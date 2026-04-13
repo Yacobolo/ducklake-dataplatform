@@ -2,13 +2,40 @@
 
 # Schema: `RunAllResult`
 
+## Example
+
+```json
+{
+  "notebook_id": "example",
+  "results": [
+    {
+      "cell_id": "example",
+      "columns": [
+        {
+          "name": "example"
+        }
+      ],
+      "duration_ms": 1,
+      "error": "example",
+      "row_count": 1,
+      "rows": [
+        {
+          "key": "value"
+        }
+      ]
+    }
+  ],
+  "total_duration_ms": 1
+}
+```
+
 - Type: `object`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `notebook_id` | `string` | `false` | - |
-| `results` | `array[CellExecutionResult]` | `false` | - |
-| `total_duration_ms` | `integer` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `notebook_id` | `string` | `false` | - | "example" |
+| `results` | `array[CellExecutionResult]` | `false` | - | [ { "cell_id": "example", "columns": [ { "name": "example" } ], "duration_ms": 1, "error": "example", "row_count": 1, "rows": [ { "key": "value" } ] } ] |
+| `total_duration_ms` | `integer` | `false` | - | 1 |
 

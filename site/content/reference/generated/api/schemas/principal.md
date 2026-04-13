@@ -2,16 +2,28 @@
 
 # Schema: `Principal`
 
+## Example
+
+```json
+{
+  "created_at": "2026-01-02T15:04:05Z",
+  "id": "example",
+  "is_admin": true,
+  "name": "example",
+  "type": "user"
+}
+```
+
 - Type: `object`
 - Required fields: `id`, `is_admin`, `name`, `type`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `created_at` | `string` | `false` | - |
-| `id` | `string` | `true` | - |
-| `is_admin` | `boolean` | `true` | - |
-| `name` | `string` | `true` | - |
-| `type` | `PrincipalType` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `created_at` | `string` | `false` | - | "2026-01-02T15:04:05Z" |
+| `id` | `string` | `true` | - | "example" |
+| `is_admin` | `boolean` | `true` | - | true |
+| `name` | `string` | `true` | - | "example" |
+| `type` | `PrincipalType` | `true` | - | "user" |
 

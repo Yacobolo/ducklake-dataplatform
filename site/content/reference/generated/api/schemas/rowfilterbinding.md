@@ -2,14 +2,25 @@
 
 # Schema: `RowFilterBinding`
 
+## Example
+
+```json
+{
+  "id": "example",
+  "principal_id": "example",
+  "principal_type": "user",
+  "row_filter_id": "example"
+}
+```
+
 - Type: `object`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `id` | `string` | `false` | - |
-| `principal_id` | `string` | `false` | - |
-| `principal_type` | `PrincipalType` | `false` | - |
-| `row_filter_id` | `string` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `id` | `string` | `false` | - | "example" |
+| `principal_id` | `string` | `false` | - | "example" |
+| `principal_type` | `PrincipalType` | `false` | - | "user" |
+| `row_filter_id` | `string` | `false` | - | "example" |
 

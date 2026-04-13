@@ -2,14 +2,27 @@
 
 # Schema: `ModelDAGNode`
 
+## Example
+
+```json
+{
+  "depends_on": [
+    "example"
+  ],
+  "materialization": "VIEW",
+  "model_name": "example",
+  "project_name": "example"
+}
+```
+
 - Type: `object`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `depends_on` | `array[string]` | `false` | - |
-| `materialization` | `ModelMaterialization` | `false` | - |
-| `model_name` | `string` | `false` | - |
-| `project_name` | `string` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `depends_on` | `array[string]` | `false` | - | [ "example" ] |
+| `materialization` | `ModelMaterialization` | `false` | - | "VIEW" |
+| `model_name` | `string` | `false` | - | "example" |
+| `project_name` | `string` | `false` | - | "example" |
 

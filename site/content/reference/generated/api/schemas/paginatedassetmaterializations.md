@@ -2,13 +2,33 @@
 
 # Schema: `PaginatedAssetMaterializations`
 
+## Example
+
+```json
+{
+  "data": [
+    {
+      "asset_id": "example",
+      "created_at": "2026-01-02T15:04:05Z",
+      "id": "example",
+      "materialized_at": "2026-01-02T15:04:05Z",
+      "partition_key": "example",
+      "row_count": 1,
+      "run_id": "example",
+      "schema_hash": "example"
+    }
+  ],
+  "next_page_token": "example"
+}
+```
+
 - Type: `object`
 - Required fields: `data`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `data` | `array[AssetMaterialization]` | `true` | - |
-| `next_page_token` | `string` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `data` | `array[AssetMaterialization]` | `true` | - | [ { "asset_id": "example", "created_at": "2026-01-02T15:04:05Z", "id": "example", "materialized_at": "2026-01-02T15:04:05Z", "partition_key": "example", "row_count": 1, "run_id": "example", "schema_hash": "example" } ] |
+| `next_page_token` | `string` | `false` | - | "example" |
 

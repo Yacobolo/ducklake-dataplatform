@@ -2,5 +2,11 @@
 
 # Schema: `VisualOutputKind`
 
+## Example
+
+```json
+"table"
+```
+
 - Type: `string`
 

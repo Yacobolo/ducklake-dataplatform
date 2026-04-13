@@ -2,12 +2,20 @@
 
 # Schema: `HealthResponse`
 
+## Example
+
+```json
+{
+  "status": "example"
+}
+```
+
 - Type: `object`
 - Required fields: `status`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `status` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `status` | `string` | `true` | - | "example" |
 

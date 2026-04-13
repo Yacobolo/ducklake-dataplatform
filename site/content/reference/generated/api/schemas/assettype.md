@@ -2,5 +2,11 @@
 
 # Schema: `AssetType`
 
+## Example
+
+```json
+"TABLE"
+```
+
 - Type: `string`
 

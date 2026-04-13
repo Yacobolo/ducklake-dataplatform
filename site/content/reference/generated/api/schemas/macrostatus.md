@@ -2,5 +2,11 @@
 
 # Schema: `MacroStatus`
 
+## Example
+
+```json
+"ACTIVE"
+```
+
 - Type: `string`
 

@@ -2,18 +2,33 @@
 
 # Schema: `ModelTestResult`
 
+## Example
+
+```json
+{
+  "created_at": "2026-01-02T15:04:05Z",
+  "error_message": "example",
+  "id": "example",
+  "rows_returned": 1,
+  "run_step_id": "example",
+  "status": "PASS",
+  "test_id": "example",
+  "test_name": "example"
+}
+```
+
 - Type: `object`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `created_at` | `string` | `false` | - |
-| `error_message` | `string` | `false` | - |
-| `id` | `string` | `false` | - |
-| `rows_returned` | `integer` | `false` | - |
-| `run_step_id` | `string` | `false` | - |
-| `status` | `ModelTestResultStatus` | `false` | - |
-| `test_id` | `string` | `false` | - |
-| `test_name` | `string` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `created_at` | `string` | `false` | - | "2026-01-02T15:04:05Z" |
+| `error_message` | `string` | `false` | - | "example" |
+| `id` | `string` | `false` | - | "example" |
+| `rows_returned` | `integer` | `false` | - | 1 |
+| `run_step_id` | `string` | `false` | - | "example" |
+| `status` | `ModelTestResultStatus` | `false` | - | "PASS" |
+| `test_id` | `string` | `false` | - | "example" |
+| `test_name` | `string` | `false` | - | "example" |
 

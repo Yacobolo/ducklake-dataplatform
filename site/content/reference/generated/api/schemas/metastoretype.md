@@ -2,5 +2,11 @@
 
 # Schema: `MetastoreType`
 
+## Example
+
+```json
+"sqlite"
+```
+
 - Type: `string`
 

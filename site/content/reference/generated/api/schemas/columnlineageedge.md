@@ -2,18 +2,33 @@
 
 # Schema: `ColumnLineageEdge`
 
+## Example
+
+```json
+{
+  "function": "example",
+  "id": 1,
+  "lineage_edge_id": "example",
+  "source_column": "example",
+  "source_schema": "example",
+  "source_table": "example",
+  "target_column": "example",
+  "transform_type": "DIRECT"
+}
+```
+
 - Type: `object`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `function` | `string` | `false` | - |
-| `id` | `integer` | `false` | - |
-| `lineage_edge_id` | `string` | `false` | - |
-| `source_column` | `string` | `false` | - |
-| `source_schema` | `string` | `false` | - |
-| `source_table` | `string` | `false` | - |
-| `target_column` | `string` | `false` | - |
-| `transform_type` | `ColumnLineageEdgeTransformType` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `function` | `string` | `false` | - | "example" |
+| `id` | `integer` | `false` | - | 1 |
+| `lineage_edge_id` | `string` | `false` | - | "example" |
+| `source_column` | `string` | `false` | - | "example" |
+| `source_schema` | `string` | `false` | - | "example" |
+| `source_table` | `string` | `false` | - | "example" |
+| `target_column` | `string` | `false` | - | "example" |
+| `transform_type` | `ColumnLineageEdgeTransformType` | `false` | - | "DIRECT" |
 

@@ -2,16 +2,28 @@
 
 # Schema: `ProductDomain`
 
+## Example
+
+```json
+{
+  "created_at": "2026-01-02T15:04:05Z",
+  "description": "example",
+  "id": "example",
+  "name": "example",
+  "updated_at": "2026-01-02T15:04:05Z"
+}
+```
+
 - Type: `object`
 - Required fields: `description`, `id`, `name`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `created_at` | `string` | `false` | - |
-| `description` | `string` | `true` | - |
-| `id` | `string` | `true` | - |
-| `name` | `string` | `true` | - |
-| `updated_at` | `string` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `created_at` | `string` | `false` | - | "2026-01-02T15:04:05Z" |
+| `description` | `string` | `true` | - | "example" |
+| `id` | `string` | `true` | - | "example" |
+| `name` | `string` | `true` | - | "example" |
+| `updated_at` | `string` | `false` | - | "2026-01-02T15:04:05Z" |
 

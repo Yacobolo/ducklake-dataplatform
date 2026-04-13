@@ -2,16 +2,29 @@
 
 # Schema: `AssetPartition`
 
+## Example
+
+```json
+{
+  "asset_id": "example",
+  "created_at": "2026-01-02T15:04:05Z",
+  "id": "example",
+  "partition_key": "example",
+  "status": "example",
+  "updated_at": "2026-01-02T15:04:05Z"
+}
+```
+
 - Type: `object`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `asset_id` | `string` | `false` | - |
-| `created_at` | `string` | `false` | - |
-| `id` | `string` | `false` | - |
-| `partition_key` | `string` | `false` | - |
-| `status` | `string` | `false` | - |
-| `updated_at` | `string` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `asset_id` | `string` | `false` | - | "example" |
+| `created_at` | `string` | `false` | - | "2026-01-02T15:04:05Z" |
+| `id` | `string` | `false` | - | "example" |
+| `partition_key` | `string` | `false` | - | "example" |
+| `status` | `string` | `false` | - | "example" |
+| `updated_at` | `string` | `false` | - | "2026-01-02T15:04:05Z" |
 

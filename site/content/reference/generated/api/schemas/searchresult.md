@@ -2,16 +2,29 @@
 
 # Schema: `SearchResult`
 
+## Example
+
+```json
+{
+  "comment": "example",
+  "match_field": "example",
+  "name": "example",
+  "schema_name": "example",
+  "table_name": "example",
+  "type": "example"
+}
+```
+
 - Type: `object`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `comment` | `string` | `false` | - |
-| `match_field` | `string` | `false` | - |
-| `name` | `string` | `false` | - |
-| `schema_name` | `string` | `false` | - |
-| `table_name` | `string` | `false` | - |
-| `type` | `string` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `comment` | `string` | `false` | - | "example" |
+| `match_field` | `string` | `false` | - | "example" |
+| `name` | `string` | `false` | - | "example" |
+| `schema_name` | `string` | `false` | - | "example" |
+| `table_name` | `string` | `false` | - | "example" |
+| `type` | `string` | `false` | - | "example" |
 

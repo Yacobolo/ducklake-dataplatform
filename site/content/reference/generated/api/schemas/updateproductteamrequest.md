@@ -2,11 +2,19 @@
 
 # Schema: `UpdateProductTeamRequest`
 
+## Example
+
+```json
+{
+  "contact_channel": "example"
+}
+```
+
 - Type: `object`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `contact_channel` | `string` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `contact_channel` | `string` | `false` | - | "example" |
 

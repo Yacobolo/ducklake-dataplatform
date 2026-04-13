@@ -2,18 +2,35 @@
 
 # Schema: `AssetCheckResult`
 
+## Example
+
+```json
+{
+  "check_id": "example",
+  "created_at": "2026-01-02T15:04:05Z",
+  "id": "example",
+  "message": "example",
+  "metrics_json": {
+    "key": "value"
+  },
+  "partition_key": "example",
+  "run_id": "example",
+  "status": "example"
+}
+```
+
 - Type: `object`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `check_id` | `string` | `false` | - |
-| `created_at` | `string` | `false` | - |
-| `id` | `string` | `false` | - |
-| `message` | `string` | `false` | - |
-| `metrics_json` | `object` | `false` | - |
-| `partition_key` | `string` | `false` | - |
-| `run_id` | `string` | `false` | - |
-| `status` | `string` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `check_id` | `string` | `false` | - | "example" |
+| `created_at` | `string` | `false` | - | "2026-01-02T15:04:05Z" |
+| `id` | `string` | `false` | - | "example" |
+| `message` | `string` | `false` | - | "example" |
+| `metrics_json` | `object` | `false` | - | { "key": "value" } |
+| `partition_key` | `string` | `false` | - | "example" |
+| `run_id` | `string` | `false` | - | "example" |
+| `status` | `string` | `false` | - | "example" |
 

@@ -2,23 +2,74 @@
 
 # Schema: `Cell`
 
+## Example
+
+```json
+{
+  "cell_type": "sql",
+  "content": "example",
+  "created_at": "2026-01-02T15:04:05Z",
+  "disabled": true,
+  "id": "example",
+  "last_result": "example",
+  "name": "example",
+  "notebook_id": "example",
+  "position": 1,
+  "role": "transform",
+  "test": {
+    "severity": "error"
+  },
+  "updated_at": "2026-01-02T15:04:05Z",
+  "visual_spec": {
+    "chart_type": "bar",
+    "color_palette": "example",
+    "encodings": {
+      "label": {
+        "field": "example"
+      },
+      "secondary": {
+        "field": "example"
+      },
+      "series": {
+        "field": "example"
+      },
+      "value": {
+        "field": "example"
+      },
+      "x": {
+        "field": "example"
+      },
+      "y": {
+        "field": "example"
+      }
+    },
+    "kind": "table",
+    "legend": true,
+    "legend_position": "top",
+    "stacked": true,
+    "subtitle": "example",
+    "title": "example"
+  }
+}
+```
+
 - Type: `object`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `cell_type` | `CellCellType` | `false` | - |
-| `content` | `string` | `false` | - |
-| `created_at` | `string` | `false` | - |
-| `disabled` | `boolean` | `false` | - |
-| `id` | `string` | `false` | - |
-| `last_result` | `string` | `false` | - |
-| `name` | `string` | `false` | - |
-| `notebook_id` | `string` | `false` | - |
-| `position` | `integer` | `false` | - |
-| `role` | `CellRole` | `false` | - |
-| `test` | `NotebookCellTestConfig` | `false` | - |
-| `updated_at` | `string` | `false` | - |
-| `visual_spec` | `VisualSpec` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `cell_type` | `CellCellType` | `false` | - | "sql" |
+| `content` | `string` | `false` | - | "example" |
+| `created_at` | `string` | `false` | - | "2026-01-02T15:04:05Z" |
+| `disabled` | `boolean` | `false` | - | true |
+| `id` | `string` | `false` | - | "example" |
+| `last_result` | `string` | `false` | - | "example" |
+| `name` | `string` | `false` | - | "example" |
+| `notebook_id` | `string` | `false` | - | "example" |
+| `position` | `integer` | `false` | - | 1 |
+| `role` | `CellRole` | `false` | - | "transform" |
+| `test` | `NotebookCellTestConfig` | `false` | - | { "severity": "error" } |
+| `updated_at` | `string` | `false` | - | "2026-01-02T15:04:05Z" |
+| `visual_spec` | `VisualSpec` | `false` | - | { "chart_type": "bar", "color_palette": "example", "encodings": { "label": { "field": "example" }, "secondary": { "field": "example" }, "series": { "field": "example" }, "value": { "field": "example" }, "x": { "field": "example" }, "y": { "field": "example" } }, "kind": "table", "legend": true, "legend_position": "top", "stacked": true, "subtitle": "example", "title": "example" } |
 

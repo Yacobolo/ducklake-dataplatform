@@ -2,14 +2,25 @@
 
 # Schema: `NotebookPublishModel`
 
+## Example
+
+```json
+{
+  "materialization": "VIEW",
+  "name": "example",
+  "output_cell_id": "example",
+  "project_name": "example"
+}
+```
+
 - Type: `object`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `materialization` | `ModelMaterialization` | `false` | - |
-| `name` | `string` | `false` | - |
-| `output_cell_id` | `string` | `false` | - |
-| `project_name` | `string` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `materialization` | `ModelMaterialization` | `false` | - | "VIEW" |
+| `name` | `string` | `false` | - | "example" |
+| `output_cell_id` | `string` | `false` | - | "example" |
+| `project_name` | `string` | `false` | - | "example" |
 

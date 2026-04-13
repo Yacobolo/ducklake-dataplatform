@@ -2,17 +2,30 @@
 
 # Schema: `CreatePipelineRequest`
 
+## Example
+
+```json
+{
+  "concurrency_limit": 1,
+  "description": "example",
+  "folder_id": "example",
+  "is_paused": true,
+  "name": "example",
+  "schedule_cron": "example"
+}
+```
+
 - Type: `object`
 - Required fields: `name`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `concurrency_limit` | `integer` | `false` | - |
-| `description` | `string` | `false` | - |
-| `folder_id` | `string` | `false` | - |
-| `is_paused` | `boolean` | `false` | - |
-| `name` | `string` | `true` | - |
-| `schedule_cron` | `string` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `concurrency_limit` | `integer` | `false` | - | 1 |
+| `description` | `string` | `false` | - | "example" |
+| `folder_id` | `string` | `false` | - | "example" |
+| `is_paused` | `boolean` | `false` | - | true |
+| `name` | `string` | `true` | - | "example" |
+| `schedule_cron` | `string` | `false` | - | "example" |
 

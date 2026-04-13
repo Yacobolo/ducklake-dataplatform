@@ -2,19 +2,34 @@
 
 # Schema: `CreateStorageCredentialRequest`
 
+## Example
+
+```json
+{
+  "comment": "example",
+  "credential_type": "S3",
+  "endpoint": "example",
+  "key_id": "example",
+  "name": "example",
+  "region": "example",
+  "secret": "example",
+  "url_style": "path"
+}
+```
+
 - Type: `object`
 - Required fields: `name`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `comment` | `string` | `false` | - |
-| `credential_type` | `StorageCredentialType` | `false` | - |
-| `endpoint` | `string` | `false` | - |
-| `key_id` | `string` | `false` | - |
-| `name` | `string` | `true` | - |
-| `region` | `string` | `false` | - |
-| `secret` | `string` | `false` | - |
-| `url_style` | `URLStyle` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `comment` | `string` | `false` | - | "example" |
+| `credential_type` | `StorageCredentialType` | `false` | - | "S3" |
+| `endpoint` | `string` | `false` | - | "example" |
+| `key_id` | `string` | `false` | - | "example" |
+| `name` | `string` | `true` | - | "example" |
+| `region` | `string` | `false` | - | "example" |
+| `secret` | `string` | `false` | - | "example" |
+| `url_style` | `URLStyle` | `false` | - | "path" |
 

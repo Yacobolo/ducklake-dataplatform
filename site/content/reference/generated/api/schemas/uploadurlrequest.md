@@ -2,11 +2,19 @@
 
 # Schema: `UploadUrlRequest`
 
+## Example
+
+```json
+{
+  "filename": "example"
+}
+```
+
 - Type: `object`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `filename` | `string` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `filename` | `string` | `false` | - | "example" |
 

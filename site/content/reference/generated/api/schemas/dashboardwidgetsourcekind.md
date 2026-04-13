@@ -2,5 +2,11 @@
 
 # Schema: `DashboardWidgetSourceKind`
 
+## Example
+
+```json
+"sql_query"
+```
+
 - Type: `string`
 

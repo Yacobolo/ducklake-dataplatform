@@ -2,12 +2,43 @@
 
 # Schema: `ModelRunStepList`
 
+## Example
+
+```json
+{
+  "data": [
+    {
+      "compiled_hash": "example",
+      "compiled_sql": "example",
+      "created_at": "2026-01-02T15:04:05Z",
+      "depends_on": [
+        "example"
+      ],
+      "error_message": "example",
+      "finished_at": "2026-01-02T15:04:05Z",
+      "id": "example",
+      "macros_used": [
+        "example"
+      ],
+      "model_name": "example",
+      "rows_affected": 1,
+      "run_id": "example",
+      "started_at": "2026-01-02T15:04:05Z",
+      "status": "example",
+      "vars_used": [
+        "example"
+      ]
+    }
+  ]
+}
+```
+
 - Type: `object`
 - Required fields: `data`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `data` | `array[ModelRunStep]` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `data` | `array[ModelRunStep]` | `true` | - | [ { "compiled_hash": "example", "compiled_sql": "example", "created_at": "2026-01-02T15:04:05Z", "depends_on": [ "example" ], "error_message": "example", "finished_at": "2026-01-02T15:04:05Z", "id": "example", "macros_used": [ "example" ], "model_name": "example", "rows_affected": 1, "run_id": "example", "started_at": "2026-01-02T15:04:05Z", "status": "example", "vars_used": [ "example" ] } ] |
 

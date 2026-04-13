@@ -2,15 +2,26 @@
 
 # Schema: `PromoteNotebookRequest`
 
+## Example
+
+```json
+{
+  "cell_index": 1,
+  "materialization": "VIEW",
+  "name": "example",
+  "project_name": "example"
+}
+```
+
 - Type: `object`
 - Required fields: `cell_index`, `name`, `project_name`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `cell_index` | `integer` | `true` | - |
-| `materialization` | `ModelMaterialization` | `false` | - |
-| `name` | `string` | `true` | - |
-| `project_name` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `cell_index` | `integer` | `true` | - | 1 |
+| `materialization` | `ModelMaterialization` | `false` | - | "VIEW" |
+| `name` | `string` | `true` | - | "example" |
+| `project_name` | `string` | `true` | - | "example" |
 

@@ -2,23 +2,48 @@
 
 # Schema: `CreateMacroRequest`
 
+## Example
+
+```json
+{
+  "body": "example",
+  "catalog_name": "example",
+  "description": "example",
+  "macro_type": "SCALAR",
+  "name": "example",
+  "owner": "example",
+  "parameters": [
+    "example"
+  ],
+  "project_name": "example",
+  "properties": {
+    "key": "example"
+  },
+  "status": "ACTIVE",
+  "tags": [
+    "example"
+  ],
+  "visibility": "project"
+}
+```
+
 - Type: `object`
 - Required fields: `body`, `name`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `body` | `string` | `true` | - |
-| `catalog_name` | `string` | `false` | - |
-| `description` | `string` | `false` | - |
-| `macro_type` | `MacroType` | `false` | - |
-| `name` | `string` | `true` | - |
-| `owner` | `string` | `false` | - |
-| `parameters` | `array[string]` | `false` | - |
-| `project_name` | `string` | `false` | - |
-| `properties` | `object` | `false` | - |
-| `status` | `MacroStatus` | `false` | - |
-| `tags` | `array[string]` | `false` | - |
-| `visibility` | `MacroVisibility` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `body` | `string` | `true` | - | "example" |
+| `catalog_name` | `string` | `false` | - | "example" |
+| `description` | `string` | `false` | - | "example" |
+| `macro_type` | `MacroType` | `false` | - | "SCALAR" |
+| `name` | `string` | `true` | - | "example" |
+| `owner` | `string` | `false` | - | "example" |
+| `parameters` | `array[string]` | `false` | - | [ "example" ] |
+| `project_name` | `string` | `false` | - | "example" |
+| `properties` | `object` | `false` | - | { "key": "example" } |
+| `status` | `MacroStatus` | `false` | - | "ACTIVE" |
+| `tags` | `array[string]` | `false` | - | [ "example" ] |
+| `visibility` | `MacroVisibility` | `false` | - | "project" |
 

@@ -12,13 +12,13 @@ List audit entries
 
 ### Query Parameters
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `action` | `string` | `false` | - |
-| `max_results` | `integer` | `false` | - |
-| `page_token` | `string` | `false` | - |
-| `principal_name` | `string` | `false` | - |
-| `status` | `AuditDecisionStatus` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `action` | `string` | `false` | - | "example" |
+| `max_results` | `integer` | `false` | - | 1 |
+| `page_token` | `string` | `false` | - | "example" |
+| `principal_name` | `string` | `false` | - | "example" |
+| `status` | `AuditDecisionStatus` | `false` | - | "ALLOWED" |
 
 ### Responses
 
@@ -30,4 +30,101 @@ List audit entries
 | `403` | Access is forbidden. |
 | `429` | Client error |
 | `500` | Server error |
+
+#### `200` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "data": [
+    {
+      "action": "example",
+      "created_at": "2026-01-02T15:04:05Z",
+      "duration_ms": 1,
+      "error_message": "example",
+      "id": "example",
+      "original_sql": "example",
+      "principal_name": "example",
+      "rewritten_sql": "example",
+      "statement_type": "example",
+      "status": "ALLOWED",
+      "tables_accessed": [
+        "example"
+      ]
+    }
+  ],
+  "next_page_token": "example"
+}
+```
+
+#### `400` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `401` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `403` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `429` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `500` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
 

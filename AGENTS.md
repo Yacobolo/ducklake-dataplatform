@@ -17,6 +17,8 @@ task generate       # regenerate all code
 task build-cli      # build CLI binary → bin/duck
 ```
 
+Lint policy reference: `LINTING.md`
+
 Single package/test: `go test -race -run TestName ./internal/pkg/...`
 
 `task dev` does not require a checked-out `.env`; it injects a local-only dev profile, builds a local server binary, and derives stable HTTP/Flight SQL/PG wire ports from the current worktree path so multiple AI worktrees can run concurrently.

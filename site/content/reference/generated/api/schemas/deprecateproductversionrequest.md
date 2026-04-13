@@ -2,11 +2,19 @@
 
 # Schema: `DeprecateProductVersionRequest`
 
+## Example
+
+```json
+{
+  "replacement_slug": "example"
+}
+```
+
 - Type: `object`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `replacement_slug` | `string` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `replacement_slug` | `string` | `false` | - | "example" |
 

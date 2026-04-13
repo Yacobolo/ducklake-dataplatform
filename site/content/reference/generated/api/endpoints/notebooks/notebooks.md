@@ -12,11 +12,11 @@ List notebooks
 
 ### Query Parameters
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `max_results` | `integer` | `false` | - |
-| `owner` | `string` | `false` | - |
-| `page_token` | `string` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `max_results` | `integer` | `false` | - | 1 |
+| `owner` | `string` | `false` | - | "example" |
+| `page_token` | `string` | `false` | - | "example" |
 
 ### Responses
 
@@ -27,6 +27,87 @@ List notebooks
 | `401` | Access is unauthorized. |
 | `429` | Client error |
 | `500` | Server error |
+
+#### `200` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "data": [
+    {
+      "created_at": "2026-01-02T15:04:05Z",
+      "description": "example",
+      "environment_override_id": "example",
+      "folder_id": "example",
+      "git_path": "example",
+      "git_repo_id": "example",
+      "id": "example",
+      "name": "example",
+      "owner": "example",
+      "project_override_id": "example",
+      "updated_at": "2026-01-02T15:04:05Z"
+    }
+  ],
+  "next_page_token": "example"
+}
+```
+
+#### `400` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `401` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `429` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `500` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
 
 ## `POST /notebooks`
 
@@ -39,6 +120,19 @@ Create notebook
 - Required: `true`
 - Content types: `application/json`
 
+### Request Examples
+
+- Content type: `application/json`
+
+```json
+{
+  "description": "example",
+  "folder_id": "example",
+  "name": "example",
+  "source": "example"
+}
+```
+
 ### Responses
 
 | Code | Description |
@@ -50,6 +144,96 @@ Create notebook
 | `429` | Client error |
 | `500` | Server error |
 
+#### `201` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "created_at": "2026-01-02T15:04:05Z",
+  "description": "example",
+  "environment_override_id": "example",
+  "folder_id": "example",
+  "git_path": "example",
+  "git_repo_id": "example",
+  "id": "example",
+  "name": "example",
+  "owner": "example",
+  "project_override_id": "example",
+  "updated_at": "2026-01-02T15:04:05Z"
+}
+```
+
+#### `400` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `401` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `403` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `429` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `500` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
 ## `GET /notebooks/{notebook_id}`
 
 Get notebook
@@ -58,9 +242,9 @@ Get notebook
 
 ### Path Parameters
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `notebook_id` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `notebook_id` | `string` | `true` | - | "example" |
 
 ### Responses
 
@@ -73,6 +257,184 @@ Get notebook
 | `404` | The server cannot find the requested resource. |
 | `429` | Client error |
 | `500` | Server error |
+
+#### `200` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "cells": [
+    {
+      "cell_type": "sql",
+      "content": "example",
+      "created_at": "2026-01-02T15:04:05Z",
+      "disabled": true,
+      "id": "example",
+      "last_result": "example",
+      "name": "example",
+      "notebook_id": "example",
+      "position": 1,
+      "role": "transform",
+      "test": {
+        "severity": "error"
+      },
+      "updated_at": "2026-01-02T15:04:05Z",
+      "visual_spec": {
+        "chart_type": "bar",
+        "color_palette": "example",
+        "encodings": {
+          "label": {
+            "field": "example"
+          },
+          "secondary": {
+            "field": "example"
+          },
+          "series": {
+            "field": "example"
+          },
+          "value": {
+            "field": "example"
+          },
+          "x": {
+            "field": "example"
+          },
+          "y": {
+            "field": "example"
+          }
+        },
+        "kind": "table",
+        "legend": true,
+        "legend_position": "top",
+        "stacked": true,
+        "subtitle": "example",
+        "title": "example"
+      }
+    }
+  ],
+  "context": {
+    "effective_environment_id": "example",
+    "effective_git_repo_id": "example",
+    "effective_git_root_path": "example",
+    "effective_project_id": "example",
+    "environment_source_id": "example",
+    "folder_id": "example",
+    "git_source_folder_id": "example",
+    "notebook_id": "example",
+    "project_source_folder_id": "example",
+    "workspace_id": "example"
+  },
+  "notebook": {
+    "created_at": "2026-01-02T15:04:05Z",
+    "description": "example",
+    "environment_override_id": "example",
+    "folder_id": "example",
+    "git_path": "example",
+    "git_repo_id": "example",
+    "id": "example",
+    "name": "example",
+    "owner": "example",
+    "project_override_id": "example",
+    "updated_at": "2026-01-02T15:04:05Z"
+  },
+  "publish_model": {
+    "materialization": "VIEW",
+    "name": "example",
+    "output_cell_id": "example",
+    "project_name": "example"
+  },
+  "shares": [
+    {
+      "principal_name": "example",
+      "role": "viewer"
+    }
+  ]
+}
+```
+
+#### `400` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `401` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `403` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `404` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `429` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `500` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
 
 ## `PATCH /notebooks/{notebook_id}`
 
@@ -82,14 +444,27 @@ Update notebook
 
 ### Path Parameters
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `notebook_id` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `notebook_id` | `string` | `true` | - | "example" |
 
 ### Request Body
 
 - Required: `true`
 - Content types: `application/json`
+
+### Request Examples
+
+- Content type: `application/json`
+
+```json
+{
+  "description": "example",
+  "environment_override_id": "example",
+  "name": "example",
+  "project_override_id": "example"
+}
+```
 
 ### Responses
 
@@ -103,6 +478,110 @@ Update notebook
 | `429` | Client error |
 | `500` | Server error |
 
+#### `200` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "created_at": "2026-01-02T15:04:05Z",
+  "description": "example",
+  "environment_override_id": "example",
+  "folder_id": "example",
+  "git_path": "example",
+  "git_repo_id": "example",
+  "id": "example",
+  "name": "example",
+  "owner": "example",
+  "project_override_id": "example",
+  "updated_at": "2026-01-02T15:04:05Z"
+}
+```
+
+#### `400` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `401` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `403` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `404` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `429` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `500` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
 ## `DELETE /notebooks/{notebook_id}`
 
 Delete notebook
@@ -111,9 +590,9 @@ Delete notebook
 
 ### Path Parameters
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `notebook_id` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `notebook_id` | `string` | `true` | - | "example" |
 
 ### Responses
 
@@ -126,4 +605,88 @@ Delete notebook
 | `404` | The server cannot find the requested resource. |
 | `429` | Client error |
 | `500` | Server error |
+
+#### `400` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `401` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `403` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `404` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `429` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `500` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
 

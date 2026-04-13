@@ -2,13 +2,32 @@
 
 # Schema: `PaginatedTagAssignments`
 
+## Example
+
+```json
+{
+  "data": [
+    {
+      "assigned_at": "2026-01-02T15:04:05Z",
+      "assigned_by": "example",
+      "column_name": "example",
+      "id": "example",
+      "securable_id": "example",
+      "securable_type": "schema",
+      "tag_id": "example"
+    }
+  ],
+  "next_page_token": "example"
+}
+```
+
 - Type: `object`
 - Required fields: `data`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `data` | `array[TagAssignment]` | `true` | - |
-| `next_page_token` | `string` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `data` | `array[TagAssignment]` | `true` | - | [ { "assigned_at": "2026-01-02T15:04:05Z", "assigned_by": "example", "column_name": "example", "id": "example", "securable_id": "example", "securable_type": "schema", "tag_id": "example" } ] |
+| `next_page_token` | `string` | `false` | - | "example" |
 

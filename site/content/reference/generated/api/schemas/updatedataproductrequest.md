@@ -2,24 +2,73 @@
 
 # Schema: `UpdateDataProductRequest`
 
+## Example
+
+```json
+{
+  "access_request_path": "example",
+  "business_definitions": {
+    "key": "example"
+  },
+  "consumer_audience": "example",
+  "contact_channel": "example",
+  "contract": {
+    "breaking_change_policy": "example",
+    "data_grain": "example",
+    "dimensions": [
+      "example"
+    ],
+    "join_keys": [
+      "example"
+    ],
+    "measures": [
+      "example"
+    ],
+    "primary_keys": [
+      "example"
+    ],
+    "quality_expectations": [
+      "example"
+    ],
+    "retention_window": "example",
+    "sample_queries": [
+      "example"
+    ],
+    "update_cadence": "example"
+  },
+  "description": "example",
+  "docs_url": "example",
+  "domain_name": "example",
+  "name": "example",
+  "publication_intent": "example",
+  "slo": {
+    "freshness_slo": "example",
+    "latency_slo": "example"
+  },
+  "steward_principal": "example",
+  "team_name": "example",
+  "visibility": "example"
+}
+```
+
 - Type: `object`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `access_request_path` | `string` | `false` | - |
-| `business_definitions` | `object` | `false` | - |
-| `consumer_audience` | `string` | `false` | - |
-| `contact_channel` | `string` | `false` | - |
-| `contract` | `ProductContract` | `false` | - |
-| `description` | `string` | `false` | - |
-| `docs_url` | `string` | `false` | - |
-| `domain_name` | `string` | `false` | - |
-| `name` | `string` | `false` | - |
-| `publication_intent` | `string` | `false` | - |
-| `slo` | `ProductSLO` | `false` | - |
-| `steward_principal` | `string` | `false` | - |
-| `team_name` | `string` | `false` | - |
-| `visibility` | `string` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `access_request_path` | `string` | `false` | - | "example" |
+| `business_definitions` | `object` | `false` | - | { "key": "example" } |
+| `consumer_audience` | `string` | `false` | - | "example" |
+| `contact_channel` | `string` | `false` | - | "example" |
+| `contract` | `ProductContract` | `false` | - | { "breaking_change_policy": "example", "data_grain": "example", "dimensions": [ "example" ], "join_keys": [ "example" ], "measures": [ "example" ], "primary_keys": [ "example" ], "quality_expectations": [ "example" ], "retention_window": "example", "sample_queries": [ "example" ], "update_cadence": "example" } |
+| `description` | `string` | `false` | - | "example" |
+| `docs_url` | `string` | `false` | - | "example" |
+| `domain_name` | `string` | `false` | - | "example" |
+| `name` | `string` | `false` | - | "example" |
+| `publication_intent` | `string` | `false` | - | "example" |
+| `slo` | `ProductSLO` | `false` | - | { "freshness_slo": "example", "latency_slo": "example" } |
+| `steward_principal` | `string` | `false` | - | "example" |
+| `team_name` | `string` | `false` | - | "example" |
+| `visibility` | `string` | `false` | - | "example" |
 

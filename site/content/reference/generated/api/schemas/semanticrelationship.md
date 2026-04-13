@@ -2,21 +2,39 @@
 
 # Schema: `SemanticRelationship`
 
+## Example
+
+```json
+{
+  "cost": 1,
+  "created_at": "2026-01-02T15:04:05Z",
+  "created_by": "example",
+  "from_semantic_id": "example",
+  "id": "example",
+  "join_sql": "example",
+  "max_hops": 1,
+  "name": "example",
+  "relationship_type": "ONE_TO_ONE",
+  "to_semantic_id": "example",
+  "updated_at": "2026-01-02T15:04:05Z"
+}
+```
+
 - Type: `object`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `cost` | `integer` | `false` | - |
-| `created_at` | `string` | `false` | - |
-| `created_by` | `string` | `false` | - |
-| `from_semantic_id` | `string` | `false` | - |
-| `id` | `string` | `false` | - |
-| `join_sql` | `string` | `false` | - |
-| `max_hops` | `integer` | `false` | - |
-| `name` | `string` | `false` | - |
-| `relationship_type` | `SemanticRelationshipRelationshipType` | `false` | - |
-| `to_semantic_id` | `string` | `false` | - |
-| `updated_at` | `string` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `cost` | `integer` | `false` | - | 1 |
+| `created_at` | `string` | `false` | - | "2026-01-02T15:04:05Z" |
+| `created_by` | `string` | `false` | - | "example" |
+| `from_semantic_id` | `string` | `false` | - | "example" |
+| `id` | `string` | `false` | - | "example" |
+| `join_sql` | `string` | `false` | - | "example" |
+| `max_hops` | `integer` | `false` | - | 1 |
+| `name` | `string` | `false` | - | "example" |
+| `relationship_type` | `SemanticRelationshipRelationshipType` | `false` | - | "ONE_TO_ONE" |
+| `to_semantic_id` | `string` | `false` | - | "example" |
+| `updated_at` | `string` | `false` | - | "2026-01-02T15:04:05Z" |
 

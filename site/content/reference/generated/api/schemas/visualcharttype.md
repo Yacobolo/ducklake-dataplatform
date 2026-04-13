@@ -2,5 +2,11 @@
 
 # Schema: `VisualChartType`
 
+## Example
+
+```json
+"bar"
+```
+
 - Type: `string`
 

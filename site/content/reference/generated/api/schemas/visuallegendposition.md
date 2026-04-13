@@ -2,5 +2,11 @@
 
 # Schema: `VisualLegendPosition`
 
+## Example
+
+```json
+"top"
+```
+
 - Type: `string`
 

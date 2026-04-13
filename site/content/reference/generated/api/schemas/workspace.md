@@ -2,22 +2,40 @@
 
 # Schema: `Workspace`
 
+## Example
+
+```json
+{
+  "created_at": "2026-01-02T15:04:05Z",
+  "default_environment_id": "example",
+  "default_project_id": "example",
+  "git_repo_id": "example",
+  "git_root_path": "example",
+  "id": "example",
+  "kind": "personal",
+  "name": "example",
+  "owner_principal": "example",
+  "owner_team_id": "example",
+  "updated_at": "2026-01-02T15:04:05Z"
+}
+```
+
 - Type: `object`
 - Required fields: `kind`, `name`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `created_at` | `string` | `false` | - |
-| `default_environment_id` | `string` | `false` | - |
-| `default_project_id` | `string` | `false` | - |
-| `git_repo_id` | `string` | `false` | - |
-| `git_root_path` | `string` | `false` | - |
-| `id` | `string` | `false` | - |
-| `kind` | `WorkspaceKind` | `true` | - |
-| `name` | `string` | `true` | - |
-| `owner_principal` | `string` | `false` | - |
-| `owner_team_id` | `string` | `false` | - |
-| `updated_at` | `string` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `created_at` | `string` | `false` | - | "2026-01-02T15:04:05Z" |
+| `default_environment_id` | `string` | `false` | - | "example" |
+| `default_project_id` | `string` | `false` | - | "example" |
+| `git_repo_id` | `string` | `false` | - | "example" |
+| `git_root_path` | `string` | `false` | - | "example" |
+| `id` | `string` | `false` | - | "example" |
+| `kind` | `WorkspaceKind` | `true` | - | "personal" |
+| `name` | `string` | `true` | - | "example" |
+| `owner_principal` | `string` | `false` | - | "example" |
+| `owner_team_id` | `string` | `false` | - | "example" |
+| `updated_at` | `string` | `false` | - | "2026-01-02T15:04:05Z" |
 

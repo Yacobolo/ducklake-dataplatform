@@ -2,14 +2,24 @@
 
 # Schema: `ModelContractColumn`
 
+## Example
+
+```json
+{
+  "name": "example",
+  "nullable": true,
+  "type": "example"
+}
+```
+
 - Type: `object`
 - Required fields: `name`, `type`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `name` | `string` | `true` | - |
-| `nullable` | `boolean` | `false` | - |
-| `type` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `name` | `string` | `true` | - | "example" |
+| `nullable` | `boolean` | `false` | - | true |
+| `type` | `string` | `true` | - | "example" |
 

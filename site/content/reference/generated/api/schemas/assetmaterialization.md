@@ -2,18 +2,33 @@
 
 # Schema: `AssetMaterialization`
 
+## Example
+
+```json
+{
+  "asset_id": "example",
+  "created_at": "2026-01-02T15:04:05Z",
+  "id": "example",
+  "materialized_at": "2026-01-02T15:04:05Z",
+  "partition_key": "example",
+  "row_count": 1,
+  "run_id": "example",
+  "schema_hash": "example"
+}
+```
+
 - Type: `object`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `asset_id` | `string` | `false` | - |
-| `created_at` | `string` | `false` | - |
-| `id` | `string` | `false` | - |
-| `materialized_at` | `string` | `false` | - |
-| `partition_key` | `string` | `false` | - |
-| `row_count` | `integer` | `false` | - |
-| `run_id` | `string` | `false` | - |
-| `schema_hash` | `string` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `asset_id` | `string` | `false` | - | "example" |
+| `created_at` | `string` | `false` | - | "2026-01-02T15:04:05Z" |
+| `id` | `string` | `false` | - | "example" |
+| `materialized_at` | `string` | `false` | - | "2026-01-02T15:04:05Z" |
+| `partition_key` | `string` | `false` | - | "example" |
+| `row_count` | `integer` | `false` | - | 1 |
+| `run_id` | `string` | `false` | - | "example" |
+| `schema_hash` | `string` | `false` | - | "example" |
 

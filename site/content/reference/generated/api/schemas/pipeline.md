@@ -2,20 +2,37 @@
 
 # Schema: `Pipeline`
 
+## Example
+
+```json
+{
+  "concurrency_limit": 1,
+  "created_at": "2026-01-02T15:04:05Z",
+  "created_by": "example",
+  "description": "example",
+  "folder_id": "example",
+  "id": "example",
+  "is_paused": true,
+  "name": "example",
+  "schedule_cron": "example",
+  "updated_at": "2026-01-02T15:04:05Z"
+}
+```
+
 - Type: `object`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `concurrency_limit` | `integer` | `false` | - |
-| `created_at` | `string` | `false` | - |
-| `created_by` | `string` | `false` | - |
-| `description` | `string` | `false` | - |
-| `folder_id` | `string` | `false` | - |
-| `id` | `string` | `false` | - |
-| `is_paused` | `boolean` | `false` | - |
-| `name` | `string` | `false` | - |
-| `schedule_cron` | `string` | `false` | - |
-| `updated_at` | `string` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `concurrency_limit` | `integer` | `false` | - | 1 |
+| `created_at` | `string` | `false` | - | "2026-01-02T15:04:05Z" |
+| `created_by` | `string` | `false` | - | "example" |
+| `description` | `string` | `false` | - | "example" |
+| `folder_id` | `string` | `false` | - | "example" |
+| `id` | `string` | `false` | - | "example" |
+| `is_paused` | `boolean` | `false` | - | true |
+| `name` | `string` | `false` | - | "example" |
+| `schedule_cron` | `string` | `false` | - | "example" |
+| `updated_at` | `string` | `false` | - | "2026-01-02T15:04:05Z" |
 

@@ -2,13 +2,30 @@
 
 # Schema: `PaginatedColumnDetails`
 
+## Example
+
+```json
+{
+  "data": [
+    {
+      "comment": "example",
+      "name": "example",
+      "nullable": true,
+      "position": 1,
+      "type": "example"
+    }
+  ],
+  "next_page_token": "example"
+}
+```
+
 - Type: `object`
 - Required fields: `data`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `data` | `array[ColumnDetail]` | `true` | - |
-| `next_page_token` | `string` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `data` | `array[ColumnDetail]` | `true` | - | [ { "comment": "example", "name": "example", "nullable": true, "position": 1, "type": "example" } ] |
+| `next_page_token` | `string` | `false` | - | "example" |
 

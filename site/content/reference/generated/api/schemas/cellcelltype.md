@@ -2,5 +2,11 @@
 
 # Schema: `CellCellType`
 
+## Example
+
+```json
+"sql"
+```
+
 - Type: `string`
 

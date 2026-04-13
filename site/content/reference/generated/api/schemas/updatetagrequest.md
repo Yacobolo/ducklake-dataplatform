@@ -2,12 +2,21 @@
 
 # Schema: `UpdateTagRequest`
 
+## Example
+
+```json
+{
+  "key": "example",
+  "value": "example"
+}
+```
+
 - Type: `object`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `key` | `string` | `false` | - |
-| `value` | `string` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `key` | `string` | `false` | - | "example" |
+| `value` | `string` | `false` | - | "example" |
 

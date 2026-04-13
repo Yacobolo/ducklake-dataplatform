@@ -2,15 +2,52 @@
 
 # Schema: `DashboardWidgetSource`
 
+## Example
+
+```json
+{
+  "kind": "sql_query",
+  "notebook_cell": {
+    "cell_id": "example",
+    "notebook_id": "example"
+  },
+  "semantic_query": {
+    "dimensions": [
+      "example"
+    ],
+    "filters": [
+      "example"
+    ],
+    "limit": 1,
+    "metrics": [
+      "example"
+    ],
+    "order_by": [
+      "example"
+    ],
+    "relationship_names": [
+      "example"
+    ],
+    "semantic_model_id": "example",
+    "time_grain": "example"
+  },
+  "sql_query": {
+    "catalog": "example",
+    "schema": "example",
+    "sql": "example"
+  }
+}
+```
+
 - Type: `object`
 - Required fields: `kind`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `kind` | `DashboardWidgetSourceKind` | `true` | - |
-| `notebook_cell` | `DashboardNotebookCellSource` | `false` | - |
-| `semantic_query` | `DashboardSemanticQuerySource` | `false` | - |
-| `sql_query` | `DashboardSQLQuerySource` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `kind` | `DashboardWidgetSourceKind` | `true` | - | "sql_query" |
+| `notebook_cell` | `DashboardNotebookCellSource` | `false` | - | { "cell_id": "example", "notebook_id": "example" } |
+| `semantic_query` | `DashboardSemanticQuerySource` | `false` | - | { "dimensions": [ "example" ], "filters": [ "example" ], "limit": 1, "metrics": [ "example" ], "order_by": [ "example" ], "relationship_names": [ "example" ], "semantic_model_id": "example", "time_grain": "example" } |
+| `sql_query` | `DashboardSQLQuerySource` | `false` | - | { "catalog": "example", "schema": "example", "sql": "example" } |
 

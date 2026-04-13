@@ -2,12 +2,37 @@
 
 # Schema: `PipelineJobList`
 
+## Example
+
+```json
+{
+  "data": [
+    {
+      "compute_endpoint_id": "example",
+      "created_at": "2026-01-02T15:04:05Z",
+      "depends_on": [
+        "example"
+      ],
+      "id": "example",
+      "job_order": 1,
+      "job_type": "NOTEBOOK",
+      "model_selector": "example",
+      "name": "example",
+      "notebook_id": "example",
+      "pipeline_id": "example",
+      "retry_count": 1,
+      "timeout_seconds": 1
+    }
+  ]
+}
+```
+
 - Type: `object`
 - Required fields: `data`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `data` | `array[PipelineJob]` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `data` | `array[PipelineJob]` | `true` | - | [ { "compute_endpoint_id": "example", "created_at": "2026-01-02T15:04:05Z", "depends_on": [ "example" ], "id": "example", "job_order": 1, "job_type": "NOTEBOOK", "model_selector": "example", "name": "example", "notebook_id": "example", "pipeline_id": "example", "retry_count": 1, "timeout_seconds": 1 } ] |
 

@@ -2,21 +2,38 @@
 
 # Schema: `ExternalLocation`
 
+## Example
+
+```json
+{
+  "comment": "example",
+  "created_at": "2026-01-02T15:04:05Z",
+  "credential_name": "example",
+  "id": "example",
+  "name": "example",
+  "owner": "example",
+  "read_only": true,
+  "storage_type": "S3",
+  "updated_at": "2026-01-02T15:04:05Z",
+  "url": "example"
+}
+```
+
 - Type: `object`
 - Required fields: `id`, `name`, `url`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `comment` | `string` | `false` | - |
-| `created_at` | `string` | `false` | - |
-| `credential_name` | `string` | `false` | - |
-| `id` | `string` | `true` | - |
-| `name` | `string` | `true` | - |
-| `owner` | `string` | `false` | - |
-| `read_only` | `boolean` | `false` | - |
-| `storage_type` | `StorageType` | `false` | - |
-| `updated_at` | `string` | `false` | - |
-| `url` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `comment` | `string` | `false` | - | "example" |
+| `created_at` | `string` | `false` | - | "2026-01-02T15:04:05Z" |
+| `credential_name` | `string` | `false` | - | "example" |
+| `id` | `string` | `true` | - | "example" |
+| `name` | `string` | `true` | - | "example" |
+| `owner` | `string` | `false` | - | "example" |
+| `read_only` | `boolean` | `false` | - | true |
+| `storage_type` | `StorageType` | `false` | - | "S3" |
+| `updated_at` | `string` | `false` | - | "2026-01-02T15:04:05Z" |
+| `url` | `string` | `true` | - | "example" |
 

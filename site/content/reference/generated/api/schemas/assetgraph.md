@@ -2,13 +2,27 @@
 
 # Schema: `AssetGraph`
 
+## Example
+
+```json
+{
+  "asset_key": "example",
+  "downstream_asset_keys": [
+    "example"
+  ],
+  "upstream_asset_keys": [
+    "example"
+  ]
+}
+```
+
 - Type: `object`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `asset_key` | `string` | `false` | - |
-| `downstream_asset_keys` | `array[string]` | `false` | - |
-| `upstream_asset_keys` | `array[string]` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `asset_key` | `string` | `false` | - | "example" |
+| `downstream_asset_keys` | `array[string]` | `false` | - | [ "example" ] |
+| `upstream_asset_keys` | `array[string]` | `false` | - | [ "example" ] |
 

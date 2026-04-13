@@ -2,5 +2,11 @@
 
 # Schema: `StorageType`
 
+## Example
+
+```json
+"S3"
+```
+
 - Type: `string`
 

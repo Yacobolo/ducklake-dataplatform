@@ -2,17 +2,62 @@
 
 # Schema: `UpdateCellRequest`
 
+## Example
+
+```json
+{
+  "content": "example",
+  "disabled": true,
+  "name": "example",
+  "position": 1,
+  "role": "transform",
+  "test": {
+    "severity": "error"
+  },
+  "visual_spec": {
+    "chart_type": "bar",
+    "color_palette": "example",
+    "encodings": {
+      "label": {
+        "field": "example"
+      },
+      "secondary": {
+        "field": "example"
+      },
+      "series": {
+        "field": "example"
+      },
+      "value": {
+        "field": "example"
+      },
+      "x": {
+        "field": "example"
+      },
+      "y": {
+        "field": "example"
+      }
+    },
+    "kind": "table",
+    "legend": true,
+    "legend_position": "top",
+    "stacked": true,
+    "subtitle": "example",
+    "title": "example"
+  }
+}
+```
+
 - Type: `object`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `content` | `string` | `false` | - |
-| `disabled` | `boolean` | `false` | - |
-| `name` | `string` | `false` | - |
-| `position` | `integer` | `false` | - |
-| `role` | `CellRole` | `false` | - |
-| `test` | `NotebookCellTestConfig` | `false` | - |
-| `visual_spec` | `VisualSpecUpdate` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `content` | `string` | `false` | - | "example" |
+| `disabled` | `boolean` | `false` | - | true |
+| `name` | `string` | `false` | - | "example" |
+| `position` | `integer` | `false` | - | 1 |
+| `role` | `CellRole` | `false` | - | "transform" |
+| `test` | `NotebookCellTestConfig` | `false` | - | { "severity": "error" } |
+| `visual_spec` | `VisualSpecUpdate` | `false` | - | { "chart_type": "bar", "color_palette": "example", "encodings": { "label": { "field": "example" }, "secondary": { "field": "example" }, "series": { "field": "example" }, "value": { "field": "example" }, "x": { "field": "example" }, "y": { "field": "example" } }, "kind": "table", "legend": true, "legend_position": "top", "stacked": true, "subtitle": "example", "title": "example" } |
 

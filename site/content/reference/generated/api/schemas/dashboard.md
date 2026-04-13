@@ -2,20 +2,41 @@
 
 # Schema: `Dashboard`
 
+## Example
+
+```json
+{
+  "compute": {
+    "endpoint_name": "example",
+    "fallback_local": true,
+    "mode": "example"
+  },
+  "created_at": "2026-01-02T15:04:05Z",
+  "description": "example",
+  "folder_id": "example",
+  "id": "example",
+  "name": "example",
+  "owner": "example",
+  "semantic_model_name": "example",
+  "semantic_project_name": "example",
+  "updated_at": "2026-01-02T15:04:05Z"
+}
+```
+
 - Type: `object`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `compute` | `DashboardComputePolicy` | `false` | - |
-| `created_at` | `string` | `false` | - |
-| `description` | `string` | `false` | - |
-| `folder_id` | `string` | `false` | - |
-| `id` | `string` | `false` | - |
-| `name` | `string` | `false` | - |
-| `owner` | `string` | `false` | - |
-| `semantic_model_name` | `string` | `false` | - |
-| `semantic_project_name` | `string` | `false` | - |
-| `updated_at` | `string` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `compute` | `DashboardComputePolicy` | `false` | - | { "endpoint_name": "example", "fallback_local": true, "mode": "example" } |
+| `created_at` | `string` | `false` | - | "2026-01-02T15:04:05Z" |
+| `description` | `string` | `false` | - | "example" |
+| `folder_id` | `string` | `false` | - | "example" |
+| `id` | `string` | `false` | - | "example" |
+| `name` | `string` | `false` | - | "example" |
+| `owner` | `string` | `false` | - | "example" |
+| `semantic_model_name` | `string` | `false` | - | "example" |
+| `semantic_project_name` | `string` | `false` | - | "example" |
+| `updated_at` | `string` | `false` | - | "2026-01-02T15:04:05Z" |
 

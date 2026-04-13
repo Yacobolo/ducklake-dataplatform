@@ -2,20 +2,49 @@
 
 # Schema: `ProductContract`
 
+## Example
+
+```json
+{
+  "breaking_change_policy": "example",
+  "data_grain": "example",
+  "dimensions": [
+    "example"
+  ],
+  "join_keys": [
+    "example"
+  ],
+  "measures": [
+    "example"
+  ],
+  "primary_keys": [
+    "example"
+  ],
+  "quality_expectations": [
+    "example"
+  ],
+  "retention_window": "example",
+  "sample_queries": [
+    "example"
+  ],
+  "update_cadence": "example"
+}
+```
+
 - Type: `object`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `breaking_change_policy` | `string` | `false` | - |
-| `data_grain` | `string` | `false` | - |
-| `dimensions` | `array[string]` | `false` | - |
-| `join_keys` | `array[string]` | `false` | - |
-| `measures` | `array[string]` | `false` | - |
-| `primary_keys` | `array[string]` | `false` | - |
-| `quality_expectations` | `array[string]` | `false` | - |
-| `retention_window` | `string` | `false` | - |
-| `sample_queries` | `array[string]` | `false` | - |
-| `update_cadence` | `string` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `breaking_change_policy` | `string` | `false` | - | "example" |
+| `data_grain` | `string` | `false` | - | "example" |
+| `dimensions` | `array[string]` | `false` | - | [ "example" ] |
+| `join_keys` | `array[string]` | `false` | - | [ "example" ] |
+| `measures` | `array[string]` | `false` | - | [ "example" ] |
+| `primary_keys` | `array[string]` | `false` | - | [ "example" ] |
+| `quality_expectations` | `array[string]` | `false` | - | [ "example" ] |
+| `retention_window` | `string` | `false` | - | "example" |
+| `sample_queries` | `array[string]` | `false` | - | [ "example" ] |
+| `update_cadence` | `string` | `false` | - | "example" |
 

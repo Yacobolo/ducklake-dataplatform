@@ -2,11 +2,19 @@
 
 # Schema: `UpdatePrincipalRequest`
 
+## Example
+
+```json
+{
+  "is_admin": true
+}
+```
+
 - Type: `object`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `is_admin` | `boolean` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `is_admin` | `boolean` | `false` | - | true |
 

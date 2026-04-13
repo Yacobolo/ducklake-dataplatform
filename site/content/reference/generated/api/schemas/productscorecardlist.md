@@ -2,13 +2,39 @@
 
 # Schema: `ProductScorecardList`
 
+## Example
+
+```json
+{
+  "data": [
+    {
+      "certification_state": "example",
+      "completeness_percent": 1,
+      "domain_name": "example",
+      "has_contract": true,
+      "has_docs_or_access_path": true,
+      "has_owner": true,
+      "has_primary_output": true,
+      "has_slo": true,
+      "has_warnings": true,
+      "product_id": "example",
+      "product_name": "example",
+      "product_slug": "example",
+      "publication_state": "example",
+      "team_name": "example"
+    }
+  ],
+  "next_page_token": "example"
+}
+```
+
 - Type: `object`
 - Required fields: `data`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `data` | `array[ProductScorecard]` | `true` | - |
-| `next_page_token` | `string` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `data` | `array[ProductScorecard]` | `true` | - | [ { "certification_state": "example", "completeness_percent": 1, "domain_name": "example", "has_contract": true, "has_docs_or_access_path": true, "has_owner": true, "has_primary_output": true, "has_slo": true, "has_warnings": true, "product_id": "example", "product_name": "example", "product_slug": "example", "publication_state": "example", "team_name": "example" } ] |
+| `next_page_token` | `string` | `false` | - | "example" |
 

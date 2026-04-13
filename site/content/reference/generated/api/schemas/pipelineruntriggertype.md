@@ -2,5 +2,11 @@
 
 # Schema: `PipelineRunTriggerType`
 
+## Example
+
+```json
+"MANUAL"
+```
+
 - Type: `string`
 

@@ -2,21 +2,39 @@
 
 # Schema: `CatalogHistoryEntry`
 
+## Example
+
+```json
+{
+  "begin_snapshot_id": 1,
+  "column_name": "example",
+  "end_snapshot_id": 1,
+  "entity_type": "example",
+  "has_history": true,
+  "is_active": true,
+  "latest_snapshot_id": 1,
+  "object_id": "example",
+  "object_name": "example",
+  "schema_name": "example",
+  "table_name": "example"
+}
+```
+
 - Type: `object`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `begin_snapshot_id` | `integer` | `false` | - |
-| `column_name` | `string` | `false` | - |
-| `end_snapshot_id` | `integer` | `false` | - |
-| `entity_type` | `string` | `false` | - |
-| `has_history` | `boolean` | `false` | - |
-| `is_active` | `boolean` | `false` | - |
-| `latest_snapshot_id` | `integer` | `false` | - |
-| `object_id` | `string` | `false` | - |
-| `object_name` | `string` | `false` | - |
-| `schema_name` | `string` | `false` | - |
-| `table_name` | `string` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `begin_snapshot_id` | `integer` | `false` | - | 1 |
+| `column_name` | `string` | `false` | - | "example" |
+| `end_snapshot_id` | `integer` | `false` | - | 1 |
+| `entity_type` | `string` | `false` | - | "example" |
+| `has_history` | `boolean` | `false` | - | true |
+| `is_active` | `boolean` | `false` | - | true |
+| `latest_snapshot_id` | `integer` | `false` | - | 1 |
+| `object_id` | `string` | `false` | - | "example" |
+| `object_name` | `string` | `false` | - | "example" |
+| `schema_name` | `string` | `false` | - | "example" |
+| `table_name` | `string` | `false` | - | "example" |
 

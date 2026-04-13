@@ -2,13 +2,39 @@
 
 # Schema: `PaginatedDashboards`
 
+## Example
+
+```json
+{
+  "data": [
+    {
+      "compute": {
+        "endpoint_name": "example",
+        "fallback_local": true,
+        "mode": "example"
+      },
+      "created_at": "2026-01-02T15:04:05Z",
+      "description": "example",
+      "folder_id": "example",
+      "id": "example",
+      "name": "example",
+      "owner": "example",
+      "semantic_model_name": "example",
+      "semantic_project_name": "example",
+      "updated_at": "2026-01-02T15:04:05Z"
+    }
+  ],
+  "next_page_token": "example"
+}
+```
+
 - Type: `object`
 - Required fields: `data`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `data` | `array[Dashboard]` | `true` | - |
-| `next_page_token` | `string` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `data` | `array[Dashboard]` | `true` | - | [ { "compute": { "endpoint_name": "example", "fallback_local": true, "mode": "example" }, "created_at": "2026-01-02T15:04:05Z", "description": "example", "folder_id": "example", "id": "example", "name": "example", "owner": "example", "semantic_model_name": "example", "semantic_project_name": "example", "updated_at": "2026-01-02T15:04:05Z" } ] |
+| `next_page_token` | `string` | `false` | - | "example" |
 

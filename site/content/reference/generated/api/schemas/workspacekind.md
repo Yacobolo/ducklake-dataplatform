@@ -2,5 +2,11 @@
 
 # Schema: `WorkspaceKind`
 
+## Example
+
+```json
+"personal"
+```
+
 - Type: `string`
 

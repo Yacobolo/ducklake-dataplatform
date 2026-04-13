@@ -2,13 +2,30 @@
 
 # Schema: `PaginatedColumnMaskBindings`
 
+## Example
+
+```json
+{
+  "data": [
+    {
+      "column_mask_id": "example",
+      "id": "example",
+      "principal_id": "example",
+      "principal_type": "user",
+      "see_original": true
+    }
+  ],
+  "next_page_token": "example"
+}
+```
+
 - Type: `object`
 - Required fields: `data`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `data` | `array[ColumnMaskBinding]` | `true` | - |
-| `next_page_token` | `string` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `data` | `array[ColumnMaskBinding]` | `true` | - | [ { "column_mask_id": "example", "id": "example", "principal_id": "example", "principal_type": "user", "see_original": true } ] |
+| `next_page_token` | `string` | `false` | - | "example" |
 

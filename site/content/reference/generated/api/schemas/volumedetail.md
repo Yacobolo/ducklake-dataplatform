@@ -2,21 +2,38 @@
 
 # Schema: `VolumeDetail`
 
+## Example
+
+```json
+{
+  "catalog_name": "example",
+  "comment": "example",
+  "created_at": "2026-01-02T15:04:05Z",
+  "id": "example",
+  "name": "example",
+  "owner": "example",
+  "schema_name": "example",
+  "storage_location": "example",
+  "updated_at": "2026-01-02T15:04:05Z",
+  "volume_type": "example"
+}
+```
+
 - Type: `object`
 - Required fields: `catalog_name`, `id`, `name`, `schema_name`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `catalog_name` | `string` | `true` | - |
-| `comment` | `string` | `false` | - |
-| `created_at` | `string` | `false` | - |
-| `id` | `string` | `true` | - |
-| `name` | `string` | `true` | - |
-| `owner` | `string` | `false` | - |
-| `schema_name` | `string` | `true` | - |
-| `storage_location` | `string` | `false` | - |
-| `updated_at` | `string` | `false` | - |
-| `volume_type` | `string` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `catalog_name` | `string` | `true` | - | "example" |
+| `comment` | `string` | `false` | - | "example" |
+| `created_at` | `string` | `false` | - | "2026-01-02T15:04:05Z" |
+| `id` | `string` | `true` | - | "example" |
+| `name` | `string` | `true` | - | "example" |
+| `owner` | `string` | `false` | - | "example" |
+| `schema_name` | `string` | `true` | - | "example" |
+| `storage_location` | `string` | `false` | - | "example" |
+| `updated_at` | `string` | `false` | - | "2026-01-02T15:04:05Z" |
+| `volume_type` | `string` | `false` | - | "example" |
 

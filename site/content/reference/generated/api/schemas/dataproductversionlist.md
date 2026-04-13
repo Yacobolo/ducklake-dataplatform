@@ -2,12 +2,61 @@
 
 # Schema: `DataProductVersionList`
 
+## Example
+
+```json
+{
+  "data": [
+    {
+      "access_request_path": "example",
+      "compatibility_level": "example",
+      "contract": {
+        "breaking_change_policy": "example",
+        "data_grain": "example",
+        "dimensions": [
+          "example"
+        ],
+        "join_keys": [
+          "example"
+        ],
+        "measures": [
+          "example"
+        ],
+        "primary_keys": [
+          "example"
+        ],
+        "quality_expectations": [
+          "example"
+        ],
+        "retention_window": "example",
+        "sample_queries": [
+          "example"
+        ],
+        "update_cadence": "example"
+      },
+      "created_at": "2026-01-02T15:04:05Z",
+      "created_by": "example",
+      "docs_url": "example",
+      "id": "example",
+      "producing_build_id": "example",
+      "product_id": "example",
+      "release_state": "example",
+      "slo": {
+        "freshness_slo": "example",
+        "latency_slo": "example"
+      },
+      "version": 1
+    }
+  ]
+}
+```
+
 - Type: `object`
 - Required fields: `data`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `data` | `array[DataProductVersion]` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `data` | `array[DataProductVersion]` | `true` | - | [ { "access_request_path": "example", "compatibility_level": "example", "contract": { "breaking_change_policy": "example", "data_grain": "example", "dimensions": [ "example" ], "join_keys": [ "example" ], "measures": [ "example" ], "primary_keys": [ "example" ], "quality_expectations": [ "example" ], "retention_window": "example", "sample_queries": [ "example" ], "update_cadence": "example" }, "created_at": "2026-01-02T15:04:05Z", "created_by": "example", "docs_url": "example", "id": "example", "producing_build_id": "example", "product_id": "example", "release_state": "example", "slo": { "freshness_slo": "example", "latency_slo": "example" }, "version": 1 } ] |
 

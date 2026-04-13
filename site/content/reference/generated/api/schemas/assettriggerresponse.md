@@ -2,12 +2,21 @@
 
 # Schema: `AssetTriggerResponse`
 
+## Example
+
+```json
+{
+  "event_id": "example",
+  "status": "example"
+}
+```
+
 - Type: `object`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `event_id` | `string` | `false` | - |
-| `status` | `string` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `event_id` | `string` | `false` | - | "example" |
+| `status` | `string` | `false` | - | "example" |
 

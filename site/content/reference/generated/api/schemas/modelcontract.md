@@ -2,12 +2,27 @@
 
 # Schema: `ModelContract`
 
+## Example
+
+```json
+{
+  "columns": [
+    {
+      "name": "example",
+      "nullable": true,
+      "type": "example"
+    }
+  ],
+  "enforce": true
+}
+```
+
 - Type: `object`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `columns` | `array[ModelContractColumn]` | `false` | - |
-| `enforce` | `boolean` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `columns` | `array[ModelContractColumn]` | `false` | - | [ { "name": "example", "nullable": true, "type": "example" } ] |
+| `enforce` | `boolean` | `false` | - | true |
 

@@ -2,18 +2,32 @@
 
 # Schema: `ProductOutput`
 
+## Example
+
+```json
+{
+  "asset_id": "example",
+  "asset_key": "example",
+  "asset_type": "example",
+  "created_at": "2026-01-02T15:04:05Z",
+  "id": "example",
+  "is_primary": true,
+  "product_version_id": "example"
+}
+```
+
 - Type: `object`
 - Required fields: `asset_id`, `asset_key`, `asset_type`, `id`, `is_primary`, `product_version_id`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `asset_id` | `string` | `true` | - |
-| `asset_key` | `string` | `true` | - |
-| `asset_type` | `string` | `true` | - |
-| `created_at` | `string` | `false` | - |
-| `id` | `string` | `true` | - |
-| `is_primary` | `boolean` | `true` | - |
-| `product_version_id` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `asset_id` | `string` | `true` | - | "example" |
+| `asset_key` | `string` | `true` | - | "example" |
+| `asset_type` | `string` | `true` | - | "example" |
+| `created_at` | `string` | `false` | - | "2026-01-02T15:04:05Z" |
+| `id` | `string` | `true` | - | "example" |
+| `is_primary` | `boolean` | `true` | - | true |
+| `product_version_id` | `string` | `true` | - | "example" |
 

@@ -2,19 +2,34 @@
 
 # Schema: `CreateWorkspaceRequest`
 
+## Example
+
+```json
+{
+  "default_environment_id": "example",
+  "default_project_id": "example",
+  "git_repo_id": "example",
+  "git_root_path": "example",
+  "kind": "personal",
+  "name": "example",
+  "owner_principal": "example",
+  "owner_team_id": "example"
+}
+```
+
 - Type: `object`
 - Required fields: `name`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `default_environment_id` | `string` | `false` | - |
-| `default_project_id` | `string` | `false` | - |
-| `git_repo_id` | `string` | `false` | - |
-| `git_root_path` | `string` | `false` | - |
-| `kind` | `WorkspaceKind` | `false` | - |
-| `name` | `string` | `true` | - |
-| `owner_principal` | `string` | `false` | - |
-| `owner_team_id` | `string` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `default_environment_id` | `string` | `false` | - | "example" |
+| `default_project_id` | `string` | `false` | - | "example" |
+| `git_repo_id` | `string` | `false` | - | "example" |
+| `git_root_path` | `string` | `false` | - | "example" |
+| `kind` | `WorkspaceKind` | `false` | - | "personal" |
+| `name` | `string` | `true` | - | "example" |
+| `owner_principal` | `string` | `false` | - | "example" |
+| `owner_team_id` | `string` | `false` | - | "example" |
 

@@ -2,5 +2,11 @@
 
 # Schema: `ModelConfigOnSchemaChange`
 
+## Example
+
+```json
+"ignore"
+```
+
 - Type: `string`
 

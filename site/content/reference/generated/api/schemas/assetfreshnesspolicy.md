@@ -2,12 +2,21 @@
 
 # Schema: `AssetFreshnessPolicy`
 
+## Example
+
+```json
+{
+  "cron_schedule": "example",
+  "max_lag_seconds": 1
+}
+```
+
 - Type: `object`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `cron_schedule` | `string` | `false` | - |
-| `max_lag_seconds` | `integer` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `cron_schedule` | `string` | `false` | - | "example" |
+| `max_lag_seconds` | `integer` | `false` | - | 1 |
 

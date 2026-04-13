@@ -2,17 +2,30 @@
 
 # Schema: `CreateExternalLocationRequest`
 
+## Example
+
+```json
+{
+  "comment": "example",
+  "credential_name": "example",
+  "name": "example",
+  "read_only": true,
+  "storage_type": "S3",
+  "url": "example"
+}
+```
+
 - Type: `object`
 - Required fields: `name`, `url`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `comment` | `string` | `false` | - |
-| `credential_name` | `string` | `false` | - |
-| `name` | `string` | `true` | - |
-| `read_only` | `boolean` | `false` | - |
-| `storage_type` | `StorageType` | `false` | - |
-| `url` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `comment` | `string` | `false` | - | "example" |
+| `credential_name` | `string` | `false` | - | "example" |
+| `name` | `string` | `true` | - | "example" |
+| `read_only` | `boolean` | `false` | - | true |
+| `storage_type` | `StorageType` | `false` | - | "S3" |
+| `url` | `string` | `true` | - | "example" |
 

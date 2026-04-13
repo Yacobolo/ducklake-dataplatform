@@ -2,16 +2,28 @@
 
 # Schema: `CreateColumnMaskRequest`
 
+## Example
+
+```json
+{
+  "column_name": "example",
+  "description": "example",
+  "mask_expression": "example",
+  "name": "example",
+  "table_id": "example"
+}
+```
+
 - Type: `object`
 - Required fields: `column_name`, `mask_expression`, `name`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `column_name` | `string` | `true` | - |
-| `description` | `string` | `false` | - |
-| `mask_expression` | `string` | `true` | - |
-| `name` | `string` | `true` | - |
-| `table_id` | `string` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `column_name` | `string` | `true` | - | "example" |
+| `description` | `string` | `false` | - | "example" |
+| `mask_expression` | `string` | `true` | - | "example" |
+| `name` | `string` | `true` | - | "example" |
+| `table_id` | `string` | `false` | - | "example" |
 

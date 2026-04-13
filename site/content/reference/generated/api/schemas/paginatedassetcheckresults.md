@@ -2,13 +2,35 @@
 
 # Schema: `PaginatedAssetCheckResults`
 
+## Example
+
+```json
+{
+  "data": [
+    {
+      "check_id": "example",
+      "created_at": "2026-01-02T15:04:05Z",
+      "id": "example",
+      "message": "example",
+      "metrics_json": {
+        "key": "value"
+      },
+      "partition_key": "example",
+      "run_id": "example",
+      "status": "example"
+    }
+  ],
+  "next_page_token": "example"
+}
+```
+
 - Type: `object`
 - Required fields: `data`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `data` | `array[AssetCheckResult]` | `true` | - |
-| `next_page_token` | `string` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `data` | `array[AssetCheckResult]` | `true` | - | [ { "check_id": "example", "created_at": "2026-01-02T15:04:05Z", "id": "example", "message": "example", "metrics_json": { "key": "value" }, "partition_key": "example", "run_id": "example", "status": "example" } ] |
+| `next_page_token` | `string` | `false` | - | "example" |
 

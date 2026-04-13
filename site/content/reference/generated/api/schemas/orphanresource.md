@@ -2,14 +2,24 @@
 
 # Schema: `OrphanResource`
 
+## Example
+
+```json
+{
+  "resource_id": "example",
+  "resource_name": "example",
+  "resource_type": "example"
+}
+```
+
 - Type: `object`
 - Required fields: `resource_id`, `resource_name`, `resource_type`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `resource_id` | `string` | `true` | - |
-| `resource_name` | `string` | `true` | - |
-| `resource_type` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `resource_id` | `string` | `true` | - | "example" |
+| `resource_name` | `string` | `true` | - | "example" |
+| `resource_type` | `string` | `true` | - | "example" |
 

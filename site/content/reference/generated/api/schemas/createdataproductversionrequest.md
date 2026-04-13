@@ -2,19 +2,65 @@
 
 # Schema: `CreateDataProductVersionRequest`
 
+## Example
+
+```json
+{
+  "access_request_path": "example",
+  "compatibility_level": "example",
+  "contract": {
+    "breaking_change_policy": "example",
+    "data_grain": "example",
+    "dimensions": [
+      "example"
+    ],
+    "join_keys": [
+      "example"
+    ],
+    "measures": [
+      "example"
+    ],
+    "primary_keys": [
+      "example"
+    ],
+    "quality_expectations": [
+      "example"
+    ],
+    "retention_window": "example",
+    "sample_queries": [
+      "example"
+    ],
+    "update_cadence": "example"
+  },
+  "created_by": "example",
+  "docs_url": "example",
+  "output_asset_keys": [
+    "example"
+  ],
+  "producing_build_id": "example",
+  "semantic_model_refs": [
+    "example"
+  ],
+  "slo": {
+    "freshness_slo": "example",
+    "latency_slo": "example"
+  }
+}
+```
+
 - Type: `object`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `access_request_path` | `string` | `false` | - |
-| `compatibility_level` | `string` | `false` | - |
-| `contract` | `ProductContract` | `false` | - |
-| `created_by` | `string` | `false` | - |
-| `docs_url` | `string` | `false` | - |
-| `output_asset_keys` | `array[string]` | `false` | - |
-| `producing_build_id` | `string` | `false` | - |
-| `semantic_model_refs` | `array[string]` | `false` | - |
-| `slo` | `ProductSLO` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `access_request_path` | `string` | `false` | - | "example" |
+| `compatibility_level` | `string` | `false` | - | "example" |
+| `contract` | `ProductContract` | `false` | - | { "breaking_change_policy": "example", "data_grain": "example", "dimensions": [ "example" ], "join_keys": [ "example" ], "measures": [ "example" ], "primary_keys": [ "example" ], "quality_expectations": [ "example" ], "retention_window": "example", "sample_queries": [ "example" ], "update_cadence": "example" } |
+| `created_by` | `string` | `false` | - | "example" |
+| `docs_url` | `string` | `false` | - | "example" |
+| `output_asset_keys` | `array[string]` | `false` | - | [ "example" ] |
+| `producing_build_id` | `string` | `false` | - | "example" |
+| `semantic_model_refs` | `array[string]` | `false` | - | [ "example" ] |
+| `slo` | `ProductSLO` | `false` | - | { "freshness_slo": "example", "latency_slo": "example" } |
 

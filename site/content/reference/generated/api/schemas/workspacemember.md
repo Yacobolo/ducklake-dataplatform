@@ -2,16 +2,28 @@
 
 # Schema: `WorkspaceMember`
 
+## Example
+
+```json
+{
+  "created_at": "2026-01-02T15:04:05Z",
+  "principal_name": "example",
+  "role": "viewer",
+  "updated_at": "2026-01-02T15:04:05Z",
+  "workspace_id": "example"
+}
+```
+
 - Type: `object`
 - Required fields: `principal_name`, `role`, `workspace_id`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `created_at` | `string` | `false` | - |
-| `principal_name` | `string` | `true` | - |
-| `role` | `NotebookShareRole` | `true` | - |
-| `updated_at` | `string` | `false` | - |
-| `workspace_id` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `created_at` | `string` | `false` | - | "2026-01-02T15:04:05Z" |
+| `principal_name` | `string` | `true` | - | "example" |
+| `role` | `NotebookShareRole` | `true` | - | "viewer" |
+| `updated_at` | `string` | `false` | - | "2026-01-02T15:04:05Z" |
+| `workspace_id` | `string` | `true` | - | "example" |
 

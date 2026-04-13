@@ -2,27 +2,53 @@
 
 # Schema: `SemanticMetric`
 
+## Example
+
+```json
+{
+  "certification_state": "DRAFT",
+  "created_at": "2026-01-02T15:04:05Z",
+  "created_by": "example",
+  "default_time_grain": "example",
+  "description": "example",
+  "expression": "example",
+  "expression_mode": "DSL",
+  "filter_sql": "example",
+  "format": "example",
+  "id": "example",
+  "label": "example",
+  "metric_type": "SUM",
+  "name": "example",
+  "owner": "example",
+  "relationship_names": [
+    "example"
+  ],
+  "semantic_model_id": "example",
+  "updated_at": "2026-01-02T15:04:05Z"
+}
+```
+
 - Type: `object`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `certification_state` | `CreateSemanticMetricRequestCertificationState` | `false` | - |
-| `created_at` | `string` | `false` | - |
-| `created_by` | `string` | `false` | - |
-| `default_time_grain` | `string` | `false` | - |
-| `description` | `string` | `false` | - |
-| `expression` | `string` | `false` | - |
-| `expression_mode` | `SemanticMetricExpressionMode` | `false` | - |
-| `filter_sql` | `string` | `false` | - |
-| `format` | `string` | `false` | - |
-| `id` | `string` | `false` | - |
-| `label` | `string` | `false` | - |
-| `metric_type` | `SemanticMetricMetricType` | `false` | - |
-| `name` | `string` | `false` | - |
-| `owner` | `string` | `false` | - |
-| `relationship_names` | `array[string]` | `false` | - |
-| `semantic_model_id` | `string` | `false` | - |
-| `updated_at` | `string` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `certification_state` | `CreateSemanticMetricRequestCertificationState` | `false` | - | "DRAFT" |
+| `created_at` | `string` | `false` | - | "2026-01-02T15:04:05Z" |
+| `created_by` | `string` | `false` | - | "example" |
+| `default_time_grain` | `string` | `false` | - | "example" |
+| `description` | `string` | `false` | - | "example" |
+| `expression` | `string` | `false` | - | "example" |
+| `expression_mode` | `SemanticMetricExpressionMode` | `false` | - | "DSL" |
+| `filter_sql` | `string` | `false` | - | "example" |
+| `format` | `string` | `false` | - | "example" |
+| `id` | `string` | `false` | - | "example" |
+| `label` | `string` | `false` | - | "example" |
+| `metric_type` | `SemanticMetricMetricType` | `false` | - | "SUM" |
+| `name` | `string` | `false` | - | "example" |
+| `owner` | `string` | `false` | - | "example" |
+| `relationship_names` | `array[string]` | `false` | - | [ "example" ] |
+| `semantic_model_id` | `string` | `false` | - | "example" |
+| `updated_at` | `string` | `false` | - | "2026-01-02T15:04:05Z" |
 

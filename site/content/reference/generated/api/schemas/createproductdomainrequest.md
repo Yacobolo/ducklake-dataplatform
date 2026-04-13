@@ -2,13 +2,22 @@
 
 # Schema: `CreateProductDomainRequest`
 
+## Example
+
+```json
+{
+  "description": "example",
+  "name": "example"
+}
+```
+
 - Type: `object`
 - Required fields: `name`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `description` | `string` | `false` | - |
-| `name` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `description` | `string` | `false` | - | "example" |
+| `name` | `string` | `true` | - | "example" |
 

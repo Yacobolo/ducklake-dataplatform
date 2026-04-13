@@ -2,12 +2,37 @@
 
 # Schema: `ModelTestList`
 
+## Example
+
+```json
+{
+  "data": [
+    {
+      "column": "example",
+      "config": {
+        "custom_sql": "example",
+        "to_column": "example",
+        "to_model": "example",
+        "values": [
+          "example"
+        ]
+      },
+      "created_at": "2026-01-02T15:04:05Z",
+      "id": "example",
+      "model_id": "example",
+      "name": "example",
+      "test_type": "not_null"
+    }
+  ]
+}
+```
+
 - Type: `object`
 - Required fields: `data`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `data` | `array[ModelTest]` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `data` | `array[ModelTest]` | `true` | - | [ { "column": "example", "config": { "custom_sql": "example", "to_column": "example", "to_model": "example", "values": [ "example" ] }, "created_at": "2026-01-02T15:04:05Z", "id": "example", "model_id": "example", "name": "example", "test_type": "not_null" } ] |
 

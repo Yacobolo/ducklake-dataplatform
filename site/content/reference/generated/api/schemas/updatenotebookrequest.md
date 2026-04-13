@@ -2,14 +2,25 @@
 
 # Schema: `UpdateNotebookRequest`
 
+## Example
+
+```json
+{
+  "description": "example",
+  "environment_override_id": "example",
+  "name": "example",
+  "project_override_id": "example"
+}
+```
+
 - Type: `object`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `description` | `string` | `false` | - |
-| `environment_override_id` | `string` | `false` | - |
-| `name` | `string` | `false` | - |
-| `project_override_id` | `string` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `description` | `string` | `false` | - | "example" |
+| `environment_override_id` | `string` | `false` | - | "example" |
+| `name` | `string` | `false` | - | "example" |
+| `project_override_id` | `string` | `false` | - | "example" |
 

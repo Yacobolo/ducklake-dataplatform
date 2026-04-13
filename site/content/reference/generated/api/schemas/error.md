@@ -4,14 +4,26 @@
 
 Errors use a shared schema across the API so clients can handle failure responses consistently.
 
+## Example
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
 - Type: `object`
 - Required fields: `code`, `message`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `code` | `integer` | `true` | - |
-| `details` | `object` | `false` | - |
-| `message` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `code` | `integer` | `true` | - | 1 |
+| `details` | `object` | `false` | - | { "key": "example" } |
+| `message` | `string` | `true` | - | "example" |
 

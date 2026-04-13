@@ -2,24 +2,45 @@
 
 # Schema: `BackfillSlice`
 
+## Example
+
+```json
+{
+  "asset_id": "example",
+  "attempt_count": 1,
+  "created_at": "2026-01-02T15:04:05Z",
+  "error_message": "example",
+  "finished_at": "2026-01-02T15:04:05Z",
+  "id": "example",
+  "max_attempts": 1,
+  "partition_from": "example",
+  "partition_key": "example",
+  "partition_to": "example",
+  "request_id": "example",
+  "run_id": "example",
+  "started_at": "2026-01-02T15:04:05Z",
+  "status": "example"
+}
+```
+
 - Type: `object`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `asset_id` | `string` | `false` | - |
-| `attempt_count` | `integer` | `false` | - |
-| `created_at` | `string` | `false` | - |
-| `error_message` | `string` | `false` | - |
-| `finished_at` | `string` | `false` | - |
-| `id` | `string` | `false` | - |
-| `max_attempts` | `integer` | `false` | - |
-| `partition_from` | `string` | `false` | - |
-| `partition_key` | `string` | `false` | - |
-| `partition_to` | `string` | `false` | - |
-| `request_id` | `string` | `false` | - |
-| `run_id` | `string` | `false` | - |
-| `started_at` | `string` | `false` | - |
-| `status` | `string` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `asset_id` | `string` | `false` | - | "example" |
+| `attempt_count` | `integer` | `false` | - | 1 |
+| `created_at` | `string` | `false` | - | "2026-01-02T15:04:05Z" |
+| `error_message` | `string` | `false` | - | "example" |
+| `finished_at` | `string` | `false` | - | "2026-01-02T15:04:05Z" |
+| `id` | `string` | `false` | - | "example" |
+| `max_attempts` | `integer` | `false` | - | 1 |
+| `partition_from` | `string` | `false` | - | "example" |
+| `partition_key` | `string` | `false` | - | "example" |
+| `partition_to` | `string` | `false` | - | "example" |
+| `request_id` | `string` | `false` | - | "example" |
+| `run_id` | `string` | `false` | - | "example" |
+| `started_at` | `string` | `false` | - | "2026-01-02T15:04:05Z" |
+| `status` | `string` | `false` | - | "example" |
 

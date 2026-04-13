@@ -2,16 +2,28 @@
 
 # Schema: `ProductSemanticEntrypoint`
 
+## Example
+
+```json
+{
+  "created_at": "2026-01-02T15:04:05Z",
+  "id": "example",
+  "model_name": "example",
+  "product_version_id": "example",
+  "semantic_model_id": "example"
+}
+```
+
 - Type: `object`
 - Required fields: `id`, `model_name`, `product_version_id`, `semantic_model_id`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `created_at` | `string` | `false` | - |
-| `id` | `string` | `true` | - |
-| `model_name` | `string` | `true` | - |
-| `product_version_id` | `string` | `true` | - |
-| `semantic_model_id` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `created_at` | `string` | `false` | - | "2026-01-02T15:04:05Z" |
+| `id` | `string` | `true` | - | "example" |
+| `model_name` | `string` | `true` | - | "example" |
+| `product_version_id` | `string` | `true` | - | "example" |
+| `semantic_model_id` | `string` | `true` | - | "example" |
 

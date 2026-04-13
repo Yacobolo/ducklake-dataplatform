@@ -2,12 +2,21 @@
 
 # Schema: `ProductSLO`
 
+## Example
+
+```json
+{
+  "freshness_slo": "example",
+  "latency_slo": "example"
+}
+```
+
 - Type: `object`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `freshness_slo` | `string` | `false` | - |
-| `latency_slo` | `string` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `freshness_slo` | `string` | `false` | - | "example" |
+| `latency_slo` | `string` | `false` | - | "example" |
 

@@ -2,5 +2,11 @@
 
 # Schema: `ComputeEndpointType`
 
+## Example
+
+```json
+"LOCAL"
+```
+
 - Type: `string`
 

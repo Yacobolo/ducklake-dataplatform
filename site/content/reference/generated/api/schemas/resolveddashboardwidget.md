@@ -2,16 +2,111 @@
 
 # Schema: `ResolvedDashboardWidget`
 
+## Example
+
+```json
+{
+  "columns": [
+    "example"
+  ],
+  "generated_sql": "example",
+  "row_count": 1,
+  "rows": [
+    [
+      "example"
+    ]
+  ],
+  "widget": {
+    "created_at": "2026-01-02T15:04:05Z",
+    "dashboard_id": "example",
+    "description": "example",
+    "id": "example",
+    "key": "example",
+    "layout": {
+      "h": 1,
+      "w": 1,
+      "x": 1,
+      "y": 1
+    },
+    "name": "example",
+    "page_name": "example",
+    "source": {
+      "kind": "sql_query",
+      "notebook_cell": {
+        "cell_id": "example",
+        "notebook_id": "example"
+      },
+      "semantic_query": {
+        "dimensions": [
+          "example"
+        ],
+        "filters": [
+          "example"
+        ],
+        "limit": 1,
+        "metrics": [
+          "example"
+        ],
+        "order_by": [
+          "example"
+        ],
+        "relationship_names": [
+          "example"
+        ],
+        "semantic_model_id": "example",
+        "time_grain": "example"
+      },
+      "sql_query": {
+        "catalog": "example",
+        "schema": "example",
+        "sql": "example"
+      }
+    },
+    "updated_at": "2026-01-02T15:04:05Z",
+    "visual_spec": {
+      "chart_type": "bar",
+      "color_palette": "example",
+      "encodings": {
+        "label": {
+          "field": "example"
+        },
+        "secondary": {
+          "field": "example"
+        },
+        "series": {
+          "field": "example"
+        },
+        "value": {
+          "field": "example"
+        },
+        "x": {
+          "field": "example"
+        },
+        "y": {
+          "field": "example"
+        }
+      },
+      "kind": "table",
+      "legend": true,
+      "legend_position": "top",
+      "stacked": true,
+      "subtitle": "example",
+      "title": "example"
+    }
+  }
+}
+```
+
 - Type: `object`
 - Required fields: `columns`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `columns` | `array[string]` | `true` | - |
-| `generated_sql` | `string` | `false` | - |
-| `row_count` | `integer` | `false` | - |
-| `rows` | `array[array[object]]` | `false` | - |
-| `widget` | `DashboardWidget` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `columns` | `array[string]` | `true` | - | [ "example" ] |
+| `generated_sql` | `string` | `false` | - | "example" |
+| `row_count` | `integer` | `false` | - | 1 |
+| `rows` | `array[array[object]]` | `false` | - | [ [ "example" ] ] |
+| `widget` | `DashboardWidget` | `false` | - | { "created_at": "2026-01-02T15:04:05Z", "dashboard_id": "example", "description": "example", "id": "example", "key": "example", "layout": { "h": 1, "w": 1, "x": 1, "y": 1 }, "name": "example", "page_name": "example", "source": { "kind": "sql_query", "notebook_cell": { "cell_id": "example", "notebook_id": "example" }, "semantic_query": { "dimensions": [ "example" ], "filters": [ "example" ], "limit": 1, "metrics": [ "example" ], "order_by": [ "example" ], "relationship_names": [ "example" ], "semantic_model_id": "example", "time_grain": "example" }, "sql_query": { "catalog": "example", "schema": "example", "sql": "example" } }, "updated_at": "2026-01-02T15:04:05Z", "visual_spec": { "chart_type": "bar", "color_palette": "example", "encodings": { "label": { "field": "example" }, "secondary": { "field": "example" }, "series": { "field": "example" }, "value": { "field": "example" }, "x": { "field": "example" }, "y": { "field": "example" } }, "kind": "table", "legend": true, "legend_position": "top", "stacked": true, "subtitle": "example", "title": "example" } } |
 

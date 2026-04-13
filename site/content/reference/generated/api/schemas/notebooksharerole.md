@@ -2,5 +2,11 @@
 
 # Schema: `NotebookShareRole`
 
+## Example
+
+```json
+"viewer"
+```
+
 - Type: `string`
 

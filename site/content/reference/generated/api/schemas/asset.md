@@ -2,24 +2,63 @@
 
 # Schema: `Asset`
 
+## Example
+
+```json
+{
+  "asset_key": "example",
+  "asset_type": "TABLE",
+  "auto_materialize_policy": {
+    "downtime_windows_cron_expr": [
+      "example"
+    ],
+    "min_interval_seconds": 1,
+    "mode": "example",
+    "on_freshness_breach": true,
+    "on_upstream_materialized": true,
+    "require_all_upstreams": true,
+    "respect_downtime_windows": true
+  },
+  "created_at": "2026-01-02T15:04:05Z",
+  "created_by": "example",
+  "description": "example",
+  "freshness_policy": {
+    "cron_schedule": "example",
+    "max_lag_seconds": 1
+  },
+  "id": "example",
+  "io_profile": "example",
+  "is_active": true,
+  "materialization_policy": {
+    "allow_concurrent": true,
+    "mode": "example"
+  },
+  "owner": "example",
+  "tags": [
+    "example"
+  ],
+  "updated_at": "2026-01-02T15:04:05Z"
+}
+```
+
 - Type: `object`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `asset_key` | `string` | `false` | - |
-| `asset_type` | `AssetType` | `false` | - |
-| `auto_materialize_policy` | `AssetAutoMaterializePolicy` | `false` | - |
-| `created_at` | `string` | `false` | - |
-| `created_by` | `string` | `false` | - |
-| `description` | `string` | `false` | - |
-| `freshness_policy` | `AssetFreshnessPolicy` | `false` | - |
-| `id` | `string` | `false` | - |
-| `io_profile` | `string` | `false` | - |
-| `is_active` | `boolean` | `false` | - |
-| `materialization_policy` | `AssetMaterializationPolicy` | `false` | - |
-| `owner` | `string` | `false` | - |
-| `tags` | `array[string]` | `false` | - |
-| `updated_at` | `string` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `asset_key` | `string` | `false` | - | "example" |
+| `asset_type` | `AssetType` | `false` | - | "TABLE" |
+| `auto_materialize_policy` | `AssetAutoMaterializePolicy` | `false` | - | { "downtime_windows_cron_expr": [ "example" ], "min_interval_seconds": 1, "mode": "example", "on_freshness_breach": true, "on_upstream_materialized": true, "require_all_upstreams": true, "respect_downtime_windows": true } |
+| `created_at` | `string` | `false` | - | "2026-01-02T15:04:05Z" |
+| `created_by` | `string` | `false` | - | "example" |
+| `description` | `string` | `false` | - | "example" |
+| `freshness_policy` | `AssetFreshnessPolicy` | `false` | - | { "cron_schedule": "example", "max_lag_seconds": 1 } |
+| `id` | `string` | `false` | - | "example" |
+| `io_profile` | `string` | `false` | - | "example" |
+| `is_active` | `boolean` | `false` | - | true |
+| `materialization_policy` | `AssetMaterializationPolicy` | `false` | - | { "allow_concurrent": true, "mode": "example" } |
+| `owner` | `string` | `false` | - | "example" |
+| `tags` | `array[string]` | `false` | - | [ "example" ] |
+| `updated_at` | `string` | `false` | - | "2026-01-02T15:04:05Z" |
 

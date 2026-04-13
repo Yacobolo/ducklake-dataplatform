@@ -12,10 +12,10 @@ List assets
 
 ### Query Parameters
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `max_results` | `integer` | `false` | - |
-| `page_token` | `string` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `max_results` | `integer` | `false` | - | 1 |
+| `page_token` | `string` | `false` | - | "example" |
 
 ### Responses
 
@@ -26,6 +26,108 @@ List assets
 | `401` | Access is unauthorized. |
 | `429` | Client error |
 | `500` | Server error |
+
+#### `200` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "data": [
+    {
+      "asset_key": "example",
+      "asset_type": "TABLE",
+      "auto_materialize_policy": {
+        "downtime_windows_cron_expr": [
+          "example"
+        ],
+        "min_interval_seconds": 1,
+        "mode": "example",
+        "on_freshness_breach": true,
+        "on_upstream_materialized": true,
+        "require_all_upstreams": true,
+        "respect_downtime_windows": true
+      },
+      "created_at": "2026-01-02T15:04:05Z",
+      "created_by": "example",
+      "description": "example",
+      "freshness_policy": {
+        "cron_schedule": "example",
+        "max_lag_seconds": 1
+      },
+      "id": "example",
+      "io_profile": "example",
+      "is_active": true,
+      "materialization_policy": {
+        "allow_concurrent": true,
+        "mode": "example"
+      },
+      "owner": "example",
+      "tags": [
+        "example"
+      ],
+      "updated_at": "2026-01-02T15:04:05Z"
+    }
+  ],
+  "next_page_token": "example"
+}
+```
+
+#### `400` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `401` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `429` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `500` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
 
 ## `POST /assets`
 
@@ -40,6 +142,58 @@ Creates a managed asset definition together with its ownership, checks, tags, an
 - Required: `true`
 - Content types: `application/json`
 
+### Request Examples
+
+- Content type: `application/json`
+
+```json
+{
+  "asset_key": "example",
+  "asset_type": "TABLE",
+  "auto_materialize_policy": {
+    "downtime_windows_cron_expr": [
+      "example"
+    ],
+    "min_interval_seconds": 1,
+    "mode": "example",
+    "on_freshness_breach": true,
+    "on_upstream_materialized": true,
+    "require_all_upstreams": true,
+    "respect_downtime_windows": true
+  },
+  "checks": [
+    {
+      "check_type": "example",
+      "config_json": {
+        "key": "value"
+      },
+      "enabled": true,
+      "name": "example",
+      "severity": "ERROR"
+    }
+  ],
+  "description": "example",
+  "freshness_policy": {
+    "cron_schedule": "example",
+    "max_lag_seconds": 1
+  },
+  "io_profile": "example",
+  "is_active": true,
+  "materialization_policy": {
+    "allow_concurrent": true,
+    "mode": "example"
+  },
+  "owner": "example",
+  "product_slug": "example",
+  "tags": [
+    "example"
+  ],
+  "upstream_asset_keys": [
+    "example"
+  ]
+}
+```
+
 ### Responses
 
 | Code | Description |
@@ -52,6 +206,131 @@ Creates a managed asset definition together with its ownership, checks, tags, an
 | `429` | Client error |
 | `500` | Server error |
 
+#### `201` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "asset_key": "example",
+  "asset_type": "TABLE",
+  "auto_materialize_policy": {
+    "downtime_windows_cron_expr": [
+      "example"
+    ],
+    "min_interval_seconds": 1,
+    "mode": "example",
+    "on_freshness_breach": true,
+    "on_upstream_materialized": true,
+    "require_all_upstreams": true,
+    "respect_downtime_windows": true
+  },
+  "created_at": "2026-01-02T15:04:05Z",
+  "created_by": "example",
+  "description": "example",
+  "freshness_policy": {
+    "cron_schedule": "example",
+    "max_lag_seconds": 1
+  },
+  "id": "example",
+  "io_profile": "example",
+  "is_active": true,
+  "materialization_policy": {
+    "allow_concurrent": true,
+    "mode": "example"
+  },
+  "owner": "example",
+  "tags": [
+    "example"
+  ],
+  "updated_at": "2026-01-02T15:04:05Z"
+}
+```
+
+#### `400` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `401` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `403` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `409` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `429` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `500` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
 ## `GET /assets/{asset_key}`
 
 Get asset
@@ -60,9 +339,9 @@ Get asset
 
 ### Path Parameters
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `asset_key` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `asset_key` | `string` | `true` | - | "example" |
 
 ### Responses
 
@@ -75,6 +354,131 @@ Get asset
 | `404` | The server cannot find the requested resource. |
 | `429` | Client error |
 | `500` | Server error |
+
+#### `200` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "asset_key": "example",
+  "asset_type": "TABLE",
+  "auto_materialize_policy": {
+    "downtime_windows_cron_expr": [
+      "example"
+    ],
+    "min_interval_seconds": 1,
+    "mode": "example",
+    "on_freshness_breach": true,
+    "on_upstream_materialized": true,
+    "require_all_upstreams": true,
+    "respect_downtime_windows": true
+  },
+  "created_at": "2026-01-02T15:04:05Z",
+  "created_by": "example",
+  "description": "example",
+  "freshness_policy": {
+    "cron_schedule": "example",
+    "max_lag_seconds": 1
+  },
+  "id": "example",
+  "io_profile": "example",
+  "is_active": true,
+  "materialization_policy": {
+    "allow_concurrent": true,
+    "mode": "example"
+  },
+  "owner": "example",
+  "tags": [
+    "example"
+  ],
+  "updated_at": "2026-01-02T15:04:05Z"
+}
+```
+
+#### `400` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `401` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `403` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `404` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `429` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `500` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
 
 ## `PATCH /assets/{asset_key}`
 
@@ -84,14 +488,65 @@ Update asset
 
 ### Path Parameters
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `asset_key` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `asset_key` | `string` | `true` | - | "example" |
 
 ### Request Body
 
 - Required: `true`
 - Content types: `application/json`
+
+### Request Examples
+
+- Content type: `application/json`
+
+```json
+{
+  "asset_type": "TABLE",
+  "auto_materialize_policy": {
+    "downtime_windows_cron_expr": [
+      "example"
+    ],
+    "min_interval_seconds": 1,
+    "mode": "example",
+    "on_freshness_breach": true,
+    "on_upstream_materialized": true,
+    "require_all_upstreams": true,
+    "respect_downtime_windows": true
+  },
+  "checks": [
+    {
+      "check_type": "example",
+      "config_json": {
+        "key": "value"
+      },
+      "enabled": true,
+      "name": "example",
+      "severity": "ERROR"
+    }
+  ],
+  "description": "example",
+  "freshness_policy": {
+    "cron_schedule": "example",
+    "max_lag_seconds": 1
+  },
+  "io_profile": "example",
+  "is_active": true,
+  "materialization_policy": {
+    "allow_concurrent": true,
+    "mode": "example"
+  },
+  "owner": "example",
+  "product_slug": "example",
+  "tags": [
+    "example"
+  ],
+  "upstream_asset_keys": [
+    "example"
+  ]
+}
+```
 
 ### Responses
 
@@ -105,6 +560,131 @@ Update asset
 | `429` | Client error |
 | `500` | Server error |
 
+#### `200` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "asset_key": "example",
+  "asset_type": "TABLE",
+  "auto_materialize_policy": {
+    "downtime_windows_cron_expr": [
+      "example"
+    ],
+    "min_interval_seconds": 1,
+    "mode": "example",
+    "on_freshness_breach": true,
+    "on_upstream_materialized": true,
+    "require_all_upstreams": true,
+    "respect_downtime_windows": true
+  },
+  "created_at": "2026-01-02T15:04:05Z",
+  "created_by": "example",
+  "description": "example",
+  "freshness_policy": {
+    "cron_schedule": "example",
+    "max_lag_seconds": 1
+  },
+  "id": "example",
+  "io_profile": "example",
+  "is_active": true,
+  "materialization_policy": {
+    "allow_concurrent": true,
+    "mode": "example"
+  },
+  "owner": "example",
+  "tags": [
+    "example"
+  ],
+  "updated_at": "2026-01-02T15:04:05Z"
+}
+```
+
+#### `400` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `401` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `403` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `404` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `429` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `500` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
 ## `DELETE /assets/{asset_key}`
 
 Delete asset
@@ -113,9 +693,9 @@ Delete asset
 
 ### Path Parameters
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `asset_key` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `asset_key` | `string` | `true` | - | "example" |
 
 ### Responses
 
@@ -129,6 +709,90 @@ Delete asset
 | `429` | Client error |
 | `500` | Server error |
 
+#### `400` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `401` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `403` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `404` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `429` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `500` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
 ## `GET /assets/{asset_key}/backfills`
 
 List asset backfills
@@ -137,17 +801,17 @@ List asset backfills
 
 ### Path Parameters
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `asset_key` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `asset_key` | `string` | `true` | - | "example" |
 
 ### Query Parameters
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `max_results` | `integer` | `false` | - |
-| `page_token` | `string` | `false` | - |
-| `status` | `AssetRunStatus` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `max_results` | `integer` | `false` | - | 1 |
+| `page_token` | `string` | `false` | - | "example" |
+| `status` | `AssetRunStatus` | `false` | - | "QUEUED" |
 
 ### Responses
 
@@ -161,6 +825,115 @@ List asset backfills
 | `429` | Client error |
 | `500` | Server error |
 
+#### `200` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "data": [
+    {
+      "asset_id": "example",
+      "created_at": "2026-01-02T15:04:05Z",
+      "error_message": "example",
+      "finished_at": "2026-01-02T15:04:05Z",
+      "id": "example",
+      "max_parallelism": 1,
+      "partition_from": "example",
+      "partition_to": "example",
+      "requested_by": "example",
+      "started_at": "2026-01-02T15:04:05Z",
+      "status": "example"
+    }
+  ],
+  "next_page_token": "example"
+}
+```
+
+#### `400` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `401` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `403` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `404` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `429` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `500` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
 ## `POST /assets/{asset_key}/backfills`
 
 Create asset backfill
@@ -169,14 +942,26 @@ Create asset backfill
 
 ### Path Parameters
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `asset_key` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `asset_key` | `string` | `true` | - | "example" |
 
 ### Request Body
 
 - Required: `true`
 - Content types: `application/json`
+
+### Request Examples
+
+- Content type: `application/json`
+
+```json
+{
+  "max_parallelism": 1,
+  "partition_from": "example",
+  "partition_to": "example"
+}
+```
 
 ### Responses
 
@@ -190,6 +975,130 @@ Create asset backfill
 | `429` | Client error |
 | `500` | Server error |
 
+#### `201` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "request": {
+    "asset_id": "example",
+    "created_at": "2026-01-02T15:04:05Z",
+    "error_message": "example",
+    "finished_at": "2026-01-02T15:04:05Z",
+    "id": "example",
+    "max_parallelism": 1,
+    "partition_from": "example",
+    "partition_to": "example",
+    "requested_by": "example",
+    "started_at": "2026-01-02T15:04:05Z",
+    "status": "example"
+  },
+  "slices": [
+    {
+      "asset_id": "example",
+      "attempt_count": 1,
+      "created_at": "2026-01-02T15:04:05Z",
+      "error_message": "example",
+      "finished_at": "2026-01-02T15:04:05Z",
+      "id": "example",
+      "max_attempts": 1,
+      "partition_from": "example",
+      "partition_key": "example",
+      "partition_to": "example",
+      "request_id": "example",
+      "run_id": "example",
+      "started_at": "2026-01-02T15:04:05Z",
+      "status": "example"
+    }
+  ]
+}
+```
+
+#### `400` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `401` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `403` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `404` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `429` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `500` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
 ## `GET /assets/{asset_key}/backfills/{backfill_id}`
 
 Get asset backfill
@@ -198,10 +1107,10 @@ Get asset backfill
 
 ### Path Parameters
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `asset_key` | `string` | `true` | - |
-| `backfill_id` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `asset_key` | `string` | `true` | - | "example" |
+| `backfill_id` | `string` | `true` | - | "example" |
 
 ### Responses
 
@@ -214,6 +1123,130 @@ Get asset backfill
 | `404` | The server cannot find the requested resource. |
 | `429` | Client error |
 | `500` | Server error |
+
+#### `200` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "request": {
+    "asset_id": "example",
+    "created_at": "2026-01-02T15:04:05Z",
+    "error_message": "example",
+    "finished_at": "2026-01-02T15:04:05Z",
+    "id": "example",
+    "max_parallelism": 1,
+    "partition_from": "example",
+    "partition_to": "example",
+    "requested_by": "example",
+    "started_at": "2026-01-02T15:04:05Z",
+    "status": "example"
+  },
+  "slices": [
+    {
+      "asset_id": "example",
+      "attempt_count": 1,
+      "created_at": "2026-01-02T15:04:05Z",
+      "error_message": "example",
+      "finished_at": "2026-01-02T15:04:05Z",
+      "id": "example",
+      "max_attempts": 1,
+      "partition_from": "example",
+      "partition_key": "example",
+      "partition_to": "example",
+      "request_id": "example",
+      "run_id": "example",
+      "started_at": "2026-01-02T15:04:05Z",
+      "status": "example"
+    }
+  ]
+}
+```
+
+#### `400` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `401` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `403` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `404` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `429` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `500` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
 
 ## `GET /assets/{asset_key}/checks`
 
@@ -223,9 +1256,9 @@ List asset checks
 
 ### Path Parameters
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `asset_key` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `asset_key` | `string` | `true` | - | "example" |
 
 ### Responses
 
@@ -238,6 +1271,111 @@ List asset checks
 | `404` | The server cannot find the requested resource. |
 | `429` | Client error |
 | `500` | Server error |
+
+#### `200` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "data": [
+    {
+      "asset_id": "example",
+      "check_type": "example",
+      "created_at": "2026-01-02T15:04:05Z",
+      "enabled": true,
+      "id": "example",
+      "name": "example",
+      "severity": "ERROR",
+      "updated_at": "2026-01-02T15:04:05Z"
+    }
+  ]
+}
+```
+
+#### `400` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `401` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `403` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `404` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `429` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `500` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
 
 ## `GET /assets/{asset_key}/checks/results`
 
@@ -247,16 +1385,16 @@ List asset check results
 
 ### Path Parameters
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `asset_key` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `asset_key` | `string` | `true` | - | "example" |
 
 ### Query Parameters
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `max_results` | `integer` | `false` | - |
-| `page_token` | `string` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `max_results` | `integer` | `false` | - | 1 |
+| `page_token` | `string` | `false` | - | "example" |
 
 ### Responses
 
@@ -269,6 +1407,114 @@ List asset check results
 | `404` | The server cannot find the requested resource. |
 | `429` | Client error |
 | `500` | Server error |
+
+#### `200` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "data": [
+    {
+      "check_id": "example",
+      "created_at": "2026-01-02T15:04:05Z",
+      "id": "example",
+      "message": "example",
+      "metrics_json": {
+        "key": "value"
+      },
+      "partition_key": "example",
+      "run_id": "example",
+      "status": "example"
+    }
+  ],
+  "next_page_token": "example"
+}
+```
+
+#### `400` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `401` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `403` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `404` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `429` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `500` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
 
 ## `GET /assets/{asset_key}/freshness`
 
@@ -278,9 +1524,9 @@ Get asset freshness
 
 ### Path Parameters
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `asset_key` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `asset_key` | `string` | `true` | - | "example" |
 
 ### Responses
 
@@ -294,6 +1540,110 @@ Get asset freshness
 | `429` | Client error |
 | `500` | Server error |
 
+#### `200` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "asset_id": "example",
+  "asset_key": "example",
+  "asset_type": "TABLE",
+  "basis": [
+    "example"
+  ],
+  "effective_max_lag_seconds": 1,
+  "freshness_status": "example",
+  "last_materialized_at": "2026-01-02T15:04:05Z",
+  "reason": "example",
+  "stale_since": "2026-01-02T15:04:05Z"
+}
+```
+
+#### `400` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `401` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `403` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `404` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `429` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `500` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
 ## `POST /assets/{asset_key}/freshness-reconciliations`
 
 Reconcile asset freshness
@@ -302,9 +1652,9 @@ Reconcile asset freshness
 
 ### Path Parameters
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `asset_key` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `asset_key` | `string` | `true` | - | "example" |
 
 ### Responses
 
@@ -318,6 +1668,121 @@ Reconcile asset freshness
 | `429` | Client error |
 | `500` | Server error |
 
+#### `202` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "asset": {
+    "asset_id": "example",
+    "asset_key": "example",
+    "asset_type": "TABLE",
+    "basis": [
+      "example"
+    ],
+    "effective_max_lag_seconds": 1,
+    "freshness_status": "example",
+    "last_materialized_at": "2026-01-02T15:04:05Z",
+    "reason": "example",
+    "stale_since": "2026-01-02T15:04:05Z"
+  },
+  "targets": [
+    {
+      "asset_id": "example",
+      "asset_key": "example",
+      "asset_type": "TABLE",
+      "event_id": "example",
+      "freshness_status": "example"
+    }
+  ]
+}
+```
+
+#### `400` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `401` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `403` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `404` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `429` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `500` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
 ## `GET /assets/{asset_key}/freshness/blockers`
 
 List asset freshness blockers
@@ -326,9 +1791,9 @@ List asset freshness blockers
 
 ### Path Parameters
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `asset_key` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `asset_key` | `string` | `true` | - | "example" |
 
 ### Responses
 
@@ -341,6 +1806,130 @@ List asset freshness blockers
 | `404` | The server cannot find the requested resource. |
 | `429` | Client error |
 | `500` | Server error |
+
+#### `200` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "asset": {
+    "asset_id": "example",
+    "asset_key": "example",
+    "asset_type": "TABLE",
+    "basis": [
+      "example"
+    ],
+    "effective_max_lag_seconds": 1,
+    "freshness_status": "example",
+    "last_materialized_at": "2026-01-02T15:04:05Z",
+    "reason": "example",
+    "stale_since": "2026-01-02T15:04:05Z"
+  },
+  "blockers": [
+    {
+      "asset": {
+        "asset_id": "example",
+        "asset_key": "example",
+        "asset_type": "TABLE",
+        "basis": [
+          "example"
+        ],
+        "effective_max_lag_seconds": 1,
+        "freshness_status": "example",
+        "last_materialized_at": "2026-01-02T15:04:05Z",
+        "reason": "example",
+        "stale_since": "2026-01-02T15:04:05Z"
+      },
+      "dependency_type": "example"
+    }
+  ]
+}
+```
+
+#### `400` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `401` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `403` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `404` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `429` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `500` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
 
 ## `GET /assets/{asset_key}/freshness/explanation`
 
@@ -350,9 +1939,9 @@ Explain asset freshness
 
 ### Path Parameters
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `asset_key` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `asset_key` | `string` | `true` | - | "example" |
 
 ### Responses
 
@@ -365,6 +1954,134 @@ Explain asset freshness
 | `404` | The server cannot find the requested resource. |
 | `429` | Client error |
 | `500` | Server error |
+
+#### `200` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "asset": {
+    "asset_id": "example",
+    "asset_key": "example",
+    "asset_type": "TABLE",
+    "basis": [
+      "example"
+    ],
+    "effective_max_lag_seconds": 1,
+    "freshness_status": "example",
+    "last_materialized_at": "2026-01-02T15:04:05Z",
+    "reason": "example",
+    "stale_since": "2026-01-02T15:04:05Z"
+  },
+  "edges": [
+    {
+      "dependency_type": "example",
+      "from_asset_key": "example",
+      "to_asset_key": "example"
+    }
+  ],
+  "nodes": [
+    {
+      "asset_id": "example",
+      "asset_key": "example",
+      "asset_type": "TABLE",
+      "basis": [
+        "example"
+      ],
+      "effective_max_lag_seconds": 1,
+      "freshness_status": "example",
+      "last_materialized_at": "2026-01-02T15:04:05Z",
+      "reason": "example",
+      "stale_since": "2026-01-02T15:04:05Z"
+    }
+  ]
+}
+```
+
+#### `400` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `401` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `403` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `404` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `429` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `500` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
 
 ## `GET /assets/{asset_key}/freshness/requirements`
 
@@ -374,9 +2091,9 @@ List asset freshness requirements
 
 ### Path Parameters
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `asset_key` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `asset_key` | `string` | `true` | - | "example" |
 
 ### Responses
 
@@ -389,6 +2106,130 @@ List asset freshness requirements
 | `404` | The server cannot find the requested resource. |
 | `429` | Client error |
 | `500` | Server error |
+
+#### `200` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "asset": {
+    "asset_id": "example",
+    "asset_key": "example",
+    "asset_type": "TABLE",
+    "basis": [
+      "example"
+    ],
+    "effective_max_lag_seconds": 1,
+    "freshness_status": "example",
+    "last_materialized_at": "2026-01-02T15:04:05Z",
+    "reason": "example",
+    "stale_since": "2026-01-02T15:04:05Z"
+  },
+  "requirements": [
+    {
+      "asset": {
+        "asset_id": "example",
+        "asset_key": "example",
+        "asset_type": "TABLE",
+        "basis": [
+          "example"
+        ],
+        "effective_max_lag_seconds": 1,
+        "freshness_status": "example",
+        "last_materialized_at": "2026-01-02T15:04:05Z",
+        "reason": "example",
+        "stale_since": "2026-01-02T15:04:05Z"
+      },
+      "dependency_type": "example"
+    }
+  ]
+}
+```
+
+#### `400` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `401` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `403` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `404` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `429` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `500` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
 
 ## `GET /assets/{asset_key}/graph`
 
@@ -398,9 +2239,9 @@ Get asset graph
 
 ### Path Parameters
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `asset_key` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `asset_key` | `string` | `true` | - | "example" |
 
 ### Responses
 
@@ -413,6 +2254,106 @@ Get asset graph
 | `404` | The server cannot find the requested resource. |
 | `429` | Client error |
 | `500` | Server error |
+
+#### `200` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "asset_key": "example",
+  "downstream_asset_keys": [
+    "example"
+  ],
+  "upstream_asset_keys": [
+    "example"
+  ]
+}
+```
+
+#### `400` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `401` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `403` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `404` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `429` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `500` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
 
 ## `GET /assets/{asset_key}/materializations`
 
@@ -422,16 +2363,16 @@ List asset materializations
 
 ### Path Parameters
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `asset_key` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `asset_key` | `string` | `true` | - | "example" |
 
 ### Query Parameters
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `max_results` | `integer` | `false` | - |
-| `page_token` | `string` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `max_results` | `integer` | `false` | - | 1 |
+| `page_token` | `string` | `false` | - | "example" |
 
 ### Responses
 
@@ -444,6 +2385,112 @@ List asset materializations
 | `404` | The server cannot find the requested resource. |
 | `429` | Client error |
 | `500` | Server error |
+
+#### `200` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "data": [
+    {
+      "asset_id": "example",
+      "created_at": "2026-01-02T15:04:05Z",
+      "id": "example",
+      "materialized_at": "2026-01-02T15:04:05Z",
+      "partition_key": "example",
+      "row_count": 1,
+      "run_id": "example",
+      "schema_hash": "example"
+    }
+  ],
+  "next_page_token": "example"
+}
+```
+
+#### `400` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `401` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `403` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `404` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `429` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `500` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
 
 ## `POST /assets/{asset_key}/materializations`
 
@@ -455,14 +2502,28 @@ Starts a materialization run for the specified asset and returns the queued exec
 
 ### Path Parameters
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `asset_key` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `asset_key` | `string` | `true` | - | "example" |
 
 ### Request Body
 
 - Required: `false`
 - Content types: `application/json`
+
+### Request Examples
+
+- Content type: `application/json`
+
+```json
+{
+  "idempotency_key": "example",
+  "partition_key": "example",
+  "payload": {
+    "key": "value"
+  }
+}
+```
 
 ### Responses
 
@@ -476,6 +2537,101 @@ Starts a materialization run for the specified asset and returns the queued exec
 | `429` | Client error |
 | `500` | Server error |
 
+#### `202` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "event_id": "example",
+  "status": "example"
+}
+```
+
+#### `400` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `401` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `403` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `404` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `429` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `500` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
 ## `GET /assets/{asset_key}/partitions`
 
 List asset partitions
@@ -484,16 +2640,16 @@ List asset partitions
 
 ### Path Parameters
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `asset_key` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `asset_key` | `string` | `true` | - | "example" |
 
 ### Query Parameters
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `max_results` | `integer` | `false` | - |
-| `page_token` | `string` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `max_results` | `integer` | `false` | - | 1 |
+| `page_token` | `string` | `false` | - | "example" |
 
 ### Responses
 
@@ -506,6 +2662,110 @@ List asset partitions
 | `404` | The server cannot find the requested resource. |
 | `429` | Client error |
 | `500` | Server error |
+
+#### `200` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "data": [
+    {
+      "asset_id": "example",
+      "created_at": "2026-01-02T15:04:05Z",
+      "id": "example",
+      "partition_key": "example",
+      "status": "example",
+      "updated_at": "2026-01-02T15:04:05Z"
+    }
+  ],
+  "next_page_token": "example"
+}
+```
+
+#### `400` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `401` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `403` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `404` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `429` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `500` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
 
 ## `GET /assets/{asset_key}/runs`
 
@@ -515,17 +2775,17 @@ List asset runs
 
 ### Path Parameters
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `asset_key` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `asset_key` | `string` | `true` | - | "example" |
 
 ### Query Parameters
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `max_results` | `integer` | `false` | - |
-| `page_token` | `string` | `false` | - |
-| `status` | `AssetRunStatus` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `max_results` | `integer` | `false` | - | 1 |
+| `page_token` | `string` | `false` | - | "example" |
+| `status` | `AssetRunStatus` | `false` | - | "QUEUED" |
 
 ### Responses
 
@@ -538,4 +2798,118 @@ List asset runs
 | `404` | The server cannot find the requested resource. |
 | `429` | Client error |
 | `500` | Server error |
+
+#### `200` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "data": [
+    {
+      "asset_id": "example",
+      "attempt_count": 1,
+      "created_at": "2026-01-02T15:04:05Z",
+      "error_message": "example",
+      "finished_at": "2026-01-02T15:04:05Z",
+      "id": "example",
+      "max_attempts": 1,
+      "partition_from": "example",
+      "partition_key": "example",
+      "partition_to": "example",
+      "run_group_id": "example",
+      "started_at": "2026-01-02T15:04:05Z",
+      "status": "QUEUED",
+      "trigger_type": "MANUAL",
+      "triggered_by": "example",
+      "updated_at": "2026-01-02T15:04:05Z"
+    }
+  ],
+  "next_page_token": "example"
+}
+```
+
+#### `400` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `401` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `403` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `404` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `429` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `500` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
 

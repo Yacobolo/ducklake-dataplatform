@@ -2,5 +2,11 @@
 
 # Schema: `AssetTriggerType`
 
+## Example
+
+```json
+"MANUAL"
+```
+
 - Type: `string`
 

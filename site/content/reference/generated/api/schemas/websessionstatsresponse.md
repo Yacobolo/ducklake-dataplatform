@@ -2,20 +2,36 @@
 
 # Schema: `WebSessionStatsResponse`
 
+## Example
+
+```json
+{
+  "absolute_ttl_seconds": 1,
+  "active_sessions": 1,
+  "created_total": 1,
+  "idle_ttl_seconds": 1,
+  "reaped_total": 1,
+  "resolve_failed_total": 1,
+  "resolved_total": 1,
+  "revoked_all_total": 1,
+  "revoked_total": 1
+}
+```
+
 - Type: `object`
 - Required fields: `absolute_ttl_seconds`, `active_sessions`, `created_total`, `idle_ttl_seconds`, `reaped_total`, `resolve_failed_total`, `resolved_total`, `revoked_all_total`, `revoked_total`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `absolute_ttl_seconds` | `integer` | `true` | - |
-| `active_sessions` | `integer` | `true` | - |
-| `created_total` | `integer` | `true` | - |
-| `idle_ttl_seconds` | `integer` | `true` | - |
-| `reaped_total` | `integer` | `true` | - |
-| `resolve_failed_total` | `integer` | `true` | - |
-| `resolved_total` | `integer` | `true` | - |
-| `revoked_all_total` | `integer` | `true` | - |
-| `revoked_total` | `integer` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `absolute_ttl_seconds` | `integer` | `true` | - | 1 |
+| `active_sessions` | `integer` | `true` | - | 1 |
+| `created_total` | `integer` | `true` | - | 1 |
+| `idle_ttl_seconds` | `integer` | `true` | - | 1 |
+| `reaped_total` | `integer` | `true` | - | 1 |
+| `resolve_failed_total` | `integer` | `true` | - | 1 |
+| `resolved_total` | `integer` | `true` | - | 1 |
+| `revoked_all_total` | `integer` | `true` | - | 1 |
+| `revoked_total` | `integer` | `true` | - | 1 |
 

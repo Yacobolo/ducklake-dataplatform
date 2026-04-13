@@ -2,18 +2,33 @@
 
 # Schema: `NotebookJob`
 
+## Example
+
+```json
+{
+  "created_at": "2026-01-02T15:04:05Z",
+  "error": "example",
+  "id": "example",
+  "notebook_id": "example",
+  "result": "example",
+  "session_id": "example",
+  "state": "pending",
+  "updated_at": "2026-01-02T15:04:05Z"
+}
+```
+
 - Type: `object`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `created_at` | `string` | `false` | - |
-| `error` | `string` | `false` | - |
-| `id` | `string` | `false` | - |
-| `notebook_id` | `string` | `false` | - |
-| `result` | `string` | `false` | - |
-| `session_id` | `string` | `false` | - |
-| `state` | `NotebookJobState` | `false` | - |
-| `updated_at` | `string` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `created_at` | `string` | `false` | - | "2026-01-02T15:04:05Z" |
+| `error` | `string` | `false` | - | "example" |
+| `id` | `string` | `false` | - | "example" |
+| `notebook_id` | `string` | `false` | - | "example" |
+| `result` | `string` | `false` | - | "example" |
+| `session_id` | `string` | `false` | - | "example" |
+| `state` | `NotebookJobState` | `false` | - | "pending" |
+| `updated_at` | `string` | `false` | - | "2026-01-02T15:04:05Z" |
 

@@ -2,17 +2,30 @@
 
 # Schema: `RowFilter`
 
+## Example
+
+```json
+{
+  "created_at": "2026-01-02T15:04:05Z",
+  "description": "example",
+  "filter_sql": "example",
+  "id": "example",
+  "name": "example",
+  "table_id": "example"
+}
+```
+
 - Type: `object`
 - Required fields: `filter_sql`, `id`, `name`, `table_id`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `created_at` | `string` | `false` | - |
-| `description` | `string` | `false` | - |
-| `filter_sql` | `string` | `true` | - |
-| `id` | `string` | `true` | - |
-| `name` | `string` | `true` | - |
-| `table_id` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `created_at` | `string` | `false` | - | "2026-01-02T15:04:05Z" |
+| `description` | `string` | `false` | - | "example" |
+| `filter_sql` | `string` | `true` | - | "example" |
+| `id` | `string` | `true` | - | "example" |
+| `name` | `string` | `true` | - | "example" |
+| `table_id` | `string` | `true` | - | "example" |
 

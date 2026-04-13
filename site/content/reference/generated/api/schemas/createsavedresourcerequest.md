@@ -2,16 +2,28 @@
 
 # Schema: `CreateSavedResourceRequest`
 
+## Example
+
+```json
+{
+  "display_name": "example",
+  "resource_key": "example",
+  "resource_path": "example",
+  "resource_type": "example",
+  "section": "example"
+}
+```
+
 - Type: `object`
 - Required fields: `resource_key`, `resource_type`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `display_name` | `string` | `false` | - |
-| `resource_key` | `string` | `true` | - |
-| `resource_path` | `string` | `false` | - |
-| `resource_type` | `string` | `true` | - |
-| `section` | `string` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `display_name` | `string` | `false` | - | "example" |
+| `resource_key` | `string` | `true` | - | "example" |
+| `resource_path` | `string` | `false` | - | "example" |
+| `resource_type` | `string` | `true` | - | "example" |
+| `section` | `string` | `false` | - | "example" |
 

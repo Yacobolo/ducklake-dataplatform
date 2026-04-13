@@ -2,17 +2,30 @@
 
 # Schema: `CreateFolderRequest`
 
+## Example
+
+```json
+{
+  "default_environment_id": "example",
+  "default_project_id": "example",
+  "git_repo_id": "example",
+  "git_root_path": "example",
+  "name": "example",
+  "parent_folder_id": "example"
+}
+```
+
 - Type: `object`
 - Required fields: `name`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `default_environment_id` | `string` | `false` | - |
-| `default_project_id` | `string` | `false` | - |
-| `git_repo_id` | `string` | `false` | - |
-| `git_root_path` | `string` | `false` | - |
-| `name` | `string` | `true` | - |
-| `parent_folder_id` | `string` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `default_environment_id` | `string` | `false` | - | "example" |
+| `default_project_id` | `string` | `false` | - | "example" |
+| `git_repo_id` | `string` | `false` | - | "example" |
+| `git_root_path` | `string` | `false` | - | "example" |
+| `name` | `string` | `true` | - | "example" |
+| `parent_folder_id` | `string` | `false` | - | "example" |
 

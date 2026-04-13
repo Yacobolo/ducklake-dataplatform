@@ -2,14 +2,25 @@
 
 # Schema: `GitSyncResult`
 
+## Example
+
+```json
+{
+  "commit_sha": "example",
+  "notebooks_created": 1,
+  "notebooks_deleted": 1,
+  "notebooks_updated": 1
+}
+```
+
 - Type: `object`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `commit_sha` | `string` | `false` | - |
-| `notebooks_created` | `integer` | `false` | - |
-| `notebooks_deleted` | `integer` | `false` | - |
-| `notebooks_updated` | `integer` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `commit_sha` | `string` | `false` | - | "example" |
+| `notebooks_created` | `integer` | `false` | - | 1 |
+| `notebooks_deleted` | `integer` | `false` | - | 1 |
+| `notebooks_updated` | `integer` | `false` | - | 1 |
 

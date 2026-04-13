@@ -2,12 +2,21 @@
 
 # Schema: `AssetMaterializationPolicy`
 
+## Example
+
+```json
+{
+  "allow_concurrent": true,
+  "mode": "example"
+}
+```
+
 - Type: `object`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `allow_concurrent` | `boolean` | `false` | - |
-| `mode` | `string` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `allow_concurrent` | `boolean` | `false` | - | true |
+| `mode` | `string` | `false` | - | "example" |
 

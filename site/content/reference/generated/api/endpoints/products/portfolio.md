@@ -20,6 +20,145 @@ Get product portfolio report
 | `429` | Client error |
 | `500` | Server error |
 
+#### `200` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "domain_scorecards": [
+    {
+      "average_completeness_pct": 1,
+      "certified_count": 1,
+      "name": "example",
+      "product_count": 1,
+      "published_count": 1
+    }
+  ],
+  "high_blast_radius": [
+    {
+      "adoption_score": 1,
+      "domain_name": "example",
+      "downstream_product_count": 1,
+      "output_count": 1,
+      "product_id": "example",
+      "product_name": "example",
+      "product_slug": "example",
+      "semantic_entrypoint_count": 1,
+      "subscriber_count": 1,
+      "team_name": "example"
+    }
+  ],
+  "least_adopted": [
+    {
+      "adoption_score": 1,
+      "domain_name": "example",
+      "downstream_product_count": 1,
+      "output_count": 1,
+      "product_id": "example",
+      "product_name": "example",
+      "product_slug": "example",
+      "semantic_entrypoint_count": 1,
+      "subscriber_count": 1,
+      "team_name": "example"
+    }
+  ],
+  "orphan_assets": [
+    {
+      "resource_id": "example",
+      "resource_name": "example",
+      "resource_type": "example"
+    }
+  ],
+  "orphan_semantic_models": [
+    {
+      "resource_id": "example",
+      "resource_name": "example",
+      "resource_type": "example"
+    }
+  ],
+  "team_scorecards": [
+    {
+      "average_completeness_pct": 1,
+      "certified_count": 1,
+      "name": "example",
+      "product_count": 1,
+      "published_count": 1
+    }
+  ],
+  "top_used": [
+    {
+      "adoption_score": 1,
+      "domain_name": "example",
+      "downstream_product_count": 1,
+      "output_count": 1,
+      "product_id": "example",
+      "product_name": "example",
+      "product_slug": "example",
+      "semantic_entrypoint_count": 1,
+      "subscriber_count": 1,
+      "team_name": "example"
+    }
+  ]
+}
+```
+
+#### `400` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `401` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `429` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `500` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
 ## `GET /data-products/scorecards`
 
 List product scorecards
@@ -28,10 +167,10 @@ List product scorecards
 
 ### Query Parameters
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `max_results` | `integer` | `false` | - |
-| `page_token` | `string` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `max_results` | `integer` | `false` | - | 1 |
+| `page_token` | `string` | `false` | - | "example" |
 
 ### Responses
 
@@ -42,4 +181,88 @@ List product scorecards
 | `401` | Access is unauthorized. |
 | `429` | Client error |
 | `500` | Server error |
+
+#### `200` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "data": [
+    {
+      "certification_state": "example",
+      "completeness_percent": 1,
+      "domain_name": "example",
+      "has_contract": true,
+      "has_docs_or_access_path": true,
+      "has_owner": true,
+      "has_primary_output": true,
+      "has_slo": true,
+      "has_warnings": true,
+      "product_id": "example",
+      "product_name": "example",
+      "product_slug": "example",
+      "publication_state": "example",
+      "team_name": "example"
+    }
+  ],
+  "next_page_token": "example"
+}
+```
+
+#### `400` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `401` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `429` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `500` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
 

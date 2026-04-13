@@ -2,15 +2,27 @@
 
 # Schema: `ColumnMaskBinding`
 
+## Example
+
+```json
+{
+  "column_mask_id": "example",
+  "id": "example",
+  "principal_id": "example",
+  "principal_type": "user",
+  "see_original": true
+}
+```
+
 - Type: `object`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `column_mask_id` | `string` | `false` | - |
-| `id` | `string` | `false` | - |
-| `principal_id` | `string` | `false` | - |
-| `principal_type` | `PrincipalType` | `false` | - |
-| `see_original` | `boolean` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `column_mask_id` | `string` | `false` | - | "example" |
+| `id` | `string` | `false` | - | "example" |
+| `principal_id` | `string` | `false` | - | "example" |
+| `principal_type` | `PrincipalType` | `false` | - | "user" |
+| `see_original` | `boolean` | `false` | - | true |
 

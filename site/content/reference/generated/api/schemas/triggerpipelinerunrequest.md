@@ -2,11 +2,21 @@
 
 # Schema: `TriggerPipelineRunRequest`
 
+## Example
+
+```json
+{
+  "parameters": {
+    "key": "example"
+  }
+}
+```
+
 - Type: `object`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `parameters` | `object` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `parameters` | `object` | `false` | - | { "key": "example" } |
 

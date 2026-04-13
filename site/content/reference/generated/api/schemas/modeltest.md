@@ -2,17 +2,38 @@
 
 # Schema: `ModelTest`
 
+## Example
+
+```json
+{
+  "column": "example",
+  "config": {
+    "custom_sql": "example",
+    "to_column": "example",
+    "to_model": "example",
+    "values": [
+      "example"
+    ]
+  },
+  "created_at": "2026-01-02T15:04:05Z",
+  "id": "example",
+  "model_id": "example",
+  "name": "example",
+  "test_type": "not_null"
+}
+```
+
 - Type: `object`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `column` | `string` | `false` | - |
-| `config` | `ModelTestConfig` | `false` | - |
-| `created_at` | `string` | `false` | - |
-| `id` | `string` | `false` | - |
-| `model_id` | `string` | `false` | - |
-| `name` | `string` | `false` | - |
-| `test_type` | `ModelTestTestType` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `column` | `string` | `false` | - | "example" |
+| `config` | `ModelTestConfig` | `false` | - | { "custom_sql": "example", "to_column": "example", "to_model": "example", "values": [ "example" ] } |
+| `created_at` | `string` | `false` | - | "2026-01-02T15:04:05Z" |
+| `id` | `string` | `false` | - | "example" |
+| `model_id` | `string` | `false` | - | "example" |
+| `name` | `string` | `false` | - | "example" |
+| `test_type` | `ModelTestTestType` | `false` | - | "not_null" |
 

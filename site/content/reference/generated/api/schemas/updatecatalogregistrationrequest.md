@@ -2,12 +2,21 @@
 
 # Schema: `UpdateCatalogRegistrationRequest`
 
+## Example
+
+```json
+{
+  "comment": "example",
+  "data_path": "example"
+}
+```
+
 - Type: `object`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `comment` | `string` | `false` | - |
-| `data_path` | `string` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `comment` | `string` | `false` | - | "example" |
+| `data_path` | `string` | `false` | - | "example" |
 

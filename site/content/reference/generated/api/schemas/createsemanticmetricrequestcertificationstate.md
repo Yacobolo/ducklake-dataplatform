@@ -2,5 +2,11 @@
 
 # Schema: `CreateSemanticMetricRequestCertificationState`
 
+## Example
+
+```json
+"DRAFT"
+```
+
 - Type: `string`
 

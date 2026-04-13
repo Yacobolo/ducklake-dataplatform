@@ -2,13 +2,23 @@
 
 # Schema: `DashboardComputePolicy`
 
+## Example
+
+```json
+{
+  "endpoint_name": "example",
+  "fallback_local": true,
+  "mode": "example"
+}
+```
+
 - Type: `object`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `endpoint_name` | `string` | `false` | - |
-| `fallback_local` | `boolean` | `false` | - |
-| `mode` | `string` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `endpoint_name` | `string` | `false` | - | "example" |
+| `fallback_local` | `boolean` | `false` | - | true |
+| `mode` | `string` | `false` | - | "example" |
 

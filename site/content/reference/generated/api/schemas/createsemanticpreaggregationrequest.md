@@ -2,17 +2,34 @@
 
 # Schema: `CreateSemanticPreAggregationRequest`
 
+## Example
+
+```json
+{
+  "dimension_set": [
+    "example"
+  ],
+  "grain": "example",
+  "metric_set": [
+    "example"
+  ],
+  "name": "example",
+  "refresh_policy": "example",
+  "target_relation": "example"
+}
+```
+
 - Type: `object`
 - Required fields: `name`, `target_relation`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `dimension_set` | `array[string]` | `false` | - |
-| `grain` | `string` | `false` | - |
-| `metric_set` | `array[string]` | `false` | - |
-| `name` | `string` | `true` | - |
-| `refresh_policy` | `string` | `false` | - |
-| `target_relation` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `dimension_set` | `array[string]` | `false` | - | [ "example" ] |
+| `grain` | `string` | `false` | - | "example" |
+| `metric_set` | `array[string]` | `false` | - | [ "example" ] |
+| `name` | `string` | `true` | - | "example" |
+| `refresh_policy` | `string` | `false` | - | "example" |
+| `target_relation` | `string` | `true` | - | "example" |
 

@@ -2,13 +2,41 @@
 
 # Schema: `PaginatedBuilds`
 
+## Example
+
+```json
+{
+  "data": [
+    {
+      "commit_sha": "example",
+      "compile_diagnostics": "example",
+      "compile_manifest": "example",
+      "created_at": "2026-01-02T15:04:05Z",
+      "environment_id": "example",
+      "environment_name": "example",
+      "git_ref": "example",
+      "id": "example",
+      "product_id": "example",
+      "project_id": "example",
+      "project_name": "example",
+      "selector": "example",
+      "source_model_run_id": "example",
+      "state": "draft",
+      "target_catalog": "example",
+      "target_schema": "example"
+    }
+  ],
+  "next_page_token": "example"
+}
+```
+
 - Type: `object`
 - Required fields: `data`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `data` | `array[Build]` | `true` | - |
-| `next_page_token` | `string` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `data` | `array[Build]` | `true` | - | [ { "commit_sha": "example", "compile_diagnostics": "example", "compile_manifest": "example", "created_at": "2026-01-02T15:04:05Z", "environment_id": "example", "environment_name": "example", "git_ref": "example", "id": "example", "product_id": "example", "project_id": "example", "project_name": "example", "selector": "example", "source_model_run_id": "example", "state": "draft", "target_catalog": "example", "target_schema": "example" } ] |
+| `next_page_token` | `string` | `false` | - | "example" |
 

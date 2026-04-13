@@ -2,13 +2,36 @@
 
 # Schema: `PaginatedBackfillRequests`
 
+## Example
+
+```json
+{
+  "data": [
+    {
+      "asset_id": "example",
+      "created_at": "2026-01-02T15:04:05Z",
+      "error_message": "example",
+      "finished_at": "2026-01-02T15:04:05Z",
+      "id": "example",
+      "max_parallelism": 1,
+      "partition_from": "example",
+      "partition_to": "example",
+      "requested_by": "example",
+      "started_at": "2026-01-02T15:04:05Z",
+      "status": "example"
+    }
+  ],
+  "next_page_token": "example"
+}
+```
+
 - Type: `object`
 - Required fields: `data`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `data` | `array[BackfillRequest]` | `true` | - |
-| `next_page_token` | `string` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `data` | `array[BackfillRequest]` | `true` | - | [ { "asset_id": "example", "created_at": "2026-01-02T15:04:05Z", "error_message": "example", "finished_at": "2026-01-02T15:04:05Z", "id": "example", "max_parallelism": 1, "partition_from": "example", "partition_to": "example", "requested_by": "example", "started_at": "2026-01-02T15:04:05Z", "status": "example" } ] |
+| `next_page_token` | `string` | `false` | - | "example" |
 

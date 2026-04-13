@@ -2,5 +2,11 @@
 
 # Schema: `ComputeEndpointSize`
 
+## Example
+
+```json
+"SMALL"
+```
+
 - Type: `string`
 

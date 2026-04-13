@@ -2,5 +2,11 @@
 
 # Schema: `AssetRunStatus`
 
+## Example
+
+```json
+"QUEUED"
+```
+
 - Type: `string`
 

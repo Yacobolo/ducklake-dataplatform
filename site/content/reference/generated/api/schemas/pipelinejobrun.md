@@ -2,20 +2,37 @@
 
 # Schema: `PipelineJobRun`
 
+## Example
+
+```json
+{
+  "created_at": "2026-01-02T15:04:05Z",
+  "error_message": "example",
+  "finished_at": "2026-01-02T15:04:05Z",
+  "id": "example",
+  "job_id": "example",
+  "job_name": "example",
+  "retry_attempt": 1,
+  "run_id": "example",
+  "started_at": "2026-01-02T15:04:05Z",
+  "status": "PENDING"
+}
+```
+
 - Type: `object`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `created_at` | `string` | `false` | - |
-| `error_message` | `string` | `false` | - |
-| `finished_at` | `string` | `false` | - |
-| `id` | `string` | `false` | - |
-| `job_id` | `string` | `false` | - |
-| `job_name` | `string` | `false` | - |
-| `retry_attempt` | `integer` | `false` | - |
-| `run_id` | `string` | `false` | - |
-| `started_at` | `string` | `false` | - |
-| `status` | `PipelineJobRunStatus` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `created_at` | `string` | `false` | - | "2026-01-02T15:04:05Z" |
+| `error_message` | `string` | `false` | - | "example" |
+| `finished_at` | `string` | `false` | - | "2026-01-02T15:04:05Z" |
+| `id` | `string` | `false` | - | "example" |
+| `job_id` | `string` | `false` | - | "example" |
+| `job_name` | `string` | `false` | - | "example" |
+| `retry_attempt` | `integer` | `false` | - | 1 |
+| `run_id` | `string` | `false` | - | "example" |
+| `started_at` | `string` | `false` | - | "2026-01-02T15:04:05Z" |
+| `status` | `PipelineJobRunStatus` | `false` | - | "PENDING" |
 

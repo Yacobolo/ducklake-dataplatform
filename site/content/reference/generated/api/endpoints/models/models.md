@@ -12,11 +12,11 @@ List models
 
 ### Query Parameters
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `max_results` | `integer` | `false` | - |
-| `page_token` | `string` | `false` | - |
-| `project_name` | `string` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `max_results` | `integer` | `false` | - | 1 |
+| `page_token` | `string` | `false` | - | "example" |
+| `project_name` | `string` | `false` | - | "example" |
 
 ### Responses
 
@@ -27,6 +27,113 @@ List models
 | `401` | Access is unauthorized. |
 | `429` | Client error |
 | `500` | Server error |
+
+#### `200` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "data": [
+    {
+      "config": {
+        "incremental_strategy": "example",
+        "on_schema_change": "ignore",
+        "unique_key": [
+          "example"
+        ]
+      },
+      "contract": {
+        "columns": [
+          {
+            "name": "example",
+            "nullable": true,
+            "type": "example"
+          }
+        ],
+        "enforce": true
+      },
+      "created_at": "2026-01-02T15:04:05Z",
+      "created_by": "example",
+      "depends_on": [
+        "example"
+      ],
+      "description": "example",
+      "freshness_policy": {
+        "cron_schedule": "example",
+        "max_lag_seconds": 1
+      },
+      "id": "example",
+      "materialization": "VIEW",
+      "name": "example",
+      "owner": "example",
+      "project_name": "example",
+      "sql": "example",
+      "tags": [
+        "example"
+      ],
+      "updated_at": "2026-01-02T15:04:05Z"
+    }
+  ],
+  "next_page_token": "example"
+}
+```
+
+#### `400` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `401` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `429` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `500` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
 
 ## `POST /models`
 
@@ -39,6 +146,44 @@ Create model
 - Required: `true`
 - Content types: `application/json`
 
+### Request Examples
+
+- Content type: `application/json`
+
+```json
+{
+  "config": {
+    "incremental_strategy": "example",
+    "on_schema_change": "ignore",
+    "unique_key": [
+      "example"
+    ]
+  },
+  "contract": {
+    "columns": [
+      {
+        "name": "example",
+        "nullable": true,
+        "type": "example"
+      }
+    ],
+    "enforce": true
+  },
+  "description": "example",
+  "freshness_policy": {
+    "cron_schedule": "example",
+    "max_lag_seconds": 1
+  },
+  "materialization": "VIEW",
+  "name": "example",
+  "project_name": "example",
+  "sql": "example",
+  "tags": [
+    "example"
+  ]
+}
+```
+
 ### Responses
 
 | Code | Description |
@@ -49,6 +194,122 @@ Create model
 | `403` | Access is forbidden. |
 | `429` | Client error |
 | `500` | Server error |
+
+#### `201` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "config": {
+    "incremental_strategy": "example",
+    "on_schema_change": "ignore",
+    "unique_key": [
+      "example"
+    ]
+  },
+  "contract": {
+    "columns": [
+      {
+        "name": "example",
+        "nullable": true,
+        "type": "example"
+      }
+    ],
+    "enforce": true
+  },
+  "created_at": "2026-01-02T15:04:05Z",
+  "created_by": "example",
+  "depends_on": [
+    "example"
+  ],
+  "description": "example",
+  "freshness_policy": {
+    "cron_schedule": "example",
+    "max_lag_seconds": 1
+  },
+  "id": "example",
+  "materialization": "VIEW",
+  "name": "example",
+  "owner": "example",
+  "project_name": "example",
+  "sql": "example",
+  "tags": [
+    "example"
+  ],
+  "updated_at": "2026-01-02T15:04:05Z"
+}
+```
+
+#### `400` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `401` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `403` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `429` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `500` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
 
 ## `GET /models/dag`
 
@@ -58,9 +319,9 @@ Get model DAG
 
 ### Query Parameters
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `project_name` | `string` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `project_name` | `string` | `false` | - | "example" |
 
 ### Responses
 
@@ -72,6 +333,86 @@ Get model DAG
 | `429` | Client error |
 | `500` | Server error |
 
+#### `200` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "tiers": [
+    {
+      "nodes": [
+        {
+          "depends_on": [
+            "example"
+          ],
+          "materialization": "VIEW",
+          "model_name": "example",
+          "project_name": "example"
+        }
+      ],
+      "tier": 1
+    }
+  ]
+}
+```
+
+#### `400` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `401` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `429` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `500` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
 ## `GET /models/{project_name}/{model_name}`
 
 Get model
@@ -80,10 +421,10 @@ Get model
 
 ### Path Parameters
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `model_name` | `string` | `true` | - |
-| `project_name` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `model_name` | `string` | `true` | - | "example" |
+| `project_name` | `string` | `true` | - | "example" |
 
 ### Responses
 
@@ -97,6 +438,136 @@ Get model
 | `429` | Client error |
 | `500` | Server error |
 
+#### `200` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "config": {
+    "incremental_strategy": "example",
+    "on_schema_change": "ignore",
+    "unique_key": [
+      "example"
+    ]
+  },
+  "contract": {
+    "columns": [
+      {
+        "name": "example",
+        "nullable": true,
+        "type": "example"
+      }
+    ],
+    "enforce": true
+  },
+  "created_at": "2026-01-02T15:04:05Z",
+  "created_by": "example",
+  "depends_on": [
+    "example"
+  ],
+  "description": "example",
+  "freshness_policy": {
+    "cron_schedule": "example",
+    "max_lag_seconds": 1
+  },
+  "id": "example",
+  "materialization": "VIEW",
+  "name": "example",
+  "owner": "example",
+  "project_name": "example",
+  "sql": "example",
+  "tags": [
+    "example"
+  ],
+  "updated_at": "2026-01-02T15:04:05Z"
+}
+```
+
+#### `400` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `401` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `403` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `404` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `429` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `500` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
 ## `PATCH /models/{project_name}/{model_name}`
 
 Update model
@@ -105,15 +576,51 @@ Update model
 
 ### Path Parameters
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `model_name` | `string` | `true` | - |
-| `project_name` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `model_name` | `string` | `true` | - | "example" |
+| `project_name` | `string` | `true` | - | "example" |
 
 ### Request Body
 
 - Required: `true`
 - Content types: `application/json`
+
+### Request Examples
+
+- Content type: `application/json`
+
+```json
+{
+  "config": {
+    "incremental_strategy": "example",
+    "on_schema_change": "ignore",
+    "unique_key": [
+      "example"
+    ]
+  },
+  "contract": {
+    "columns": [
+      {
+        "name": "example",
+        "nullable": true,
+        "type": "example"
+      }
+    ],
+    "enforce": true
+  },
+  "description": "example",
+  "freshness_policy": {
+    "cron_schedule": "example",
+    "max_lag_seconds": 1
+  },
+  "materialization": "VIEW",
+  "sql": "example",
+  "tags": [
+    "example"
+  ]
+}
+```
 
 ### Responses
 
@@ -126,6 +633,122 @@ Update model
 | `429` | Client error |
 | `500` | Server error |
 
+#### `200` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "config": {
+    "incremental_strategy": "example",
+    "on_schema_change": "ignore",
+    "unique_key": [
+      "example"
+    ]
+  },
+  "contract": {
+    "columns": [
+      {
+        "name": "example",
+        "nullable": true,
+        "type": "example"
+      }
+    ],
+    "enforce": true
+  },
+  "created_at": "2026-01-02T15:04:05Z",
+  "created_by": "example",
+  "depends_on": [
+    "example"
+  ],
+  "description": "example",
+  "freshness_policy": {
+    "cron_schedule": "example",
+    "max_lag_seconds": 1
+  },
+  "id": "example",
+  "materialization": "VIEW",
+  "name": "example",
+  "owner": "example",
+  "project_name": "example",
+  "sql": "example",
+  "tags": [
+    "example"
+  ],
+  "updated_at": "2026-01-02T15:04:05Z"
+}
+```
+
+#### `400` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `401` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `403` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `429` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `500` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
 ## `DELETE /models/{project_name}/{model_name}`
 
 Delete model
@@ -134,10 +757,10 @@ Delete model
 
 ### Path Parameters
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `model_name` | `string` | `true` | - |
-| `project_name` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `model_name` | `string` | `true` | - | "example" |
+| `project_name` | `string` | `true` | - | "example" |
 
 ### Responses
 
@@ -150,6 +773,76 @@ Delete model
 | `429` | Client error |
 | `500` | Server error |
 
+#### `400` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `401` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `403` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `429` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `500` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
 ## `GET /models/{project_name}/{model_name}/freshness`
 
 Check model freshness
@@ -158,10 +851,10 @@ Check model freshness
 
 ### Path Parameters
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `model_name` | `string` | `true` | - |
-| `project_name` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `model_name` | `string` | `true` | - | "example" |
+| `project_name` | `string` | `true` | - | "example" |
 
 ### Responses
 
@@ -174,6 +867,103 @@ Check model freshness
 | `404` | The server cannot find the requested resource. |
 | `429` | Client error |
 | `500` | Server error |
+
+#### `200` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "is_fresh": true,
+  "last_run_at": "2026-01-02T15:04:05Z",
+  "max_lag_seconds": 1,
+  "stale_since": "2026-01-02T15:04:05Z"
+}
+```
+
+#### `400` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `401` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `403` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `404` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `429` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `500` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
 
 ## `GET /models/{project_name}/{model_name}/tests`
 
@@ -183,10 +973,10 @@ List model tests
 
 ### Path Parameters
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `model_name` | `string` | `true` | - |
-| `project_name` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `model_name` | `string` | `true` | - | "example" |
+| `project_name` | `string` | `true` | - | "example" |
 
 ### Responses
 
@@ -200,6 +990,117 @@ List model tests
 | `429` | Client error |
 | `500` | Server error |
 
+#### `200` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "data": [
+    {
+      "column": "example",
+      "config": {
+        "custom_sql": "example",
+        "to_column": "example",
+        "to_model": "example",
+        "values": [
+          "example"
+        ]
+      },
+      "created_at": "2026-01-02T15:04:05Z",
+      "id": "example",
+      "model_id": "example",
+      "name": "example",
+      "test_type": "not_null"
+    }
+  ]
+}
+```
+
+#### `400` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `401` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `403` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `404` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `429` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `500` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
 ## `POST /models/{project_name}/{model_name}/tests`
 
 Create model test
@@ -208,15 +1109,35 @@ Create model test
 
 ### Path Parameters
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `model_name` | `string` | `true` | - |
-| `project_name` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `model_name` | `string` | `true` | - | "example" |
+| `project_name` | `string` | `true` | - | "example" |
 
 ### Request Body
 
 - Required: `true`
 - Content types: `application/json`
+
+### Request Examples
+
+- Content type: `application/json`
+
+```json
+{
+  "column": "example",
+  "config": {
+    "custom_sql": "example",
+    "to_column": "example",
+    "to_model": "example",
+    "values": [
+      "example"
+    ]
+  },
+  "name": "example",
+  "test_type": "not_null"
+}
+```
 
 ### Responses
 
@@ -229,6 +1150,99 @@ Create model test
 | `429` | Client error |
 | `500` | Server error |
 
+#### `201` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "column": "example",
+  "config": {
+    "custom_sql": "example",
+    "to_column": "example",
+    "to_model": "example",
+    "values": [
+      "example"
+    ]
+  },
+  "created_at": "2026-01-02T15:04:05Z",
+  "id": "example",
+  "model_id": "example",
+  "name": "example",
+  "test_type": "not_null"
+}
+```
+
+#### `400` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `401` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `403` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `429` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `500` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
 ## `DELETE /models/{project_name}/{model_name}/tests/{test_id}`
 
 Delete model test
@@ -237,11 +1251,11 @@ Delete model test
 
 ### Path Parameters
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `model_name` | `string` | `true` | - |
-| `project_name` | `string` | `true` | - |
-| `test_id` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `model_name` | `string` | `true` | - | "example" |
+| `project_name` | `string` | `true` | - | "example" |
+| `test_id` | `string` | `true` | - | "example" |
 
 ### Responses
 
@@ -253,4 +1267,74 @@ Delete model test
 | `403` | Access is forbidden. |
 | `429` | Client error |
 | `500` | Server error |
+
+#### `400` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `401` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `403` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `429` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `500` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
 

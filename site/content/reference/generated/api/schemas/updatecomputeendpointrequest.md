@@ -2,15 +2,27 @@
 
 # Schema: `UpdateComputeEndpointRequest`
 
+## Example
+
+```json
+{
+  "auth_token": "example",
+  "max_memory_gb": 1,
+  "size": "SMALL",
+  "status": "ACTIVE",
+  "url": "example"
+}
+```
+
 - Type: `object`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `auth_token` | `string` | `false` | - |
-| `max_memory_gb` | `integer` | `false` | - |
-| `size` | `ComputeEndpointSize` | `false` | - |
-| `status` | `ComputeEndpointStatus` | `false` | - |
-| `url` | `string` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `auth_token` | `string` | `false` | - | "example" |
+| `max_memory_gb` | `integer` | `false` | - | 1 |
+| `size` | `ComputeEndpointSize` | `false` | - | "SMALL" |
+| `status` | `ComputeEndpointStatus` | `false` | - | "ACTIVE" |
+| `url` | `string` | `false` | - | "example" |
 

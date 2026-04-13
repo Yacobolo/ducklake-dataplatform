@@ -2,14 +2,31 @@
 
 # Schema: `CreateTableRequest`
 
+## Example
+
+```json
+{
+  "columns": [
+    {
+      "comment": "example",
+      "name": "example",
+      "nullable": true,
+      "type": "example"
+    }
+  ],
+  "comment": "example",
+  "name": "example"
+}
+```
+
 - Type: `object`
 - Required fields: `name`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `columns` | `array[CreateColumnRequest]` | `false` | - |
-| `comment` | `string` | `false` | - |
-| `name` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `columns` | `array[CreateColumnRequest]` | `false` | - | [ { "comment": "example", "name": "example", "nullable": true, "type": "example" } ] |
+| `comment` | `string` | `false` | - | "example" |
+| `name` | `string` | `true` | - | "example" |
 

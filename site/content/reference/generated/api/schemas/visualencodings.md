@@ -2,16 +2,41 @@
 
 # Schema: `VisualEncodings`
 
+## Example
+
+```json
+{
+  "label": {
+    "field": "example"
+  },
+  "secondary": {
+    "field": "example"
+  },
+  "series": {
+    "field": "example"
+  },
+  "value": {
+    "field": "example"
+  },
+  "x": {
+    "field": "example"
+  },
+  "y": {
+    "field": "example"
+  }
+}
+```
+
 - Type: `object`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `label` | `VisualFieldBinding` | `false` | - |
-| `secondary` | `VisualFieldBinding` | `false` | - |
-| `series` | `VisualFieldBinding` | `false` | - |
-| `value` | `VisualFieldBinding` | `false` | - |
-| `x` | `VisualFieldBinding` | `false` | - |
-| `y` | `VisualFieldBinding` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `label` | `VisualFieldBinding` | `false` | - | { "field": "example" } |
+| `secondary` | `VisualFieldBinding` | `false` | - | { "field": "example" } |
+| `series` | `VisualFieldBinding` | `false` | - | { "field": "example" } |
+| `value` | `VisualFieldBinding` | `false` | - | { "field": "example" } |
+| `x` | `VisualFieldBinding` | `false` | - | { "field": "example" } |
+| `y` | `VisualFieldBinding` | `false` | - | { "field": "example" } |
 

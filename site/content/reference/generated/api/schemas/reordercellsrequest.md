@@ -2,12 +2,22 @@
 
 # Schema: `ReorderCellsRequest`
 
+## Example
+
+```json
+{
+  "cell_ids": [
+    "example"
+  ]
+}
+```
+
 - Type: `object`
 - Required fields: `cell_ids`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `cell_ids` | `array[string]` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `cell_ids` | `array[string]` | `true` | - | [ "example" ] |
 

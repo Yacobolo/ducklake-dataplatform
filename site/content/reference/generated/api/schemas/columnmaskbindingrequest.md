@@ -2,14 +2,24 @@
 
 # Schema: `ColumnMaskBindingRequest`
 
+## Example
+
+```json
+{
+  "principal_id": "example",
+  "principal_type": "user",
+  "see_original": true
+}
+```
+
 - Type: `object`
 - Required fields: `principal_id`, `principal_type`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `principal_id` | `string` | `true` | - |
-| `principal_type` | `PrincipalType` | `true` | - |
-| `see_original` | `boolean` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `principal_id` | `string` | `true` | - | "example" |
+| `principal_type` | `PrincipalType` | `true` | - | "user" |
+| `see_original` | `boolean` | `false` | - | true |
 

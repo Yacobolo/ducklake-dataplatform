@@ -2,14 +2,24 @@
 
 # Schema: `CreateAPIKeyRequest`
 
+## Example
+
+```json
+{
+  "expires_at": "2026-01-02T15:04:05Z",
+  "name": "example",
+  "principal_id": "example"
+}
+```
+
 - Type: `object`
 - Required fields: `principal_id`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `expires_at` | `string` | `false` | - |
-| `name` | `string` | `false` | - |
-| `principal_id` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `expires_at` | `string` | `false` | - | "2026-01-02T15:04:05Z" |
+| `name` | `string` | `false` | - | "example" |
+| `principal_id` | `string` | `true` | - | "example" |
 

@@ -2,15 +2,26 @@
 
 # Schema: `BootstrapCompleteRequest`
 
+## Example
+
+```json
+{
+  "bootstrap_token": "example",
+  "password": "example",
+  "principal_name": "example",
+  "username": "example"
+}
+```
+
 - Type: `object`
 - Required fields: `password`, `username`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `bootstrap_token` | `string` | `false` | - |
-| `password` | `string` | `true` | - |
-| `principal_name` | `string` | `false` | - |
-| `username` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `bootstrap_token` | `string` | `false` | - | "example" |
+| `password` | `string` | `true` | - | "example" |
+| `principal_name` | `string` | `false` | - | "example" |
+| `username` | `string` | `true` | - | "example" |
 

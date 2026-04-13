@@ -12,10 +12,10 @@ List semantic models
 
 ### Query Parameters
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `max_results` | `integer` | `false` | - |
-| `page_token` | `string` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `max_results` | `integer` | `false` | - | 1 |
+| `page_token` | `string` | `false` | - | "example" |
 
 ### Responses
 
@@ -26,6 +26,88 @@ List semantic models
 | `401` | Access is unauthorized. |
 | `429` | Client error |
 | `500` | Server error |
+
+#### `200` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "data": [
+    {
+      "base_model_ref": "example",
+      "created_at": "2026-01-02T15:04:05Z",
+      "created_by": "example",
+      "default_time_dimension": "example",
+      "description": "example",
+      "id": "example",
+      "name": "example",
+      "owner": "example",
+      "tags": [
+        "example"
+      ],
+      "updated_at": "2026-01-02T15:04:05Z"
+    }
+  ],
+  "next_page_token": "example"
+}
+```
+
+#### `400` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `401` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `429` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `500` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
 
 ## `POST /semantic-models`
 
@@ -38,6 +120,22 @@ Create semantic model
 - Required: `true`
 - Content types: `application/json`
 
+### Request Examples
+
+- Content type: `application/json`
+
+```json
+{
+  "base_model_ref": "example",
+  "default_time_dimension": "example",
+  "description": "example",
+  "name": "example",
+  "tags": [
+    "example"
+  ]
+}
+```
+
 ### Responses
 
 | Code | Description |
@@ -48,6 +146,97 @@ Create semantic model
 | `403` | Access is forbidden. |
 | `429` | Client error |
 | `500` | Server error |
+
+#### `201` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "base_model_ref": "example",
+  "created_at": "2026-01-02T15:04:05Z",
+  "created_by": "example",
+  "default_time_dimension": "example",
+  "description": "example",
+  "id": "example",
+  "name": "example",
+  "owner": "example",
+  "tags": [
+    "example"
+  ],
+  "updated_at": "2026-01-02T15:04:05Z"
+}
+```
+
+#### `400` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `401` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `403` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `429` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `500` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
 
 ## `GET /semantic-models/{semantic_model_id}`
 
@@ -57,9 +246,9 @@ Get semantic model
 
 ### Path Parameters
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `semantic_model_id` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `semantic_model_id` | `string` | `true` | - | "example" |
 
 ### Responses
 
@@ -72,6 +261,111 @@ Get semantic model
 | `404` | The server cannot find the requested resource. |
 | `429` | Client error |
 | `500` | Server error |
+
+#### `200` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "base_model_ref": "example",
+  "created_at": "2026-01-02T15:04:05Z",
+  "created_by": "example",
+  "default_time_dimension": "example",
+  "description": "example",
+  "id": "example",
+  "name": "example",
+  "owner": "example",
+  "tags": [
+    "example"
+  ],
+  "updated_at": "2026-01-02T15:04:05Z"
+}
+```
+
+#### `400` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `401` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `403` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `404` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `429` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `500` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
 
 ## `PATCH /semantic-models/{semantic_model_id}`
 
@@ -81,14 +375,30 @@ Update semantic model
 
 ### Path Parameters
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `semantic_model_id` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `semantic_model_id` | `string` | `true` | - | "example" |
 
 ### Request Body
 
 - Required: `true`
 - Content types: `application/json`
+
+### Request Examples
+
+- Content type: `application/json`
+
+```json
+{
+  "base_model_ref": "example",
+  "default_time_dimension": "example",
+  "description": "example",
+  "owner": "example",
+  "tags": [
+    "example"
+  ]
+}
+```
 
 ### Responses
 
@@ -100,6 +410,97 @@ Update semantic model
 | `403` | Access is forbidden. |
 | `429` | Client error |
 | `500` | Server error |
+
+#### `200` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "base_model_ref": "example",
+  "created_at": "2026-01-02T15:04:05Z",
+  "created_by": "example",
+  "default_time_dimension": "example",
+  "description": "example",
+  "id": "example",
+  "name": "example",
+  "owner": "example",
+  "tags": [
+    "example"
+  ],
+  "updated_at": "2026-01-02T15:04:05Z"
+}
+```
+
+#### `400` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `401` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `403` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `429` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `500` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
 
 ## `DELETE /semantic-models/{semantic_model_id}`
 
@@ -109,9 +510,9 @@ Delete semantic model
 
 ### Path Parameters
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `semantic_model_id` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `semantic_model_id` | `string` | `true` | - | "example" |
 
 ### Responses
 
@@ -123,6 +524,76 @@ Delete semantic model
 | `403` | Access is forbidden. |
 | `429` | Client error |
 | `500` | Server error |
+
+#### `400` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `401` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `403` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `429` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `500` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
 
 ## `GET /semantic-models/{semantic_model_id}/metrics`
 
@@ -132,9 +603,9 @@ List semantic metrics
 
 ### Path Parameters
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `semantic_model_id` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `semantic_model_id` | `string` | `true` | - | "example" |
 
 ### Responses
 
@@ -147,6 +618,122 @@ List semantic metrics
 | `404` | The server cannot find the requested resource. |
 | `429` | Client error |
 | `500` | Server error |
+
+#### `200` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "data": [
+    {
+      "certification_state": "DRAFT",
+      "created_at": "2026-01-02T15:04:05Z",
+      "created_by": "example",
+      "default_time_grain": "example",
+      "description": "example",
+      "expression": "example",
+      "expression_mode": "DSL",
+      "filter_sql": "example",
+      "format": "example",
+      "id": "example",
+      "label": "example",
+      "metric_type": "SUM",
+      "name": "example",
+      "owner": "example",
+      "relationship_names": [
+        "example"
+      ],
+      "semantic_model_id": "example",
+      "updated_at": "2026-01-02T15:04:05Z"
+    }
+  ]
+}
+```
+
+#### `400` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `401` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `403` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `404` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `429` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `500` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
 
 ## `POST /semantic-models/{semantic_model_id}/metrics`
 
@@ -156,14 +743,36 @@ Create semantic metric
 
 ### Path Parameters
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `semantic_model_id` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `semantic_model_id` | `string` | `true` | - | "example" |
 
 ### Request Body
 
 - Required: `true`
 - Content types: `application/json`
+
+### Request Examples
+
+- Content type: `application/json`
+
+```json
+{
+  "certification_state": "DRAFT",
+  "default_time_grain": "example",
+  "description": "example",
+  "expression": "example",
+  "expression_mode": "DSL",
+  "filter_sql": "example",
+  "format": "example",
+  "label": "example",
+  "metric_type": "SUM",
+  "name": "example",
+  "relationship_names": [
+    "example"
+  ]
+}
+```
 
 ### Responses
 
@@ -175,6 +784,104 @@ Create semantic metric
 | `403` | Access is forbidden. |
 | `429` | Client error |
 | `500` | Server error |
+
+#### `201` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "certification_state": "DRAFT",
+  "created_at": "2026-01-02T15:04:05Z",
+  "created_by": "example",
+  "default_time_grain": "example",
+  "description": "example",
+  "expression": "example",
+  "expression_mode": "DSL",
+  "filter_sql": "example",
+  "format": "example",
+  "id": "example",
+  "label": "example",
+  "metric_type": "SUM",
+  "name": "example",
+  "owner": "example",
+  "relationship_names": [
+    "example"
+  ],
+  "semantic_model_id": "example",
+  "updated_at": "2026-01-02T15:04:05Z"
+}
+```
+
+#### `400` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `401` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `403` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `429` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `500` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
 
 ## `GET /semantic-models/{semantic_model_id}/metrics/{metric_name}`
 
@@ -184,10 +891,10 @@ Get semantic metric
 
 ### Path Parameters
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `metric_name` | `string` | `true` | - |
-| `semantic_model_id` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `metric_name` | `string` | `true` | - | "example" |
+| `semantic_model_id` | `string` | `true` | - | "example" |
 
 ### Responses
 
@@ -200,6 +907,118 @@ Get semantic metric
 | `404` | The server cannot find the requested resource. |
 | `429` | Client error |
 | `500` | Server error |
+
+#### `200` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "certification_state": "DRAFT",
+  "created_at": "2026-01-02T15:04:05Z",
+  "created_by": "example",
+  "default_time_grain": "example",
+  "description": "example",
+  "expression": "example",
+  "expression_mode": "DSL",
+  "filter_sql": "example",
+  "format": "example",
+  "id": "example",
+  "label": "example",
+  "metric_type": "SUM",
+  "name": "example",
+  "owner": "example",
+  "relationship_names": [
+    "example"
+  ],
+  "semantic_model_id": "example",
+  "updated_at": "2026-01-02T15:04:05Z"
+}
+```
+
+#### `400` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `401` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `403` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `404` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `429` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `500` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
 
 ## `PATCH /semantic-models/{semantic_model_id}/metrics/{metric_name}`
 
@@ -209,15 +1028,37 @@ Update semantic metric
 
 ### Path Parameters
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `metric_name` | `string` | `true` | - |
-| `semantic_model_id` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `metric_name` | `string` | `true` | - | "example" |
+| `semantic_model_id` | `string` | `true` | - | "example" |
 
 ### Request Body
 
 - Required: `true`
 - Content types: `application/json`
+
+### Request Examples
+
+- Content type: `application/json`
+
+```json
+{
+  "certification_state": "DRAFT",
+  "default_time_grain": "example",
+  "description": "example",
+  "expression": "example",
+  "expression_mode": "DSL",
+  "filter_sql": "example",
+  "format": "example",
+  "label": "example",
+  "metric_type": "SUM",
+  "owner": "example",
+  "relationship_names": [
+    "example"
+  ]
+}
+```
 
 ### Responses
 
@@ -229,6 +1070,104 @@ Update semantic metric
 | `403` | Access is forbidden. |
 | `429` | Client error |
 | `500` | Server error |
+
+#### `200` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "certification_state": "DRAFT",
+  "created_at": "2026-01-02T15:04:05Z",
+  "created_by": "example",
+  "default_time_grain": "example",
+  "description": "example",
+  "expression": "example",
+  "expression_mode": "DSL",
+  "filter_sql": "example",
+  "format": "example",
+  "id": "example",
+  "label": "example",
+  "metric_type": "SUM",
+  "name": "example",
+  "owner": "example",
+  "relationship_names": [
+    "example"
+  ],
+  "semantic_model_id": "example",
+  "updated_at": "2026-01-02T15:04:05Z"
+}
+```
+
+#### `400` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `401` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `403` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `429` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `500` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
 
 ## `DELETE /semantic-models/{semantic_model_id}/metrics/{metric_name}`
 
@@ -238,10 +1177,10 @@ Delete semantic metric
 
 ### Path Parameters
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `metric_name` | `string` | `true` | - |
-| `semantic_model_id` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `metric_name` | `string` | `true` | - | "example" |
+| `semantic_model_id` | `string` | `true` | - | "example" |
 
 ### Responses
 
@@ -253,6 +1192,76 @@ Delete semantic metric
 | `403` | Access is forbidden. |
 | `429` | Client error |
 | `500` | Server error |
+
+#### `400` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `401` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `403` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `429` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `500` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
 
 ## `GET /semantic-models/{semantic_model_id}/pre-aggregations`
 
@@ -262,9 +1271,9 @@ List semantic pre aggregations
 
 ### Path Parameters
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `semantic_model_id` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `semantic_model_id` | `string` | `true` | - | "example" |
 
 ### Responses
 
@@ -277,6 +1286,118 @@ List semantic pre aggregations
 | `404` | The server cannot find the requested resource. |
 | `429` | Client error |
 | `500` | Server error |
+
+#### `200` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "data": [
+    {
+      "created_at": "2026-01-02T15:04:05Z",
+      "created_by": "example",
+      "dimension_set": [
+        "example"
+      ],
+      "grain": "example",
+      "id": "example",
+      "metric_set": [
+        "example"
+      ],
+      "name": "example",
+      "refresh_policy": "example",
+      "semantic_model_id": "example",
+      "target_relation": "example",
+      "updated_at": "2026-01-02T15:04:05Z"
+    }
+  ]
+}
+```
+
+#### `400` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `401` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `403` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `404` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `429` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `500` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
 
 ## `POST /semantic-models/{semantic_model_id}/pre-aggregations`
 
@@ -286,14 +1407,33 @@ Create semantic pre aggregation
 
 ### Path Parameters
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `semantic_model_id` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `semantic_model_id` | `string` | `true` | - | "example" |
 
 ### Request Body
 
 - Required: `true`
 - Content types: `application/json`
+
+### Request Examples
+
+- Content type: `application/json`
+
+```json
+{
+  "dimension_set": [
+    "example"
+  ],
+  "grain": "example",
+  "metric_set": [
+    "example"
+  ],
+  "name": "example",
+  "refresh_policy": "example",
+  "target_relation": "example"
+}
+```
 
 ### Responses
 
@@ -305,6 +1445,100 @@ Create semantic pre aggregation
 | `403` | Access is forbidden. |
 | `429` | Client error |
 | `500` | Server error |
+
+#### `201` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "created_at": "2026-01-02T15:04:05Z",
+  "created_by": "example",
+  "dimension_set": [
+    "example"
+  ],
+  "grain": "example",
+  "id": "example",
+  "metric_set": [
+    "example"
+  ],
+  "name": "example",
+  "refresh_policy": "example",
+  "semantic_model_id": "example",
+  "target_relation": "example",
+  "updated_at": "2026-01-02T15:04:05Z"
+}
+```
+
+#### `400` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `401` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `403` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `429` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `500` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
 
 ## `GET /semantic-models/{semantic_model_id}/pre-aggregations/{pre_aggregation_name}`
 
@@ -314,10 +1548,10 @@ Get semantic pre aggregation
 
 ### Path Parameters
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `pre_aggregation_name` | `string` | `true` | - |
-| `semantic_model_id` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `pre_aggregation_name` | `string` | `true` | - | "example" |
+| `semantic_model_id` | `string` | `true` | - | "example" |
 
 ### Responses
 
@@ -331,6 +1565,114 @@ Get semantic pre aggregation
 | `429` | Client error |
 | `500` | Server error |
 
+#### `200` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "created_at": "2026-01-02T15:04:05Z",
+  "created_by": "example",
+  "dimension_set": [
+    "example"
+  ],
+  "grain": "example",
+  "id": "example",
+  "metric_set": [
+    "example"
+  ],
+  "name": "example",
+  "refresh_policy": "example",
+  "semantic_model_id": "example",
+  "target_relation": "example",
+  "updated_at": "2026-01-02T15:04:05Z"
+}
+```
+
+#### `400` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `401` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `403` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `404` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `429` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `500` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
 ## `PATCH /semantic-models/{semantic_model_id}/pre-aggregations/{pre_aggregation_name}`
 
 Update semantic pre aggregation
@@ -339,15 +1681,33 @@ Update semantic pre aggregation
 
 ### Path Parameters
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `pre_aggregation_name` | `string` | `true` | - |
-| `semantic_model_id` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `pre_aggregation_name` | `string` | `true` | - | "example" |
+| `semantic_model_id` | `string` | `true` | - | "example" |
 
 ### Request Body
 
 - Required: `true`
 - Content types: `application/json`
+
+### Request Examples
+
+- Content type: `application/json`
+
+```json
+{
+  "dimension_set": [
+    "example"
+  ],
+  "grain": "example",
+  "metric_set": [
+    "example"
+  ],
+  "refresh_policy": "example",
+  "target_relation": "example"
+}
+```
 
 ### Responses
 
@@ -360,6 +1720,100 @@ Update semantic pre aggregation
 | `429` | Client error |
 | `500` | Server error |
 
+#### `200` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "created_at": "2026-01-02T15:04:05Z",
+  "created_by": "example",
+  "dimension_set": [
+    "example"
+  ],
+  "grain": "example",
+  "id": "example",
+  "metric_set": [
+    "example"
+  ],
+  "name": "example",
+  "refresh_policy": "example",
+  "semantic_model_id": "example",
+  "target_relation": "example",
+  "updated_at": "2026-01-02T15:04:05Z"
+}
+```
+
+#### `400` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `401` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `403` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `429` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `500` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
 ## `DELETE /semantic-models/{semantic_model_id}/pre-aggregations/{pre_aggregation_name}`
 
 Delete semantic pre aggregation
@@ -368,10 +1822,10 @@ Delete semantic pre aggregation
 
 ### Path Parameters
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `pre_aggregation_name` | `string` | `true` | - |
-| `semantic_model_id` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `pre_aggregation_name` | `string` | `true` | - | "example" |
+| `semantic_model_id` | `string` | `true` | - | "example" |
 
 ### Responses
 
@@ -384,6 +1838,76 @@ Delete semantic pre aggregation
 | `429` | Client error |
 | `500` | Server error |
 
+#### `400` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `401` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `403` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `429` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `500` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
 ## `POST /semantic-models/{semantic_model_id}/query-explanations`
 
 Explain metric query
@@ -392,14 +1916,40 @@ Explain metric query
 
 ### Path Parameters
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `semantic_model_id` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `semantic_model_id` | `string` | `true` | - | "example" |
 
 ### Request Body
 
 - Required: `true`
 - Content types: `application/json`
+
+### Request Examples
+
+- Content type: `application/json`
+
+```json
+{
+  "dimensions": [
+    "example"
+  ],
+  "filters": [
+    "example"
+  ],
+  "limit": 1,
+  "metrics": [
+    "example"
+  ],
+  "order_by": [
+    "example"
+  ],
+  "relationship_names": [
+    "example"
+  ],
+  "time_grain": "example"
+}
+```
 
 ### Responses
 
@@ -411,6 +1961,111 @@ Explain metric query
 | `403` | Access is forbidden. |
 | `429` | Client error |
 | `500` | Server error |
+
+#### `200` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "plan": {
+    "base_model_name": "example",
+    "base_relation": "example",
+    "dimensions": [
+      "example"
+    ],
+    "freshness_basis": [
+      "example"
+    ],
+    "freshness_status": "example",
+    "generated_sql": "example",
+    "join_path": [
+      {
+        "from_model": "example",
+        "join_sql": "example",
+        "relationship_name": "example",
+        "relationship_type": "example",
+        "to_model": "example"
+      }
+    ],
+    "metrics": [
+      "example"
+    ],
+    "selected_pre_aggregation": "example",
+    "time_grain": "example"
+  }
+}
+```
+
+#### `400` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `401` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `403` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `429` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `500` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
 
 ## `POST /semantic-models/{semantic_model_id}/query-runs`
 
@@ -420,14 +2075,40 @@ Run metric query
 
 ### Path Parameters
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `semantic_model_id` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `semantic_model_id` | `string` | `true` | - | "example" |
 
 ### Request Body
 
 - Required: `true`
 - Content types: `application/json`
+
+### Request Examples
+
+- Content type: `application/json`
+
+```json
+{
+  "dimensions": [
+    "example"
+  ],
+  "filters": [
+    "example"
+  ],
+  "limit": 1,
+  "metrics": [
+    "example"
+  ],
+  "order_by": [
+    "example"
+  ],
+  "relationship_names": [
+    "example"
+  ],
+  "time_grain": "example"
+}
+```
 
 ### Responses
 
@@ -440,6 +2121,125 @@ Run metric query
 | `429` | Client error |
 | `500` | Server error |
 
+#### `200` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "plan": {
+    "base_model_name": "example",
+    "base_relation": "example",
+    "dimensions": [
+      "example"
+    ],
+    "freshness_basis": [
+      "example"
+    ],
+    "freshness_status": "example",
+    "generated_sql": "example",
+    "join_path": [
+      {
+        "from_model": "example",
+        "join_sql": "example",
+        "relationship_name": "example",
+        "relationship_type": "example",
+        "to_model": "example"
+      }
+    ],
+    "metrics": [
+      "example"
+    ],
+    "selected_pre_aggregation": "example",
+    "time_grain": "example"
+  },
+  "result": {
+    "columns": [
+      {
+        "name": "example"
+      }
+    ],
+    "next_page_token": "example",
+    "row_count": 1,
+    "rows": [
+      {
+        "key": "value"
+      }
+    ]
+  }
+}
+```
+
+#### `400` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `401` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `403` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `429` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `500` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
 ## `GET /semantic-models/{semantic_model_id}/relationships`
 
 List semantic relationships for a semantic model
@@ -448,9 +2248,9 @@ List semantic relationships for a semantic model
 
 ### Path Parameters
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `semantic_model_id` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `semantic_model_id` | `string` | `true` | - | "example" |
 
 ### Responses
 
@@ -464,6 +2264,114 @@ List semantic relationships for a semantic model
 | `429` | Client error |
 | `500` | Server error |
 
+#### `200` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "data": [
+    {
+      "cost": 1,
+      "created_at": "2026-01-02T15:04:05Z",
+      "created_by": "example",
+      "from_semantic_id": "example",
+      "id": "example",
+      "join_sql": "example",
+      "max_hops": 1,
+      "name": "example",
+      "relationship_type": "ONE_TO_ONE",
+      "to_semantic_id": "example",
+      "updated_at": "2026-01-02T15:04:05Z"
+    }
+  ]
+}
+```
+
+#### `400` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `401` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `403` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `404` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `429` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `500` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
 ## `POST /semantic-models/{semantic_model_id}/relationships`
 
 Create semantic relationship for a semantic model
@@ -472,14 +2380,30 @@ Create semantic relationship for a semantic model
 
 ### Path Parameters
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `semantic_model_id` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `semantic_model_id` | `string` | `true` | - | "example" |
 
 ### Request Body
 
 - Required: `true`
 - Content types: `application/json`
+
+### Request Examples
+
+- Content type: `application/json`
+
+```json
+{
+  "cost": 1,
+  "from_semantic_id": "example",
+  "join_sql": "example",
+  "max_hops": 1,
+  "name": "example",
+  "relationship_type": "ONE_TO_ONE",
+  "to_semantic_id": "example"
+}
+```
 
 ### Responses
 
@@ -492,6 +2416,96 @@ Create semantic relationship for a semantic model
 | `429` | Client error |
 | `500` | Server error |
 
+#### `201` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "cost": 1,
+  "created_at": "2026-01-02T15:04:05Z",
+  "created_by": "example",
+  "from_semantic_id": "example",
+  "id": "example",
+  "join_sql": "example",
+  "max_hops": 1,
+  "name": "example",
+  "relationship_type": "ONE_TO_ONE",
+  "to_semantic_id": "example",
+  "updated_at": "2026-01-02T15:04:05Z"
+}
+```
+
+#### `400` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `401` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `403` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `429` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `500` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
 ## `GET /semantic-models/{semantic_model_id}/relationships/{relationship_name}`
 
 Get semantic relationship for a semantic model
@@ -500,10 +2514,10 @@ Get semantic relationship for a semantic model
 
 ### Path Parameters
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `relationship_name` | `string` | `true` | - |
-| `semantic_model_id` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `relationship_name` | `string` | `true` | - | "example" |
+| `semantic_model_id` | `string` | `true` | - | "example" |
 
 ### Responses
 
@@ -517,6 +2531,110 @@ Get semantic relationship for a semantic model
 | `429` | Client error |
 | `500` | Server error |
 
+#### `200` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "cost": 1,
+  "created_at": "2026-01-02T15:04:05Z",
+  "created_by": "example",
+  "from_semantic_id": "example",
+  "id": "example",
+  "join_sql": "example",
+  "max_hops": 1,
+  "name": "example",
+  "relationship_type": "ONE_TO_ONE",
+  "to_semantic_id": "example",
+  "updated_at": "2026-01-02T15:04:05Z"
+}
+```
+
+#### `400` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `401` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `403` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `404` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `429` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `500` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
 ## `PATCH /semantic-models/{semantic_model_id}/relationships/{relationship_name}`
 
 Update semantic relationship for a semantic model
@@ -525,15 +2643,28 @@ Update semantic relationship for a semantic model
 
 ### Path Parameters
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `relationship_name` | `string` | `true` | - |
-| `semantic_model_id` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `relationship_name` | `string` | `true` | - | "example" |
+| `semantic_model_id` | `string` | `true` | - | "example" |
 
 ### Request Body
 
 - Required: `true`
 - Content types: `application/json`
+
+### Request Examples
+
+- Content type: `application/json`
+
+```json
+{
+  "cost": 1,
+  "join_sql": "example",
+  "max_hops": 1,
+  "relationship_type": "ONE_TO_ONE"
+}
+```
 
 ### Responses
 
@@ -546,6 +2677,96 @@ Update semantic relationship for a semantic model
 | `429` | Client error |
 | `500` | Server error |
 
+#### `200` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "cost": 1,
+  "created_at": "2026-01-02T15:04:05Z",
+  "created_by": "example",
+  "from_semantic_id": "example",
+  "id": "example",
+  "join_sql": "example",
+  "max_hops": 1,
+  "name": "example",
+  "relationship_type": "ONE_TO_ONE",
+  "to_semantic_id": "example",
+  "updated_at": "2026-01-02T15:04:05Z"
+}
+```
+
+#### `400` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `401` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `403` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `429` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `500` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
 ## `DELETE /semantic-models/{semantic_model_id}/relationships/{relationship_name}`
 
 Delete semantic relationship for a semantic model
@@ -554,10 +2775,10 @@ Delete semantic relationship for a semantic model
 
 ### Path Parameters
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `relationship_name` | `string` | `true` | - |
-| `semantic_model_id` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `relationship_name` | `string` | `true` | - | "example" |
+| `semantic_model_id` | `string` | `true` | - | "example" |
 
 ### Responses
 
@@ -569,4 +2790,74 @@ Delete semantic relationship for a semantic model
 | `403` | Access is forbidden. |
 | `429` | Client error |
 | `500` | Server error |
+
+#### `400` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `401` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `403` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `429` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `500` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
 

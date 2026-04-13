@@ -2,15 +2,29 @@
 
 # Schema: `UpdateSemanticModelRequest`
 
+## Example
+
+```json
+{
+  "base_model_ref": "example",
+  "default_time_dimension": "example",
+  "description": "example",
+  "owner": "example",
+  "tags": [
+    "example"
+  ]
+}
+```
+
 - Type: `object`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `base_model_ref` | `string` | `false` | - |
-| `default_time_dimension` | `string` | `false` | - |
-| `description` | `string` | `false` | - |
-| `owner` | `string` | `false` | - |
-| `tags` | `array[string]` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `base_model_ref` | `string` | `false` | - | "example" |
+| `default_time_dimension` | `string` | `false` | - | "example" |
+| `description` | `string` | `false` | - | "example" |
+| `owner` | `string` | `false` | - | "example" |
+| `tags` | `array[string]` | `false` | - | [ "example" ] |
 

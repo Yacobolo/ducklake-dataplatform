@@ -2,13 +2,22 @@
 
 # Schema: `ShareNotebookRequest`
 
+## Example
+
+```json
+{
+  "principal_name": "example",
+  "role": "viewer"
+}
+```
+
 - Type: `object`
 - Required fields: `principal_name`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `principal_name` | `string` | `true` | - |
-| `role` | `NotebookShareRole` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `principal_name` | `string` | `true` | - | "example" |
+| `role` | `NotebookShareRole` | `false` | - | "viewer" |
 

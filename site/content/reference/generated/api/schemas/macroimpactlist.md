@@ -2,13 +2,29 @@
 
 # Schema: `MacroImpactList`
 
+## Example
+
+```json
+{
+  "data": [
+    {
+      "last_seen_at": "2026-01-02T15:04:05Z",
+      "model_name": "example",
+      "target_schema": "example",
+      "target_table": "example"
+    }
+  ],
+  "next_page_token": "example"
+}
+```
+
 - Type: `object`
 - Required fields: `data`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `data` | `array[MacroImpactModel]` | `true` | - |
-| `next_page_token` | `string` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `data` | `array[MacroImpactModel]` | `true` | - | [ { "last_seen_at": "2026-01-02T15:04:05Z", "model_name": "example", "target_schema": "example", "target_table": "example" } ] |
+| `next_page_token` | `string` | `false` | - | "example" |
 

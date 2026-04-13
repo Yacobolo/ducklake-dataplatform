@@ -2,13 +2,62 @@
 
 # Schema: `PaginatedModels`
 
+## Example
+
+```json
+{
+  "data": [
+    {
+      "config": {
+        "incremental_strategy": "example",
+        "on_schema_change": "ignore",
+        "unique_key": [
+          "example"
+        ]
+      },
+      "contract": {
+        "columns": [
+          {
+            "name": "example",
+            "nullable": true,
+            "type": "example"
+          }
+        ],
+        "enforce": true
+      },
+      "created_at": "2026-01-02T15:04:05Z",
+      "created_by": "example",
+      "depends_on": [
+        "example"
+      ],
+      "description": "example",
+      "freshness_policy": {
+        "cron_schedule": "example",
+        "max_lag_seconds": 1
+      },
+      "id": "example",
+      "materialization": "VIEW",
+      "name": "example",
+      "owner": "example",
+      "project_name": "example",
+      "sql": "example",
+      "tags": [
+        "example"
+      ],
+      "updated_at": "2026-01-02T15:04:05Z"
+    }
+  ],
+  "next_page_token": "example"
+}
+```
+
 - Type: `object`
 - Required fields: `data`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `data` | `array[Model]` | `true` | - |
-| `next_page_token` | `string` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `data` | `array[Model]` | `true` | - | [ { "config": { "incremental_strategy": "example", "on_schema_change": "ignore", "unique_key": [ "example" ] }, "contract": { "columns": [ { "name": "example", "nullable": true, "type": "example" } ], "enforce": true }, "created_at": "2026-01-02T15:04:05Z", "created_by": "example", "depends_on": [ "example" ], "description": "example", "freshness_policy": { "cron_schedule": "example", "max_lag_seconds": 1 }, "id": "example", "materialization": "VIEW", "name": "example", "owner": "example", "project_name": "example", "sql": "example", "tags": [ "example" ], "updated_at": "2026-01-02T15:04:05Z" } ] |
+| `next_page_token` | `string` | `false` | - | "example" |
 

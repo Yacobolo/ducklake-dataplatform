@@ -2,24 +2,45 @@
 
 # Schema: `Folder`
 
+## Example
+
+```json
+{
+  "created_at": "2026-01-02T15:04:05Z",
+  "default_environment_id": "example",
+  "default_project_id": "example",
+  "depth": 1,
+  "git_repo_id": "example",
+  "git_root_path": "example",
+  "id": "example",
+  "name": "example",
+  "owner": "example",
+  "parent_folder_id": "example",
+  "path": "example",
+  "system_role": "example",
+  "updated_at": "2026-01-02T15:04:05Z",
+  "workspace_id": "example"
+}
+```
+
 - Type: `object`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `created_at` | `string` | `false` | - |
-| `default_environment_id` | `string` | `false` | - |
-| `default_project_id` | `string` | `false` | - |
-| `depth` | `integer` | `false` | - |
-| `git_repo_id` | `string` | `false` | - |
-| `git_root_path` | `string` | `false` | - |
-| `id` | `string` | `false` | - |
-| `name` | `string` | `false` | - |
-| `owner` | `string` | `false` | - |
-| `parent_folder_id` | `string` | `false` | - |
-| `path` | `string` | `false` | - |
-| `system_role` | `string` | `false` | - |
-| `updated_at` | `string` | `false` | - |
-| `workspace_id` | `string` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `created_at` | `string` | `false` | - | "2026-01-02T15:04:05Z" |
+| `default_environment_id` | `string` | `false` | - | "example" |
+| `default_project_id` | `string` | `false` | - | "example" |
+| `depth` | `integer` | `false` | - | 1 |
+| `git_repo_id` | `string` | `false` | - | "example" |
+| `git_root_path` | `string` | `false` | - | "example" |
+| `id` | `string` | `false` | - | "example" |
+| `name` | `string` | `false` | - | "example" |
+| `owner` | `string` | `false` | - | "example" |
+| `parent_folder_id` | `string` | `false` | - | "example" |
+| `path` | `string` | `false` | - | "example" |
+| `system_role` | `string` | `false` | - | "example" |
+| `updated_at` | `string` | `false` | - | "2026-01-02T15:04:05Z" |
+| `workspace_id` | `string` | `false` | - | "example" |
 

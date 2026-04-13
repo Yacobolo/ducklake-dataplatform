@@ -2,18 +2,42 @@
 
 # Schema: `MetricQueryRequest`
 
+## Example
+
+```json
+{
+  "dimensions": [
+    "example"
+  ],
+  "filters": [
+    "example"
+  ],
+  "limit": 1,
+  "metrics": [
+    "example"
+  ],
+  "order_by": [
+    "example"
+  ],
+  "relationship_names": [
+    "example"
+  ],
+  "time_grain": "example"
+}
+```
+
 - Type: `object`
 - Required fields: `metrics`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `dimensions` | `array[string]` | `false` | - |
-| `filters` | `array[string]` | `false` | - |
-| `limit` | `integer` | `false` | - |
-| `metrics` | `array[string]` | `true` | - |
-| `order_by` | `array[string]` | `false` | - |
-| `relationship_names` | `array[string]` | `false` | - |
-| `time_grain` | `string` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `dimensions` | `array[string]` | `false` | - | [ "example" ] |
+| `filters` | `array[string]` | `false` | - | [ "example" ] |
+| `limit` | `integer` | `false` | - | 1 |
+| `metrics` | `array[string]` | `true` | - | [ "example" ] |
+| `order_by` | `array[string]` | `false` | - | [ "example" ] |
+| `relationship_names` | `array[string]` | `false` | - | [ "example" ] |
+| `time_grain` | `string` | `false` | - | "example" |
 

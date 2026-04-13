@@ -2,30 +2,84 @@
 
 # Schema: `DataProduct`
 
+## Example
+
+```json
+{
+  "access_request_path": "example",
+  "business_definitions": {
+    "key": "example"
+  },
+  "consumer_audience": "example",
+  "contact_channel": "example",
+  "contract": {
+    "breaking_change_policy": "example",
+    "data_grain": "example",
+    "dimensions": [
+      "example"
+    ],
+    "join_keys": [
+      "example"
+    ],
+    "measures": [
+      "example"
+    ],
+    "primary_keys": [
+      "example"
+    ],
+    "quality_expectations": [
+      "example"
+    ],
+    "retention_window": "example",
+    "sample_queries": [
+      "example"
+    ],
+    "update_cadence": "example"
+  },
+  "created_at": "2026-01-02T15:04:05Z",
+  "created_by": "example",
+  "description": "example",
+  "docs_url": "example",
+  "domain_id": "example",
+  "id": "example",
+  "name": "example",
+  "owner_team_id": "example",
+  "publication_intent": "example",
+  "slo": {
+    "freshness_slo": "example",
+    "latency_slo": "example"
+  },
+  "slug": "example",
+  "steward_principal": "example",
+  "updated_at": "2026-01-02T15:04:05Z",
+  "visibility": "example"
+}
+```
+
 - Type: `object`
 - Required fields: `contact_channel`, `description`, `domain_id`, `id`, `name`, `owner_team_id`, `slug`, `steward_principal`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `access_request_path` | `string` | `false` | - |
-| `business_definitions` | `object` | `false` | - |
-| `consumer_audience` | `string` | `false` | - |
-| `contact_channel` | `string` | `true` | - |
-| `contract` | `ProductContract` | `false` | - |
-| `created_at` | `string` | `false` | - |
-| `created_by` | `string` | `false` | - |
-| `description` | `string` | `true` | - |
-| `docs_url` | `string` | `false` | - |
-| `domain_id` | `string` | `true` | - |
-| `id` | `string` | `true` | - |
-| `name` | `string` | `true` | - |
-| `owner_team_id` | `string` | `true` | - |
-| `publication_intent` | `string` | `false` | - |
-| `slo` | `ProductSLO` | `false` | - |
-| `slug` | `string` | `true` | - |
-| `steward_principal` | `string` | `true` | - |
-| `updated_at` | `string` | `false` | - |
-| `visibility` | `string` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `access_request_path` | `string` | `false` | - | "example" |
+| `business_definitions` | `object` | `false` | - | { "key": "example" } |
+| `consumer_audience` | `string` | `false` | - | "example" |
+| `contact_channel` | `string` | `true` | - | "example" |
+| `contract` | `ProductContract` | `false` | - | { "breaking_change_policy": "example", "data_grain": "example", "dimensions": [ "example" ], "join_keys": [ "example" ], "measures": [ "example" ], "primary_keys": [ "example" ], "quality_expectations": [ "example" ], "retention_window": "example", "sample_queries": [ "example" ], "update_cadence": "example" } |
+| `created_at` | `string` | `false` | - | "2026-01-02T15:04:05Z" |
+| `created_by` | `string` | `false` | - | "example" |
+| `description` | `string` | `true` | - | "example" |
+| `docs_url` | `string` | `false` | - | "example" |
+| `domain_id` | `string` | `true` | - | "example" |
+| `id` | `string` | `true` | - | "example" |
+| `name` | `string` | `true` | - | "example" |
+| `owner_team_id` | `string` | `true` | - | "example" |
+| `publication_intent` | `string` | `false` | - | "example" |
+| `slo` | `ProductSLO` | `false` | - | { "freshness_slo": "example", "latency_slo": "example" } |
+| `slug` | `string` | `true` | - | "example" |
+| `steward_principal` | `string` | `true` | - | "example" |
+| `updated_at` | `string` | `false` | - | "2026-01-02T15:04:05Z" |
+| `visibility` | `string` | `false` | - | "example" |
 

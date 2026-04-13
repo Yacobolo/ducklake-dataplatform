@@ -2,5 +2,11 @@
 
 # Schema: `SetDefaultCatalogRequest`
 
+## Example
+
+```json
+{}
+```
+
 - Type: `object`
 

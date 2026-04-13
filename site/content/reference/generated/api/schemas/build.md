@@ -2,27 +2,50 @@
 
 # Schema: `Build`
 
+## Example
+
+```json
+{
+  "commit_sha": "example",
+  "compile_diagnostics": "example",
+  "compile_manifest": "example",
+  "created_at": "2026-01-02T15:04:05Z",
+  "environment_id": "example",
+  "environment_name": "example",
+  "git_ref": "example",
+  "id": "example",
+  "product_id": "example",
+  "project_id": "example",
+  "project_name": "example",
+  "selector": "example",
+  "source_model_run_id": "example",
+  "state": "draft",
+  "target_catalog": "example",
+  "target_schema": "example"
+}
+```
+
 - Type: `object`
 - Required fields: `compile_manifest`, `git_ref`, `target_catalog`, `target_schema`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `commit_sha` | `string` | `false` | - |
-| `compile_diagnostics` | `string` | `false` | - |
-| `compile_manifest` | `string` | `true` | - |
-| `created_at` | `string` | `false` | - |
-| `environment_id` | `string` | `false` | - |
-| `environment_name` | `string` | `false` | - |
-| `git_ref` | `string` | `true` | - |
-| `id` | `string` | `false` | - |
-| `product_id` | `string` | `false` | - |
-| `project_id` | `string` | `false` | - |
-| `project_name` | `string` | `false` | - |
-| `selector` | `string` | `false` | - |
-| `source_model_run_id` | `string` | `false` | - |
-| `state` | `BuildState` | `false` | - |
-| `target_catalog` | `string` | `true` | - |
-| `target_schema` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `commit_sha` | `string` | `false` | - | "example" |
+| `compile_diagnostics` | `string` | `false` | - | "example" |
+| `compile_manifest` | `string` | `true` | - | "example" |
+| `created_at` | `string` | `false` | - | "2026-01-02T15:04:05Z" |
+| `environment_id` | `string` | `false` | - | "example" |
+| `environment_name` | `string` | `false` | - | "example" |
+| `git_ref` | `string` | `true` | - | "example" |
+| `id` | `string` | `false` | - | "example" |
+| `product_id` | `string` | `false` | - | "example" |
+| `project_id` | `string` | `false` | - | "example" |
+| `project_name` | `string` | `false` | - | "example" |
+| `selector` | `string` | `false` | - | "example" |
+| `source_model_run_id` | `string` | `false` | - | "example" |
+| `state` | `BuildState` | `false` | - | "draft" |
+| `target_catalog` | `string` | `true` | - | "example" |
+| `target_schema` | `string` | `true` | - | "example" |
 

@@ -4,12 +4,20 @@
 
 Submits a SQL statement for immediate execution and returns a tabular result when the request completes.
 
+## Example
+
+```json
+{
+  "sql": "example"
+}
+```
+
 - Type: `object`
 - Required fields: `sql`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `sql` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `sql` | `string` | `true` | - | "example" |
 

@@ -2,5 +2,11 @@
 
 # Schema: `AssetCheckSeverity`
 
+## Example
+
+```json
+"ERROR"
+```
+
 - Type: `string`
 

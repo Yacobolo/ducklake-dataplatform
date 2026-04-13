@@ -2,18 +2,33 @@
 
 # Schema: `AssetCheck`
 
+## Example
+
+```json
+{
+  "asset_id": "example",
+  "check_type": "example",
+  "created_at": "2026-01-02T15:04:05Z",
+  "enabled": true,
+  "id": "example",
+  "name": "example",
+  "severity": "ERROR",
+  "updated_at": "2026-01-02T15:04:05Z"
+}
+```
+
 - Type: `object`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `asset_id` | `string` | `false` | - |
-| `check_type` | `string` | `false` | - |
-| `created_at` | `string` | `false` | - |
-| `enabled` | `boolean` | `false` | - |
-| `id` | `string` | `false` | - |
-| `name` | `string` | `false` | - |
-| `severity` | `AssetCheckSeverity` | `false` | - |
-| `updated_at` | `string` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `asset_id` | `string` | `false` | - | "example" |
+| `check_type` | `string` | `false` | - | "example" |
+| `created_at` | `string` | `false` | - | "2026-01-02T15:04:05Z" |
+| `enabled` | `boolean` | `false` | - | true |
+| `id` | `string` | `false` | - | "example" |
+| `name` | `string` | `false` | - | "example" |
+| `severity` | `AssetCheckSeverity` | `false` | - | "ERROR" |
+| `updated_at` | `string` | `false` | - | "2026-01-02T15:04:05Z" |
 

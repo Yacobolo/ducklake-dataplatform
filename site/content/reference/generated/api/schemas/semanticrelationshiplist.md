@@ -2,12 +2,34 @@
 
 # Schema: `SemanticRelationshipList`
 
+## Example
+
+```json
+{
+  "data": [
+    {
+      "cost": 1,
+      "created_at": "2026-01-02T15:04:05Z",
+      "created_by": "example",
+      "from_semantic_id": "example",
+      "id": "example",
+      "join_sql": "example",
+      "max_hops": 1,
+      "name": "example",
+      "relationship_type": "ONE_TO_ONE",
+      "to_semantic_id": "example",
+      "updated_at": "2026-01-02T15:04:05Z"
+    }
+  ]
+}
+```
+
 - Type: `object`
 - Required fields: `data`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `data` | `array[SemanticRelationship]` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `data` | `array[SemanticRelationship]` | `true` | - | [ { "cost": 1, "created_at": "2026-01-02T15:04:05Z", "created_by": "example", "from_semantic_id": "example", "id": "example", "join_sql": "example", "max_hops": 1, "name": "example", "relationship_type": "ONE_TO_ONE", "to_semantic_id": "example", "updated_at": "2026-01-02T15:04:05Z" } ] |
 

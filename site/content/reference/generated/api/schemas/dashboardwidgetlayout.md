@@ -2,15 +2,26 @@
 
 # Schema: `DashboardWidgetLayout`
 
+## Example
+
+```json
+{
+  "h": 1,
+  "w": 1,
+  "x": 1,
+  "y": 1
+}
+```
+
 - Type: `object`
 - Required fields: `h`, `w`, `x`, `y`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `h` | `integer` | `true` | - |
-| `w` | `integer` | `true` | - |
-| `x` | `integer` | `true` | - |
-| `y` | `integer` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `h` | `integer` | `true` | - | 1 |
+| `w` | `integer` | `true` | - | 1 |
+| `x` | `integer` | `true` | - | 1 |
+| `y` | `integer` | `true` | - | 1 |
 

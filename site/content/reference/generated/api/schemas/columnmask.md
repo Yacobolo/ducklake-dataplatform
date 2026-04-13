@@ -2,18 +2,32 @@
 
 # Schema: `ColumnMask`
 
+## Example
+
+```json
+{
+  "column_name": "example",
+  "created_at": "2026-01-02T15:04:05Z",
+  "description": "example",
+  "id": "example",
+  "mask_expression": "example",
+  "name": "example",
+  "table_id": "example"
+}
+```
+
 - Type: `object`
 - Required fields: `column_name`, `id`, `mask_expression`, `name`, `table_id`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `column_name` | `string` | `true` | - |
-| `created_at` | `string` | `false` | - |
-| `description` | `string` | `false` | - |
-| `id` | `string` | `true` | - |
-| `mask_expression` | `string` | `true` | - |
-| `name` | `string` | `true` | - |
-| `table_id` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `column_name` | `string` | `true` | - | "example" |
+| `created_at` | `string` | `false` | - | "2026-01-02T15:04:05Z" |
+| `description` | `string` | `false` | - | "example" |
+| `id` | `string` | `true` | - | "example" |
+| `mask_expression` | `string` | `true` | - | "example" |
+| `name` | `string` | `true` | - | "example" |
+| `table_id` | `string` | `true` | - | "example" |
 

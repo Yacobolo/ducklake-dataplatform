@@ -2,5 +2,11 @@
 
 # Schema: `NotebookSessionState`
 
+## Example
+
+```json
+"active"
+```
+
 - Type: `string`
 

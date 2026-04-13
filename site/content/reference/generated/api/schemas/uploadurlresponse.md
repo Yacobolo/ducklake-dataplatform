@@ -2,14 +2,24 @@
 
 # Schema: `UploadUrlResponse`
 
+## Example
+
+```json
+{
+  "expires_at": "2026-01-02T15:04:05Z",
+  "s3_key": "example",
+  "upload_url": "example"
+}
+```
+
 - Type: `object`
 - Required fields: `expires_at`, `s3_key`, `upload_url`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `expires_at` | `string` | `true` | - |
-| `s3_key` | `string` | `true` | - |
-| `upload_url` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `expires_at` | `string` | `true` | - | "2026-01-02T15:04:05Z" |
+| `s3_key` | `string` | `true` | - | "example" |
+| `upload_url` | `string` | `true` | - | "example" |
 

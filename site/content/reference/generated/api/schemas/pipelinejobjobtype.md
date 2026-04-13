@@ -2,5 +2,11 @@
 
 # Schema: `PipelineJobJobType`
 
+## Example
+
+```json
+"NOTEBOOK"
+```
+
 - Type: `string`
 

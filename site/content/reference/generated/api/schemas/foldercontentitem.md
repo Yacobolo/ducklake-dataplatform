@@ -2,21 +2,39 @@
 
 # Schema: `FolderContentItem`
 
+## Example
+
+```json
+{
+  "folder_id": "example",
+  "git_repo_id": "example",
+  "id": "example",
+  "kind": "example",
+  "name": "example",
+  "owner": "example",
+  "project_bound": true,
+  "project_name": "example",
+  "scope": "example",
+  "shared": true,
+  "updated_at": "2026-01-02T15:04:05Z"
+}
+```
+
 - Type: `object`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `folder_id` | `string` | `false` | - |
-| `git_repo_id` | `string` | `false` | - |
-| `id` | `string` | `false` | - |
-| `kind` | `string` | `false` | - |
-| `name` | `string` | `false` | - |
-| `owner` | `string` | `false` | - |
-| `project_bound` | `boolean` | `false` | - |
-| `project_name` | `string` | `false` | - |
-| `scope` | `string` | `false` | - |
-| `shared` | `boolean` | `false` | - |
-| `updated_at` | `string` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `folder_id` | `string` | `false` | - | "example" |
+| `git_repo_id` | `string` | `false` | - | "example" |
+| `id` | `string` | `false` | - | "example" |
+| `kind` | `string` | `false` | - | "example" |
+| `name` | `string` | `false` | - | "example" |
+| `owner` | `string` | `false` | - | "example" |
+| `project_bound` | `boolean` | `false` | - | true |
+| `project_name` | `string` | `false` | - | "example" |
+| `scope` | `string` | `false` | - | "example" |
+| `shared` | `boolean` | `false` | - | true |
+| `updated_at` | `string` | `false` | - | "2026-01-02T15:04:05Z" |
 

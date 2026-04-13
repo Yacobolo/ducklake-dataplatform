@@ -2,14 +2,24 @@
 
 # Schema: `GroupMember`
 
+## Example
+
+```json
+{
+  "group_id": "example",
+  "member_id": "example",
+  "member_type": "user"
+}
+```
+
 - Type: `object`
 - Required fields: `group_id`, `member_id`, `member_type`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `group_id` | `string` | `true` | - |
-| `member_id` | `string` | `true` | - |
-| `member_type` | `PrincipalType` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `group_id` | `string` | `true` | - | "example" |
+| `member_id` | `string` | `true` | - | "example" |
+| `member_type` | `PrincipalType` | `true` | - | "user" |
 

@@ -2,16 +2,28 @@
 
 # Schema: `CreateProjectRequest`
 
+## Example
+
+```json
+{
+  "default_branch": "example",
+  "description": "example",
+  "kind": "personal",
+  "name": "example",
+  "product_id": "example"
+}
+```
+
 - Type: `object`
 - Required fields: `name`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `default_branch` | `string` | `false` | - |
-| `description` | `string` | `false` | - |
-| `kind` | `ProjectKind` | `false` | - |
-| `name` | `string` | `true` | - |
-| `product_id` | `string` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `default_branch` | `string` | `false` | - | "example" |
+| `description` | `string` | `false` | - | "example" |
+| `kind` | `ProjectKind` | `false` | - | "personal" |
+| `name` | `string` | `true` | - | "example" |
+| `product_id` | `string` | `false` | - | "example" |
 

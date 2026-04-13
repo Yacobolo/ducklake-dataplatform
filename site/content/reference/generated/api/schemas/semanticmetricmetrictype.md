@@ -2,5 +2,11 @@
 
 # Schema: `SemanticMetricMetricType`
 
+## Example
+
+```json
+"SUM"
+```
+
 - Type: `string`
 

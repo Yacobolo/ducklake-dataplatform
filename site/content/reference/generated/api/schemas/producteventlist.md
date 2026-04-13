@@ -2,13 +2,34 @@
 
 # Schema: `ProductEventList`
 
+## Example
+
+```json
+{
+  "data": [
+    {
+      "created_at": "2026-01-02T15:04:05Z",
+      "description": "example",
+      "event_type": "example",
+      "id": "example",
+      "metadata": {
+        "key": "value"
+      },
+      "product_id": "example",
+      "title": "example"
+    }
+  ],
+  "next_page_token": "example"
+}
+```
+
 - Type: `object`
 - Required fields: `data`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `data` | `array[ProductEvent]` | `true` | - |
-| `next_page_token` | `string` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `data` | `array[ProductEvent]` | `true` | - | [ { "created_at": "2026-01-02T15:04:05Z", "description": "example", "event_type": "example", "id": "example", "metadata": { "key": "value" }, "product_id": "example", "title": "example" } ] |
+| `next_page_token` | `string` | `false` | - | "example" |
 

@@ -2,12 +2,20 @@
 
 # Schema: `PurgeLineageRequest`
 
+## Example
+
+```json
+{
+  "older_than_days": 1
+}
+```
+
 - Type: `object`
 - Required fields: `older_than_days`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `older_than_days` | `integer` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `older_than_days` | `integer` | `true` | - | 1 |
 

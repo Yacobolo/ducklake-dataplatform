@@ -2,16 +2,30 @@
 
 # Schema: `CreateSemanticModelRequest`
 
+## Example
+
+```json
+{
+  "base_model_ref": "example",
+  "default_time_dimension": "example",
+  "description": "example",
+  "name": "example",
+  "tags": [
+    "example"
+  ]
+}
+```
+
 - Type: `object`
 - Required fields: `base_model_ref`, `name`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `base_model_ref` | `string` | `true` | - |
-| `default_time_dimension` | `string` | `false` | - |
-| `description` | `string` | `false` | - |
-| `name` | `string` | `true` | - |
-| `tags` | `array[string]` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `base_model_ref` | `string` | `true` | - | "example" |
+| `default_time_dimension` | `string` | `false` | - | "example" |
+| `description` | `string` | `false` | - | "example" |
+| `name` | `string` | `true` | - | "example" |
+| `tags` | `array[string]` | `false` | - | [ "example" ] |
 

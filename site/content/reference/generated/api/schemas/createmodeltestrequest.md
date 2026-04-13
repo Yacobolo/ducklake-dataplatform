@@ -2,15 +2,33 @@
 
 # Schema: `CreateModelTestRequest`
 
+## Example
+
+```json
+{
+  "column": "example",
+  "config": {
+    "custom_sql": "example",
+    "to_column": "example",
+    "to_model": "example",
+    "values": [
+      "example"
+    ]
+  },
+  "name": "example",
+  "test_type": "not_null"
+}
+```
+
 - Type: `object`
 - Required fields: `name`, `test_type`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `column` | `string` | `false` | - |
-| `config` | `ModelTestConfig` | `false` | - |
-| `name` | `string` | `true` | - |
-| `test_type` | `ModelTestTestType` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `column` | `string` | `false` | - | "example" |
+| `config` | `ModelTestConfig` | `false` | - | { "custom_sql": "example", "to_column": "example", "to_model": "example", "values": [ "example" ] } |
+| `name` | `string` | `true` | - | "example" |
+| `test_type` | `ModelTestTestType` | `true` | - | "not_null" |
 

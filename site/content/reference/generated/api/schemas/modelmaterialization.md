@@ -2,5 +2,11 @@
 
 # Schema: `ModelMaterialization`
 
+## Example
+
+```json
+"VIEW"
+```
+
 - Type: `string`
 

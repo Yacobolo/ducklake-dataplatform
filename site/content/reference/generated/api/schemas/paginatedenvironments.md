@@ -2,13 +2,43 @@
 
 # Schema: `PaginatedEnvironments`
 
+## Example
+
+```json
+{
+  "data": [
+    {
+      "compute_endpoint": "example",
+      "created_at": "2026-01-02T15:04:05Z",
+      "defer_to_environment": "example",
+      "description": "example",
+      "id": "example",
+      "kind": "development",
+      "name": "example",
+      "project_id": "example",
+      "project_name": "example",
+      "source_overrides": {
+        "key": "example"
+      },
+      "target_catalog": "example",
+      "target_schema": "example",
+      "updated_at": "2026-01-02T15:04:05Z",
+      "variables": {
+        "key": "example"
+      }
+    }
+  ],
+  "next_page_token": "example"
+}
+```
+
 - Type: `object`
 - Required fields: `data`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `data` | `array[Environment]` | `true` | - |
-| `next_page_token` | `string` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `data` | `array[Environment]` | `true` | - | [ { "compute_endpoint": "example", "created_at": "2026-01-02T15:04:05Z", "defer_to_environment": "example", "description": "example", "id": "example", "kind": "development", "name": "example", "project_id": "example", "project_name": "example", "source_overrides": { "key": "example" }, "target_catalog": "example", "target_schema": "example", "updated_at": "2026-01-02T15:04:05Z", "variables": { "key": "example" } } ] |
+| `next_page_token` | `string` | `false` | - | "example" |
 

@@ -2,12 +2,37 @@
 
 # Schema: `FolderPath`
 
+## Example
+
+```json
+{
+  "data": [
+    {
+      "created_at": "2026-01-02T15:04:05Z",
+      "default_environment_id": "example",
+      "default_project_id": "example",
+      "depth": 1,
+      "git_repo_id": "example",
+      "git_root_path": "example",
+      "id": "example",
+      "name": "example",
+      "owner": "example",
+      "parent_folder_id": "example",
+      "path": "example",
+      "system_role": "example",
+      "updated_at": "2026-01-02T15:04:05Z",
+      "workspace_id": "example"
+    }
+  ]
+}
+```
+
 - Type: `object`
 - Required fields: `data`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `data` | `array[Folder]` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `data` | `array[Folder]` | `true` | - | [ { "created_at": "2026-01-02T15:04:05Z", "default_environment_id": "example", "default_project_id": "example", "depth": 1, "git_repo_id": "example", "git_root_path": "example", "id": "example", "name": "example", "owner": "example", "parent_folder_id": "example", "path": "example", "system_role": "example", "updated_at": "2026-01-02T15:04:05Z", "workspace_id": "example" } ] |
 

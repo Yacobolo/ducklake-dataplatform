@@ -2,13 +2,36 @@
 
 # Schema: `PaginatedFolderContents`
 
+## Example
+
+```json
+{
+  "data": [
+    {
+      "folder_id": "example",
+      "git_repo_id": "example",
+      "id": "example",
+      "kind": "example",
+      "name": "example",
+      "owner": "example",
+      "project_bound": true,
+      "project_name": "example",
+      "scope": "example",
+      "shared": true,
+      "updated_at": "2026-01-02T15:04:05Z"
+    }
+  ],
+  "next_page_token": "example"
+}
+```
+
 - Type: `object`
 - Required fields: `data`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `data` | `array[FolderContentItem]` | `true` | - |
-| `next_page_token` | `string` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `data` | `array[FolderContentItem]` | `true` | - | [ { "folder_id": "example", "git_repo_id": "example", "id": "example", "kind": "example", "name": "example", "owner": "example", "project_bound": true, "project_name": "example", "scope": "example", "shared": true, "updated_at": "2026-01-02T15:04:05Z" } ] |
+| `next_page_token` | `string` | `false` | - | "example" |
 

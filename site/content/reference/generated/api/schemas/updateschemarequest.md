@@ -2,12 +2,23 @@
 
 # Schema: `UpdateSchemaRequest`
 
+## Example
+
+```json
+{
+  "comment": "example",
+  "properties": {
+    "key": "example"
+  }
+}
+```
+
 - Type: `object`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `comment` | `string` | `false` | - |
-| `properties` | `object` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `comment` | `string` | `false` | - | "example" |
+| `properties` | `object` | `false` | - | { "key": "example" } |
 

@@ -2,13 +2,22 @@
 
 # Schema: `SubmitQueryResponse`
 
+## Example
+
+```json
+{
+  "query_id": "example",
+  "status": "QUEUED"
+}
+```
+
 - Type: `object`
 - Required fields: `query_id`, `status`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `query_id` | `string` | `true` | - |
-| `status` | `QueryJobStatus` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `query_id` | `string` | `true` | - | "example" |
+| `status` | `QueryJobStatus` | `true` | - | "QUEUED" |
 

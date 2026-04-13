@@ -2,14 +2,24 @@
 
 # Schema: `CreatePrincipalRequest`
 
+## Example
+
+```json
+{
+  "is_admin": true,
+  "name": "example",
+  "type": "user"
+}
+```
+
 - Type: `object`
 - Required fields: `name`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `is_admin` | `boolean` | `false` | - |
-| `name` | `string` | `true` | - |
-| `type` | `PrincipalType` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `is_admin` | `boolean` | `false` | - | true |
+| `name` | `string` | `true` | - | "example" |
+| `type` | `PrincipalType` | `false` | - | "user" |
 

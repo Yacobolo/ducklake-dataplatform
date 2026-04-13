@@ -2,12 +2,20 @@
 
 # Schema: `RevokeWebSessionsRequest`
 
+## Example
+
+```json
+{
+  "principal_id": "example"
+}
+```
+
 - Type: `object`
 - Required fields: `principal_id`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `principal_id` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `principal_id` | `string` | `true` | - | "example" |
 

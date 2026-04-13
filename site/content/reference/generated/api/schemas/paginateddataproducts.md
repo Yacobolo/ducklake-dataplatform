@@ -2,13 +2,156 @@
 
 # Schema: `PaginatedDataProducts`
 
+## Example
+
+```json
+{
+  "data": [
+    {
+      "domain": {
+        "created_at": "2026-01-02T15:04:05Z",
+        "description": "example",
+        "id": "example",
+        "name": "example",
+        "updated_at": "2026-01-02T15:04:05Z"
+      },
+      "latest_version": {
+        "access_request_path": "example",
+        "compatibility_level": "example",
+        "contract": {
+          "breaking_change_policy": "example",
+          "data_grain": "example",
+          "dimensions": [
+            "example"
+          ],
+          "join_keys": [
+            "example"
+          ],
+          "measures": [
+            "example"
+          ],
+          "primary_keys": [
+            "example"
+          ],
+          "quality_expectations": [
+            "example"
+          ],
+          "retention_window": "example",
+          "sample_queries": [
+            "example"
+          ],
+          "update_cadence": "example"
+        },
+        "created_at": "2026-01-02T15:04:05Z",
+        "created_by": "example",
+        "docs_url": "example",
+        "id": "example",
+        "producing_build_id": "example",
+        "product_id": "example",
+        "release_state": "example",
+        "slo": {
+          "freshness_slo": "example",
+          "latency_slo": "example"
+        },
+        "version": 1
+      },
+      "owner_team": {
+        "contact_channel": "example",
+        "created_at": "2026-01-02T15:04:05Z",
+        "domain_id": "example",
+        "id": "example",
+        "name": "example",
+        "updated_at": "2026-01-02T15:04:05Z"
+      },
+      "primary_output": {
+        "asset_id": "example",
+        "asset_key": "example",
+        "asset_type": "example",
+        "created_at": "2026-01-02T15:04:05Z",
+        "id": "example",
+        "is_primary": true,
+        "product_version_id": "example"
+      },
+      "product": {
+        "access_request_path": "example",
+        "business_definitions": {
+          "key": "example"
+        },
+        "consumer_audience": "example",
+        "contact_channel": "example",
+        "contract": {
+          "breaking_change_policy": "example",
+          "data_grain": "example",
+          "dimensions": [
+            "example"
+          ],
+          "join_keys": [
+            "example"
+          ],
+          "measures": [
+            "example"
+          ],
+          "primary_keys": [
+            "example"
+          ],
+          "quality_expectations": [
+            "example"
+          ],
+          "retention_window": "example",
+          "sample_queries": [
+            "example"
+          ],
+          "update_cadence": "example"
+        },
+        "created_at": "2026-01-02T15:04:05Z",
+        "created_by": "example",
+        "description": "example",
+        "docs_url": "example",
+        "domain_id": "example",
+        "id": "example",
+        "name": "example",
+        "owner_team_id": "example",
+        "publication_intent": "example",
+        "slo": {
+          "freshness_slo": "example",
+          "latency_slo": "example"
+        },
+        "slug": "example",
+        "steward_principal": "example",
+        "updated_at": "2026-01-02T15:04:05Z",
+        "visibility": "example"
+      },
+      "status": {
+        "adoption_metrics": {
+          "key": "value"
+        },
+        "certification_state": "example",
+        "failing_checks_count": 1,
+        "freshness_status": "example",
+        "last_successful_update_at": "2026-01-02T15:04:05Z",
+        "lineage_coverage": 1,
+        "open_warnings": [
+          "example"
+        ],
+        "product_id": "example",
+        "publication_state": "example",
+        "quality_status": "example",
+        "replacement_product_id": "example",
+        "updated_at": "2026-01-02T15:04:05Z"
+      }
+    }
+  ],
+  "next_page_token": "example"
+}
+```
+
 - Type: `object`
 - Required fields: `data`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `data` | `array[DataProductListItem]` | `true` | - |
-| `next_page_token` | `string` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `data` | `array[DataProductListItem]` | `true` | - | [ { "domain": { "created_at": "2026-01-02T15:04:05Z", "description": "example", "id": "example", "name": "example", "updated_at": "2026-01-02T15:04:05Z" }, "latest_version": { "access_request_path": "example", "compatibility_level": "example", "contract": { "breaking_change_policy": "example", "data_grain": "example", "dimensions": [ "example" ], "join_keys": [ "example" ], "measures": [ "example" ], "primary_keys": [ "example" ], "quality_expectations": [ "example" ], "retention_window": "example", "sample_queries": [ "example" ], "update_cadence": "example" }, "created_at": "2026-01-02T15:04:05Z", "created_by": "example", "docs_url": "example", "id": "example", "producing_build_id": "example", "product_id": "example", "release_state": "example", "slo": { "freshness_slo": "example", "latency_slo": "example" }, "version": 1 }, "owner_team": { "contact_channel": "example", "created_at": "2026-01-02T15:04:05Z", "domain_id": "example", "id": "example", "name": "example", "updated_at": "2026-01-02T15:04:05Z" }, "primary_output": { "asset_id": "example", "asset_key": "example", "asset_type": "example", "created_at": "2026-01-02T15:04:05Z", "id": "example", "is_primary": true, "product_version_id": "example" }, "product": { "access_request_path": "example", "business_definitions": { "key": "example" }, "consumer_audience": "example", "contact_channel": "example", "contract": { "breaking_change_policy": "example", "data_grain": "example", "dimensions": [ "example" ], "join_keys": [ "example" ], "measures": [ "example" ], "primary_keys": [ "example" ], "quality_expectations": [ "example" ], "retention_window": "example", "sample_queries": [ "example" ], "update_cadence": "example" }, "created_at": "2026-01-02T15:04:05Z", "created_by": "example", "description": "example", "docs_url": "example", "domain_id": "example", "id": "example", "name": "example", "owner_team_id": "example", "publication_intent": "example", "slo": { "freshness_slo": "example", "latency_slo": "example" }, "slug": "example", "steward_principal": "example", "updated_at": "2026-01-02T15:04:05Z", "visibility": "example" }, "status": { "adoption_metrics": { "key": "value" }, "certification_state": "example", "failing_checks_count": 1, "freshness_status": "example", "last_successful_update_at": "2026-01-02T15:04:05Z", "lineage_coverage": 1, "open_warnings": [ "example" ], "product_id": "example", "publication_state": "example", "quality_status": "example", "replacement_product_id": "example", "updated_at": "2026-01-02T15:04:05Z" } } ] |
+| `next_page_token` | `string` | `false` | - | "example" |
 

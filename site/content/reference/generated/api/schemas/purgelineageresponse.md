@@ -2,11 +2,19 @@
 
 # Schema: `PurgeLineageResponse`
 
+## Example
+
+```json
+{
+  "deleted_count": 1
+}
+```
+
 - Type: `object`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `deleted_count` | `integer` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `deleted_count` | `integer` | `false` | - | 1 |
 

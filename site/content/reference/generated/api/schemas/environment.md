@@ -2,25 +2,50 @@
 
 # Schema: `Environment`
 
+## Example
+
+```json
+{
+  "compute_endpoint": "example",
+  "created_at": "2026-01-02T15:04:05Z",
+  "defer_to_environment": "example",
+  "description": "example",
+  "id": "example",
+  "kind": "development",
+  "name": "example",
+  "project_id": "example",
+  "project_name": "example",
+  "source_overrides": {
+    "key": "example"
+  },
+  "target_catalog": "example",
+  "target_schema": "example",
+  "updated_at": "2026-01-02T15:04:05Z",
+  "variables": {
+    "key": "example"
+  }
+}
+```
+
 - Type: `object`
 - Required fields: `kind`, `name`, `target_catalog`, `target_schema`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `compute_endpoint` | `string` | `false` | - |
-| `created_at` | `string` | `false` | - |
-| `defer_to_environment` | `string` | `false` | - |
-| `description` | `string` | `false` | - |
-| `id` | `string` | `false` | - |
-| `kind` | `EnvironmentKind` | `true` | - |
-| `name` | `string` | `true` | - |
-| `project_id` | `string` | `false` | - |
-| `project_name` | `string` | `false` | - |
-| `source_overrides` | `object` | `false` | - |
-| `target_catalog` | `string` | `true` | - |
-| `target_schema` | `string` | `true` | - |
-| `updated_at` | `string` | `false` | - |
-| `variables` | `object` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `compute_endpoint` | `string` | `false` | - | "example" |
+| `created_at` | `string` | `false` | - | "2026-01-02T15:04:05Z" |
+| `defer_to_environment` | `string` | `false` | - | "example" |
+| `description` | `string` | `false` | - | "example" |
+| `id` | `string` | `false` | - | "example" |
+| `kind` | `EnvironmentKind` | `true` | - | "development" |
+| `name` | `string` | `true` | - | "example" |
+| `project_id` | `string` | `false` | - | "example" |
+| `project_name` | `string` | `false` | - | "example" |
+| `source_overrides` | `object` | `false` | - | { "key": "example" } |
+| `target_catalog` | `string` | `true` | - | "example" |
+| `target_schema` | `string` | `true` | - | "example" |
+| `updated_at` | `string` | `false` | - | "2026-01-02T15:04:05Z" |
+| `variables` | `object` | `false` | - | { "key": "example" } |
 

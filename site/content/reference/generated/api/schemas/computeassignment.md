@@ -2,18 +2,33 @@
 
 # Schema: `ComputeAssignment`
 
+## Example
+
+```json
+{
+  "created_at": "2026-01-02T15:04:05Z",
+  "endpoint_id": "example",
+  "endpoint_name": "example",
+  "fallback_local": true,
+  "id": "example",
+  "is_default": true,
+  "principal_id": "example",
+  "principal_type": "user"
+}
+```
+
 - Type: `object`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `created_at` | `string` | `false` | - |
-| `endpoint_id` | `string` | `false` | - |
-| `endpoint_name` | `string` | `false` | - |
-| `fallback_local` | `boolean` | `false` | - |
-| `id` | `string` | `false` | - |
-| `is_default` | `boolean` | `false` | - |
-| `principal_id` | `string` | `false` | - |
-| `principal_type` | `ComputeAssignmentPrincipalType` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `created_at` | `string` | `false` | - | "2026-01-02T15:04:05Z" |
+| `endpoint_id` | `string` | `false` | - | "example" |
+| `endpoint_name` | `string` | `false` | - | "example" |
+| `fallback_local` | `boolean` | `false` | - | true |
+| `id` | `string` | `false` | - | "example" |
+| `is_default` | `boolean` | `false` | - | true |
+| `principal_id` | `string` | `false` | - | "example" |
+| `principal_type` | `ComputeAssignmentPrincipalType` | `false` | - | "user" |
 

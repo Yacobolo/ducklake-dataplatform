@@ -2,16 +2,28 @@
 
 # Schema: `CreateCatalogRequest`
 
+## Example
+
+```json
+{
+  "comment": "example",
+  "data_path": "example",
+  "dsn": "example",
+  "metastore_type": "sqlite",
+  "name": "example"
+}
+```
+
 - Type: `object`
 - Required fields: `name`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `comment` | `string` | `false` | - |
-| `data_path` | `string` | `false` | - |
-| `dsn` | `string` | `false` | - |
-| `metastore_type` | `MetastoreType` | `false` | - |
-| `name` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `comment` | `string` | `false` | - | "example" |
+| `data_path` | `string` | `false` | - | "example" |
+| `dsn` | `string` | `false` | - | "example" |
+| `metastore_type` | `MetastoreType` | `false` | - | "sqlite" |
+| `name` | `string` | `true` | - | "example" |
 

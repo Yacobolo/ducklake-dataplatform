@@ -2,15 +2,26 @@
 
 # Schema: `CreateVolumeRequest`
 
+## Example
+
+```json
+{
+  "comment": "example",
+  "name": "example",
+  "storage_location": "example",
+  "volume_type": "example"
+}
+```
+
 - Type: `object`
 - Required fields: `name`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `comment` | `string` | `false` | - |
-| `name` | `string` | `true` | - |
-| `storage_location` | `string` | `false` | - |
-| `volume_type` | `string` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `comment` | `string` | `false` | - | "example" |
+| `name` | `string` | `true` | - | "example" |
+| `storage_location` | `string` | `false` | - | "example" |
+| `volume_type` | `string` | `false` | - | "example" |
 

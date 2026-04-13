@@ -19,6 +19,7 @@ type Options struct{}
 
 // EmitYAML renders the canonical OpenAPI document from IR.
 func EmitYAML(docIR ir.Document, _ Options) ([]byte, error) {
+	examples := newExampleResolver(docIR)
 	root := mappingNode()
 	appendKeyValue(root, "openapi", stringNode(openAPIVersion(docIR)))
 	appendKeyValue(root, "info", infoNode(docIR.Info))
@@ -27,7 +28,7 @@ func EmitYAML(docIR ir.Document, _ Options) ([]byte, error) {
 		appendKeyValue(root, "tags", tagsNode(docIR))
 	}
 
-	paths, err := pathsNode(docIR)
+	paths, err := pathsNode(docIR, examples)
 	if err != nil {
 		return nil, err
 	}
@@ -37,7 +38,7 @@ func EmitYAML(docIR ir.Document, _ Options) ([]byte, error) {
 		appendKeyValue(root, "security", securityRequirementsNode(docIR.OpenAPI.Security))
 	}
 
-	components, err := componentsNode(docIR)
+	components, err := componentsNode(docIR, examples)
 	if err != nil {
 		return nil, err
 	}
@@ -111,7 +112,7 @@ func tagNode(tag ir.Tag) *yaml.Node {
 	return node
 }
 
-func pathsNode(doc ir.Document) (*yaml.Node, error) {
+func pathsNode(doc ir.Document, examples *exampleResolver) (*yaml.Node, error) {
 	paths := mappingNode()
 	grouped := map[string][]ir.Endpoint{}
 	pathKeys := make([]string, 0)
@@ -125,7 +126,7 @@ func pathsNode(doc ir.Document) (*yaml.Node, error) {
 	for _, path := range pathKeys {
 		itemNode := mappingNode()
 		for _, endpoint := range grouped[path] {
-			op, err := operationNode(endpoint)
+			op, err := operationNode(endpoint, examples)
 			if err != nil {
 				return nil, err
 			}
@@ -137,7 +138,7 @@ func pathsNode(doc ir.Document) (*yaml.Node, error) {
 	return paths, nil
 }
 
-func operationNode(endpoint ir.Endpoint) (*yaml.Node, error) {
+func operationNode(endpoint ir.Endpoint, examples *exampleResolver) (*yaml.Node, error) {
 	if len(endpoint.Responses) == 0 {
 		return nil, fmt.Errorf("at least one response is required for %s", endpoint.OperationID)
 	}
@@ -153,11 +154,11 @@ func operationNode(endpoint ir.Endpoint) (*yaml.Node, error) {
 
 	parameters := sequenceNode()
 	for _, parameter := range endpoint.Parameters {
-		parameters.Content = append(parameters.Content, parameterNode(parameter))
+		parameters.Content = append(parameters.Content, parameterNode(parameter, examples))
 	}
 	appendKeyValue(node, "parameters", parameters)
 
-	responses, err := responsesNode(endpoint.Responses)
+	responses, err := responsesNode(endpoint.Responses, examples)
 	if err != nil {
 		return nil, err
 	}
@@ -172,7 +173,7 @@ func operationNode(endpoint ir.Endpoint) (*yaml.Node, error) {
 	}
 
 	if endpoint.RequestBody != nil {
-		appendKeyValue(node, "requestBody", requestBodyNode(*endpoint.RequestBody))
+		appendKeyValue(node, "requestBody", requestBodyNode(*endpoint.RequestBody, examples))
 	}
 
 	security := endpoint.Security
@@ -211,30 +212,39 @@ func operationNode(endpoint ir.Endpoint) (*yaml.Node, error) {
 	return node, nil
 }
 
-func parameterNode(parameter ir.Parameter) *yaml.Node {
+func parameterNode(parameter ir.Parameter, examples *exampleResolver) *yaml.Node {
 	node := mappingNode()
 	appendKeyValue(node, "name", stringNode(parameter.Name))
 	appendKeyValue(node, "in", stringNode(parameter.In))
 	appendKeyValue(node, "required", boolNode(parameter.Required))
+	if parameter.Description != "" {
+		appendKeyValue(node, "description", stringNode(parameter.Description))
+	}
 	appendKeyValue(node, "schema", schemaRefNode(parameter.Schema))
+	if example := examples.parameterExample(parameter); example != nil {
+		appendKeyValue(node, "example", anyToNode(example))
+	}
 	if parameter.Explode != nil {
 		appendKeyValue(node, "explode", boolNode(*parameter.Explode))
 	}
 	return node
 }
 
-func requestBodyNode(requestBody ir.RequestBody) *yaml.Node {
+func requestBodyNode(requestBody ir.RequestBody, examples *exampleResolver) *yaml.Node {
 	node := mappingNode()
 	appendKeyValue(node, "required", boolNode(requestBody.Required))
+	if requestBody.Description != "" {
+		appendKeyValue(node, "description", stringNode(requestBody.Description))
+	}
 	contentType := requestBody.ContentType
 	if contentType == "" {
 		contentType = "application/json"
 	}
-	appendKeyValue(node, "content", singleContentNode(contentType, requestBody.Schema))
+	appendKeyValue(node, "content", singleContentNode(contentType, requestBody.Schema, examples.requestBodyExample(requestBody)))
 	return node
 }
 
-func responsesNode(responses []ir.Response) (*yaml.Node, error) {
+func responsesNode(responses []ir.Response, examples *exampleResolver) (*yaml.Node, error) {
 	node := mappingNode()
 	for _, response := range responses {
 		entry := mappingNode()
@@ -257,28 +267,31 @@ func responsesNode(responses []ir.Response) (*yaml.Node, error) {
 			if contentType == "" {
 				contentType = "application/json"
 			}
-			appendKeyValue(entry, "content", singleAnyOfContentNode(contentType, response.AnyOf))
+			appendKeyValue(entry, "content", singleAnyOfContentNode(contentType, response.AnyOf, examples.responseExample(response)))
 		} else if response.Schema != nil {
 			contentType := response.ContentType
 			if contentType == "" {
 				contentType = "application/json"
 			}
-			appendKeyValue(entry, "content", singleContentNode(contentType, *response.Schema))
+			appendKeyValue(entry, "content", singleContentNode(contentType, *response.Schema, examples.responseExample(response)))
 		}
 		appendKeyValue(node, strconv.Itoa(response.StatusCode), entry)
 	}
 	return node, nil
 }
 
-func singleContentNode(contentType string, schema ir.SchemaRef) *yaml.Node {
+func singleContentNode(contentType string, schema ir.SchemaRef, example any) *yaml.Node {
 	content := mappingNode()
 	mediaType := mappingNode()
 	appendKeyValue(mediaType, "schema", schemaRefNode(schema))
+	if example != nil {
+		appendKeyValue(mediaType, "example", anyToNode(example))
+	}
 	appendKeyValue(content, contentType, mediaType)
 	return content
 }
 
-func singleAnyOfContentNode(contentType string, schemas []ir.SchemaRef) *yaml.Node {
+func singleAnyOfContentNode(contentType string, schemas []ir.SchemaRef, example any) *yaml.Node {
 	content := mappingNode()
 	mediaType := mappingNode()
 	schema := mappingNode()
@@ -288,6 +301,9 @@ func singleAnyOfContentNode(contentType string, schemas []ir.SchemaRef) *yaml.No
 	}
 	appendKeyValue(schema, "anyOf", anyOf)
 	appendKeyValue(mediaType, "schema", schema)
+	if example != nil {
+		appendKeyValue(mediaType, "example", anyToNode(example))
+	}
 	appendKeyValue(content, contentType, mediaType)
 	return content
 }
@@ -319,7 +335,7 @@ func securityRequirementsNode(requirements []ir.SecurityRequirement) *yaml.Node 
 	return node
 }
 
-func componentsNode(doc ir.Document) (*yaml.Node, error) {
+func componentsNode(doc ir.Document, examples *exampleResolver) (*yaml.Node, error) {
 	node := mappingNode()
 
 	schemas := mappingNode()
@@ -332,7 +348,7 @@ func componentsNode(doc ir.Document) (*yaml.Node, error) {
 	}
 	sort.Strings(schemaKeys)
 	for _, key := range schemaKeys {
-		appendKeyValue(schemas, key, schemaNode(doc.Schemas[key]))
+		appendKeyValue(schemas, key, schemaNode(key, doc.Schemas[key], examples))
 	}
 	appendKeyValue(node, "schemas", schemas)
 
@@ -356,7 +372,7 @@ func componentsNode(doc ir.Document) (*yaml.Node, error) {
 	return node, nil
 }
 
-func schemaNode(schema ir.Schema) *yaml.Node {
+func schemaNode(name string, schema ir.Schema, examples *exampleResolver) *yaml.Node {
 	node := mappingNode()
 	appendKeyValue(node, "type", stringNode(schema.Type))
 	if len(schema.Enum) > 0 {
@@ -380,7 +396,7 @@ func schemaNode(schema ir.Schema) *yaml.Node {
 		properties := mappingNode()
 		propertyKeys := orderedPropertyKeys(schema)
 		for _, name := range propertyKeys {
-			appendKeyValue(properties, name, schemaPropertyNode(schema.Properties[name]))
+			appendKeyValue(properties, name, schemaPropertyNode(schema.Properties[name], examples))
 		}
 		appendKeyValue(node, "properties", properties)
 	}
@@ -389,6 +405,9 @@ func schemaNode(schema ir.Schema) *yaml.Node {
 	}
 	if schema.Title != "" {
 		appendKeyValue(node, "title", stringNode(schema.Title))
+	}
+	if example := examples.schemaExample(name, schema); example != nil {
+		appendKeyValue(node, "example", anyToNode(example))
 	}
 	return node
 }
@@ -417,12 +436,240 @@ func orderedPropertyKeys(schema ir.Schema) []string {
 	return keys
 }
 
-func schemaPropertyNode(property ir.SchemaProperty) *yaml.Node {
+func schemaPropertyNode(property ir.SchemaProperty, examples *exampleResolver) *yaml.Node {
 	node := schemaRefNode(property.Schema)
 	if property.Description != "" {
 		appendKeyValue(node, "description", stringNode(property.Description))
 	}
+	if example, ok := examples.schemaPropertyExample(property); ok && example != nil {
+		appendKeyValue(node, "example", anyToNode(example))
+	}
 	return node
+}
+
+type exampleResolver struct {
+	schemas map[string]ir.Schema
+	cache   map[string]any
+	active  map[string]bool
+}
+
+func newExampleResolver(doc ir.Document) *exampleResolver {
+	return &exampleResolver{
+		schemas: doc.Schemas,
+		cache:   make(map[string]any, len(doc.Schemas)),
+		active:  map[string]bool{},
+	}
+}
+
+func (r *exampleResolver) parameterExample(parameter ir.Parameter) any {
+	if parameter.Example != nil {
+		return cloneExampleValue(parameter.Example)
+	}
+	return r.schemaRefExample(parameter.Schema)
+}
+
+func (r *exampleResolver) requestBodyExample(body ir.RequestBody) any {
+	if body.Example != nil {
+		return cloneExampleValue(body.Example)
+	}
+	return r.schemaRefExample(body.Schema)
+}
+
+func (r *exampleResolver) responseExample(response ir.Response) any {
+	if response.Example != nil {
+		return cloneExampleValue(response.Example)
+	}
+	if response.Schema != nil {
+		return r.schemaRefExample(*response.Schema)
+	}
+	for _, ref := range response.AnyOf {
+		if example := r.schemaRefExample(ref); example != nil {
+			return example
+		}
+	}
+	return nil
+}
+
+func (r *exampleResolver) schemaExample(name string, schema ir.Schema) any {
+	if schema.Example != nil {
+		return cloneExampleValue(schema.Example)
+	}
+	if cached, ok := r.cache[name]; ok {
+		return cloneExampleValue(cached)
+	}
+	if name != "" {
+		if r.active[name] {
+			return nil
+		}
+		r.active[name] = true
+		defer delete(r.active, name)
+	}
+	example := r.deriveSchemaExample(schema)
+	if name != "" {
+		r.cache[name] = cloneExampleValue(example)
+	}
+	return example
+}
+
+func (r *exampleResolver) schemaPropertyExample(property ir.SchemaProperty) (any, bool) {
+	if property.Example != nil {
+		return cloneExampleValue(property.Example), true
+	}
+	if isPureRef(property.Schema) {
+		return nil, false
+	}
+	return r.schemaRefExample(property.Schema), true
+}
+
+func (r *exampleResolver) schemaRefExample(ref ir.SchemaRef) any {
+	if ref.Ref != "" && isPureRef(ref) {
+		schema, ok := r.schemas[ref.Ref]
+		if !ok {
+			return nil
+		}
+		return r.schemaExample(ref.Ref, schema)
+	}
+	if ref.Ref != "" {
+		if schema, ok := r.schemas[ref.Ref]; ok {
+			if example := r.schemaExample(ref.Ref, schema); example != nil {
+				return example
+			}
+		}
+	}
+	return deriveInlineSchemaRefExample(ref, r)
+}
+
+func (r *exampleResolver) deriveSchemaExample(schema ir.Schema) any {
+	switch schema.Type {
+	case "object":
+		if len(schema.Properties) == 0 {
+			return map[string]any{}
+		}
+		example := make(map[string]any, len(schema.Properties))
+		for _, key := range orderedPropertyKeys(schema) {
+			property := schema.Properties[key]
+			value := cloneExampleValue(property.Example)
+			if value == nil {
+				value = r.schemaRefExample(property.Schema)
+			}
+			if value != nil {
+				example[key] = value
+			}
+		}
+		return example
+	case "array":
+		if schema.Items == nil {
+			return []any{}
+		}
+		item := r.schemaRefExample(*schema.Items)
+		if item == nil {
+			return []any{}
+		}
+		return []any{item}
+	case "string":
+		if len(schema.Enum) > 0 {
+			return schema.Enum[0]
+		}
+		return exampleStringForFormat("")
+	case "integer":
+		return int64(1)
+	case "number":
+		return 1.0
+	case "boolean":
+		return true
+	default:
+		return nil
+	}
+}
+
+func deriveInlineSchemaRefExample(ref ir.SchemaRef, resolver *exampleResolver) any {
+	switch ref.Type {
+	case "array":
+		if ref.Items == nil {
+			return []any{}
+		}
+		item := resolver.schemaRefExample(*ref.Items)
+		if item == nil {
+			return []any{}
+		}
+		return []any{item}
+	case "object":
+		if ref.AdditionalProperties != nil {
+			return map[string]any{
+				"key": deriveAdditionalPropertiesExample(*ref.AdditionalProperties, resolver),
+			}
+		}
+		return map[string]any{}
+	case "string":
+		return exampleStringForFormat(ref.Format)
+	case "integer":
+		return int64(1)
+	case "number":
+		return 1.0
+	case "boolean":
+		return true
+	default:
+		if ref.AdditionalProperties != nil {
+			return map[string]any{
+				"key": deriveAdditionalPropertiesExample(*ref.AdditionalProperties, resolver),
+			}
+		}
+		return "example"
+	}
+}
+
+func deriveAdditionalPropertiesExample(additional ir.AdditionalProperties, resolver *exampleResolver) any {
+	if additional.Schema != nil {
+		if example := resolver.schemaRefExample(*additional.Schema); example != nil {
+			return example
+		}
+	}
+	if additional.Any {
+		return "value"
+	}
+	return map[string]any{}
+}
+
+func exampleStringForFormat(format string) string {
+	switch format {
+	case "date-time":
+		return "2026-01-02T15:04:05Z"
+	case "date":
+		return "2026-01-02"
+	case "uuid":
+		return "123e4567-e89b-12d3-a456-426614174000"
+	case "uri":
+		return "https://example.com/resource"
+	case "email":
+		return "user@example.com"
+	default:
+		return "example"
+	}
+}
+
+func isPureRef(ref ir.SchemaRef) bool {
+	return ref.Ref != "" && ref.Type == "" && ref.Format == "" && ref.Items == nil && ref.AdditionalProperties == nil
+}
+
+func cloneExampleValue(value any) any {
+	switch typed := value.(type) {
+	case map[string]any:
+		cloned := make(map[string]any, len(typed))
+		for key, item := range typed {
+			cloned[key] = cloneExampleValue(item)
+		}
+		return cloned
+	case []any:
+		cloned := make([]any, len(typed))
+		for i, item := range typed {
+			cloned[i] = cloneExampleValue(item)
+		}
+		return cloned
+	case []string:
+		return append([]string(nil), typed...)
+	default:
+		return typed
+	}
 }
 
 func schemaRefNode(ref ir.SchemaRef) *yaml.Node {

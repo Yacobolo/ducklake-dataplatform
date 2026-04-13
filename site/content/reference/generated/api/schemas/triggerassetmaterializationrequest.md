@@ -2,13 +2,25 @@
 
 # Schema: `TriggerAssetMaterializationRequest`
 
+## Example
+
+```json
+{
+  "idempotency_key": "example",
+  "partition_key": "example",
+  "payload": {
+    "key": "value"
+  }
+}
+```
+
 - Type: `object`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `idempotency_key` | `string` | `false` | - |
-| `partition_key` | `string` | `false` | - |
-| `payload` | `object` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `idempotency_key` | `string` | `false` | - | "example" |
+| `partition_key` | `string` | `false` | - | "example" |
+| `payload` | `object` | `false` | - | { "key": "value" } |
 

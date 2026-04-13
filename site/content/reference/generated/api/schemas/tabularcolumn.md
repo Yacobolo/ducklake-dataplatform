@@ -2,12 +2,20 @@
 
 # Schema: `TabularColumn`
 
+## Example
+
+```json
+{
+  "name": "example"
+}
+```
+
 - Type: `object`
 - Required fields: `name`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `name` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `name` | `string` | `true` | - | "example" |
 

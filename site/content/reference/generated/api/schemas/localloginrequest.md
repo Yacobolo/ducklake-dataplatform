@@ -2,13 +2,22 @@
 
 # Schema: `LocalLoginRequest`
 
+## Example
+
+```json
+{
+  "password": "example",
+  "username": "example"
+}
+```
+
 - Type: `object`
 - Required fields: `password`, `username`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `password` | `string` | `true` | - |
-| `username` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `password` | `string` | `true` | - | "example" |
+| `username` | `string` | `true` | - | "example" |
 

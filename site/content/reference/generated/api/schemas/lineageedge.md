@@ -2,18 +2,33 @@
 
 # Schema: `LineageEdge`
 
+## Example
+
+```json
+{
+  "created_at": "2026-01-02T15:04:05Z",
+  "edge_type": "example",
+  "id": "example",
+  "principal_name": "example",
+  "source_schema": "example",
+  "source_table": "example",
+  "target_schema": "example",
+  "target_table": "example"
+}
+```
+
 - Type: `object`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `created_at` | `string` | `false` | - |
-| `edge_type` | `string` | `false` | - |
-| `id` | `string` | `false` | - |
-| `principal_name` | `string` | `false` | - |
-| `source_schema` | `string` | `false` | - |
-| `source_table` | `string` | `false` | - |
-| `target_schema` | `string` | `false` | - |
-| `target_table` | `string` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `created_at` | `string` | `false` | - | "2026-01-02T15:04:05Z" |
+| `edge_type` | `string` | `false` | - | "example" |
+| `id` | `string` | `false` | - | "example" |
+| `principal_name` | `string` | `false` | - | "example" |
+| `source_schema` | `string` | `false` | - | "example" |
+| `source_table` | `string` | `false` | - | "example" |
+| `target_schema` | `string` | `false` | - | "example" |
+| `target_table` | `string` | `false` | - | "example" |
 

@@ -2,12 +2,20 @@
 
 # Schema: `CreateProductDependencyRequest`
 
+## Example
+
+```json
+{
+  "depends_on_slug": "example"
+}
+```
+
 - Type: `object`
 - Required fields: `depends_on_slug`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `depends_on_slug` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `depends_on_slug` | `string` | `true` | - | "example" |
 

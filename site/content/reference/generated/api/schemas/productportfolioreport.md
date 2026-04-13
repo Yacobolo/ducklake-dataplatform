@@ -2,18 +2,99 @@
 
 # Schema: `ProductPortfolioReport`
 
+## Example
+
+```json
+{
+  "domain_scorecards": [
+    {
+      "average_completeness_pct": 1,
+      "certified_count": 1,
+      "name": "example",
+      "product_count": 1,
+      "published_count": 1
+    }
+  ],
+  "high_blast_radius": [
+    {
+      "adoption_score": 1,
+      "domain_name": "example",
+      "downstream_product_count": 1,
+      "output_count": 1,
+      "product_id": "example",
+      "product_name": "example",
+      "product_slug": "example",
+      "semantic_entrypoint_count": 1,
+      "subscriber_count": 1,
+      "team_name": "example"
+    }
+  ],
+  "least_adopted": [
+    {
+      "adoption_score": 1,
+      "domain_name": "example",
+      "downstream_product_count": 1,
+      "output_count": 1,
+      "product_id": "example",
+      "product_name": "example",
+      "product_slug": "example",
+      "semantic_entrypoint_count": 1,
+      "subscriber_count": 1,
+      "team_name": "example"
+    }
+  ],
+  "orphan_assets": [
+    {
+      "resource_id": "example",
+      "resource_name": "example",
+      "resource_type": "example"
+    }
+  ],
+  "orphan_semantic_models": [
+    {
+      "resource_id": "example",
+      "resource_name": "example",
+      "resource_type": "example"
+    }
+  ],
+  "team_scorecards": [
+    {
+      "average_completeness_pct": 1,
+      "certified_count": 1,
+      "name": "example",
+      "product_count": 1,
+      "published_count": 1
+    }
+  ],
+  "top_used": [
+    {
+      "adoption_score": 1,
+      "domain_name": "example",
+      "downstream_product_count": 1,
+      "output_count": 1,
+      "product_id": "example",
+      "product_name": "example",
+      "product_slug": "example",
+      "semantic_entrypoint_count": 1,
+      "subscriber_count": 1,
+      "team_name": "example"
+    }
+  ]
+}
+```
+
 - Type: `object`
 - Required fields: `domain_scorecards`, `high_blast_radius`, `least_adopted`, `orphan_assets`, `orphan_semantic_models`, `team_scorecards`, `top_used`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `domain_scorecards` | `array[ProductPortfolioGroup]` | `true` | - |
-| `high_blast_radius` | `array[ProductAdoptionSummary]` | `true` | - |
-| `least_adopted` | `array[ProductAdoptionSummary]` | `true` | - |
-| `orphan_assets` | `array[OrphanResource]` | `true` | - |
-| `orphan_semantic_models` | `array[OrphanResource]` | `true` | - |
-| `team_scorecards` | `array[ProductPortfolioGroup]` | `true` | - |
-| `top_used` | `array[ProductAdoptionSummary]` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `domain_scorecards` | `array[ProductPortfolioGroup]` | `true` | - | [ { "average_completeness_pct": 1, "certified_count": 1, "name": "example", "product_count": 1, "published_count": 1 } ] |
+| `high_blast_radius` | `array[ProductAdoptionSummary]` | `true` | - | [ { "adoption_score": 1, "domain_name": "example", "downstream_product_count": 1, "output_count": 1, "product_id": "example", "product_name": "example", "product_slug": "example", "semantic_entrypoint_count": 1, "subscriber_count": 1, "team_name": "example" } ] |
+| `least_adopted` | `array[ProductAdoptionSummary]` | `true` | - | [ { "adoption_score": 1, "domain_name": "example", "downstream_product_count": 1, "output_count": 1, "product_id": "example", "product_name": "example", "product_slug": "example", "semantic_entrypoint_count": 1, "subscriber_count": 1, "team_name": "example" } ] |
+| `orphan_assets` | `array[OrphanResource]` | `true` | - | [ { "resource_id": "example", "resource_name": "example", "resource_type": "example" } ] |
+| `orphan_semantic_models` | `array[OrphanResource]` | `true` | - | [ { "resource_id": "example", "resource_name": "example", "resource_type": "example" } ] |
+| `team_scorecards` | `array[ProductPortfolioGroup]` | `true` | - | [ { "average_completeness_pct": 1, "certified_count": 1, "name": "example", "product_count": 1, "published_count": 1 } ] |
+| `top_used` | `array[ProductAdoptionSummary]` | `true` | - | [ { "adoption_score": 1, "domain_name": "example", "downstream_product_count": 1, "output_count": 1, "product_id": "example", "product_name": "example", "product_slug": "example", "semantic_entrypoint_count": 1, "subscriber_count": 1, "team_name": "example" } ] |
 

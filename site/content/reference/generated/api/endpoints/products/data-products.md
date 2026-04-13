@@ -12,16 +12,16 @@ List data products
 
 ### Query Parameters
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `certification_state` | `string` | `false` | - |
-| `domain` | `string` | `false` | - |
-| `freshness_state` | `string` | `false` | - |
-| `max_results` | `integer` | `false` | - |
-| `page_token` | `string` | `false` | - |
-| `publication_state` | `string` | `false` | - |
-| `q` | `string` | `false` | - |
-| `team` | `string` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `certification_state` | `string` | `false` | - | "example" |
+| `domain` | `string` | `false` | - | "example" |
+| `freshness_state` | `string` | `false` | - | "example" |
+| `max_results` | `integer` | `false` | - | 1 |
+| `page_token` | `string` | `false` | - | "example" |
+| `publication_state` | `string` | `false` | - | "example" |
+| `q` | `string` | `false` | - | "example" |
+| `team` | `string` | `false` | - | "example" |
 
 ### Responses
 
@@ -32,6 +32,207 @@ List data products
 | `401` | Access is unauthorized. |
 | `429` | Client error |
 | `500` | Server error |
+
+#### `200` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "data": [
+    {
+      "domain": {
+        "created_at": "2026-01-02T15:04:05Z",
+        "description": "example",
+        "id": "example",
+        "name": "example",
+        "updated_at": "2026-01-02T15:04:05Z"
+      },
+      "latest_version": {
+        "access_request_path": "example",
+        "compatibility_level": "example",
+        "contract": {
+          "breaking_change_policy": "example",
+          "data_grain": "example",
+          "dimensions": [
+            "example"
+          ],
+          "join_keys": [
+            "example"
+          ],
+          "measures": [
+            "example"
+          ],
+          "primary_keys": [
+            "example"
+          ],
+          "quality_expectations": [
+            "example"
+          ],
+          "retention_window": "example",
+          "sample_queries": [
+            "example"
+          ],
+          "update_cadence": "example"
+        },
+        "created_at": "2026-01-02T15:04:05Z",
+        "created_by": "example",
+        "docs_url": "example",
+        "id": "example",
+        "producing_build_id": "example",
+        "product_id": "example",
+        "release_state": "example",
+        "slo": {
+          "freshness_slo": "example",
+          "latency_slo": "example"
+        },
+        "version": 1
+      },
+      "owner_team": {
+        "contact_channel": "example",
+        "created_at": "2026-01-02T15:04:05Z",
+        "domain_id": "example",
+        "id": "example",
+        "name": "example",
+        "updated_at": "2026-01-02T15:04:05Z"
+      },
+      "primary_output": {
+        "asset_id": "example",
+        "asset_key": "example",
+        "asset_type": "example",
+        "created_at": "2026-01-02T15:04:05Z",
+        "id": "example",
+        "is_primary": true,
+        "product_version_id": "example"
+      },
+      "product": {
+        "access_request_path": "example",
+        "business_definitions": {
+          "key": "example"
+        },
+        "consumer_audience": "example",
+        "contact_channel": "example",
+        "contract": {
+          "breaking_change_policy": "example",
+          "data_grain": "example",
+          "dimensions": [
+            "example"
+          ],
+          "join_keys": [
+            "example"
+          ],
+          "measures": [
+            "example"
+          ],
+          "primary_keys": [
+            "example"
+          ],
+          "quality_expectations": [
+            "example"
+          ],
+          "retention_window": "example",
+          "sample_queries": [
+            "example"
+          ],
+          "update_cadence": "example"
+        },
+        "created_at": "2026-01-02T15:04:05Z",
+        "created_by": "example",
+        "description": "example",
+        "docs_url": "example",
+        "domain_id": "example",
+        "id": "example",
+        "name": "example",
+        "owner_team_id": "example",
+        "publication_intent": "example",
+        "slo": {
+          "freshness_slo": "example",
+          "latency_slo": "example"
+        },
+        "slug": "example",
+        "steward_principal": "example",
+        "updated_at": "2026-01-02T15:04:05Z",
+        "visibility": "example"
+      },
+      "status": {
+        "adoption_metrics": {
+          "key": "value"
+        },
+        "certification_state": "example",
+        "failing_checks_count": 1,
+        "freshness_status": "example",
+        "last_successful_update_at": "2026-01-02T15:04:05Z",
+        "lineage_coverage": 1,
+        "open_warnings": [
+          "example"
+        ],
+        "product_id": "example",
+        "publication_state": "example",
+        "quality_status": "example",
+        "replacement_product_id": "example",
+        "updated_at": "2026-01-02T15:04:05Z"
+      }
+    }
+  ],
+  "next_page_token": "example"
+}
+```
+
+#### `400` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `401` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `429` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `500` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
 
 ## `POST /data-products`
 
@@ -44,6 +245,63 @@ Create data product
 - Required: `true`
 - Content types: `application/json`
 
+### Request Examples
+
+- Content type: `application/json`
+
+```json
+{
+  "access_request_path": "example",
+  "business_definitions": {
+    "key": "example"
+  },
+  "consumer_audience": "example",
+  "contact_channel": "example",
+  "contract": {
+    "breaking_change_policy": "example",
+    "data_grain": "example",
+    "dimensions": [
+      "example"
+    ],
+    "join_keys": [
+      "example"
+    ],
+    "measures": [
+      "example"
+    ],
+    "primary_keys": [
+      "example"
+    ],
+    "quality_expectations": [
+      "example"
+    ],
+    "retention_window": "example",
+    "sample_queries": [
+      "example"
+    ],
+    "update_cadence": "example"
+  },
+  "created_by": "example",
+  "description": "example",
+  "docs_url": "example",
+  "domain_name": "example",
+  "name": "example",
+  "primary_asset_key": "example",
+  "producing_build_id": "example",
+  "semantic_model_refs": [
+    "example"
+  ],
+  "slo": {
+    "freshness_slo": "example",
+    "latency_slo": "example"
+  },
+  "slug": "example",
+  "steward_principal": "example",
+  "team_name": "example",
+  "visibility": "example"
+}
+```
+
 ### Responses
 
 | Code | Description |
@@ -55,6 +313,401 @@ Create data product
 | `409` | The request conflicts with the current state of the server. |
 | `429` | Client error |
 | `500` | Server error |
+
+#### `201` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "dependencies": [
+    {
+      "domain": {
+        "created_at": "2026-01-02T15:04:05Z",
+        "description": "example",
+        "id": "example",
+        "name": "example",
+        "updated_at": "2026-01-02T15:04:05Z"
+      },
+      "latest_version": {
+        "access_request_path": "example",
+        "compatibility_level": "example",
+        "contract": {
+          "breaking_change_policy": "example",
+          "data_grain": "example",
+          "dimensions": [
+            "example"
+          ],
+          "join_keys": [
+            "example"
+          ],
+          "measures": [
+            "example"
+          ],
+          "primary_keys": [
+            "example"
+          ],
+          "quality_expectations": [
+            "example"
+          ],
+          "retention_window": "example",
+          "sample_queries": [
+            "example"
+          ],
+          "update_cadence": "example"
+        },
+        "created_at": "2026-01-02T15:04:05Z",
+        "created_by": "example",
+        "docs_url": "example",
+        "id": "example",
+        "producing_build_id": "example",
+        "product_id": "example",
+        "release_state": "example",
+        "slo": {
+          "freshness_slo": "example",
+          "latency_slo": "example"
+        },
+        "version": 1
+      },
+      "owner_team": {
+        "contact_channel": "example",
+        "created_at": "2026-01-02T15:04:05Z",
+        "domain_id": "example",
+        "id": "example",
+        "name": "example",
+        "updated_at": "2026-01-02T15:04:05Z"
+      },
+      "primary_output": {
+        "asset_id": "example",
+        "asset_key": "example",
+        "asset_type": "example",
+        "created_at": "2026-01-02T15:04:05Z",
+        "id": "example",
+        "is_primary": true,
+        "product_version_id": "example"
+      },
+      "product": {
+        "access_request_path": "example",
+        "business_definitions": {
+          "key": "example"
+        },
+        "consumer_audience": "example",
+        "contact_channel": "example",
+        "contract": {
+          "breaking_change_policy": "example",
+          "data_grain": "example",
+          "dimensions": [
+            "example"
+          ],
+          "join_keys": [
+            "example"
+          ],
+          "measures": [
+            "example"
+          ],
+          "primary_keys": [
+            "example"
+          ],
+          "quality_expectations": [
+            "example"
+          ],
+          "retention_window": "example",
+          "sample_queries": [
+            "example"
+          ],
+          "update_cadence": "example"
+        },
+        "created_at": "2026-01-02T15:04:05Z",
+        "created_by": "example",
+        "description": "example",
+        "docs_url": "example",
+        "domain_id": "example",
+        "id": "example",
+        "name": "example",
+        "owner_team_id": "example",
+        "publication_intent": "example",
+        "slo": {
+          "freshness_slo": "example",
+          "latency_slo": "example"
+        },
+        "slug": "example",
+        "steward_principal": "example",
+        "updated_at": "2026-01-02T15:04:05Z",
+        "visibility": "example"
+      },
+      "status": {
+        "adoption_metrics": {
+          "key": "value"
+        },
+        "certification_state": "example",
+        "failing_checks_count": 1,
+        "freshness_status": "example",
+        "last_successful_update_at": "2026-01-02T15:04:05Z",
+        "lineage_coverage": 1,
+        "open_warnings": [
+          "example"
+        ],
+        "product_id": "example",
+        "publication_state": "example",
+        "quality_status": "example",
+        "replacement_product_id": "example",
+        "updated_at": "2026-01-02T15:04:05Z"
+      }
+    }
+  ],
+  "domain": {
+    "created_at": "2026-01-02T15:04:05Z",
+    "description": "example",
+    "id": "example",
+    "name": "example",
+    "updated_at": "2026-01-02T15:04:05Z"
+  },
+  "events": [
+    {
+      "created_at": "2026-01-02T15:04:05Z",
+      "description": "example",
+      "event_type": "example",
+      "id": "example",
+      "metadata": {
+        "key": "value"
+      },
+      "product_id": "example",
+      "title": "example"
+    }
+  ],
+  "outputs": [
+    {
+      "asset_id": "example",
+      "asset_key": "example",
+      "asset_type": "example",
+      "created_at": "2026-01-02T15:04:05Z",
+      "id": "example",
+      "is_primary": true,
+      "product_version_id": "example"
+    }
+  ],
+  "owner_team": {
+    "contact_channel": "example",
+    "created_at": "2026-01-02T15:04:05Z",
+    "domain_id": "example",
+    "id": "example",
+    "name": "example",
+    "updated_at": "2026-01-02T15:04:05Z"
+  },
+  "product": {
+    "access_request_path": "example",
+    "business_definitions": {
+      "key": "example"
+    },
+    "consumer_audience": "example",
+    "contact_channel": "example",
+    "contract": {
+      "breaking_change_policy": "example",
+      "data_grain": "example",
+      "dimensions": [
+        "example"
+      ],
+      "join_keys": [
+        "example"
+      ],
+      "measures": [
+        "example"
+      ],
+      "primary_keys": [
+        "example"
+      ],
+      "quality_expectations": [
+        "example"
+      ],
+      "retention_window": "example",
+      "sample_queries": [
+        "example"
+      ],
+      "update_cadence": "example"
+    },
+    "created_at": "2026-01-02T15:04:05Z",
+    "created_by": "example",
+    "description": "example",
+    "docs_url": "example",
+    "domain_id": "example",
+    "id": "example",
+    "name": "example",
+    "owner_team_id": "example",
+    "publication_intent": "example",
+    "slo": {
+      "freshness_slo": "example",
+      "latency_slo": "example"
+    },
+    "slug": "example",
+    "steward_principal": "example",
+    "updated_at": "2026-01-02T15:04:05Z",
+    "visibility": "example"
+  },
+  "semantic_entrypoints": [
+    {
+      "created_at": "2026-01-02T15:04:05Z",
+      "id": "example",
+      "model_name": "example",
+      "product_version_id": "example",
+      "semantic_model_id": "example"
+    }
+  ],
+  "status": {
+    "adoption_metrics": {
+      "key": "value"
+    },
+    "certification_state": "example",
+    "failing_checks_count": 1,
+    "freshness_status": "example",
+    "last_successful_update_at": "2026-01-02T15:04:05Z",
+    "lineage_coverage": 1,
+    "open_warnings": [
+      "example"
+    ],
+    "product_id": "example",
+    "publication_state": "example",
+    "quality_status": "example",
+    "replacement_product_id": "example",
+    "updated_at": "2026-01-02T15:04:05Z"
+  },
+  "subscriptions": [
+    {
+      "channel": "example",
+      "created_at": "2026-01-02T15:04:05Z",
+      "event_type": "example",
+      "id": "example",
+      "principal_name": "example",
+      "product_id": "example"
+    }
+  ],
+  "versions": [
+    {
+      "access_request_path": "example",
+      "compatibility_level": "example",
+      "contract": {
+        "breaking_change_policy": "example",
+        "data_grain": "example",
+        "dimensions": [
+          "example"
+        ],
+        "join_keys": [
+          "example"
+        ],
+        "measures": [
+          "example"
+        ],
+        "primary_keys": [
+          "example"
+        ],
+        "quality_expectations": [
+          "example"
+        ],
+        "retention_window": "example",
+        "sample_queries": [
+          "example"
+        ],
+        "update_cadence": "example"
+      },
+      "created_at": "2026-01-02T15:04:05Z",
+      "created_by": "example",
+      "docs_url": "example",
+      "id": "example",
+      "producing_build_id": "example",
+      "product_id": "example",
+      "release_state": "example",
+      "slo": {
+        "freshness_slo": "example",
+        "latency_slo": "example"
+      },
+      "version": 1
+    }
+  ]
+}
+```
+
+#### `400` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `401` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `403` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `409` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `429` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `500` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
 
 ## `GET /data-products/{product_slug}`
 
@@ -64,9 +717,9 @@ Get data product
 
 ### Path Parameters
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `product_slug` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `product_slug` | `string` | `true` | - | "example" |
 
 ### Responses
 
@@ -78,6 +731,387 @@ Get data product
 | `404` | The server cannot find the requested resource. |
 | `429` | Client error |
 | `500` | Server error |
+
+#### `200` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "dependencies": [
+    {
+      "domain": {
+        "created_at": "2026-01-02T15:04:05Z",
+        "description": "example",
+        "id": "example",
+        "name": "example",
+        "updated_at": "2026-01-02T15:04:05Z"
+      },
+      "latest_version": {
+        "access_request_path": "example",
+        "compatibility_level": "example",
+        "contract": {
+          "breaking_change_policy": "example",
+          "data_grain": "example",
+          "dimensions": [
+            "example"
+          ],
+          "join_keys": [
+            "example"
+          ],
+          "measures": [
+            "example"
+          ],
+          "primary_keys": [
+            "example"
+          ],
+          "quality_expectations": [
+            "example"
+          ],
+          "retention_window": "example",
+          "sample_queries": [
+            "example"
+          ],
+          "update_cadence": "example"
+        },
+        "created_at": "2026-01-02T15:04:05Z",
+        "created_by": "example",
+        "docs_url": "example",
+        "id": "example",
+        "producing_build_id": "example",
+        "product_id": "example",
+        "release_state": "example",
+        "slo": {
+          "freshness_slo": "example",
+          "latency_slo": "example"
+        },
+        "version": 1
+      },
+      "owner_team": {
+        "contact_channel": "example",
+        "created_at": "2026-01-02T15:04:05Z",
+        "domain_id": "example",
+        "id": "example",
+        "name": "example",
+        "updated_at": "2026-01-02T15:04:05Z"
+      },
+      "primary_output": {
+        "asset_id": "example",
+        "asset_key": "example",
+        "asset_type": "example",
+        "created_at": "2026-01-02T15:04:05Z",
+        "id": "example",
+        "is_primary": true,
+        "product_version_id": "example"
+      },
+      "product": {
+        "access_request_path": "example",
+        "business_definitions": {
+          "key": "example"
+        },
+        "consumer_audience": "example",
+        "contact_channel": "example",
+        "contract": {
+          "breaking_change_policy": "example",
+          "data_grain": "example",
+          "dimensions": [
+            "example"
+          ],
+          "join_keys": [
+            "example"
+          ],
+          "measures": [
+            "example"
+          ],
+          "primary_keys": [
+            "example"
+          ],
+          "quality_expectations": [
+            "example"
+          ],
+          "retention_window": "example",
+          "sample_queries": [
+            "example"
+          ],
+          "update_cadence": "example"
+        },
+        "created_at": "2026-01-02T15:04:05Z",
+        "created_by": "example",
+        "description": "example",
+        "docs_url": "example",
+        "domain_id": "example",
+        "id": "example",
+        "name": "example",
+        "owner_team_id": "example",
+        "publication_intent": "example",
+        "slo": {
+          "freshness_slo": "example",
+          "latency_slo": "example"
+        },
+        "slug": "example",
+        "steward_principal": "example",
+        "updated_at": "2026-01-02T15:04:05Z",
+        "visibility": "example"
+      },
+      "status": {
+        "adoption_metrics": {
+          "key": "value"
+        },
+        "certification_state": "example",
+        "failing_checks_count": 1,
+        "freshness_status": "example",
+        "last_successful_update_at": "2026-01-02T15:04:05Z",
+        "lineage_coverage": 1,
+        "open_warnings": [
+          "example"
+        ],
+        "product_id": "example",
+        "publication_state": "example",
+        "quality_status": "example",
+        "replacement_product_id": "example",
+        "updated_at": "2026-01-02T15:04:05Z"
+      }
+    }
+  ],
+  "domain": {
+    "created_at": "2026-01-02T15:04:05Z",
+    "description": "example",
+    "id": "example",
+    "name": "example",
+    "updated_at": "2026-01-02T15:04:05Z"
+  },
+  "events": [
+    {
+      "created_at": "2026-01-02T15:04:05Z",
+      "description": "example",
+      "event_type": "example",
+      "id": "example",
+      "metadata": {
+        "key": "value"
+      },
+      "product_id": "example",
+      "title": "example"
+    }
+  ],
+  "outputs": [
+    {
+      "asset_id": "example",
+      "asset_key": "example",
+      "asset_type": "example",
+      "created_at": "2026-01-02T15:04:05Z",
+      "id": "example",
+      "is_primary": true,
+      "product_version_id": "example"
+    }
+  ],
+  "owner_team": {
+    "contact_channel": "example",
+    "created_at": "2026-01-02T15:04:05Z",
+    "domain_id": "example",
+    "id": "example",
+    "name": "example",
+    "updated_at": "2026-01-02T15:04:05Z"
+  },
+  "product": {
+    "access_request_path": "example",
+    "business_definitions": {
+      "key": "example"
+    },
+    "consumer_audience": "example",
+    "contact_channel": "example",
+    "contract": {
+      "breaking_change_policy": "example",
+      "data_grain": "example",
+      "dimensions": [
+        "example"
+      ],
+      "join_keys": [
+        "example"
+      ],
+      "measures": [
+        "example"
+      ],
+      "primary_keys": [
+        "example"
+      ],
+      "quality_expectations": [
+        "example"
+      ],
+      "retention_window": "example",
+      "sample_queries": [
+        "example"
+      ],
+      "update_cadence": "example"
+    },
+    "created_at": "2026-01-02T15:04:05Z",
+    "created_by": "example",
+    "description": "example",
+    "docs_url": "example",
+    "domain_id": "example",
+    "id": "example",
+    "name": "example",
+    "owner_team_id": "example",
+    "publication_intent": "example",
+    "slo": {
+      "freshness_slo": "example",
+      "latency_slo": "example"
+    },
+    "slug": "example",
+    "steward_principal": "example",
+    "updated_at": "2026-01-02T15:04:05Z",
+    "visibility": "example"
+  },
+  "semantic_entrypoints": [
+    {
+      "created_at": "2026-01-02T15:04:05Z",
+      "id": "example",
+      "model_name": "example",
+      "product_version_id": "example",
+      "semantic_model_id": "example"
+    }
+  ],
+  "status": {
+    "adoption_metrics": {
+      "key": "value"
+    },
+    "certification_state": "example",
+    "failing_checks_count": 1,
+    "freshness_status": "example",
+    "last_successful_update_at": "2026-01-02T15:04:05Z",
+    "lineage_coverage": 1,
+    "open_warnings": [
+      "example"
+    ],
+    "product_id": "example",
+    "publication_state": "example",
+    "quality_status": "example",
+    "replacement_product_id": "example",
+    "updated_at": "2026-01-02T15:04:05Z"
+  },
+  "subscriptions": [
+    {
+      "channel": "example",
+      "created_at": "2026-01-02T15:04:05Z",
+      "event_type": "example",
+      "id": "example",
+      "principal_name": "example",
+      "product_id": "example"
+    }
+  ],
+  "versions": [
+    {
+      "access_request_path": "example",
+      "compatibility_level": "example",
+      "contract": {
+        "breaking_change_policy": "example",
+        "data_grain": "example",
+        "dimensions": [
+          "example"
+        ],
+        "join_keys": [
+          "example"
+        ],
+        "measures": [
+          "example"
+        ],
+        "primary_keys": [
+          "example"
+        ],
+        "quality_expectations": [
+          "example"
+        ],
+        "retention_window": "example",
+        "sample_queries": [
+          "example"
+        ],
+        "update_cadence": "example"
+      },
+      "created_at": "2026-01-02T15:04:05Z",
+      "created_by": "example",
+      "docs_url": "example",
+      "id": "example",
+      "producing_build_id": "example",
+      "product_id": "example",
+      "release_state": "example",
+      "slo": {
+        "freshness_slo": "example",
+        "latency_slo": "example"
+      },
+      "version": 1
+    }
+  ]
+}
+```
+
+#### `400` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `401` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `404` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `429` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `500` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
 
 ## `PATCH /data-products/{product_slug}`
 
@@ -87,14 +1121,65 @@ Update data product
 
 ### Path Parameters
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `product_slug` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `product_slug` | `string` | `true` | - | "example" |
 
 ### Request Body
 
 - Required: `true`
 - Content types: `application/json`
+
+### Request Examples
+
+- Content type: `application/json`
+
+```json
+{
+  "access_request_path": "example",
+  "business_definitions": {
+    "key": "example"
+  },
+  "consumer_audience": "example",
+  "contact_channel": "example",
+  "contract": {
+    "breaking_change_policy": "example",
+    "data_grain": "example",
+    "dimensions": [
+      "example"
+    ],
+    "join_keys": [
+      "example"
+    ],
+    "measures": [
+      "example"
+    ],
+    "primary_keys": [
+      "example"
+    ],
+    "quality_expectations": [
+      "example"
+    ],
+    "retention_window": "example",
+    "sample_queries": [
+      "example"
+    ],
+    "update_cadence": "example"
+  },
+  "description": "example",
+  "docs_url": "example",
+  "domain_name": "example",
+  "name": "example",
+  "publication_intent": "example",
+  "slo": {
+    "freshness_slo": "example",
+    "latency_slo": "example"
+  },
+  "steward_principal": "example",
+  "team_name": "example",
+  "visibility": "example"
+}
+```
 
 ### Responses
 
@@ -107,6 +1192,401 @@ Update data product
 | `404` | The server cannot find the requested resource. |
 | `429` | Client error |
 | `500` | Server error |
+
+#### `200` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "dependencies": [
+    {
+      "domain": {
+        "created_at": "2026-01-02T15:04:05Z",
+        "description": "example",
+        "id": "example",
+        "name": "example",
+        "updated_at": "2026-01-02T15:04:05Z"
+      },
+      "latest_version": {
+        "access_request_path": "example",
+        "compatibility_level": "example",
+        "contract": {
+          "breaking_change_policy": "example",
+          "data_grain": "example",
+          "dimensions": [
+            "example"
+          ],
+          "join_keys": [
+            "example"
+          ],
+          "measures": [
+            "example"
+          ],
+          "primary_keys": [
+            "example"
+          ],
+          "quality_expectations": [
+            "example"
+          ],
+          "retention_window": "example",
+          "sample_queries": [
+            "example"
+          ],
+          "update_cadence": "example"
+        },
+        "created_at": "2026-01-02T15:04:05Z",
+        "created_by": "example",
+        "docs_url": "example",
+        "id": "example",
+        "producing_build_id": "example",
+        "product_id": "example",
+        "release_state": "example",
+        "slo": {
+          "freshness_slo": "example",
+          "latency_slo": "example"
+        },
+        "version": 1
+      },
+      "owner_team": {
+        "contact_channel": "example",
+        "created_at": "2026-01-02T15:04:05Z",
+        "domain_id": "example",
+        "id": "example",
+        "name": "example",
+        "updated_at": "2026-01-02T15:04:05Z"
+      },
+      "primary_output": {
+        "asset_id": "example",
+        "asset_key": "example",
+        "asset_type": "example",
+        "created_at": "2026-01-02T15:04:05Z",
+        "id": "example",
+        "is_primary": true,
+        "product_version_id": "example"
+      },
+      "product": {
+        "access_request_path": "example",
+        "business_definitions": {
+          "key": "example"
+        },
+        "consumer_audience": "example",
+        "contact_channel": "example",
+        "contract": {
+          "breaking_change_policy": "example",
+          "data_grain": "example",
+          "dimensions": [
+            "example"
+          ],
+          "join_keys": [
+            "example"
+          ],
+          "measures": [
+            "example"
+          ],
+          "primary_keys": [
+            "example"
+          ],
+          "quality_expectations": [
+            "example"
+          ],
+          "retention_window": "example",
+          "sample_queries": [
+            "example"
+          ],
+          "update_cadence": "example"
+        },
+        "created_at": "2026-01-02T15:04:05Z",
+        "created_by": "example",
+        "description": "example",
+        "docs_url": "example",
+        "domain_id": "example",
+        "id": "example",
+        "name": "example",
+        "owner_team_id": "example",
+        "publication_intent": "example",
+        "slo": {
+          "freshness_slo": "example",
+          "latency_slo": "example"
+        },
+        "slug": "example",
+        "steward_principal": "example",
+        "updated_at": "2026-01-02T15:04:05Z",
+        "visibility": "example"
+      },
+      "status": {
+        "adoption_metrics": {
+          "key": "value"
+        },
+        "certification_state": "example",
+        "failing_checks_count": 1,
+        "freshness_status": "example",
+        "last_successful_update_at": "2026-01-02T15:04:05Z",
+        "lineage_coverage": 1,
+        "open_warnings": [
+          "example"
+        ],
+        "product_id": "example",
+        "publication_state": "example",
+        "quality_status": "example",
+        "replacement_product_id": "example",
+        "updated_at": "2026-01-02T15:04:05Z"
+      }
+    }
+  ],
+  "domain": {
+    "created_at": "2026-01-02T15:04:05Z",
+    "description": "example",
+    "id": "example",
+    "name": "example",
+    "updated_at": "2026-01-02T15:04:05Z"
+  },
+  "events": [
+    {
+      "created_at": "2026-01-02T15:04:05Z",
+      "description": "example",
+      "event_type": "example",
+      "id": "example",
+      "metadata": {
+        "key": "value"
+      },
+      "product_id": "example",
+      "title": "example"
+    }
+  ],
+  "outputs": [
+    {
+      "asset_id": "example",
+      "asset_key": "example",
+      "asset_type": "example",
+      "created_at": "2026-01-02T15:04:05Z",
+      "id": "example",
+      "is_primary": true,
+      "product_version_id": "example"
+    }
+  ],
+  "owner_team": {
+    "contact_channel": "example",
+    "created_at": "2026-01-02T15:04:05Z",
+    "domain_id": "example",
+    "id": "example",
+    "name": "example",
+    "updated_at": "2026-01-02T15:04:05Z"
+  },
+  "product": {
+    "access_request_path": "example",
+    "business_definitions": {
+      "key": "example"
+    },
+    "consumer_audience": "example",
+    "contact_channel": "example",
+    "contract": {
+      "breaking_change_policy": "example",
+      "data_grain": "example",
+      "dimensions": [
+        "example"
+      ],
+      "join_keys": [
+        "example"
+      ],
+      "measures": [
+        "example"
+      ],
+      "primary_keys": [
+        "example"
+      ],
+      "quality_expectations": [
+        "example"
+      ],
+      "retention_window": "example",
+      "sample_queries": [
+        "example"
+      ],
+      "update_cadence": "example"
+    },
+    "created_at": "2026-01-02T15:04:05Z",
+    "created_by": "example",
+    "description": "example",
+    "docs_url": "example",
+    "domain_id": "example",
+    "id": "example",
+    "name": "example",
+    "owner_team_id": "example",
+    "publication_intent": "example",
+    "slo": {
+      "freshness_slo": "example",
+      "latency_slo": "example"
+    },
+    "slug": "example",
+    "steward_principal": "example",
+    "updated_at": "2026-01-02T15:04:05Z",
+    "visibility": "example"
+  },
+  "semantic_entrypoints": [
+    {
+      "created_at": "2026-01-02T15:04:05Z",
+      "id": "example",
+      "model_name": "example",
+      "product_version_id": "example",
+      "semantic_model_id": "example"
+    }
+  ],
+  "status": {
+    "adoption_metrics": {
+      "key": "value"
+    },
+    "certification_state": "example",
+    "failing_checks_count": 1,
+    "freshness_status": "example",
+    "last_successful_update_at": "2026-01-02T15:04:05Z",
+    "lineage_coverage": 1,
+    "open_warnings": [
+      "example"
+    ],
+    "product_id": "example",
+    "publication_state": "example",
+    "quality_status": "example",
+    "replacement_product_id": "example",
+    "updated_at": "2026-01-02T15:04:05Z"
+  },
+  "subscriptions": [
+    {
+      "channel": "example",
+      "created_at": "2026-01-02T15:04:05Z",
+      "event_type": "example",
+      "id": "example",
+      "principal_name": "example",
+      "product_id": "example"
+    }
+  ],
+  "versions": [
+    {
+      "access_request_path": "example",
+      "compatibility_level": "example",
+      "contract": {
+        "breaking_change_policy": "example",
+        "data_grain": "example",
+        "dimensions": [
+          "example"
+        ],
+        "join_keys": [
+          "example"
+        ],
+        "measures": [
+          "example"
+        ],
+        "primary_keys": [
+          "example"
+        ],
+        "quality_expectations": [
+          "example"
+        ],
+        "retention_window": "example",
+        "sample_queries": [
+          "example"
+        ],
+        "update_cadence": "example"
+      },
+      "created_at": "2026-01-02T15:04:05Z",
+      "created_by": "example",
+      "docs_url": "example",
+      "id": "example",
+      "producing_build_id": "example",
+      "product_id": "example",
+      "release_state": "example",
+      "slo": {
+        "freshness_slo": "example",
+        "latency_slo": "example"
+      },
+      "version": 1
+    }
+  ]
+}
+```
+
+#### `400` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `401` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `403` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `404` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `429` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `500` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
 
 ## `DELETE /data-products/{product_slug}`
 
@@ -116,9 +1596,9 @@ Delete data product
 
 ### Path Parameters
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `product_slug` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `product_slug` | `string` | `true` | - | "example" |
 
 ### Responses
 
@@ -131,6 +1611,90 @@ Delete data product
 | `404` | The server cannot find the requested resource. |
 | `429` | Client error |
 | `500` | Server error |
+
+#### `400` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `401` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `403` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `404` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `429` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `500` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
 
 ## `GET /data-products/{product_slug}/dependencies`
 
@@ -140,9 +1704,9 @@ List data product dependencies
 
 ### Path Parameters
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `product_slug` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `product_slug` | `string` | `true` | - | "example" |
 
 ### Responses
 
@@ -154,6 +1718,220 @@ List data product dependencies
 | `404` | The server cannot find the requested resource. |
 | `429` | Client error |
 | `500` | Server error |
+
+#### `200` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "data": [
+    {
+      "domain": {
+        "created_at": "2026-01-02T15:04:05Z",
+        "description": "example",
+        "id": "example",
+        "name": "example",
+        "updated_at": "2026-01-02T15:04:05Z"
+      },
+      "latest_version": {
+        "access_request_path": "example",
+        "compatibility_level": "example",
+        "contract": {
+          "breaking_change_policy": "example",
+          "data_grain": "example",
+          "dimensions": [
+            "example"
+          ],
+          "join_keys": [
+            "example"
+          ],
+          "measures": [
+            "example"
+          ],
+          "primary_keys": [
+            "example"
+          ],
+          "quality_expectations": [
+            "example"
+          ],
+          "retention_window": "example",
+          "sample_queries": [
+            "example"
+          ],
+          "update_cadence": "example"
+        },
+        "created_at": "2026-01-02T15:04:05Z",
+        "created_by": "example",
+        "docs_url": "example",
+        "id": "example",
+        "producing_build_id": "example",
+        "product_id": "example",
+        "release_state": "example",
+        "slo": {
+          "freshness_slo": "example",
+          "latency_slo": "example"
+        },
+        "version": 1
+      },
+      "owner_team": {
+        "contact_channel": "example",
+        "created_at": "2026-01-02T15:04:05Z",
+        "domain_id": "example",
+        "id": "example",
+        "name": "example",
+        "updated_at": "2026-01-02T15:04:05Z"
+      },
+      "primary_output": {
+        "asset_id": "example",
+        "asset_key": "example",
+        "asset_type": "example",
+        "created_at": "2026-01-02T15:04:05Z",
+        "id": "example",
+        "is_primary": true,
+        "product_version_id": "example"
+      },
+      "product": {
+        "access_request_path": "example",
+        "business_definitions": {
+          "key": "example"
+        },
+        "consumer_audience": "example",
+        "contact_channel": "example",
+        "contract": {
+          "breaking_change_policy": "example",
+          "data_grain": "example",
+          "dimensions": [
+            "example"
+          ],
+          "join_keys": [
+            "example"
+          ],
+          "measures": [
+            "example"
+          ],
+          "primary_keys": [
+            "example"
+          ],
+          "quality_expectations": [
+            "example"
+          ],
+          "retention_window": "example",
+          "sample_queries": [
+            "example"
+          ],
+          "update_cadence": "example"
+        },
+        "created_at": "2026-01-02T15:04:05Z",
+        "created_by": "example",
+        "description": "example",
+        "docs_url": "example",
+        "domain_id": "example",
+        "id": "example",
+        "name": "example",
+        "owner_team_id": "example",
+        "publication_intent": "example",
+        "slo": {
+          "freshness_slo": "example",
+          "latency_slo": "example"
+        },
+        "slug": "example",
+        "steward_principal": "example",
+        "updated_at": "2026-01-02T15:04:05Z",
+        "visibility": "example"
+      },
+      "status": {
+        "adoption_metrics": {
+          "key": "value"
+        },
+        "certification_state": "example",
+        "failing_checks_count": 1,
+        "freshness_status": "example",
+        "last_successful_update_at": "2026-01-02T15:04:05Z",
+        "lineage_coverage": 1,
+        "open_warnings": [
+          "example"
+        ],
+        "product_id": "example",
+        "publication_state": "example",
+        "quality_status": "example",
+        "replacement_product_id": "example",
+        "updated_at": "2026-01-02T15:04:05Z"
+      }
+    }
+  ]
+}
+```
+
+#### `400` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `401` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `404` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `429` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `500` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
 
 ## `POST /data-products/{product_slug}/dependencies`
 
@@ -163,14 +1941,24 @@ Create data product dependency
 
 ### Path Parameters
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `product_slug` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `product_slug` | `string` | `true` | - | "example" |
 
 ### Request Body
 
 - Required: `true`
 - Content types: `application/json`
+
+### Request Examples
+
+- Content type: `application/json`
+
+```json
+{
+  "depends_on_slug": "example"
+}
+```
 
 ### Responses
 
@@ -184,6 +1972,248 @@ Create data product dependency
 | `409` | The request conflicts with the current state of the server. |
 | `429` | Client error |
 | `500` | Server error |
+
+#### `201` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "data": [
+    {
+      "domain": {
+        "created_at": "2026-01-02T15:04:05Z",
+        "description": "example",
+        "id": "example",
+        "name": "example",
+        "updated_at": "2026-01-02T15:04:05Z"
+      },
+      "latest_version": {
+        "access_request_path": "example",
+        "compatibility_level": "example",
+        "contract": {
+          "breaking_change_policy": "example",
+          "data_grain": "example",
+          "dimensions": [
+            "example"
+          ],
+          "join_keys": [
+            "example"
+          ],
+          "measures": [
+            "example"
+          ],
+          "primary_keys": [
+            "example"
+          ],
+          "quality_expectations": [
+            "example"
+          ],
+          "retention_window": "example",
+          "sample_queries": [
+            "example"
+          ],
+          "update_cadence": "example"
+        },
+        "created_at": "2026-01-02T15:04:05Z",
+        "created_by": "example",
+        "docs_url": "example",
+        "id": "example",
+        "producing_build_id": "example",
+        "product_id": "example",
+        "release_state": "example",
+        "slo": {
+          "freshness_slo": "example",
+          "latency_slo": "example"
+        },
+        "version": 1
+      },
+      "owner_team": {
+        "contact_channel": "example",
+        "created_at": "2026-01-02T15:04:05Z",
+        "domain_id": "example",
+        "id": "example",
+        "name": "example",
+        "updated_at": "2026-01-02T15:04:05Z"
+      },
+      "primary_output": {
+        "asset_id": "example",
+        "asset_key": "example",
+        "asset_type": "example",
+        "created_at": "2026-01-02T15:04:05Z",
+        "id": "example",
+        "is_primary": true,
+        "product_version_id": "example"
+      },
+      "product": {
+        "access_request_path": "example",
+        "business_definitions": {
+          "key": "example"
+        },
+        "consumer_audience": "example",
+        "contact_channel": "example",
+        "contract": {
+          "breaking_change_policy": "example",
+          "data_grain": "example",
+          "dimensions": [
+            "example"
+          ],
+          "join_keys": [
+            "example"
+          ],
+          "measures": [
+            "example"
+          ],
+          "primary_keys": [
+            "example"
+          ],
+          "quality_expectations": [
+            "example"
+          ],
+          "retention_window": "example",
+          "sample_queries": [
+            "example"
+          ],
+          "update_cadence": "example"
+        },
+        "created_at": "2026-01-02T15:04:05Z",
+        "created_by": "example",
+        "description": "example",
+        "docs_url": "example",
+        "domain_id": "example",
+        "id": "example",
+        "name": "example",
+        "owner_team_id": "example",
+        "publication_intent": "example",
+        "slo": {
+          "freshness_slo": "example",
+          "latency_slo": "example"
+        },
+        "slug": "example",
+        "steward_principal": "example",
+        "updated_at": "2026-01-02T15:04:05Z",
+        "visibility": "example"
+      },
+      "status": {
+        "adoption_metrics": {
+          "key": "value"
+        },
+        "certification_state": "example",
+        "failing_checks_count": 1,
+        "freshness_status": "example",
+        "last_successful_update_at": "2026-01-02T15:04:05Z",
+        "lineage_coverage": 1,
+        "open_warnings": [
+          "example"
+        ],
+        "product_id": "example",
+        "publication_state": "example",
+        "quality_status": "example",
+        "replacement_product_id": "example",
+        "updated_at": "2026-01-02T15:04:05Z"
+      }
+    }
+  ]
+}
+```
+
+#### `400` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `401` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `403` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `404` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `409` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `429` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `500` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
 
 ## `GET /data-products/{product_slug}/events`
 
@@ -193,16 +2223,16 @@ List data product events
 
 ### Path Parameters
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `product_slug` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `product_slug` | `string` | `true` | - | "example" |
 
 ### Query Parameters
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `max_results` | `integer` | `false` | - |
-| `page_token` | `string` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `max_results` | `integer` | `false` | - | 1 |
+| `page_token` | `string` | `false` | - | "example" |
 
 ### Responses
 
@@ -214,6 +2244,99 @@ List data product events
 | `404` | The server cannot find the requested resource. |
 | `429` | Client error |
 | `500` | Server error |
+
+#### `200` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "data": [
+    {
+      "created_at": "2026-01-02T15:04:05Z",
+      "description": "example",
+      "event_type": "example",
+      "id": "example",
+      "metadata": {
+        "key": "value"
+      },
+      "product_id": "example",
+      "title": "example"
+    }
+  ],
+  "next_page_token": "example"
+}
+```
+
+#### `400` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `401` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `404` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `429` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `500` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
 
 ## `GET /data-products/{product_slug}/outputs`
 
@@ -223,9 +2346,9 @@ List data product outputs
 
 ### Path Parameters
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `product_slug` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `product_slug` | `string` | `true` | - | "example" |
 
 ### Responses
 
@@ -237,6 +2360,96 @@ List data product outputs
 | `404` | The server cannot find the requested resource. |
 | `429` | Client error |
 | `500` | Server error |
+
+#### `200` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "data": [
+    {
+      "asset_id": "example",
+      "asset_key": "example",
+      "asset_type": "example",
+      "created_at": "2026-01-02T15:04:05Z",
+      "id": "example",
+      "is_primary": true,
+      "product_version_id": "example"
+    }
+  ]
+}
+```
+
+#### `400` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `401` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `404` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `429` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `500` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
 
 ## `GET /data-products/{product_slug}/semantic-entrypoints`
 
@@ -246,9 +2459,9 @@ List data product semantic entrypoints
 
 ### Path Parameters
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `product_slug` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `product_slug` | `string` | `true` | - | "example" |
 
 ### Responses
 
@@ -260,6 +2473,94 @@ List data product semantic entrypoints
 | `404` | The server cannot find the requested resource. |
 | `429` | Client error |
 | `500` | Server error |
+
+#### `200` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "data": [
+    {
+      "created_at": "2026-01-02T15:04:05Z",
+      "id": "example",
+      "model_name": "example",
+      "product_version_id": "example",
+      "semantic_model_id": "example"
+    }
+  ]
+}
+```
+
+#### `400` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `401` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `404` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `429` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `500` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
 
 ## `GET /data-products/{product_slug}/status`
 
@@ -269,9 +2570,9 @@ Get data product status
 
 ### Path Parameters
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `product_slug` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `product_slug` | `string` | `true` | - | "example" |
 
 ### Responses
 
@@ -283,6 +2584,101 @@ Get data product status
 | `404` | The server cannot find the requested resource. |
 | `429` | Client error |
 | `500` | Server error |
+
+#### `200` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "adoption_metrics": {
+    "key": "value"
+  },
+  "certification_state": "example",
+  "failing_checks_count": 1,
+  "freshness_status": "example",
+  "last_successful_update_at": "2026-01-02T15:04:05Z",
+  "lineage_coverage": 1,
+  "open_warnings": [
+    "example"
+  ],
+  "product_id": "example",
+  "publication_state": "example",
+  "quality_status": "example",
+  "replacement_product_id": "example",
+  "updated_at": "2026-01-02T15:04:05Z"
+}
+```
+
+#### `400` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `401` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `404` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `429` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `500` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
 
 ## `GET /data-products/{product_slug}/subscriptions`
 
@@ -292,9 +2688,9 @@ List data product subscriptions
 
 ### Path Parameters
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `product_slug` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `product_slug` | `string` | `true` | - | "example" |
 
 ### Responses
 
@@ -306,6 +2702,95 @@ List data product subscriptions
 | `404` | The server cannot find the requested resource. |
 | `429` | Client error |
 | `500` | Server error |
+
+#### `200` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "data": [
+    {
+      "channel": "example",
+      "created_at": "2026-01-02T15:04:05Z",
+      "event_type": "example",
+      "id": "example",
+      "principal_name": "example",
+      "product_id": "example"
+    }
+  ]
+}
+```
+
+#### `400` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `401` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `404` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `429` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `500` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
 
 ## `POST /data-products/{product_slug}/subscriptions`
 
@@ -315,14 +2800,26 @@ Create data product subscription
 
 ### Path Parameters
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `product_slug` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `product_slug` | `string` | `true` | - | "example" |
 
 ### Request Body
 
 - Required: `true`
 - Content types: `application/json`
+
+### Request Examples
+
+- Content type: `application/json`
+
+```json
+{
+  "channel": "example",
+  "event_type": "example",
+  "principal_name": "example"
+}
+```
 
 ### Responses
 
@@ -336,6 +2833,119 @@ Create data product subscription
 | `409` | The request conflicts with the current state of the server. |
 | `429` | Client error |
 | `500` | Server error |
+
+#### `201` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "channel": "example",
+  "created_at": "2026-01-02T15:04:05Z",
+  "event_type": "example",
+  "id": "example",
+  "principal_name": "example",
+  "product_id": "example"
+}
+```
+
+#### `400` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `401` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `403` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `404` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `409` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `429` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `500` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
 
 ## `GET /data-products/{product_slug}/versions`
 
@@ -345,9 +2955,9 @@ List data product versions
 
 ### Path Parameters
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `product_slug` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `product_slug` | `string` | `true` | - | "example" |
 
 ### Responses
 
@@ -360,6 +2970,127 @@ List data product versions
 | `429` | Client error |
 | `500` | Server error |
 
+#### `200` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "data": [
+    {
+      "access_request_path": "example",
+      "compatibility_level": "example",
+      "contract": {
+        "breaking_change_policy": "example",
+        "data_grain": "example",
+        "dimensions": [
+          "example"
+        ],
+        "join_keys": [
+          "example"
+        ],
+        "measures": [
+          "example"
+        ],
+        "primary_keys": [
+          "example"
+        ],
+        "quality_expectations": [
+          "example"
+        ],
+        "retention_window": "example",
+        "sample_queries": [
+          "example"
+        ],
+        "update_cadence": "example"
+      },
+      "created_at": "2026-01-02T15:04:05Z",
+      "created_by": "example",
+      "docs_url": "example",
+      "id": "example",
+      "producing_build_id": "example",
+      "product_id": "example",
+      "release_state": "example",
+      "slo": {
+        "freshness_slo": "example",
+        "latency_slo": "example"
+      },
+      "version": 1
+    }
+  ]
+}
+```
+
+#### `400` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `401` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `404` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `429` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `500` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
 ## `POST /data-products/{product_slug}/versions`
 
 Create data product version
@@ -368,14 +3099,62 @@ Create data product version
 
 ### Path Parameters
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `product_slug` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `product_slug` | `string` | `true` | - | "example" |
 
 ### Request Body
 
 - Required: `true`
 - Content types: `application/json`
+
+### Request Examples
+
+- Content type: `application/json`
+
+```json
+{
+  "access_request_path": "example",
+  "compatibility_level": "example",
+  "contract": {
+    "breaking_change_policy": "example",
+    "data_grain": "example",
+    "dimensions": [
+      "example"
+    ],
+    "join_keys": [
+      "example"
+    ],
+    "measures": [
+      "example"
+    ],
+    "primary_keys": [
+      "example"
+    ],
+    "quality_expectations": [
+      "example"
+    ],
+    "retention_window": "example",
+    "sample_queries": [
+      "example"
+    ],
+    "update_cadence": "example"
+  },
+  "created_by": "example",
+  "docs_url": "example",
+  "output_asset_keys": [
+    "example"
+  ],
+  "producing_build_id": "example",
+  "semantic_model_refs": [
+    "example"
+  ],
+  "slo": {
+    "freshness_slo": "example",
+    "latency_slo": "example"
+  }
+}
+```
 
 ### Responses
 
@@ -390,6 +3169,415 @@ Create data product version
 | `429` | Client error |
 | `500` | Server error |
 
+#### `201` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "dependencies": [
+    {
+      "domain": {
+        "created_at": "2026-01-02T15:04:05Z",
+        "description": "example",
+        "id": "example",
+        "name": "example",
+        "updated_at": "2026-01-02T15:04:05Z"
+      },
+      "latest_version": {
+        "access_request_path": "example",
+        "compatibility_level": "example",
+        "contract": {
+          "breaking_change_policy": "example",
+          "data_grain": "example",
+          "dimensions": [
+            "example"
+          ],
+          "join_keys": [
+            "example"
+          ],
+          "measures": [
+            "example"
+          ],
+          "primary_keys": [
+            "example"
+          ],
+          "quality_expectations": [
+            "example"
+          ],
+          "retention_window": "example",
+          "sample_queries": [
+            "example"
+          ],
+          "update_cadence": "example"
+        },
+        "created_at": "2026-01-02T15:04:05Z",
+        "created_by": "example",
+        "docs_url": "example",
+        "id": "example",
+        "producing_build_id": "example",
+        "product_id": "example",
+        "release_state": "example",
+        "slo": {
+          "freshness_slo": "example",
+          "latency_slo": "example"
+        },
+        "version": 1
+      },
+      "owner_team": {
+        "contact_channel": "example",
+        "created_at": "2026-01-02T15:04:05Z",
+        "domain_id": "example",
+        "id": "example",
+        "name": "example",
+        "updated_at": "2026-01-02T15:04:05Z"
+      },
+      "primary_output": {
+        "asset_id": "example",
+        "asset_key": "example",
+        "asset_type": "example",
+        "created_at": "2026-01-02T15:04:05Z",
+        "id": "example",
+        "is_primary": true,
+        "product_version_id": "example"
+      },
+      "product": {
+        "access_request_path": "example",
+        "business_definitions": {
+          "key": "example"
+        },
+        "consumer_audience": "example",
+        "contact_channel": "example",
+        "contract": {
+          "breaking_change_policy": "example",
+          "data_grain": "example",
+          "dimensions": [
+            "example"
+          ],
+          "join_keys": [
+            "example"
+          ],
+          "measures": [
+            "example"
+          ],
+          "primary_keys": [
+            "example"
+          ],
+          "quality_expectations": [
+            "example"
+          ],
+          "retention_window": "example",
+          "sample_queries": [
+            "example"
+          ],
+          "update_cadence": "example"
+        },
+        "created_at": "2026-01-02T15:04:05Z",
+        "created_by": "example",
+        "description": "example",
+        "docs_url": "example",
+        "domain_id": "example",
+        "id": "example",
+        "name": "example",
+        "owner_team_id": "example",
+        "publication_intent": "example",
+        "slo": {
+          "freshness_slo": "example",
+          "latency_slo": "example"
+        },
+        "slug": "example",
+        "steward_principal": "example",
+        "updated_at": "2026-01-02T15:04:05Z",
+        "visibility": "example"
+      },
+      "status": {
+        "adoption_metrics": {
+          "key": "value"
+        },
+        "certification_state": "example",
+        "failing_checks_count": 1,
+        "freshness_status": "example",
+        "last_successful_update_at": "2026-01-02T15:04:05Z",
+        "lineage_coverage": 1,
+        "open_warnings": [
+          "example"
+        ],
+        "product_id": "example",
+        "publication_state": "example",
+        "quality_status": "example",
+        "replacement_product_id": "example",
+        "updated_at": "2026-01-02T15:04:05Z"
+      }
+    }
+  ],
+  "domain": {
+    "created_at": "2026-01-02T15:04:05Z",
+    "description": "example",
+    "id": "example",
+    "name": "example",
+    "updated_at": "2026-01-02T15:04:05Z"
+  },
+  "events": [
+    {
+      "created_at": "2026-01-02T15:04:05Z",
+      "description": "example",
+      "event_type": "example",
+      "id": "example",
+      "metadata": {
+        "key": "value"
+      },
+      "product_id": "example",
+      "title": "example"
+    }
+  ],
+  "outputs": [
+    {
+      "asset_id": "example",
+      "asset_key": "example",
+      "asset_type": "example",
+      "created_at": "2026-01-02T15:04:05Z",
+      "id": "example",
+      "is_primary": true,
+      "product_version_id": "example"
+    }
+  ],
+  "owner_team": {
+    "contact_channel": "example",
+    "created_at": "2026-01-02T15:04:05Z",
+    "domain_id": "example",
+    "id": "example",
+    "name": "example",
+    "updated_at": "2026-01-02T15:04:05Z"
+  },
+  "product": {
+    "access_request_path": "example",
+    "business_definitions": {
+      "key": "example"
+    },
+    "consumer_audience": "example",
+    "contact_channel": "example",
+    "contract": {
+      "breaking_change_policy": "example",
+      "data_grain": "example",
+      "dimensions": [
+        "example"
+      ],
+      "join_keys": [
+        "example"
+      ],
+      "measures": [
+        "example"
+      ],
+      "primary_keys": [
+        "example"
+      ],
+      "quality_expectations": [
+        "example"
+      ],
+      "retention_window": "example",
+      "sample_queries": [
+        "example"
+      ],
+      "update_cadence": "example"
+    },
+    "created_at": "2026-01-02T15:04:05Z",
+    "created_by": "example",
+    "description": "example",
+    "docs_url": "example",
+    "domain_id": "example",
+    "id": "example",
+    "name": "example",
+    "owner_team_id": "example",
+    "publication_intent": "example",
+    "slo": {
+      "freshness_slo": "example",
+      "latency_slo": "example"
+    },
+    "slug": "example",
+    "steward_principal": "example",
+    "updated_at": "2026-01-02T15:04:05Z",
+    "visibility": "example"
+  },
+  "semantic_entrypoints": [
+    {
+      "created_at": "2026-01-02T15:04:05Z",
+      "id": "example",
+      "model_name": "example",
+      "product_version_id": "example",
+      "semantic_model_id": "example"
+    }
+  ],
+  "status": {
+    "adoption_metrics": {
+      "key": "value"
+    },
+    "certification_state": "example",
+    "failing_checks_count": 1,
+    "freshness_status": "example",
+    "last_successful_update_at": "2026-01-02T15:04:05Z",
+    "lineage_coverage": 1,
+    "open_warnings": [
+      "example"
+    ],
+    "product_id": "example",
+    "publication_state": "example",
+    "quality_status": "example",
+    "replacement_product_id": "example",
+    "updated_at": "2026-01-02T15:04:05Z"
+  },
+  "subscriptions": [
+    {
+      "channel": "example",
+      "created_at": "2026-01-02T15:04:05Z",
+      "event_type": "example",
+      "id": "example",
+      "principal_name": "example",
+      "product_id": "example"
+    }
+  ],
+  "versions": [
+    {
+      "access_request_path": "example",
+      "compatibility_level": "example",
+      "contract": {
+        "breaking_change_policy": "example",
+        "data_grain": "example",
+        "dimensions": [
+          "example"
+        ],
+        "join_keys": [
+          "example"
+        ],
+        "measures": [
+          "example"
+        ],
+        "primary_keys": [
+          "example"
+        ],
+        "quality_expectations": [
+          "example"
+        ],
+        "retention_window": "example",
+        "sample_queries": [
+          "example"
+        ],
+        "update_cadence": "example"
+      },
+      "created_at": "2026-01-02T15:04:05Z",
+      "created_by": "example",
+      "docs_url": "example",
+      "id": "example",
+      "producing_build_id": "example",
+      "product_id": "example",
+      "release_state": "example",
+      "slo": {
+        "freshness_slo": "example",
+        "latency_slo": "example"
+      },
+      "version": 1
+    }
+  ]
+}
+```
+
+#### `400` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `401` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `403` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `404` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `409` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `429` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `500` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
 ## `GET /data-products/{product_slug}/versions/{version}`
 
 Get data product version
@@ -398,10 +3586,10 @@ Get data product version
 
 ### Path Parameters
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `product_slug` | `string` | `true` | - |
-| `version` | `integer` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `product_slug` | `string` | `true` | - | "example" |
+| `version` | `integer` | `true` | - | 1 |
 
 ### Responses
 
@@ -414,6 +3602,375 @@ Get data product version
 | `429` | Client error |
 | `500` | Server error |
 
+#### `200` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "dependencies": [
+    {
+      "domain": {
+        "created_at": "2026-01-02T15:04:05Z",
+        "description": "example",
+        "id": "example",
+        "name": "example",
+        "updated_at": "2026-01-02T15:04:05Z"
+      },
+      "latest_version": {
+        "access_request_path": "example",
+        "compatibility_level": "example",
+        "contract": {
+          "breaking_change_policy": "example",
+          "data_grain": "example",
+          "dimensions": [
+            "example"
+          ],
+          "join_keys": [
+            "example"
+          ],
+          "measures": [
+            "example"
+          ],
+          "primary_keys": [
+            "example"
+          ],
+          "quality_expectations": [
+            "example"
+          ],
+          "retention_window": "example",
+          "sample_queries": [
+            "example"
+          ],
+          "update_cadence": "example"
+        },
+        "created_at": "2026-01-02T15:04:05Z",
+        "created_by": "example",
+        "docs_url": "example",
+        "id": "example",
+        "producing_build_id": "example",
+        "product_id": "example",
+        "release_state": "example",
+        "slo": {
+          "freshness_slo": "example",
+          "latency_slo": "example"
+        },
+        "version": 1
+      },
+      "owner_team": {
+        "contact_channel": "example",
+        "created_at": "2026-01-02T15:04:05Z",
+        "domain_id": "example",
+        "id": "example",
+        "name": "example",
+        "updated_at": "2026-01-02T15:04:05Z"
+      },
+      "primary_output": {
+        "asset_id": "example",
+        "asset_key": "example",
+        "asset_type": "example",
+        "created_at": "2026-01-02T15:04:05Z",
+        "id": "example",
+        "is_primary": true,
+        "product_version_id": "example"
+      },
+      "product": {
+        "access_request_path": "example",
+        "business_definitions": {
+          "key": "example"
+        },
+        "consumer_audience": "example",
+        "contact_channel": "example",
+        "contract": {
+          "breaking_change_policy": "example",
+          "data_grain": "example",
+          "dimensions": [
+            "example"
+          ],
+          "join_keys": [
+            "example"
+          ],
+          "measures": [
+            "example"
+          ],
+          "primary_keys": [
+            "example"
+          ],
+          "quality_expectations": [
+            "example"
+          ],
+          "retention_window": "example",
+          "sample_queries": [
+            "example"
+          ],
+          "update_cadence": "example"
+        },
+        "created_at": "2026-01-02T15:04:05Z",
+        "created_by": "example",
+        "description": "example",
+        "docs_url": "example",
+        "domain_id": "example",
+        "id": "example",
+        "name": "example",
+        "owner_team_id": "example",
+        "publication_intent": "example",
+        "slo": {
+          "freshness_slo": "example",
+          "latency_slo": "example"
+        },
+        "slug": "example",
+        "steward_principal": "example",
+        "updated_at": "2026-01-02T15:04:05Z",
+        "visibility": "example"
+      },
+      "status": {
+        "adoption_metrics": {
+          "key": "value"
+        },
+        "certification_state": "example",
+        "failing_checks_count": 1,
+        "freshness_status": "example",
+        "last_successful_update_at": "2026-01-02T15:04:05Z",
+        "lineage_coverage": 1,
+        "open_warnings": [
+          "example"
+        ],
+        "product_id": "example",
+        "publication_state": "example",
+        "quality_status": "example",
+        "replacement_product_id": "example",
+        "updated_at": "2026-01-02T15:04:05Z"
+      }
+    }
+  ],
+  "domain": {
+    "created_at": "2026-01-02T15:04:05Z",
+    "description": "example",
+    "id": "example",
+    "name": "example",
+    "updated_at": "2026-01-02T15:04:05Z"
+  },
+  "events": [
+    {
+      "created_at": "2026-01-02T15:04:05Z",
+      "description": "example",
+      "event_type": "example",
+      "id": "example",
+      "metadata": {
+        "key": "value"
+      },
+      "product_id": "example",
+      "title": "example"
+    }
+  ],
+  "outputs": [
+    {
+      "asset_id": "example",
+      "asset_key": "example",
+      "asset_type": "example",
+      "created_at": "2026-01-02T15:04:05Z",
+      "id": "example",
+      "is_primary": true,
+      "product_version_id": "example"
+    }
+  ],
+  "owner_team": {
+    "contact_channel": "example",
+    "created_at": "2026-01-02T15:04:05Z",
+    "domain_id": "example",
+    "id": "example",
+    "name": "example",
+    "updated_at": "2026-01-02T15:04:05Z"
+  },
+  "product": {
+    "access_request_path": "example",
+    "business_definitions": {
+      "key": "example"
+    },
+    "consumer_audience": "example",
+    "contact_channel": "example",
+    "contract": {
+      "breaking_change_policy": "example",
+      "data_grain": "example",
+      "dimensions": [
+        "example"
+      ],
+      "join_keys": [
+        "example"
+      ],
+      "measures": [
+        "example"
+      ],
+      "primary_keys": [
+        "example"
+      ],
+      "quality_expectations": [
+        "example"
+      ],
+      "retention_window": "example",
+      "sample_queries": [
+        "example"
+      ],
+      "update_cadence": "example"
+    },
+    "created_at": "2026-01-02T15:04:05Z",
+    "created_by": "example",
+    "description": "example",
+    "docs_url": "example",
+    "domain_id": "example",
+    "id": "example",
+    "name": "example",
+    "owner_team_id": "example",
+    "publication_intent": "example",
+    "slo": {
+      "freshness_slo": "example",
+      "latency_slo": "example"
+    },
+    "slug": "example",
+    "steward_principal": "example",
+    "updated_at": "2026-01-02T15:04:05Z",
+    "visibility": "example"
+  },
+  "semantic_entrypoints": [
+    {
+      "created_at": "2026-01-02T15:04:05Z",
+      "id": "example",
+      "model_name": "example",
+      "product_version_id": "example",
+      "semantic_model_id": "example"
+    }
+  ],
+  "status": {
+    "adoption_metrics": {
+      "key": "value"
+    },
+    "certification_state": "example",
+    "failing_checks_count": 1,
+    "freshness_status": "example",
+    "last_successful_update_at": "2026-01-02T15:04:05Z",
+    "lineage_coverage": 1,
+    "open_warnings": [
+      "example"
+    ],
+    "product_id": "example",
+    "publication_state": "example",
+    "quality_status": "example",
+    "replacement_product_id": "example",
+    "updated_at": "2026-01-02T15:04:05Z"
+  },
+  "version": {
+    "access_request_path": "example",
+    "compatibility_level": "example",
+    "contract": {
+      "breaking_change_policy": "example",
+      "data_grain": "example",
+      "dimensions": [
+        "example"
+      ],
+      "join_keys": [
+        "example"
+      ],
+      "measures": [
+        "example"
+      ],
+      "primary_keys": [
+        "example"
+      ],
+      "quality_expectations": [
+        "example"
+      ],
+      "retention_window": "example",
+      "sample_queries": [
+        "example"
+      ],
+      "update_cadence": "example"
+    },
+    "created_at": "2026-01-02T15:04:05Z",
+    "created_by": "example",
+    "docs_url": "example",
+    "id": "example",
+    "producing_build_id": "example",
+    "product_id": "example",
+    "release_state": "example",
+    "slo": {
+      "freshness_slo": "example",
+      "latency_slo": "example"
+    },
+    "version": 1
+  }
+}
+```
+
+#### `400` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `401` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `404` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `429` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `500` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
 ## `DELETE /data-products/{product_slug}/versions/{version}`
 
 Delete data product version
@@ -422,10 +3979,10 @@ Delete data product version
 
 ### Path Parameters
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `product_slug` | `string` | `true` | - |
-| `version` | `integer` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `product_slug` | `string` | `true` | - | "example" |
+| `version` | `integer` | `true` | - | 1 |
 
 ### Responses
 
@@ -439,6 +3996,90 @@ Delete data product version
 | `429` | Client error |
 | `500` | Server error |
 
+#### `400` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `401` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `403` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `404` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `429` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `500` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
 ## `POST /data-products/{product_slug}/versions/{version}/deprecations`
 
 Deprecate data product version
@@ -447,15 +4088,25 @@ Deprecate data product version
 
 ### Path Parameters
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `product_slug` | `string` | `true` | - |
-| `version` | `integer` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `product_slug` | `string` | `true` | - | "example" |
+| `version` | `integer` | `true` | - | 1 |
 
 ### Request Body
 
 - Required: `false`
 - Content types: `application/json`
+
+### Request Examples
+
+- Content type: `application/json`
+
+```json
+{
+  "replacement_slug": "example"
+}
+```
 
 ### Responses
 
@@ -468,6 +4119,401 @@ Deprecate data product version
 | `404` | The server cannot find the requested resource. |
 | `429` | Client error |
 | `500` | Server error |
+
+#### `200` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "dependencies": [
+    {
+      "domain": {
+        "created_at": "2026-01-02T15:04:05Z",
+        "description": "example",
+        "id": "example",
+        "name": "example",
+        "updated_at": "2026-01-02T15:04:05Z"
+      },
+      "latest_version": {
+        "access_request_path": "example",
+        "compatibility_level": "example",
+        "contract": {
+          "breaking_change_policy": "example",
+          "data_grain": "example",
+          "dimensions": [
+            "example"
+          ],
+          "join_keys": [
+            "example"
+          ],
+          "measures": [
+            "example"
+          ],
+          "primary_keys": [
+            "example"
+          ],
+          "quality_expectations": [
+            "example"
+          ],
+          "retention_window": "example",
+          "sample_queries": [
+            "example"
+          ],
+          "update_cadence": "example"
+        },
+        "created_at": "2026-01-02T15:04:05Z",
+        "created_by": "example",
+        "docs_url": "example",
+        "id": "example",
+        "producing_build_id": "example",
+        "product_id": "example",
+        "release_state": "example",
+        "slo": {
+          "freshness_slo": "example",
+          "latency_slo": "example"
+        },
+        "version": 1
+      },
+      "owner_team": {
+        "contact_channel": "example",
+        "created_at": "2026-01-02T15:04:05Z",
+        "domain_id": "example",
+        "id": "example",
+        "name": "example",
+        "updated_at": "2026-01-02T15:04:05Z"
+      },
+      "primary_output": {
+        "asset_id": "example",
+        "asset_key": "example",
+        "asset_type": "example",
+        "created_at": "2026-01-02T15:04:05Z",
+        "id": "example",
+        "is_primary": true,
+        "product_version_id": "example"
+      },
+      "product": {
+        "access_request_path": "example",
+        "business_definitions": {
+          "key": "example"
+        },
+        "consumer_audience": "example",
+        "contact_channel": "example",
+        "contract": {
+          "breaking_change_policy": "example",
+          "data_grain": "example",
+          "dimensions": [
+            "example"
+          ],
+          "join_keys": [
+            "example"
+          ],
+          "measures": [
+            "example"
+          ],
+          "primary_keys": [
+            "example"
+          ],
+          "quality_expectations": [
+            "example"
+          ],
+          "retention_window": "example",
+          "sample_queries": [
+            "example"
+          ],
+          "update_cadence": "example"
+        },
+        "created_at": "2026-01-02T15:04:05Z",
+        "created_by": "example",
+        "description": "example",
+        "docs_url": "example",
+        "domain_id": "example",
+        "id": "example",
+        "name": "example",
+        "owner_team_id": "example",
+        "publication_intent": "example",
+        "slo": {
+          "freshness_slo": "example",
+          "latency_slo": "example"
+        },
+        "slug": "example",
+        "steward_principal": "example",
+        "updated_at": "2026-01-02T15:04:05Z",
+        "visibility": "example"
+      },
+      "status": {
+        "adoption_metrics": {
+          "key": "value"
+        },
+        "certification_state": "example",
+        "failing_checks_count": 1,
+        "freshness_status": "example",
+        "last_successful_update_at": "2026-01-02T15:04:05Z",
+        "lineage_coverage": 1,
+        "open_warnings": [
+          "example"
+        ],
+        "product_id": "example",
+        "publication_state": "example",
+        "quality_status": "example",
+        "replacement_product_id": "example",
+        "updated_at": "2026-01-02T15:04:05Z"
+      }
+    }
+  ],
+  "domain": {
+    "created_at": "2026-01-02T15:04:05Z",
+    "description": "example",
+    "id": "example",
+    "name": "example",
+    "updated_at": "2026-01-02T15:04:05Z"
+  },
+  "events": [
+    {
+      "created_at": "2026-01-02T15:04:05Z",
+      "description": "example",
+      "event_type": "example",
+      "id": "example",
+      "metadata": {
+        "key": "value"
+      },
+      "product_id": "example",
+      "title": "example"
+    }
+  ],
+  "outputs": [
+    {
+      "asset_id": "example",
+      "asset_key": "example",
+      "asset_type": "example",
+      "created_at": "2026-01-02T15:04:05Z",
+      "id": "example",
+      "is_primary": true,
+      "product_version_id": "example"
+    }
+  ],
+  "owner_team": {
+    "contact_channel": "example",
+    "created_at": "2026-01-02T15:04:05Z",
+    "domain_id": "example",
+    "id": "example",
+    "name": "example",
+    "updated_at": "2026-01-02T15:04:05Z"
+  },
+  "product": {
+    "access_request_path": "example",
+    "business_definitions": {
+      "key": "example"
+    },
+    "consumer_audience": "example",
+    "contact_channel": "example",
+    "contract": {
+      "breaking_change_policy": "example",
+      "data_grain": "example",
+      "dimensions": [
+        "example"
+      ],
+      "join_keys": [
+        "example"
+      ],
+      "measures": [
+        "example"
+      ],
+      "primary_keys": [
+        "example"
+      ],
+      "quality_expectations": [
+        "example"
+      ],
+      "retention_window": "example",
+      "sample_queries": [
+        "example"
+      ],
+      "update_cadence": "example"
+    },
+    "created_at": "2026-01-02T15:04:05Z",
+    "created_by": "example",
+    "description": "example",
+    "docs_url": "example",
+    "domain_id": "example",
+    "id": "example",
+    "name": "example",
+    "owner_team_id": "example",
+    "publication_intent": "example",
+    "slo": {
+      "freshness_slo": "example",
+      "latency_slo": "example"
+    },
+    "slug": "example",
+    "steward_principal": "example",
+    "updated_at": "2026-01-02T15:04:05Z",
+    "visibility": "example"
+  },
+  "semantic_entrypoints": [
+    {
+      "created_at": "2026-01-02T15:04:05Z",
+      "id": "example",
+      "model_name": "example",
+      "product_version_id": "example",
+      "semantic_model_id": "example"
+    }
+  ],
+  "status": {
+    "adoption_metrics": {
+      "key": "value"
+    },
+    "certification_state": "example",
+    "failing_checks_count": 1,
+    "freshness_status": "example",
+    "last_successful_update_at": "2026-01-02T15:04:05Z",
+    "lineage_coverage": 1,
+    "open_warnings": [
+      "example"
+    ],
+    "product_id": "example",
+    "publication_state": "example",
+    "quality_status": "example",
+    "replacement_product_id": "example",
+    "updated_at": "2026-01-02T15:04:05Z"
+  },
+  "subscriptions": [
+    {
+      "channel": "example",
+      "created_at": "2026-01-02T15:04:05Z",
+      "event_type": "example",
+      "id": "example",
+      "principal_name": "example",
+      "product_id": "example"
+    }
+  ],
+  "versions": [
+    {
+      "access_request_path": "example",
+      "compatibility_level": "example",
+      "contract": {
+        "breaking_change_policy": "example",
+        "data_grain": "example",
+        "dimensions": [
+          "example"
+        ],
+        "join_keys": [
+          "example"
+        ],
+        "measures": [
+          "example"
+        ],
+        "primary_keys": [
+          "example"
+        ],
+        "quality_expectations": [
+          "example"
+        ],
+        "retention_window": "example",
+        "sample_queries": [
+          "example"
+        ],
+        "update_cadence": "example"
+      },
+      "created_at": "2026-01-02T15:04:05Z",
+      "created_by": "example",
+      "docs_url": "example",
+      "id": "example",
+      "producing_build_id": "example",
+      "product_id": "example",
+      "release_state": "example",
+      "slo": {
+        "freshness_slo": "example",
+        "latency_slo": "example"
+      },
+      "version": 1
+    }
+  ]
+}
+```
+
+#### `400` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `401` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `403` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `404` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `429` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `500` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
 
 ## `POST /data-products/{product_slug}/versions/{version}/publications`
 
@@ -477,10 +4523,10 @@ Publish data product version
 
 ### Path Parameters
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `product_slug` | `string` | `true` | - |
-| `version` | `integer` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `product_slug` | `string` | `true` | - | "example" |
+| `version` | `integer` | `true` | - | 1 |
 
 ### Responses
 
@@ -493,6 +4539,401 @@ Publish data product version
 | `404` | The server cannot find the requested resource. |
 | `429` | Client error |
 | `500` | Server error |
+
+#### `200` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "dependencies": [
+    {
+      "domain": {
+        "created_at": "2026-01-02T15:04:05Z",
+        "description": "example",
+        "id": "example",
+        "name": "example",
+        "updated_at": "2026-01-02T15:04:05Z"
+      },
+      "latest_version": {
+        "access_request_path": "example",
+        "compatibility_level": "example",
+        "contract": {
+          "breaking_change_policy": "example",
+          "data_grain": "example",
+          "dimensions": [
+            "example"
+          ],
+          "join_keys": [
+            "example"
+          ],
+          "measures": [
+            "example"
+          ],
+          "primary_keys": [
+            "example"
+          ],
+          "quality_expectations": [
+            "example"
+          ],
+          "retention_window": "example",
+          "sample_queries": [
+            "example"
+          ],
+          "update_cadence": "example"
+        },
+        "created_at": "2026-01-02T15:04:05Z",
+        "created_by": "example",
+        "docs_url": "example",
+        "id": "example",
+        "producing_build_id": "example",
+        "product_id": "example",
+        "release_state": "example",
+        "slo": {
+          "freshness_slo": "example",
+          "latency_slo": "example"
+        },
+        "version": 1
+      },
+      "owner_team": {
+        "contact_channel": "example",
+        "created_at": "2026-01-02T15:04:05Z",
+        "domain_id": "example",
+        "id": "example",
+        "name": "example",
+        "updated_at": "2026-01-02T15:04:05Z"
+      },
+      "primary_output": {
+        "asset_id": "example",
+        "asset_key": "example",
+        "asset_type": "example",
+        "created_at": "2026-01-02T15:04:05Z",
+        "id": "example",
+        "is_primary": true,
+        "product_version_id": "example"
+      },
+      "product": {
+        "access_request_path": "example",
+        "business_definitions": {
+          "key": "example"
+        },
+        "consumer_audience": "example",
+        "contact_channel": "example",
+        "contract": {
+          "breaking_change_policy": "example",
+          "data_grain": "example",
+          "dimensions": [
+            "example"
+          ],
+          "join_keys": [
+            "example"
+          ],
+          "measures": [
+            "example"
+          ],
+          "primary_keys": [
+            "example"
+          ],
+          "quality_expectations": [
+            "example"
+          ],
+          "retention_window": "example",
+          "sample_queries": [
+            "example"
+          ],
+          "update_cadence": "example"
+        },
+        "created_at": "2026-01-02T15:04:05Z",
+        "created_by": "example",
+        "description": "example",
+        "docs_url": "example",
+        "domain_id": "example",
+        "id": "example",
+        "name": "example",
+        "owner_team_id": "example",
+        "publication_intent": "example",
+        "slo": {
+          "freshness_slo": "example",
+          "latency_slo": "example"
+        },
+        "slug": "example",
+        "steward_principal": "example",
+        "updated_at": "2026-01-02T15:04:05Z",
+        "visibility": "example"
+      },
+      "status": {
+        "adoption_metrics": {
+          "key": "value"
+        },
+        "certification_state": "example",
+        "failing_checks_count": 1,
+        "freshness_status": "example",
+        "last_successful_update_at": "2026-01-02T15:04:05Z",
+        "lineage_coverage": 1,
+        "open_warnings": [
+          "example"
+        ],
+        "product_id": "example",
+        "publication_state": "example",
+        "quality_status": "example",
+        "replacement_product_id": "example",
+        "updated_at": "2026-01-02T15:04:05Z"
+      }
+    }
+  ],
+  "domain": {
+    "created_at": "2026-01-02T15:04:05Z",
+    "description": "example",
+    "id": "example",
+    "name": "example",
+    "updated_at": "2026-01-02T15:04:05Z"
+  },
+  "events": [
+    {
+      "created_at": "2026-01-02T15:04:05Z",
+      "description": "example",
+      "event_type": "example",
+      "id": "example",
+      "metadata": {
+        "key": "value"
+      },
+      "product_id": "example",
+      "title": "example"
+    }
+  ],
+  "outputs": [
+    {
+      "asset_id": "example",
+      "asset_key": "example",
+      "asset_type": "example",
+      "created_at": "2026-01-02T15:04:05Z",
+      "id": "example",
+      "is_primary": true,
+      "product_version_id": "example"
+    }
+  ],
+  "owner_team": {
+    "contact_channel": "example",
+    "created_at": "2026-01-02T15:04:05Z",
+    "domain_id": "example",
+    "id": "example",
+    "name": "example",
+    "updated_at": "2026-01-02T15:04:05Z"
+  },
+  "product": {
+    "access_request_path": "example",
+    "business_definitions": {
+      "key": "example"
+    },
+    "consumer_audience": "example",
+    "contact_channel": "example",
+    "contract": {
+      "breaking_change_policy": "example",
+      "data_grain": "example",
+      "dimensions": [
+        "example"
+      ],
+      "join_keys": [
+        "example"
+      ],
+      "measures": [
+        "example"
+      ],
+      "primary_keys": [
+        "example"
+      ],
+      "quality_expectations": [
+        "example"
+      ],
+      "retention_window": "example",
+      "sample_queries": [
+        "example"
+      ],
+      "update_cadence": "example"
+    },
+    "created_at": "2026-01-02T15:04:05Z",
+    "created_by": "example",
+    "description": "example",
+    "docs_url": "example",
+    "domain_id": "example",
+    "id": "example",
+    "name": "example",
+    "owner_team_id": "example",
+    "publication_intent": "example",
+    "slo": {
+      "freshness_slo": "example",
+      "latency_slo": "example"
+    },
+    "slug": "example",
+    "steward_principal": "example",
+    "updated_at": "2026-01-02T15:04:05Z",
+    "visibility": "example"
+  },
+  "semantic_entrypoints": [
+    {
+      "created_at": "2026-01-02T15:04:05Z",
+      "id": "example",
+      "model_name": "example",
+      "product_version_id": "example",
+      "semantic_model_id": "example"
+    }
+  ],
+  "status": {
+    "adoption_metrics": {
+      "key": "value"
+    },
+    "certification_state": "example",
+    "failing_checks_count": 1,
+    "freshness_status": "example",
+    "last_successful_update_at": "2026-01-02T15:04:05Z",
+    "lineage_coverage": 1,
+    "open_warnings": [
+      "example"
+    ],
+    "product_id": "example",
+    "publication_state": "example",
+    "quality_status": "example",
+    "replacement_product_id": "example",
+    "updated_at": "2026-01-02T15:04:05Z"
+  },
+  "subscriptions": [
+    {
+      "channel": "example",
+      "created_at": "2026-01-02T15:04:05Z",
+      "event_type": "example",
+      "id": "example",
+      "principal_name": "example",
+      "product_id": "example"
+    }
+  ],
+  "versions": [
+    {
+      "access_request_path": "example",
+      "compatibility_level": "example",
+      "contract": {
+        "breaking_change_policy": "example",
+        "data_grain": "example",
+        "dimensions": [
+          "example"
+        ],
+        "join_keys": [
+          "example"
+        ],
+        "measures": [
+          "example"
+        ],
+        "primary_keys": [
+          "example"
+        ],
+        "quality_expectations": [
+          "example"
+        ],
+        "retention_window": "example",
+        "sample_queries": [
+          "example"
+        ],
+        "update_cadence": "example"
+      },
+      "created_at": "2026-01-02T15:04:05Z",
+      "created_by": "example",
+      "docs_url": "example",
+      "id": "example",
+      "producing_build_id": "example",
+      "product_id": "example",
+      "release_state": "example",
+      "slo": {
+        "freshness_slo": "example",
+        "latency_slo": "example"
+      },
+      "version": 1
+    }
+  ]
+}
+```
+
+#### `400` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `401` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `403` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `404` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `429` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `500` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
 
 ## `POST /data-products/{product_slug}/versions/{version}/retirements`
 
@@ -502,10 +4943,10 @@ Retire data product version
 
 ### Path Parameters
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `product_slug` | `string` | `true` | - |
-| `version` | `integer` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `product_slug` | `string` | `true` | - | "example" |
+| `version` | `integer` | `true` | - | 1 |
 
 ### Responses
 
@@ -518,4 +4959,399 @@ Retire data product version
 | `404` | The server cannot find the requested resource. |
 | `429` | Client error |
 | `500` | Server error |
+
+#### `200` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "dependencies": [
+    {
+      "domain": {
+        "created_at": "2026-01-02T15:04:05Z",
+        "description": "example",
+        "id": "example",
+        "name": "example",
+        "updated_at": "2026-01-02T15:04:05Z"
+      },
+      "latest_version": {
+        "access_request_path": "example",
+        "compatibility_level": "example",
+        "contract": {
+          "breaking_change_policy": "example",
+          "data_grain": "example",
+          "dimensions": [
+            "example"
+          ],
+          "join_keys": [
+            "example"
+          ],
+          "measures": [
+            "example"
+          ],
+          "primary_keys": [
+            "example"
+          ],
+          "quality_expectations": [
+            "example"
+          ],
+          "retention_window": "example",
+          "sample_queries": [
+            "example"
+          ],
+          "update_cadence": "example"
+        },
+        "created_at": "2026-01-02T15:04:05Z",
+        "created_by": "example",
+        "docs_url": "example",
+        "id": "example",
+        "producing_build_id": "example",
+        "product_id": "example",
+        "release_state": "example",
+        "slo": {
+          "freshness_slo": "example",
+          "latency_slo": "example"
+        },
+        "version": 1
+      },
+      "owner_team": {
+        "contact_channel": "example",
+        "created_at": "2026-01-02T15:04:05Z",
+        "domain_id": "example",
+        "id": "example",
+        "name": "example",
+        "updated_at": "2026-01-02T15:04:05Z"
+      },
+      "primary_output": {
+        "asset_id": "example",
+        "asset_key": "example",
+        "asset_type": "example",
+        "created_at": "2026-01-02T15:04:05Z",
+        "id": "example",
+        "is_primary": true,
+        "product_version_id": "example"
+      },
+      "product": {
+        "access_request_path": "example",
+        "business_definitions": {
+          "key": "example"
+        },
+        "consumer_audience": "example",
+        "contact_channel": "example",
+        "contract": {
+          "breaking_change_policy": "example",
+          "data_grain": "example",
+          "dimensions": [
+            "example"
+          ],
+          "join_keys": [
+            "example"
+          ],
+          "measures": [
+            "example"
+          ],
+          "primary_keys": [
+            "example"
+          ],
+          "quality_expectations": [
+            "example"
+          ],
+          "retention_window": "example",
+          "sample_queries": [
+            "example"
+          ],
+          "update_cadence": "example"
+        },
+        "created_at": "2026-01-02T15:04:05Z",
+        "created_by": "example",
+        "description": "example",
+        "docs_url": "example",
+        "domain_id": "example",
+        "id": "example",
+        "name": "example",
+        "owner_team_id": "example",
+        "publication_intent": "example",
+        "slo": {
+          "freshness_slo": "example",
+          "latency_slo": "example"
+        },
+        "slug": "example",
+        "steward_principal": "example",
+        "updated_at": "2026-01-02T15:04:05Z",
+        "visibility": "example"
+      },
+      "status": {
+        "adoption_metrics": {
+          "key": "value"
+        },
+        "certification_state": "example",
+        "failing_checks_count": 1,
+        "freshness_status": "example",
+        "last_successful_update_at": "2026-01-02T15:04:05Z",
+        "lineage_coverage": 1,
+        "open_warnings": [
+          "example"
+        ],
+        "product_id": "example",
+        "publication_state": "example",
+        "quality_status": "example",
+        "replacement_product_id": "example",
+        "updated_at": "2026-01-02T15:04:05Z"
+      }
+    }
+  ],
+  "domain": {
+    "created_at": "2026-01-02T15:04:05Z",
+    "description": "example",
+    "id": "example",
+    "name": "example",
+    "updated_at": "2026-01-02T15:04:05Z"
+  },
+  "events": [
+    {
+      "created_at": "2026-01-02T15:04:05Z",
+      "description": "example",
+      "event_type": "example",
+      "id": "example",
+      "metadata": {
+        "key": "value"
+      },
+      "product_id": "example",
+      "title": "example"
+    }
+  ],
+  "outputs": [
+    {
+      "asset_id": "example",
+      "asset_key": "example",
+      "asset_type": "example",
+      "created_at": "2026-01-02T15:04:05Z",
+      "id": "example",
+      "is_primary": true,
+      "product_version_id": "example"
+    }
+  ],
+  "owner_team": {
+    "contact_channel": "example",
+    "created_at": "2026-01-02T15:04:05Z",
+    "domain_id": "example",
+    "id": "example",
+    "name": "example",
+    "updated_at": "2026-01-02T15:04:05Z"
+  },
+  "product": {
+    "access_request_path": "example",
+    "business_definitions": {
+      "key": "example"
+    },
+    "consumer_audience": "example",
+    "contact_channel": "example",
+    "contract": {
+      "breaking_change_policy": "example",
+      "data_grain": "example",
+      "dimensions": [
+        "example"
+      ],
+      "join_keys": [
+        "example"
+      ],
+      "measures": [
+        "example"
+      ],
+      "primary_keys": [
+        "example"
+      ],
+      "quality_expectations": [
+        "example"
+      ],
+      "retention_window": "example",
+      "sample_queries": [
+        "example"
+      ],
+      "update_cadence": "example"
+    },
+    "created_at": "2026-01-02T15:04:05Z",
+    "created_by": "example",
+    "description": "example",
+    "docs_url": "example",
+    "domain_id": "example",
+    "id": "example",
+    "name": "example",
+    "owner_team_id": "example",
+    "publication_intent": "example",
+    "slo": {
+      "freshness_slo": "example",
+      "latency_slo": "example"
+    },
+    "slug": "example",
+    "steward_principal": "example",
+    "updated_at": "2026-01-02T15:04:05Z",
+    "visibility": "example"
+  },
+  "semantic_entrypoints": [
+    {
+      "created_at": "2026-01-02T15:04:05Z",
+      "id": "example",
+      "model_name": "example",
+      "product_version_id": "example",
+      "semantic_model_id": "example"
+    }
+  ],
+  "status": {
+    "adoption_metrics": {
+      "key": "value"
+    },
+    "certification_state": "example",
+    "failing_checks_count": 1,
+    "freshness_status": "example",
+    "last_successful_update_at": "2026-01-02T15:04:05Z",
+    "lineage_coverage": 1,
+    "open_warnings": [
+      "example"
+    ],
+    "product_id": "example",
+    "publication_state": "example",
+    "quality_status": "example",
+    "replacement_product_id": "example",
+    "updated_at": "2026-01-02T15:04:05Z"
+  },
+  "subscriptions": [
+    {
+      "channel": "example",
+      "created_at": "2026-01-02T15:04:05Z",
+      "event_type": "example",
+      "id": "example",
+      "principal_name": "example",
+      "product_id": "example"
+    }
+  ],
+  "versions": [
+    {
+      "access_request_path": "example",
+      "compatibility_level": "example",
+      "contract": {
+        "breaking_change_policy": "example",
+        "data_grain": "example",
+        "dimensions": [
+          "example"
+        ],
+        "join_keys": [
+          "example"
+        ],
+        "measures": [
+          "example"
+        ],
+        "primary_keys": [
+          "example"
+        ],
+        "quality_expectations": [
+          "example"
+        ],
+        "retention_window": "example",
+        "sample_queries": [
+          "example"
+        ],
+        "update_cadence": "example"
+      },
+      "created_at": "2026-01-02T15:04:05Z",
+      "created_by": "example",
+      "docs_url": "example",
+      "id": "example",
+      "producing_build_id": "example",
+      "product_id": "example",
+      "release_state": "example",
+      "slo": {
+        "freshness_slo": "example",
+        "latency_slo": "example"
+      },
+      "version": 1
+    }
+  ]
+}
+```
+
+#### `400` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `401` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `403` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `404` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `429` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `500` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
 

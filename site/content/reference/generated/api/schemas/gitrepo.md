@@ -2,19 +2,35 @@
 
 # Schema: `GitRepo`
 
+## Example
+
+```json
+{
+  "branch": "example",
+  "created_at": "2026-01-02T15:04:05Z",
+  "id": "example",
+  "last_commit": "example",
+  "last_sync_at": "2026-01-02T15:04:05Z",
+  "owner": "example",
+  "path": "example",
+  "updated_at": "2026-01-02T15:04:05Z",
+  "url": "example"
+}
+```
+
 - Type: `object`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `branch` | `string` | `false` | - |
-| `created_at` | `string` | `false` | - |
-| `id` | `string` | `false` | - |
-| `last_commit` | `string` | `false` | - |
-| `last_sync_at` | `string` | `false` | - |
-| `owner` | `string` | `false` | - |
-| `path` | `string` | `false` | - |
-| `updated_at` | `string` | `false` | - |
-| `url` | `string` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `branch` | `string` | `false` | - | "example" |
+| `created_at` | `string` | `false` | - | "2026-01-02T15:04:05Z" |
+| `id` | `string` | `false` | - | "example" |
+| `last_commit` | `string` | `false` | - | "example" |
+| `last_sync_at` | `string` | `false` | - | "2026-01-02T15:04:05Z" |
+| `owner` | `string` | `false` | - | "example" |
+| `path` | `string` | `false` | - | "example" |
+| `updated_at` | `string` | `false` | - | "2026-01-02T15:04:05Z" |
+| `url` | `string` | `false` | - | "example" |
 

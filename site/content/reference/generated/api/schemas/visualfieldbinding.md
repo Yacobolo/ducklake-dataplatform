@@ -2,12 +2,20 @@
 
 # Schema: `VisualFieldBinding`
 
+## Example
+
+```json
+{
+  "field": "example"
+}
+```
+
 - Type: `object`
 - Required fields: `field`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `field` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `field` | `string` | `true` | - | "example" |
 

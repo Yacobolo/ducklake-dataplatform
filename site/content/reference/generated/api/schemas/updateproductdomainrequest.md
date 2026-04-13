@@ -2,11 +2,19 @@
 
 # Schema: `UpdateProductDomainRequest`
 
+## Example
+
+```json
+{
+  "description": "example"
+}
+```
+
 - Type: `object`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `description` | `string` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `description` | `string` | `false` | - | "example" |
 

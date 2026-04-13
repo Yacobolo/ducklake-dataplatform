@@ -2,5 +2,11 @@
 
 # Schema: `PipelineRunStatus`
 
+## Example
+
+```json
+"PENDING"
+```
+
 - Type: `string`
 

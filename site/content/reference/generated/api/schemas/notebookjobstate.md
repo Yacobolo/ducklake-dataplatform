@@ -2,5 +2,11 @@
 
 # Schema: `NotebookJobState`
 
+## Example
+
+```json
+"pending"
+```
+
 - Type: `string`
 

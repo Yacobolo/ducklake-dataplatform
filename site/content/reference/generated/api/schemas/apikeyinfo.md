@@ -4,17 +4,30 @@
 
 Represents a stored API key without returning the full secret value.
 
+## Example
+
+```json
+{
+  "created_at": "2026-01-02T15:04:05Z",
+  "expires_at": "2026-01-02T15:04:05Z",
+  "id": "example",
+  "key_prefix": "example",
+  "name": "example",
+  "principal_id": "example"
+}
+```
+
 - Type: `object`
 - Required fields: `id`, `name`, `principal_id`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `created_at` | `string` | `false` | - |
-| `expires_at` | `string` | `false` | - |
-| `id` | `string` | `true` | - |
-| `key_prefix` | `string` | `false` | - |
-| `name` | `string` | `true` | - |
-| `principal_id` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `created_at` | `string` | `false` | - | "2026-01-02T15:04:05Z" |
+| `expires_at` | `string` | `false` | - | "2026-01-02T15:04:05Z" |
+| `id` | `string` | `true` | - | "example" |
+| `key_prefix` | `string` | `false` | - | "example" |
+| `name` | `string` | `true` | - | "example" |
+| `principal_id` | `string` | `true` | - | "example" |
 

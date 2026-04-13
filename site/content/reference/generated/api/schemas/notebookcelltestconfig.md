@@ -2,11 +2,19 @@
 
 # Schema: `NotebookCellTestConfig`
 
+## Example
+
+```json
+{
+  "severity": "error"
+}
+```
+
 - Type: `object`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `severity` | `NotebookTestSeverity` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `severity` | `NotebookTestSeverity` | `false` | - | "error" |
 

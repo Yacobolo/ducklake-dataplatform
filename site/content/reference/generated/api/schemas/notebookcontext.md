@@ -2,20 +2,37 @@
 
 # Schema: `NotebookContext`
 
+## Example
+
+```json
+{
+  "effective_environment_id": "example",
+  "effective_git_repo_id": "example",
+  "effective_git_root_path": "example",
+  "effective_project_id": "example",
+  "environment_source_id": "example",
+  "folder_id": "example",
+  "git_source_folder_id": "example",
+  "notebook_id": "example",
+  "project_source_folder_id": "example",
+  "workspace_id": "example"
+}
+```
+
 - Type: `object`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `effective_environment_id` | `string` | `false` | - |
-| `effective_git_repo_id` | `string` | `false` | - |
-| `effective_git_root_path` | `string` | `false` | - |
-| `effective_project_id` | `string` | `false` | - |
-| `environment_source_id` | `string` | `false` | - |
-| `folder_id` | `string` | `false` | - |
-| `git_source_folder_id` | `string` | `false` | - |
-| `notebook_id` | `string` | `false` | - |
-| `project_source_folder_id` | `string` | `false` | - |
-| `workspace_id` | `string` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `effective_environment_id` | `string` | `false` | - | "example" |
+| `effective_git_repo_id` | `string` | `false` | - | "example" |
+| `effective_git_root_path` | `string` | `false` | - | "example" |
+| `effective_project_id` | `string` | `false` | - | "example" |
+| `environment_source_id` | `string` | `false` | - | "example" |
+| `folder_id` | `string` | `false` | - | "example" |
+| `git_source_folder_id` | `string` | `false` | - | "example" |
+| `notebook_id` | `string` | `false` | - | "example" |
+| `project_source_folder_id` | `string` | `false` | - | "example" |
+| `workspace_id` | `string` | `false` | - | "example" |
 

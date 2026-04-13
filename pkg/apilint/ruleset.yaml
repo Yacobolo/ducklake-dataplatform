@@ -70,10 +70,7 @@ rules:
   # Suppressed: QueryResult.rows cell schema is intentionally untyped (items: {})
   # to represent heterogeneous values. Adding a type would be incorrect.
   oas-missing-type: off
-  # Downgraded: property-level missing examples are noisy; top-level media type
-  # examples already cover most endpoints. Only media-type-level violations
-  # (the genuine ones) are surfaced at warning level by vacuum.
-  oas3-missing-example: off
+  oas3-missing-example: error
 
   # Temporarily relaxed for in-flight semantic API expansion; enforced via
   # runtime/service validation and tests until schema hardening is completed.

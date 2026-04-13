@@ -2,5 +2,11 @@
 
 # Schema: `ModelTestResultStatus`
 
+## Example
+
+```json
+"PASS"
+```
+
 - Type: `string`
 

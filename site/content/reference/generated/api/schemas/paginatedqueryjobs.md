@@ -2,13 +2,33 @@
 
 # Schema: `PaginatedQueryJobs`
 
+## Example
+
+```json
+{
+  "data": [
+    {
+      "completed_at": "2026-01-02T15:04:05Z",
+      "created_at": "2026-01-02T15:04:05Z",
+      "error": "example",
+      "query_id": "example",
+      "request_id": "example",
+      "row_count": 1,
+      "started_at": "2026-01-02T15:04:05Z",
+      "status": "QUEUED"
+    }
+  ],
+  "next_page_token": "example"
+}
+```
+
 - Type: `object`
 - Required fields: `data`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `data` | `array[QueryJob]` | `true` | - |
-| `next_page_token` | `string` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `data` | `array[QueryJob]` | `true` | - | [ { "completed_at": "2026-01-02T15:04:05Z", "created_at": "2026-01-02T15:04:05Z", "error": "example", "query_id": "example", "request_id": "example", "row_count": 1, "started_at": "2026-01-02T15:04:05Z", "status": "QUEUED" } ] |
+| `next_page_token` | `string` | `false` | - | "example" |
 

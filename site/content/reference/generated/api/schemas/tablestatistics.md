@@ -2,15 +2,27 @@
 
 # Schema: `TableStatistics`
 
+## Example
+
+```json
+{
+  "column_count": 1,
+  "last_profiled_at": "2026-01-02T15:04:05Z",
+  "profiled_by": "example",
+  "row_count": 1,
+  "size_bytes": 1
+}
+```
+
 - Type: `object`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `column_count` | `integer` | `false` | - |
-| `last_profiled_at` | `string` | `false` | - |
-| `profiled_by` | `string` | `false` | - |
-| `row_count` | `integer` | `false` | - |
-| `size_bytes` | `integer` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `column_count` | `integer` | `false` | - | 1 |
+| `last_profiled_at` | `string` | `false` | - | "2026-01-02T15:04:05Z" |
+| `profiled_by` | `string` | `false` | - | "example" |
+| `row_count` | `integer` | `false` | - | 1 |
+| `size_bytes` | `integer` | `false` | - | 1 |
 

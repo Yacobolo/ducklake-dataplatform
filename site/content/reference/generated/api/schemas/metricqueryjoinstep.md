@@ -2,15 +2,27 @@
 
 # Schema: `MetricQueryJoinStep`
 
+## Example
+
+```json
+{
+  "from_model": "example",
+  "join_sql": "example",
+  "relationship_name": "example",
+  "relationship_type": "example",
+  "to_model": "example"
+}
+```
+
 - Type: `object`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `from_model` | `string` | `false` | - |
-| `join_sql` | `string` | `false` | - |
-| `relationship_name` | `string` | `false` | - |
-| `relationship_type` | `string` | `false` | - |
-| `to_model` | `string` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `from_model` | `string` | `false` | - | "example" |
+| `join_sql` | `string` | `false` | - | "example" |
+| `relationship_name` | `string` | `false` | - | "example" |
+| `relationship_type` | `string` | `false` | - | "example" |
+| `to_model` | `string` | `false` | - | "example" |
 

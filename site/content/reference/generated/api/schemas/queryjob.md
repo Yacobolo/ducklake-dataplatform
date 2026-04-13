@@ -2,19 +2,34 @@
 
 # Schema: `QueryJob`
 
+## Example
+
+```json
+{
+  "completed_at": "2026-01-02T15:04:05Z",
+  "created_at": "2026-01-02T15:04:05Z",
+  "error": "example",
+  "query_id": "example",
+  "request_id": "example",
+  "row_count": 1,
+  "started_at": "2026-01-02T15:04:05Z",
+  "status": "QUEUED"
+}
+```
+
 - Type: `object`
 - Required fields: `query_id`, `row_count`, `status`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `completed_at` | `string` | `false` | - |
-| `created_at` | `string` | `false` | - |
-| `error` | `string` | `false` | - |
-| `query_id` | `string` | `true` | - |
-| `request_id` | `string` | `false` | - |
-| `row_count` | `integer` | `true` | - |
-| `started_at` | `string` | `false` | - |
-| `status` | `QueryJobStatus` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `completed_at` | `string` | `false` | - | "2026-01-02T15:04:05Z" |
+| `created_at` | `string` | `false` | - | "2026-01-02T15:04:05Z" |
+| `error` | `string` | `false` | - | "example" |
+| `query_id` | `string` | `true` | - | "example" |
+| `request_id` | `string` | `false` | - | "example" |
+| `row_count` | `integer` | `true` | - | 1 |
+| `started_at` | `string` | `false` | - | "2026-01-02T15:04:05Z" |
+| `status` | `QueryJobStatus` | `true` | - | "QUEUED" |
 

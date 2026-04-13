@@ -12,14 +12,26 @@ Reorder cells
 
 ### Path Parameters
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `notebook_id` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `notebook_id` | `string` | `true` | - | "example" |
 
 ### Request Body
 
 - Required: `true`
 - Content types: `application/json`
+
+### Request Examples
+
+- Content type: `application/json`
+
+```json
+{
+  "cell_ids": [
+    "example"
+  ]
+}
+```
 
 ### Responses
 
@@ -32,4 +44,145 @@ Reorder cells
 | `404` | The server cannot find the requested resource. |
 | `429` | Client error |
 | `500` | Server error |
+
+#### `200` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "data": [
+    {
+      "cell_type": "sql",
+      "content": "example",
+      "created_at": "2026-01-02T15:04:05Z",
+      "disabled": true,
+      "id": "example",
+      "last_result": "example",
+      "name": "example",
+      "notebook_id": "example",
+      "position": 1,
+      "role": "transform",
+      "test": {
+        "severity": "error"
+      },
+      "updated_at": "2026-01-02T15:04:05Z",
+      "visual_spec": {
+        "chart_type": "bar",
+        "color_palette": "example",
+        "encodings": {
+          "label": {
+            "field": "example"
+          },
+          "secondary": {
+            "field": "example"
+          },
+          "series": {
+            "field": "example"
+          },
+          "value": {
+            "field": "example"
+          },
+          "x": {
+            "field": "example"
+          },
+          "y": {
+            "field": "example"
+          }
+        },
+        "kind": "table",
+        "legend": true,
+        "legend_position": "top",
+        "stacked": true,
+        "subtitle": "example",
+        "title": "example"
+      }
+    }
+  ]
+}
+```
+
+#### `400` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `401` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `403` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `404` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `429` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
+
+#### `500` Example
+
+- Content type: `application/json`
+
+```json
+{
+  "code": 1,
+  "details": {
+    "key": "example"
+  },
+  "message": "example"
+}
+```
 

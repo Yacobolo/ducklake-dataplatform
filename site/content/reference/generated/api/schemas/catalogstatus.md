@@ -2,5 +2,11 @@
 
 # Schema: `CatalogStatus`
 
+## Example
+
+```json
+"ACTIVE"
+```
+
 - Type: `string`
 

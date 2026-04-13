@@ -2,5 +2,11 @@
 
 # Schema: `EnvironmentKind`
 
+## Example
+
+```json
+"development"
+```
+
 - Type: `string`
 

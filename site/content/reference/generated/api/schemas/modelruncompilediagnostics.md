@@ -2,12 +2,25 @@
 
 # Schema: `ModelRunCompileDiagnostics`
 
+## Example
+
+```json
+{
+  "errors": [
+    "example"
+  ],
+  "warnings": [
+    "example"
+  ]
+}
+```
+
 - Type: `object`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `errors` | `array[string]` | `false` | - |
-| `warnings` | `array[string]` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `errors` | `array[string]` | `false` | - | [ "example" ] |
+| `warnings` | `array[string]` | `false` | - | [ "example" ] |
 

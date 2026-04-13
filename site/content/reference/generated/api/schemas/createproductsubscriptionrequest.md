@@ -2,14 +2,24 @@
 
 # Schema: `CreateProductSubscriptionRequest`
 
+## Example
+
+```json
+{
+  "channel": "example",
+  "event_type": "example",
+  "principal_name": "example"
+}
+```
+
 - Type: `object`
 - Required fields: `event_type`, `principal_name`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `channel` | `string` | `false` | - |
-| `event_type` | `string` | `true` | - |
-| `principal_name` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `channel` | `string` | `false` | - | "example" |
+| `event_type` | `string` | `true` | - | "example" |
+| `principal_name` | `string` | `true` | - | "example" |
 

@@ -2,13 +2,23 @@
 
 # Schema: `UpdateRowFilterRequest`
 
+## Example
+
+```json
+{
+  "description": "example",
+  "filter_sql": "example",
+  "name": "example"
+}
+```
+
 - Type: `object`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `description` | `string` | `false` | - |
-| `filter_sql` | `string` | `false` | - |
-| `name` | `string` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `description` | `string` | `false` | - | "example" |
+| `filter_sql` | `string` | `false` | - | "example" |
+| `name` | `string` | `false` | - | "example" |
 

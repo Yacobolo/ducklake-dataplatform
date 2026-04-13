@@ -2,13 +2,22 @@
 
 # Schema: `BootstrapTokenResponse`
 
+## Example
+
+```json
+{
+  "bootstrap_token": "example",
+  "ttl_seconds": 1
+}
+```
+
 - Type: `object`
 - Required fields: `bootstrap_token`, `ttl_seconds`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `bootstrap_token` | `string` | `true` | - |
-| `ttl_seconds` | `integer` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `bootstrap_token` | `string` | `true` | - | "example" |
+| `ttl_seconds` | `integer` | `true` | - | 1 |
 

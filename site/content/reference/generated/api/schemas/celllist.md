@@ -2,12 +2,67 @@
 
 # Schema: `CellList`
 
+## Example
+
+```json
+{
+  "data": [
+    {
+      "cell_type": "sql",
+      "content": "example",
+      "created_at": "2026-01-02T15:04:05Z",
+      "disabled": true,
+      "id": "example",
+      "last_result": "example",
+      "name": "example",
+      "notebook_id": "example",
+      "position": 1,
+      "role": "transform",
+      "test": {
+        "severity": "error"
+      },
+      "updated_at": "2026-01-02T15:04:05Z",
+      "visual_spec": {
+        "chart_type": "bar",
+        "color_palette": "example",
+        "encodings": {
+          "label": {
+            "field": "example"
+          },
+          "secondary": {
+            "field": "example"
+          },
+          "series": {
+            "field": "example"
+          },
+          "value": {
+            "field": "example"
+          },
+          "x": {
+            "field": "example"
+          },
+          "y": {
+            "field": "example"
+          }
+        },
+        "kind": "table",
+        "legend": true,
+        "legend_position": "top",
+        "stacked": true,
+        "subtitle": "example",
+        "title": "example"
+      }
+    }
+  ]
+}
+```
+
 - Type: `object`
 - Required fields: `data`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `data` | `array[Cell]` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `data` | `array[Cell]` | `true` | - | [ { "cell_type": "sql", "content": "example", "created_at": "2026-01-02T15:04:05Z", "disabled": true, "id": "example", "last_result": "example", "name": "example", "notebook_id": "example", "position": 1, "role": "transform", "test": { "severity": "error" }, "updated_at": "2026-01-02T15:04:05Z", "visual_spec": { "chart_type": "bar", "color_palette": "example", "encodings": { "label": { "field": "example" }, "secondary": { "field": "example" }, "series": { "field": "example" }, "value": { "field": "example" }, "x": { "field": "example" }, "y": { "field": "example" } }, "kind": "table", "legend": true, "legend_position": "top", "stacked": true, "subtitle": "example", "title": "example" } } ] |
 

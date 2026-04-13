@@ -2,25 +2,56 @@
 
 # Schema: `ModelRun`
 
+## Example
+
+```json
+{
+  "build_id": "example",
+  "compile_diagnostics": {
+    "errors": [
+      "example"
+    ],
+    "warnings": [
+      "example"
+    ]
+  },
+  "compile_manifest": "example",
+  "created_at": "2026-01-02T15:04:05Z",
+  "environment_name": "example",
+  "error_message": "example",
+  "finished_at": "2026-01-02T15:04:05Z",
+  "full_refresh": true,
+  "id": "example",
+  "model_names": [
+    "example"
+  ],
+  "project_name": "example",
+  "started_at": "2026-01-02T15:04:05Z",
+  "status": "example",
+  "trigger_type": "example",
+  "triggered_by": "example"
+}
+```
+
 - Type: `object`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `build_id` | `string` | `false` | - |
-| `compile_diagnostics` | `ModelRunCompileDiagnostics` | `false` | - |
-| `compile_manifest` | `string` | `false` | - |
-| `created_at` | `string` | `false` | - |
-| `environment_name` | `string` | `false` | - |
-| `error_message` | `string` | `false` | - |
-| `finished_at` | `string` | `false` | - |
-| `full_refresh` | `boolean` | `false` | - |
-| `id` | `string` | `false` | - |
-| `model_names` | `array[string]` | `false` | - |
-| `project_name` | `string` | `false` | - |
-| `started_at` | `string` | `false` | - |
-| `status` | `string` | `false` | - |
-| `trigger_type` | `string` | `false` | - |
-| `triggered_by` | `string` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `build_id` | `string` | `false` | - | "example" |
+| `compile_diagnostics` | `ModelRunCompileDiagnostics` | `false` | - | { "errors": [ "example" ], "warnings": [ "example" ] } |
+| `compile_manifest` | `string` | `false` | - | "example" |
+| `created_at` | `string` | `false` | - | "2026-01-02T15:04:05Z" |
+| `environment_name` | `string` | `false` | - | "example" |
+| `error_message` | `string` | `false` | - | "example" |
+| `finished_at` | `string` | `false` | - | "2026-01-02T15:04:05Z" |
+| `full_refresh` | `boolean` | `false` | - | true |
+| `id` | `string` | `false` | - | "example" |
+| `model_names` | `array[string]` | `false` | - | [ "example" ] |
+| `project_name` | `string` | `false` | - | "example" |
+| `started_at` | `string` | `false` | - | "2026-01-02T15:04:05Z" |
+| `status` | `string` | `false` | - | "example" |
+| `trigger_type` | `string` | `false` | - | "example" |
+| `triggered_by` | `string` | `false` | - | "example" |
 

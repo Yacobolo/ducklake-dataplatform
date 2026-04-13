@@ -2,17 +2,30 @@
 
 # Schema: `CreateAPIKeyResponse`
 
+## Example
+
+```json
+{
+  "created_at": "2026-01-02T15:04:05Z",
+  "expires_at": "2026-01-02T15:04:05Z",
+  "id": "example",
+  "key": "example",
+  "key_prefix": "example",
+  "name": "example"
+}
+```
+
 - Type: `object`
 - Required fields: `id`, `key`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `created_at` | `string` | `false` | - |
-| `expires_at` | `string` | `false` | - |
-| `id` | `string` | `true` | - |
-| `key` | `string` | `true` | - |
-| `key_prefix` | `string` | `false` | - |
-| `name` | `string` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `created_at` | `string` | `false` | - | "2026-01-02T15:04:05Z" |
+| `expires_at` | `string` | `false` | - | "2026-01-02T15:04:05Z" |
+| `id` | `string` | `true` | - | "example" |
+| `key` | `string` | `true` | - | "example" |
+| `key_prefix` | `string` | `false` | - | "example" |
+| `name` | `string` | `false` | - | "example" |
 

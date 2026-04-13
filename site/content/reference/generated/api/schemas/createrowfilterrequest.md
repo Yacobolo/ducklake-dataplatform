@@ -2,15 +2,26 @@
 
 # Schema: `CreateRowFilterRequest`
 
+## Example
+
+```json
+{
+  "description": "example",
+  "filter_sql": "example",
+  "name": "example",
+  "table_id": "example"
+}
+```
+
 - Type: `object`
 - Required fields: `filter_sql`, `name`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `description` | `string` | `false` | - |
-| `filter_sql` | `string` | `true` | - |
-| `name` | `string` | `true` | - |
-| `table_id` | `string` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `description` | `string` | `false` | - | "example" |
+| `filter_sql` | `string` | `true` | - | "example" |
+| `name` | `string` | `true` | - | "example" |
+| `table_id` | `string` | `false` | - | "example" |
 

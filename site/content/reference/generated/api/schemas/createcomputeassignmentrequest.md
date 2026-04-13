@@ -2,15 +2,26 @@
 
 # Schema: `CreateComputeAssignmentRequest`
 
+## Example
+
+```json
+{
+  "fallback_local": true,
+  "is_default": true,
+  "principal_id": "example",
+  "principal_type": "user"
+}
+```
+
 - Type: `object`
 - Required fields: `principal_id`, `principal_type`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `fallback_local` | `boolean` | `false` | - |
-| `is_default` | `boolean` | `false` | - |
-| `principal_id` | `string` | `true` | - |
-| `principal_type` | `ComputeAssignmentPrincipalType` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `fallback_local` | `boolean` | `false` | - | true |
+| `is_default` | `boolean` | `false` | - | true |
+| `principal_id` | `string` | `true` | - | "example" |
+| `principal_type` | `ComputeAssignmentPrincipalType` | `true` | - | "user" |
 

@@ -2,15 +2,31 @@
 
 # Schema: `UpdateSemanticPreAggregationRequest`
 
+## Example
+
+```json
+{
+  "dimension_set": [
+    "example"
+  ],
+  "grain": "example",
+  "metric_set": [
+    "example"
+  ],
+  "refresh_policy": "example",
+  "target_relation": "example"
+}
+```
+
 - Type: `object`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `dimension_set` | `array[string]` | `false` | - |
-| `grain` | `string` | `false` | - |
-| `metric_set` | `array[string]` | `false` | - |
-| `refresh_policy` | `string` | `false` | - |
-| `target_relation` | `string` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `dimension_set` | `array[string]` | `false` | - | [ "example" ] |
+| `grain` | `string` | `false` | - | "example" |
+| `metric_set` | `array[string]` | `false` | - | [ "example" ] |
+| `refresh_policy` | `string` | `false` | - | "example" |
+| `target_relation` | `string` | `false` | - | "example" |
 

@@ -2,15 +2,107 @@
 
 # Schema: `NotebookDetail`
 
+## Example
+
+```json
+{
+  "cells": [
+    {
+      "cell_type": "sql",
+      "content": "example",
+      "created_at": "2026-01-02T15:04:05Z",
+      "disabled": true,
+      "id": "example",
+      "last_result": "example",
+      "name": "example",
+      "notebook_id": "example",
+      "position": 1,
+      "role": "transform",
+      "test": {
+        "severity": "error"
+      },
+      "updated_at": "2026-01-02T15:04:05Z",
+      "visual_spec": {
+        "chart_type": "bar",
+        "color_palette": "example",
+        "encodings": {
+          "label": {
+            "field": "example"
+          },
+          "secondary": {
+            "field": "example"
+          },
+          "series": {
+            "field": "example"
+          },
+          "value": {
+            "field": "example"
+          },
+          "x": {
+            "field": "example"
+          },
+          "y": {
+            "field": "example"
+          }
+        },
+        "kind": "table",
+        "legend": true,
+        "legend_position": "top",
+        "stacked": true,
+        "subtitle": "example",
+        "title": "example"
+      }
+    }
+  ],
+  "context": {
+    "effective_environment_id": "example",
+    "effective_git_repo_id": "example",
+    "effective_git_root_path": "example",
+    "effective_project_id": "example",
+    "environment_source_id": "example",
+    "folder_id": "example",
+    "git_source_folder_id": "example",
+    "notebook_id": "example",
+    "project_source_folder_id": "example",
+    "workspace_id": "example"
+  },
+  "notebook": {
+    "created_at": "2026-01-02T15:04:05Z",
+    "description": "example",
+    "environment_override_id": "example",
+    "folder_id": "example",
+    "git_path": "example",
+    "git_repo_id": "example",
+    "id": "example",
+    "name": "example",
+    "owner": "example",
+    "project_override_id": "example",
+    "updated_at": "2026-01-02T15:04:05Z"
+  },
+  "publish_model": {
+    "materialization": "VIEW",
+    "name": "example",
+    "output_cell_id": "example",
+    "project_name": "example"
+  },
+  "shares": [
+    {
+      "principal_name": "example",
+      "role": "viewer"
+    }
+  ]
+}
+```
+
 - Type: `object`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `cells` | `array[Cell]` | `false` | - |
-| `context` | `NotebookContext` | `false` | - |
-| `notebook` | `Notebook` | `false` | - |
-| `publish_model` | `NotebookPublishModel` | `false` | - |
-| `shares` | `array[NotebookShare]` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `cells` | `array[Cell]` | `false` | - | [ { "cell_type": "sql", "content": "example", "created_at": "2026-01-02T15:04:05Z", "disabled": true, "id": "example", "last_result": "example", "name": "example", "notebook_id": "example", "position": 1, "role": "transform", "test": { "severity": "error" }, "updated_at": "2026-01-02T15:04:05Z", "visual_spec": { "chart_type": "bar", "color_palette": "example", "encodings": { "label": { "field": "example" }, "secondary": { "field": "example" }, "series": { "field": "example" }, "value": { "field": "example" }, "x": { "field": "example" }, "y": { "field": "example" } }, "kind": "table", "legend": true, "legend_position": "top", "stacked": true, "subtitle": "example", "title": "example" } } ] |
+| `context` | `NotebookContext` | `false` | - | { "effective_environment_id": "example", "effective_git_repo_id": "example", "effective_git_root_path": "example", "effective_project_id": "example", "environment_source_id": "example", "folder_id": "example", "git_source_folder_id": "example", "notebook_id": "example", "project_source_folder_id": "example", "workspace_id": "example" } |
+| `notebook` | `Notebook` | `false` | - | { "created_at": "2026-01-02T15:04:05Z", "description": "example", "environment_override_id": "example", "folder_id": "example", "git_path": "example", "git_repo_id": "example", "id": "example", "name": "example", "owner": "example", "project_override_id": "example", "updated_at": "2026-01-02T15:04:05Z" } |
+| `publish_model` | `NotebookPublishModel` | `false` | - | { "materialization": "VIEW", "name": "example", "output_cell_id": "example", "project_name": "example" } |
+| `shares` | `array[NotebookShare]` | `false` | - | [ { "principal_name": "example", "role": "viewer" } ] |
 

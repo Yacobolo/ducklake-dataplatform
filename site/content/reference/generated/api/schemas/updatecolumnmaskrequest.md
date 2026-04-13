@@ -2,14 +2,25 @@
 
 # Schema: `UpdateColumnMaskRequest`
 
+## Example
+
+```json
+{
+  "column_name": "example",
+  "description": "example",
+  "mask_expression": "example",
+  "name": "example"
+}
+```
+
 - Type: `object`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `column_name` | `string` | `false` | - |
-| `description` | `string` | `false` | - |
-| `mask_expression` | `string` | `false` | - |
-| `name` | `string` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `column_name` | `string` | `false` | - | "example" |
+| `description` | `string` | `false` | - | "example" |
+| `mask_expression` | `string` | `false` | - | "example" |
+| `name` | `string` | `false` | - | "example" |
 

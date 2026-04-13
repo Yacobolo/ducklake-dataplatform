@@ -2,5 +2,11 @@
 
 # Schema: `ModelTestTestType`
 
+## Example
+
+```json
+"not_null"
+```
+
 - Type: `string`
 

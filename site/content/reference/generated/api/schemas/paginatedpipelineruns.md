@@ -2,13 +2,38 @@
 
 # Schema: `PaginatedPipelineRuns`
 
+## Example
+
+```json
+{
+  "data": [
+    {
+      "created_at": "2026-01-02T15:04:05Z",
+      "error_message": "example",
+      "finished_at": "2026-01-02T15:04:05Z",
+      "git_commit_hash": "example",
+      "id": "example",
+      "parameters": {
+        "key": "example"
+      },
+      "pipeline_id": "example",
+      "started_at": "2026-01-02T15:04:05Z",
+      "status": "PENDING",
+      "trigger_type": "MANUAL",
+      "triggered_by": "example"
+    }
+  ],
+  "next_page_token": "example"
+}
+```
+
 - Type: `object`
 - Required fields: `data`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `data` | `array[PipelineRun]` | `true` | - |
-| `next_page_token` | `string` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `data` | `array[PipelineRun]` | `true` | - | [ { "created_at": "2026-01-02T15:04:05Z", "error_message": "example", "finished_at": "2026-01-02T15:04:05Z", "git_commit_hash": "example", "id": "example", "parameters": { "key": "example" }, "pipeline_id": "example", "started_at": "2026-01-02T15:04:05Z", "status": "PENDING", "trigger_type": "MANUAL", "triggered_by": "example" } ] |
+| `next_page_token` | `string` | `false` | - | "example" |
 

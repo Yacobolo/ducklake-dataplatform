@@ -2,17 +2,30 @@
 
 # Schema: `CreateComputeEndpointRequest`
 
+## Example
+
+```json
+{
+  "auth_token": "example",
+  "max_memory_gb": 1,
+  "name": "example",
+  "size": "SMALL",
+  "type": "LOCAL",
+  "url": "example"
+}
+```
+
 - Type: `object`
 - Required fields: `name`, `type`, `url`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `auth_token` | `string` | `false` | - |
-| `max_memory_gb` | `integer` | `false` | - |
-| `name` | `string` | `true` | - |
-| `size` | `ComputeEndpointSize` | `false` | - |
-| `type` | `ComputeEndpointType` | `true` | - |
-| `url` | `string` | `true` | Endpoint URI. REMOTE endpoints must use grpc:// or grpcs://; LOCAL endpoints use local routing URLs. |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `auth_token` | `string` | `false` | - | "example" |
+| `max_memory_gb` | `integer` | `false` | - | 1 |
+| `name` | `string` | `true` | - | "example" |
+| `size` | `ComputeEndpointSize` | `false` | - | "SMALL" |
+| `type` | `ComputeEndpointType` | `true` | - | "LOCAL" |
+| `url` | `string` | `true` | Endpoint URI. REMOTE endpoints must use grpc:// or grpcs://; LOCAL endpoints use local routing URLs. | "example" |
 

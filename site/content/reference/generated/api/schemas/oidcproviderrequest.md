@@ -2,18 +2,32 @@
 
 # Schema: `OIDCProviderRequest`
 
+## Example
+
+```json
+{
+  "audience": "example",
+  "client_id": "example",
+  "client_secret": "example",
+  "enabled": true,
+  "issuer_url": "example",
+  "jwks_url": "example",
+  "scopes": "example"
+}
+```
+
 - Type: `object`
 - Required fields: `enabled`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `audience` | `string` | `false` | - |
-| `client_id` | `string` | `false` | - |
-| `client_secret` | `string` | `false` | - |
-| `enabled` | `boolean` | `true` | - |
-| `issuer_url` | `string` | `false` | - |
-| `jwks_url` | `string` | `false` | - |
-| `scopes` | `string` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `audience` | `string` | `false` | - | "example" |
+| `client_id` | `string` | `false` | - | "example" |
+| `client_secret` | `string` | `false` | - | "example" |
+| `enabled` | `boolean` | `true` | - | true |
+| `issuer_url` | `string` | `false` | - | "example" |
+| `jwks_url` | `string` | `false` | - | "example" |
+| `scopes` | `string` | `false` | - | "example" |
 

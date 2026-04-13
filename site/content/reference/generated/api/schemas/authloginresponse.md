@@ -2,13 +2,26 @@
 
 # Schema: `AuthLoginResponse`
 
+## Example
+
+```json
+{
+  "principal": {
+    "id": "example",
+    "is_admin": true,
+    "name": "example"
+  },
+  "token": "example"
+}
+```
+
 - Type: `object`
 - Required fields: `principal`, `token`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `principal` | `AuthPrincipalSummary` | `true` | - |
-| `token` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `principal` | `AuthPrincipalSummary` | `true` | - | { "id": "example", "is_admin": true, "name": "example" } |
+| `token` | `string` | `true` | - | "example" |
 

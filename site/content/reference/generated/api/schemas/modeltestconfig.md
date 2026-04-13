@@ -2,14 +2,27 @@
 
 # Schema: `ModelTestConfig`
 
+## Example
+
+```json
+{
+  "custom_sql": "example",
+  "to_column": "example",
+  "to_model": "example",
+  "values": [
+    "example"
+  ]
+}
+```
+
 - Type: `object`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `custom_sql` | `string` | `false` | - |
-| `to_column` | `string` | `false` | - |
-| `to_model` | `string` | `false` | - |
-| `values` | `array[string]` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `custom_sql` | `string` | `false` | - | "example" |
+| `to_column` | `string` | `false` | - | "example" |
+| `to_model` | `string` | `false` | - | "example" |
+| `values` | `array[string]` | `false` | - | [ "example" ] |
 

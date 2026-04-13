@@ -2,13 +2,27 @@
 
 # Schema: `LoadExternalRequest`
 
+## Example
+
+```json
+{
+  "options": {
+    "allow_missing_columns": true,
+    "ignore_extra_columns": true
+  },
+  "paths": [
+    "example"
+  ]
+}
+```
+
 - Type: `object`
 - Required fields: `paths`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `options` | `IngestionOptions` | `false` | - |
-| `paths` | `array[string]` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `options` | `IngestionOptions` | `false` | - | { "allow_missing_columns": true, "ignore_extra_columns": true } |
+| `paths` | `array[string]` | `true` | - | [ "example" ] |
 

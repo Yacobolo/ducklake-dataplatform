@@ -2,13 +2,49 @@
 
 # Schema: `PaginatedModelRuns`
 
+## Example
+
+```json
+{
+  "data": [
+    {
+      "build_id": "example",
+      "compile_diagnostics": {
+        "errors": [
+          "example"
+        ],
+        "warnings": [
+          "example"
+        ]
+      },
+      "compile_manifest": "example",
+      "created_at": "2026-01-02T15:04:05Z",
+      "environment_name": "example",
+      "error_message": "example",
+      "finished_at": "2026-01-02T15:04:05Z",
+      "full_refresh": true,
+      "id": "example",
+      "model_names": [
+        "example"
+      ],
+      "project_name": "example",
+      "started_at": "2026-01-02T15:04:05Z",
+      "status": "example",
+      "trigger_type": "example",
+      "triggered_by": "example"
+    }
+  ],
+  "next_page_token": "example"
+}
+```
+
 - Type: `object`
 - Required fields: `data`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `data` | `array[ModelRun]` | `true` | - |
-| `next_page_token` | `string` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `data` | `array[ModelRun]` | `true` | - | [ { "build_id": "example", "compile_diagnostics": { "errors": [ "example" ], "warnings": [ "example" ] }, "compile_manifest": "example", "created_at": "2026-01-02T15:04:05Z", "environment_name": "example", "error_message": "example", "finished_at": "2026-01-02T15:04:05Z", "full_refresh": true, "id": "example", "model_names": [ "example" ], "project_name": "example", "started_at": "2026-01-02T15:04:05Z", "status": "example", "trigger_type": "example", "triggered_by": "example" } ] |
+| `next_page_token` | `string` | `false` | - | "example" |
 

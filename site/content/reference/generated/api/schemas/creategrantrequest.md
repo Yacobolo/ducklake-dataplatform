@@ -2,16 +2,28 @@
 
 # Schema: `CreateGrantRequest`
 
+## Example
+
+```json
+{
+  "principal_id": "example",
+  "principal_type": "user",
+  "privilege": "example",
+  "securable_id": "example",
+  "securable_type": "example"
+}
+```
+
 - Type: `object`
 - Required fields: `principal_id`, `principal_type`, `privilege`, `securable_id`, `securable_type`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `principal_id` | `string` | `true` | - |
-| `principal_type` | `PrincipalType` | `true` | - |
-| `privilege` | `string` | `true` | - |
-| `securable_id` | `string` | `true` | - |
-| `securable_type` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `principal_id` | `string` | `true` | - | "example" |
+| `principal_type` | `PrincipalType` | `true` | - | "user" |
+| `privilege` | `string` | `true` | - | "example" |
+| `securable_id` | `string` | `true` | - | "example" |
+| `securable_type` | `string` | `true` | - | "example" |
 

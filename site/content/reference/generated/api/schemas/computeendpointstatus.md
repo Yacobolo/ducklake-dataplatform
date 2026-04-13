@@ -2,5 +2,11 @@
 
 # Schema: `ComputeEndpointStatus`
 
+## Example
+
+```json
+"ACTIVE"
+```
+
 - Type: `string`
 

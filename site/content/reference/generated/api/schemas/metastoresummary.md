@@ -2,17 +2,30 @@
 
 # Schema: `MetastoreSummary`
 
+## Example
+
+```json
+{
+  "catalog_name": "example",
+  "data_path": "example",
+  "metastore_type": "example",
+  "schema_count": 1,
+  "storage_backend": "example",
+  "table_count": 1
+}
+```
+
 - Type: `object`
 - Required fields: `catalog_name`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `catalog_name` | `string` | `true` | - |
-| `data_path` | `string` | `false` | - |
-| `metastore_type` | `string` | `false` | - |
-| `schema_count` | `integer` | `false` | - |
-| `storage_backend` | `string` | `false` | - |
-| `table_count` | `integer` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `catalog_name` | `string` | `true` | - | "example" |
+| `data_path` | `string` | `false` | - | "example" |
+| `metastore_type` | `string` | `false` | - | "example" |
+| `schema_count` | `integer` | `false` | - | 1 |
+| `storage_backend` | `string` | `false` | - | "example" |
+| `table_count` | `integer` | `false` | - | 1 |
 

@@ -2,5 +2,11 @@
 
 # Schema: `AuditDecisionStatus`
 
+## Example
+
+```json
+"ALLOWED"
+```
+
 - Type: `string`
 

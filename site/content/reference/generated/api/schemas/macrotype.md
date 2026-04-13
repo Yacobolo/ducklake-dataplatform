@@ -2,5 +2,11 @@
 
 # Schema: `MacroType`
 
+## Example
+
+```json
+"SCALAR"
+```
+
 - Type: `string`
 

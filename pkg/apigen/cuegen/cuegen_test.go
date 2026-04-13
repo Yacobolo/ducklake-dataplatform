@@ -1,6 +1,7 @@
 package cuegen
 
 import (
+	"os"
 	"path/filepath"
 	"testing"
 
@@ -67,6 +68,98 @@ func TestCompileDir_LineageCompactAuthoringParity(t *testing.T) {
 	require.Equal(t, []string{"id", "principal_id", "name", "key_prefix", "expires_at", "created_at"}, apiKeyInfo.PropertyOrder)
 	require.Equal(t, "date-time", apiKeyInfo.Properties["created_at"].Schema.Format)
 	require.Equal(t, "date-time", apiKeyInfo.Properties["expires_at"].Schema.Format)
+}
+
+func TestCompileDir_PreservesExamples(t *testing.T) {
+	t.Helper()
+
+	dir := t.TempDir()
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "api.cue"), []byte(`package api
+
+schema_version: "v1"
+
+info: {
+	title:   "Example API"
+	version: "1.0.0"
+}
+
+schemas: {
+	Thing: {
+		type: "object"
+		example: {
+			id:   "thing_123"
+			name: "Primary thing"
+		}
+		properties: {
+			id: {
+				example: "thing_123"
+				schema: {
+					type: "string"
+				}
+			}
+			name: {
+				schema: {
+					type: "string"
+				}
+			}
+		}
+		required: ["id", "name"]
+	}
+}
+
+endpoints: [
+	{
+		method:       "post"
+		path:         "/things"
+		operation_id: "createThing"
+		parameters: [
+			{
+				name:    "dry_run"
+				in:      "query"
+				example: true
+				schema: {
+					type: "boolean"
+				}
+			},
+		]
+		request_body: {
+			example: {
+				name: "Primary thing"
+			}
+			schema: {
+				ref: "Thing"
+			}
+		}
+		responses: [
+			{
+				status_code: 201
+				description: "created"
+				example: {
+					id:   "thing_123"
+					name: "Primary thing"
+				}
+				schema: {
+					ref: "Thing"
+				}
+			},
+		]
+	},
+]`), 0o600))
+
+	bundle, err := CompileDir(dir)
+	require.NoError(t, err)
+
+	thing := bundle.Document.Schemas["Thing"]
+	require.Equal(t, map[string]any{"id": "thing_123", "name": "Primary thing"}, thing.Example)
+	require.Equal(t, "thing_123", thing.Properties["id"].Example)
+
+	endpoint := requireEndpoint(t, bundle.Document, "createThing")
+	require.Len(t, endpoint.Parameters, 1)
+	require.Equal(t, true, endpoint.Parameters[0].Example)
+	require.NotNil(t, endpoint.RequestBody)
+	require.Equal(t, map[string]any{"name": "Primary thing"}, endpoint.RequestBody.Example)
+	require.Len(t, endpoint.Responses, 1)
+	require.Equal(t, map[string]any{"id": "thing_123", "name": "Primary thing"}, endpoint.Responses[0].Example)
 }
 
 func requireEndpoint(t *testing.T, doc ir.Document, operationID string) ir.Endpoint {

@@ -4,15 +4,34 @@
 
 Contains result-set columns, row data, and an optional continuation token when additional rows are available.
 
+## Example
+
+```json
+{
+  "columns": [
+    {
+      "name": "example"
+    }
+  ],
+  "next_page_token": "example",
+  "row_count": 1,
+  "rows": [
+    {
+      "key": "value"
+    }
+  ]
+}
+```
+
 - Type: `object`
 - Required fields: `columns`, `rows`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `columns` | `array[TabularColumn]` | `true` | - |
-| `next_page_token` | `string` | `false` | - |
-| `row_count` | `integer` | `false` | - |
-| `rows` | `array[object]` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `columns` | `array[TabularColumn]` | `true` | - | [ { "name": "example" } ] |
+| `next_page_token` | `string` | `false` | - | "example" |
+| `row_count` | `integer` | `false` | - | 1 |
+| `rows` | `array[object]` | `true` | - | [ { "key": "value" } ] |
 

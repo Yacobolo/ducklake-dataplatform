@@ -2,14 +2,25 @@
 
 # Schema: `DashboardWidgetLayoutUpdate`
 
+## Example
+
+```json
+{
+  "h": 1,
+  "w": 1,
+  "x": 1,
+  "y": 1
+}
+```
+
 - Type: `object`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `h` | `integer` | `false` | - |
-| `w` | `integer` | `false` | - |
-| `x` | `integer` | `false` | - |
-| `y` | `integer` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `h` | `integer` | `false` | - | 1 |
+| `w` | `integer` | `false` | - | 1 |
+| `x` | `integer` | `false` | - | 1 |
+| `y` | `integer` | `false` | - | 1 |
 

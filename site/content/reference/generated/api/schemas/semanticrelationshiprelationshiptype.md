@@ -2,5 +2,11 @@
 
 # Schema: `SemanticRelationshipRelationshipType`
 
+## Example
+
+```json
+"ONE_TO_ONE"
+```
+
 - Type: `string`
 

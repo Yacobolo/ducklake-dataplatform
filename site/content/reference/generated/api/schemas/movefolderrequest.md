@@ -2,13 +2,23 @@
 
 # Schema: `MoveFolderRequest`
 
+## Example
+
+```json
+{
+  "confirm_context_change": true,
+  "confirm_leave_git": true,
+  "parent_folder_id": "example"
+}
+```
+
 - Type: `object`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `confirm_context_change` | `boolean` | `false` | - |
-| `confirm_leave_git` | `boolean` | `false` | - |
-| `parent_folder_id` | `string` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `confirm_context_change` | `boolean` | `false` | - | true |
+| `confirm_leave_git` | `boolean` | `false` | - | true |
+| `parent_folder_id` | `string` | `false` | - | "example" |
 

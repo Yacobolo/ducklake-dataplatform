@@ -2,14 +2,25 @@
 
 # Schema: `UpdateExternalLocationRequest`
 
+## Example
+
+```json
+{
+  "comment": "example",
+  "credential_name": "example",
+  "read_only": true,
+  "url": "example"
+}
+```
+
 - Type: `object`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `comment` | `string` | `false` | - |
-| `credential_name` | `string` | `false` | - |
-| `read_only` | `boolean` | `false` | - |
-| `url` | `string` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `comment` | `string` | `false` | - | "example" |
+| `credential_name` | `string` | `false` | - | "example" |
+| `read_only` | `boolean` | `false` | - | true |
+| `url` | `string` | `false` | - | "example" |
 

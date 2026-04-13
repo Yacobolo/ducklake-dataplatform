@@ -2,12 +2,21 @@
 
 # Schema: `UpdateViewRequest`
 
+## Example
+
+```json
+{
+  "comment": "example",
+  "view_definition": "example"
+}
+```
+
 - Type: `object`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `comment` | `string` | `false` | - |
-| `view_definition` | `string` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `comment` | `string` | `false` | - | "example" |
+| `view_definition` | `string` | `false` | - | "example" |
 

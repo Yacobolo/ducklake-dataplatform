@@ -2,13 +2,41 @@
 
 # Schema: `PaginatedAssetRuns`
 
+## Example
+
+```json
+{
+  "data": [
+    {
+      "asset_id": "example",
+      "attempt_count": 1,
+      "created_at": "2026-01-02T15:04:05Z",
+      "error_message": "example",
+      "finished_at": "2026-01-02T15:04:05Z",
+      "id": "example",
+      "max_attempts": 1,
+      "partition_from": "example",
+      "partition_key": "example",
+      "partition_to": "example",
+      "run_group_id": "example",
+      "started_at": "2026-01-02T15:04:05Z",
+      "status": "QUEUED",
+      "trigger_type": "MANUAL",
+      "triggered_by": "example",
+      "updated_at": "2026-01-02T15:04:05Z"
+    }
+  ],
+  "next_page_token": "example"
+}
+```
+
 - Type: `object`
 - Required fields: `data`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `data` | `array[AssetRun]` | `true` | - |
-| `next_page_token` | `string` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `data` | `array[AssetRun]` | `true` | - | [ { "asset_id": "example", "attempt_count": 1, "created_at": "2026-01-02T15:04:05Z", "error_message": "example", "finished_at": "2026-01-02T15:04:05Z", "id": "example", "max_attempts": 1, "partition_from": "example", "partition_key": "example", "partition_to": "example", "run_group_id": "example", "started_at": "2026-01-02T15:04:05Z", "status": "QUEUED", "trigger_type": "MANUAL", "triggered_by": "example", "updated_at": "2026-01-02T15:04:05Z" } ] |
+| `next_page_token` | `string` | `false` | - | "example" |
 

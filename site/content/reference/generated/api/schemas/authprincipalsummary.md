@@ -2,14 +2,24 @@
 
 # Schema: `AuthPrincipalSummary`
 
+## Example
+
+```json
+{
+  "id": "example",
+  "is_admin": true,
+  "name": "example"
+}
+```
+
 - Type: `object`
 - Required fields: `id`, `is_admin`, `name`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `id` | `string` | `true` | - |
-| `is_admin` | `boolean` | `true` | - |
-| `name` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `id` | `string` | `true` | - | "example" |
+| `is_admin` | `boolean` | `true` | - | true |
+| `name` | `string` | `true` | - | "example" |
 

@@ -2,21 +2,39 @@
 
 # Schema: `Notebook`
 
+## Example
+
+```json
+{
+  "created_at": "2026-01-02T15:04:05Z",
+  "description": "example",
+  "environment_override_id": "example",
+  "folder_id": "example",
+  "git_path": "example",
+  "git_repo_id": "example",
+  "id": "example",
+  "name": "example",
+  "owner": "example",
+  "project_override_id": "example",
+  "updated_at": "2026-01-02T15:04:05Z"
+}
+```
+
 - Type: `object`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `created_at` | `string` | `false` | - |
-| `description` | `string` | `false` | - |
-| `environment_override_id` | `string` | `false` | - |
-| `folder_id` | `string` | `false` | - |
-| `git_path` | `string` | `false` | - |
-| `git_repo_id` | `string` | `false` | - |
-| `id` | `string` | `false` | - |
-| `name` | `string` | `false` | - |
-| `owner` | `string` | `false` | - |
-| `project_override_id` | `string` | `false` | - |
-| `updated_at` | `string` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `created_at` | `string` | `false` | - | "2026-01-02T15:04:05Z" |
+| `description` | `string` | `false` | - | "example" |
+| `environment_override_id` | `string` | `false` | - | "example" |
+| `folder_id` | `string` | `false` | - | "example" |
+| `git_path` | `string` | `false` | - | "example" |
+| `git_repo_id` | `string` | `false` | - | "example" |
+| `id` | `string` | `false` | - | "example" |
+| `name` | `string` | `false` | - | "example" |
+| `owner` | `string` | `false` | - | "example" |
+| `project_override_id` | `string` | `false` | - | "example" |
+| `updated_at` | `string` | `false` | - | "2026-01-02T15:04:05Z" |
 

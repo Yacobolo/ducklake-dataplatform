@@ -2,12 +2,30 @@
 
 # Schema: `ModelDAGTier`
 
+## Example
+
+```json
+{
+  "nodes": [
+    {
+      "depends_on": [
+        "example"
+      ],
+      "materialization": "VIEW",
+      "model_name": "example",
+      "project_name": "example"
+    }
+  ],
+  "tier": 1
+}
+```
+
 - Type: `object`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `nodes` | `array[ModelDAGNode]` | `false` | - |
-| `tier` | `integer` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `nodes` | `array[ModelDAGNode]` | `false` | - | [ { "depends_on": [ "example" ], "materialization": "VIEW", "model_name": "example", "project_name": "example" } ] |
+| `tier` | `integer` | `false` | - | 1 |
 

@@ -35,6 +35,10 @@ task lint
 task build-cli
 ```
 
+Lint policy:
+
+- [`LINTING.md`](./LINTING.md)
+
 ## Docs Workflow
 
 ```bash

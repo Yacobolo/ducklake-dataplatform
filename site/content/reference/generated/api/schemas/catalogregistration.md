@@ -2,22 +2,40 @@
 
 # Schema: `CatalogRegistration`
 
+## Example
+
+```json
+{
+  "comment": "example",
+  "created_at": "2026-01-02T15:04:05Z",
+  "data_path": "example",
+  "dsn": "example",
+  "id": "example",
+  "is_default": true,
+  "metastore_type": "sqlite",
+  "name": "example",
+  "status": "ACTIVE",
+  "system_managed": true,
+  "updated_at": "2026-01-02T15:04:05Z"
+}
+```
+
 - Type: `object`
 - Required fields: `id`, `name`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `comment` | `string` | `false` | - |
-| `created_at` | `string` | `false` | - |
-| `data_path` | `string` | `false` | - |
-| `dsn` | `string` | `false` | - |
-| `id` | `string` | `true` | - |
-| `is_default` | `boolean` | `false` | - |
-| `metastore_type` | `MetastoreType` | `false` | - |
-| `name` | `string` | `true` | - |
-| `status` | `CatalogStatus` | `false` | - |
-| `system_managed` | `boolean` | `false` | - |
-| `updated_at` | `string` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `comment` | `string` | `false` | - | "example" |
+| `created_at` | `string` | `false` | - | "2026-01-02T15:04:05Z" |
+| `data_path` | `string` | `false` | - | "example" |
+| `dsn` | `string` | `false` | - | "example" |
+| `id` | `string` | `true` | - | "example" |
+| `is_default` | `boolean` | `false` | - | true |
+| `metastore_type` | `MetastoreType` | `false` | - | "sqlite" |
+| `name` | `string` | `true` | - | "example" |
+| `status` | `CatalogStatus` | `false` | - | "ACTIVE" |
+| `system_managed` | `boolean` | `false` | - | true |
+| `updated_at` | `string` | `false` | - | "2026-01-02T15:04:05Z" |
 

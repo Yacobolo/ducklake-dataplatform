@@ -2,5 +2,11 @@
 
 # Schema: `NotebookTestSeverity`
 
+## Example
+
+```json
+"error"
+```
+
 - Type: `string`
 

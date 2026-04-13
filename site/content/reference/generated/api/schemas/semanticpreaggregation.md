@@ -2,21 +2,43 @@
 
 # Schema: `SemanticPreAggregation`
 
+## Example
+
+```json
+{
+  "created_at": "2026-01-02T15:04:05Z",
+  "created_by": "example",
+  "dimension_set": [
+    "example"
+  ],
+  "grain": "example",
+  "id": "example",
+  "metric_set": [
+    "example"
+  ],
+  "name": "example",
+  "refresh_policy": "example",
+  "semantic_model_id": "example",
+  "target_relation": "example",
+  "updated_at": "2026-01-02T15:04:05Z"
+}
+```
+
 - Type: `object`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `created_at` | `string` | `false` | - |
-| `created_by` | `string` | `false` | - |
-| `dimension_set` | `array[string]` | `false` | - |
-| `grain` | `string` | `false` | - |
-| `id` | `string` | `false` | - |
-| `metric_set` | `array[string]` | `false` | - |
-| `name` | `string` | `false` | - |
-| `refresh_policy` | `string` | `false` | - |
-| `semantic_model_id` | `string` | `false` | - |
-| `target_relation` | `string` | `false` | - |
-| `updated_at` | `string` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `created_at` | `string` | `false` | - | "2026-01-02T15:04:05Z" |
+| `created_by` | `string` | `false` | - | "example" |
+| `dimension_set` | `array[string]` | `false` | - | [ "example" ] |
+| `grain` | `string` | `false` | - | "example" |
+| `id` | `string` | `false` | - | "example" |
+| `metric_set` | `array[string]` | `false` | - | [ "example" ] |
+| `name` | `string` | `false` | - | "example" |
+| `refresh_policy` | `string` | `false` | - | "example" |
+| `semantic_model_id` | `string` | `false` | - | "example" |
+| `target_relation` | `string` | `false` | - | "example" |
+| `updated_at` | `string` | `false` | - | "2026-01-02T15:04:05Z" |
 

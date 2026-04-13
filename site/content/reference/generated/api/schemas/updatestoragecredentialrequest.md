@@ -2,16 +2,29 @@
 
 # Schema: `UpdateStorageCredentialRequest`
 
+## Example
+
+```json
+{
+  "comment": "example",
+  "endpoint": "example",
+  "key_id": "example",
+  "region": "example",
+  "secret": "example",
+  "url_style": "path"
+}
+```
+
 - Type: `object`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `comment` | `string` | `false` | - |
-| `endpoint` | `string` | `false` | - |
-| `key_id` | `string` | `false` | - |
-| `region` | `string` | `false` | - |
-| `secret` | `string` | `false` | - |
-| `url_style` | `URLStyle` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `comment` | `string` | `false` | - | "example" |
+| `endpoint` | `string` | `false` | - | "example" |
+| `key_id` | `string` | `false` | - | "example" |
+| `region` | `string` | `false` | - | "example" |
+| `secret` | `string` | `false` | - | "example" |
+| `url_style` | `URLStyle` | `false` | - | "path" |
 

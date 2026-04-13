@@ -2,24 +2,51 @@
 
 # Schema: `ModelRunStep`
 
+## Example
+
+```json
+{
+  "compiled_hash": "example",
+  "compiled_sql": "example",
+  "created_at": "2026-01-02T15:04:05Z",
+  "depends_on": [
+    "example"
+  ],
+  "error_message": "example",
+  "finished_at": "2026-01-02T15:04:05Z",
+  "id": "example",
+  "macros_used": [
+    "example"
+  ],
+  "model_name": "example",
+  "rows_affected": 1,
+  "run_id": "example",
+  "started_at": "2026-01-02T15:04:05Z",
+  "status": "example",
+  "vars_used": [
+    "example"
+  ]
+}
+```
+
 - Type: `object`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `compiled_hash` | `string` | `false` | - |
-| `compiled_sql` | `string` | `false` | - |
-| `created_at` | `string` | `false` | - |
-| `depends_on` | `array[string]` | `false` | - |
-| `error_message` | `string` | `false` | - |
-| `finished_at` | `string` | `false` | - |
-| `id` | `string` | `false` | - |
-| `macros_used` | `array[string]` | `false` | - |
-| `model_name` | `string` | `false` | - |
-| `rows_affected` | `integer` | `false` | - |
-| `run_id` | `string` | `false` | - |
-| `started_at` | `string` | `false` | - |
-| `status` | `string` | `false` | - |
-| `vars_used` | `array[string]` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `compiled_hash` | `string` | `false` | - | "example" |
+| `compiled_sql` | `string` | `false` | - | "example" |
+| `created_at` | `string` | `false` | - | "2026-01-02T15:04:05Z" |
+| `depends_on` | `array[string]` | `false` | - | [ "example" ] |
+| `error_message` | `string` | `false` | - | "example" |
+| `finished_at` | `string` | `false` | - | "2026-01-02T15:04:05Z" |
+| `id` | `string` | `false` | - | "example" |
+| `macros_used` | `array[string]` | `false` | - | [ "example" ] |
+| `model_name` | `string` | `false` | - | "example" |
+| `rows_affected` | `integer` | `false` | - | 1 |
+| `run_id` | `string` | `false` | - | "example" |
+| `started_at` | `string` | `false` | - | "2026-01-02T15:04:05Z" |
+| `status` | `string` | `false` | - | "example" |
+| `vars_used` | `array[string]` | `false` | - | [ "example" ] |
 

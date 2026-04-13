@@ -2,18 +2,43 @@
 
 # Schema: `DashboardSemanticQuerySourceUpdate`
 
+## Example
+
+```json
+{
+  "dimensions": [
+    "example"
+  ],
+  "filters": [
+    "example"
+  ],
+  "limit": 1,
+  "metrics": [
+    "example"
+  ],
+  "order_by": [
+    "example"
+  ],
+  "relationship_names": [
+    "example"
+  ],
+  "semantic_model_id": "example",
+  "time_grain": "example"
+}
+```
+
 - Type: `object`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `dimensions` | `array[string]` | `false` | - |
-| `filters` | `array[string]` | `false` | - |
-| `limit` | `integer` | `false` | - |
-| `metrics` | `array[string]` | `false` | - |
-| `order_by` | `array[string]` | `false` | - |
-| `relationship_names` | `array[string]` | `false` | - |
-| `semantic_model_id` | `string` | `false` | - |
-| `time_grain` | `string` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `dimensions` | `array[string]` | `false` | - | [ "example" ] |
+| `filters` | `array[string]` | `false` | - | [ "example" ] |
+| `limit` | `integer` | `false` | - | 1 |
+| `metrics` | `array[string]` | `false` | - | [ "example" ] |
+| `order_by` | `array[string]` | `false` | - | [ "example" ] |
+| `relationship_names` | `array[string]` | `false` | - | [ "example" ] |
+| `semantic_model_id` | `string` | `false` | - | "example" |
+| `time_grain` | `string` | `false` | - | "example" |
 

@@ -2,22 +2,43 @@
 
 # Schema: `PipelineJob`
 
+## Example
+
+```json
+{
+  "compute_endpoint_id": "example",
+  "created_at": "2026-01-02T15:04:05Z",
+  "depends_on": [
+    "example"
+  ],
+  "id": "example",
+  "job_order": 1,
+  "job_type": "NOTEBOOK",
+  "model_selector": "example",
+  "name": "example",
+  "notebook_id": "example",
+  "pipeline_id": "example",
+  "retry_count": 1,
+  "timeout_seconds": 1
+}
+```
+
 - Type: `object`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `compute_endpoint_id` | `string` | `false` | - |
-| `created_at` | `string` | `false` | - |
-| `depends_on` | `array[string]` | `false` | - |
-| `id` | `string` | `false` | - |
-| `job_order` | `integer` | `false` | - |
-| `job_type` | `PipelineJobJobType` | `false` | - |
-| `model_selector` | `string` | `false` | - |
-| `name` | `string` | `false` | - |
-| `notebook_id` | `string` | `false` | - |
-| `pipeline_id` | `string` | `false` | - |
-| `retry_count` | `integer` | `false` | - |
-| `timeout_seconds` | `integer` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `compute_endpoint_id` | `string` | `false` | - | "example" |
+| `created_at` | `string` | `false` | - | "2026-01-02T15:04:05Z" |
+| `depends_on` | `array[string]` | `false` | - | [ "example" ] |
+| `id` | `string` | `false` | - | "example" |
+| `job_order` | `integer` | `false` | - | 1 |
+| `job_type` | `PipelineJobJobType` | `false` | - | "NOTEBOOK" |
+| `model_selector` | `string` | `false` | - | "example" |
+| `name` | `string` | `false` | - | "example" |
+| `notebook_id` | `string` | `false` | - | "example" |
+| `pipeline_id` | `string` | `false` | - | "example" |
+| `retry_count` | `integer` | `false` | - | 1 |
+| `timeout_seconds` | `integer` | `false` | - | 1 |
 

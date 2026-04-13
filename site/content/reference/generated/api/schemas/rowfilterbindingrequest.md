@@ -2,13 +2,22 @@
 
 # Schema: `RowFilterBindingRequest`
 
+## Example
+
+```json
+{
+  "principal_id": "example",
+  "principal_type": "user"
+}
+```
+
 - Type: `object`
 - Required fields: `principal_id`, `principal_type`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `principal_id` | `string` | `true` | - |
-| `principal_type` | `PrincipalType` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `principal_id` | `string` | `true` | - | "example" |
+| `principal_type` | `PrincipalType` | `true` | - | "user" |
 

@@ -2,25 +2,46 @@
 
 # Schema: `ProductScorecard`
 
+## Example
+
+```json
+{
+  "certification_state": "example",
+  "completeness_percent": 1,
+  "domain_name": "example",
+  "has_contract": true,
+  "has_docs_or_access_path": true,
+  "has_owner": true,
+  "has_primary_output": true,
+  "has_slo": true,
+  "has_warnings": true,
+  "product_id": "example",
+  "product_name": "example",
+  "product_slug": "example",
+  "publication_state": "example",
+  "team_name": "example"
+}
+```
+
 - Type: `object`
 - Required fields: `certification_state`, `completeness_percent`, `domain_name`, `has_contract`, `has_docs_or_access_path`, `has_owner`, `has_primary_output`, `has_slo`, `has_warnings`, `product_id`, `product_name`, `product_slug`, `publication_state`, `team_name`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `certification_state` | `string` | `true` | - |
-| `completeness_percent` | `integer` | `true` | - |
-| `domain_name` | `string` | `true` | - |
-| `has_contract` | `boolean` | `true` | - |
-| `has_docs_or_access_path` | `boolean` | `true` | - |
-| `has_owner` | `boolean` | `true` | - |
-| `has_primary_output` | `boolean` | `true` | - |
-| `has_slo` | `boolean` | `true` | - |
-| `has_warnings` | `boolean` | `true` | - |
-| `product_id` | `string` | `true` | - |
-| `product_name` | `string` | `true` | - |
-| `product_slug` | `string` | `true` | - |
-| `publication_state` | `string` | `true` | - |
-| `team_name` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `certification_state` | `string` | `true` | - | "example" |
+| `completeness_percent` | `integer` | `true` | - | 1 |
+| `domain_name` | `string` | `true` | - | "example" |
+| `has_contract` | `boolean` | `true` | - | true |
+| `has_docs_or_access_path` | `boolean` | `true` | - | true |
+| `has_owner` | `boolean` | `true` | - | true |
+| `has_primary_output` | `boolean` | `true` | - | true |
+| `has_slo` | `boolean` | `true` | - | true |
+| `has_warnings` | `boolean` | `true` | - | true |
+| `product_id` | `string` | `true` | - | "example" |
+| `product_name` | `string` | `true` | - | "example" |
+| `product_slug` | `string` | `true` | - | "example" |
+| `publication_state` | `string` | `true` | - | "example" |
+| `team_name` | `string` | `true` | - | "example" |
 

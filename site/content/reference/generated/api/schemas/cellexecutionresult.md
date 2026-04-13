@@ -2,16 +2,37 @@
 
 # Schema: `CellExecutionResult`
 
+## Example
+
+```json
+{
+  "cell_id": "example",
+  "columns": [
+    {
+      "name": "example"
+    }
+  ],
+  "duration_ms": 1,
+  "error": "example",
+  "row_count": 1,
+  "rows": [
+    {
+      "key": "value"
+    }
+  ]
+}
+```
+
 - Type: `object`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `cell_id` | `string` | `false` | - |
-| `columns` | `array[TabularColumn]` | `false` | - |
-| `duration_ms` | `integer` | `false` | - |
-| `error` | `string` | `false` | - |
-| `row_count` | `integer` | `false` | - |
-| `rows` | `array[object]` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `cell_id` | `string` | `false` | - | "example" |
+| `columns` | `array[TabularColumn]` | `false` | - | [ { "name": "example" } ] |
+| `duration_ms` | `integer` | `false` | - | 1 |
+| `error` | `string` | `false` | - | "example" |
+| `row_count` | `integer` | `false` | - | 1 |
+| `rows` | `array[object]` | `false` | - | [ { "key": "value" } ] |
 

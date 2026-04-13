@@ -2,5 +2,11 @@
 
 # Schema: `QueryJobStatus`
 
+## Example
+
+```json
+"QUEUED"
+```
+
 - Type: `string`
 

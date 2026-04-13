@@ -2,22 +2,42 @@
 
 # Schema: `QueryHistoryEntry`
 
+## Example
+
+```json
+{
+  "created_at": "2026-01-02T15:04:05Z",
+  "duration_ms": 1,
+  "error_message": "example",
+  "id": "example",
+  "original_sql": "example",
+  "principal_name": "example",
+  "rewritten_sql": "example",
+  "rows_returned": 1,
+  "statement_type": "example",
+  "status": "ALLOWED",
+  "tables_accessed": [
+    "example"
+  ]
+}
+```
+
 - Type: `object`
 - Required fields: `id`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `created_at` | `string` | `false` | - |
-| `duration_ms` | `integer` | `false` | - |
-| `error_message` | `string` | `false` | - |
-| `id` | `string` | `true` | - |
-| `original_sql` | `string` | `false` | - |
-| `principal_name` | `string` | `false` | - |
-| `rewritten_sql` | `string` | `false` | - |
-| `rows_returned` | `integer` | `false` | - |
-| `statement_type` | `string` | `false` | - |
-| `status` | `AuditDecisionStatus` | `false` | - |
-| `tables_accessed` | `array[string]` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `created_at` | `string` | `false` | - | "2026-01-02T15:04:05Z" |
+| `duration_ms` | `integer` | `false` | - | 1 |
+| `error_message` | `string` | `false` | - | "example" |
+| `id` | `string` | `true` | - | "example" |
+| `original_sql` | `string` | `false` | - | "example" |
+| `principal_name` | `string` | `false` | - | "example" |
+| `rewritten_sql` | `string` | `false` | - | "example" |
+| `rows_returned` | `integer` | `false` | - | 1 |
+| `statement_type` | `string` | `false` | - | "example" |
+| `status` | `AuditDecisionStatus` | `false` | - | "ALLOWED" |
+| `tables_accessed` | `array[string]` | `false` | - | [ "example" ] |
 

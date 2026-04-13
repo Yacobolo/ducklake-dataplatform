@@ -2,15 +2,27 @@
 
 # Schema: `AssetFreshnessReconcileTarget`
 
+## Example
+
+```json
+{
+  "asset_id": "example",
+  "asset_key": "example",
+  "asset_type": "TABLE",
+  "event_id": "example",
+  "freshness_status": "example"
+}
+```
+
 - Type: `object`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `asset_id` | `string` | `false` | - |
-| `asset_key` | `string` | `false` | - |
-| `asset_type` | `AssetType` | `false` | - |
-| `event_id` | `string` | `false` | - |
-| `freshness_status` | `string` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `asset_id` | `string` | `false` | - | "example" |
+| `asset_key` | `string` | `false` | - | "example" |
+| `asset_type` | `AssetType` | `false` | - | "TABLE" |
+| `event_id` | `string` | `false` | - | "example" |
+| `freshness_status` | `string` | `false` | - | "example" |
 

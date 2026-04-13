@@ -2,12 +2,21 @@
 
 # Schema: `IngestionOptions`
 
+## Example
+
+```json
+{
+  "allow_missing_columns": true,
+  "ignore_extra_columns": true
+}
+```
+
 - Type: `object`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `allow_missing_columns` | `boolean` | `false` | - |
-| `ignore_extra_columns` | `boolean` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `allow_missing_columns` | `boolean` | `false` | - | true |
+| `ignore_extra_columns` | `boolean` | `false` | - | true |
 

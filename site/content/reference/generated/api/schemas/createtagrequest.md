@@ -2,13 +2,22 @@
 
 # Schema: `CreateTagRequest`
 
+## Example
+
+```json
+{
+  "key": "example",
+  "value": "example"
+}
+```
+
 - Type: `object`
 - Required fields: `key`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `key` | `string` | `true` | - |
-| `value` | `string` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `key` | `string` | `true` | - | "example" |
+| `value` | `string` | `false` | - | "example" |
 

@@ -2,12 +2,31 @@
 
 # Schema: `AssetCheckList`
 
+## Example
+
+```json
+{
+  "data": [
+    {
+      "asset_id": "example",
+      "check_type": "example",
+      "created_at": "2026-01-02T15:04:05Z",
+      "enabled": true,
+      "id": "example",
+      "name": "example",
+      "severity": "ERROR",
+      "updated_at": "2026-01-02T15:04:05Z"
+    }
+  ]
+}
+```
+
 - Type: `object`
 - Required fields: `data`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `data` | `array[AssetCheck]` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `data` | `array[AssetCheck]` | `true` | - | [ { "asset_id": "example", "check_type": "example", "created_at": "2026-01-02T15:04:05Z", "enabled": true, "id": "example", "name": "example", "severity": "ERROR", "updated_at": "2026-01-02T15:04:05Z" } ] |
 

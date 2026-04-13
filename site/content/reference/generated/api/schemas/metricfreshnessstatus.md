@@ -2,17 +2,33 @@
 
 # Schema: `MetricFreshnessStatus`
 
+## Example
+
+```json
+{
+  "checked_at": "2026-01-02T15:04:05Z",
+  "freshness_basis": [
+    "example"
+  ],
+  "freshness_status": "example",
+  "metric_name": "example",
+  "selected_pre_aggregation": "example",
+  "semantic_model_id": "example",
+  "semantic_model_name": "example"
+}
+```
+
 - Type: `object`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `checked_at` | `string` | `false` | - |
-| `freshness_basis` | `array[string]` | `false` | - |
-| `freshness_status` | `string` | `false` | - |
-| `metric_name` | `string` | `false` | - |
-| `selected_pre_aggregation` | `string` | `false` | - |
-| `semantic_model_id` | `string` | `false` | - |
-| `semantic_model_name` | `string` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `checked_at` | `string` | `false` | - | "2026-01-02T15:04:05Z" |
+| `freshness_basis` | `array[string]` | `false` | - | [ "example" ] |
+| `freshness_status` | `string` | `false` | - | "example" |
+| `metric_name` | `string` | `false` | - | "example" |
+| `selected_pre_aggregation` | `string` | `false` | - | "example" |
+| `semantic_model_id` | `string` | `false` | - | "example" |
+| `semantic_model_name` | `string` | `false` | - | "example" |
 

@@ -2,13 +2,38 @@
 
 # Schema: `PaginatedQueryHistoryEntries`
 
+## Example
+
+```json
+{
+  "data": [
+    {
+      "created_at": "2026-01-02T15:04:05Z",
+      "duration_ms": 1,
+      "error_message": "example",
+      "id": "example",
+      "original_sql": "example",
+      "principal_name": "example",
+      "rewritten_sql": "example",
+      "rows_returned": 1,
+      "statement_type": "example",
+      "status": "ALLOWED",
+      "tables_accessed": [
+        "example"
+      ]
+    }
+  ],
+  "next_page_token": "example"
+}
+```
+
 - Type: `object`
 - Required fields: `data`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `data` | `array[QueryHistoryEntry]` | `true` | - |
-| `next_page_token` | `string` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `data` | `array[QueryHistoryEntry]` | `true` | - | [ { "created_at": "2026-01-02T15:04:05Z", "duration_ms": 1, "error_message": "example", "id": "example", "original_sql": "example", "principal_name": "example", "rewritten_sql": "example", "rows_returned": 1, "statement_type": "example", "status": "ALLOWED", "tables_accessed": [ "example" ] } ] |
+| `next_page_token` | `string` | `false` | - | "example" |
 

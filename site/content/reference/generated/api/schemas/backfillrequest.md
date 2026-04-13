@@ -2,21 +2,39 @@
 
 # Schema: `BackfillRequest`
 
+## Example
+
+```json
+{
+  "asset_id": "example",
+  "created_at": "2026-01-02T15:04:05Z",
+  "error_message": "example",
+  "finished_at": "2026-01-02T15:04:05Z",
+  "id": "example",
+  "max_parallelism": 1,
+  "partition_from": "example",
+  "partition_to": "example",
+  "requested_by": "example",
+  "started_at": "2026-01-02T15:04:05Z",
+  "status": "example"
+}
+```
+
 - Type: `object`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `asset_id` | `string` | `false` | - |
-| `created_at` | `string` | `false` | - |
-| `error_message` | `string` | `false` | - |
-| `finished_at` | `string` | `false` | - |
-| `id` | `string` | `false` | - |
-| `max_parallelism` | `integer` | `false` | - |
-| `partition_from` | `string` | `false` | - |
-| `partition_to` | `string` | `false` | - |
-| `requested_by` | `string` | `false` | - |
-| `started_at` | `string` | `false` | - |
-| `status` | `string` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `asset_id` | `string` | `false` | - | "example" |
+| `created_at` | `string` | `false` | - | "2026-01-02T15:04:05Z" |
+| `error_message` | `string` | `false` | - | "example" |
+| `finished_at` | `string` | `false` | - | "2026-01-02T15:04:05Z" |
+| `id` | `string` | `false` | - | "example" |
+| `max_parallelism` | `integer` | `false` | - | 1 |
+| `partition_from` | `string` | `false` | - | "example" |
+| `partition_to` | `string` | `false` | - | "example" |
+| `requested_by` | `string` | `false` | - | "example" |
+| `started_at` | `string` | `false` | - | "2026-01-02T15:04:05Z" |
+| `status` | `string` | `false` | - | "example" |
 

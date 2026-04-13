@@ -2,13 +2,37 @@
 
 # Schema: `PaginatedSemanticModels`
 
+## Example
+
+```json
+{
+  "data": [
+    {
+      "base_model_ref": "example",
+      "created_at": "2026-01-02T15:04:05Z",
+      "created_by": "example",
+      "default_time_dimension": "example",
+      "description": "example",
+      "id": "example",
+      "name": "example",
+      "owner": "example",
+      "tags": [
+        "example"
+      ],
+      "updated_at": "2026-01-02T15:04:05Z"
+    }
+  ],
+  "next_page_token": "example"
+}
+```
+
 - Type: `object`
 - Required fields: `data`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `data` | `array[SemanticModel]` | `true` | - |
-| `next_page_token` | `string` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `data` | `array[SemanticModel]` | `true` | - | [ { "base_model_ref": "example", "created_at": "2026-01-02T15:04:05Z", "created_by": "example", "default_time_dimension": "example", "description": "example", "id": "example", "name": "example", "owner": "example", "tags": [ "example" ], "updated_at": "2026-01-02T15:04:05Z" } ] |
+| `next_page_token` | `string` | `false` | - | "example" |
 

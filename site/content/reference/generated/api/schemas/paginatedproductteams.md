@@ -2,13 +2,31 @@
 
 # Schema: `PaginatedProductTeams`
 
+## Example
+
+```json
+{
+  "data": [
+    {
+      "contact_channel": "example",
+      "created_at": "2026-01-02T15:04:05Z",
+      "domain_id": "example",
+      "id": "example",
+      "name": "example",
+      "updated_at": "2026-01-02T15:04:05Z"
+    }
+  ],
+  "next_page_token": "example"
+}
+```
+
 - Type: `object`
 - Required fields: `data`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `data` | `array[ProductTeam]` | `true` | - |
-| `next_page_token` | `string` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `data` | `array[ProductTeam]` | `true` | - | [ { "contact_channel": "example", "created_at": "2026-01-02T15:04:05Z", "domain_id": "example", "id": "example", "name": "example", "updated_at": "2026-01-02T15:04:05Z" } ] |
+| `next_page_token` | `string` | `false` | - | "example" |
 

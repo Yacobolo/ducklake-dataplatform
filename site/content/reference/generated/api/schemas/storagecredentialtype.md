@@ -2,5 +2,11 @@
 
 # Schema: `StorageCredentialType`
 
+## Example
+
+```json
+"S3"
+```
+
 - Type: `string`
 

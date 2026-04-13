@@ -2,13 +2,23 @@
 
 # Schema: `UpdateVolumeRequest`
 
+## Example
+
+```json
+{
+  "comment": "example",
+  "new_name": "example",
+  "storage_location": "example"
+}
+```
+
 - Type: `object`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `comment` | `string` | `false` | - |
-| `new_name` | `string` | `false` | - |
-| `storage_location` | `string` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `comment` | `string` | `false` | - | "example" |
+| `new_name` | `string` | `false` | - | "example" |
+| `storage_location` | `string` | `false` | - | "example" |
 

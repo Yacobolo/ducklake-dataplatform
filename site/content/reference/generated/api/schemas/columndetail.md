@@ -2,16 +2,28 @@
 
 # Schema: `ColumnDetail`
 
+## Example
+
+```json
+{
+  "comment": "example",
+  "name": "example",
+  "nullable": true,
+  "position": 1,
+  "type": "example"
+}
+```
+
 - Type: `object`
 - Required fields: `name`, `type`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `comment` | `string` | `false` | - |
-| `name` | `string` | `true` | - |
-| `nullable` | `boolean` | `false` | - |
-| `position` | `integer` | `false` | - |
-| `type` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `comment` | `string` | `false` | - | "example" |
+| `name` | `string` | `true` | - | "example" |
+| `nullable` | `boolean` | `false` | - | true |
+| `position` | `integer` | `false` | - | 1 |
+| `type` | `string` | `true` | - | "example" |
 

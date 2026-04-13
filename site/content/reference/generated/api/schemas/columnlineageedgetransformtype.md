@@ -2,5 +2,11 @@
 
 # Schema: `ColumnLineageEdgeTransformType`
 
+## Example
+
+```json
+"DIRECT"
+```
+
 - Type: `string`
 

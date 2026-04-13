@@ -2,13 +2,32 @@
 
 # Schema: `PaginatedColumnMasks`
 
+## Example
+
+```json
+{
+  "data": [
+    {
+      "column_name": "example",
+      "created_at": "2026-01-02T15:04:05Z",
+      "description": "example",
+      "id": "example",
+      "mask_expression": "example",
+      "name": "example",
+      "table_id": "example"
+    }
+  ],
+  "next_page_token": "example"
+}
+```
+
 - Type: `object`
 - Required fields: `data`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `data` | `array[ColumnMask]` | `true` | - |
-| `next_page_token` | `string` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `data` | `array[ColumnMask]` | `true` | - | [ { "column_name": "example", "created_at": "2026-01-02T15:04:05Z", "description": "example", "id": "example", "mask_expression": "example", "name": "example", "table_id": "example" } ] |
+| `next_page_token` | `string` | `false` | - | "example" |
 

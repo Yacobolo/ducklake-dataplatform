@@ -2,14 +2,25 @@
 
 # Schema: `MacroImpactModel`
 
+## Example
+
+```json
+{
+  "last_seen_at": "2026-01-02T15:04:05Z",
+  "model_name": "example",
+  "target_schema": "example",
+  "target_table": "example"
+}
+```
+
 - Type: `object`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `last_seen_at` | `string` | `false` | - |
-| `model_name` | `string` | `false` | - |
-| `target_schema` | `string` | `false` | - |
-| `target_table` | `string` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `last_seen_at` | `string` | `false` | - | "2026-01-02T15:04:05Z" |
+| `model_name` | `string` | `false` | - | "example" |
+| `target_schema` | `string` | `false` | - | "example" |
+| `target_table` | `string` | `false` | - | "example" |
 

@@ -2,12 +2,21 @@
 
 # Schema: `FolderShare`
 
+## Example
+
+```json
+{
+  "principal_name": "example",
+  "role": "viewer"
+}
+```
+
 - Type: `object`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `principal_name` | `string` | `false` | - |
-| `role` | `NotebookShareRole` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `principal_name` | `string` | `false` | - | "example" |
+| `role` | `NotebookShareRole` | `false` | - | "viewer" |
 

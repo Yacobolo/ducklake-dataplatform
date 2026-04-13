@@ -2,22 +2,42 @@
 
 # Schema: `CreateSemanticMetricRequest`
 
+## Example
+
+```json
+{
+  "certification_state": "DRAFT",
+  "default_time_grain": "example",
+  "description": "example",
+  "expression": "example",
+  "expression_mode": "DSL",
+  "filter_sql": "example",
+  "format": "example",
+  "label": "example",
+  "metric_type": "SUM",
+  "name": "example",
+  "relationship_names": [
+    "example"
+  ]
+}
+```
+
 - Type: `object`
 - Required fields: `expression`, `metric_type`, `name`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `certification_state` | `CreateSemanticMetricRequestCertificationState` | `false` | - |
-| `default_time_grain` | `string` | `false` | - |
-| `description` | `string` | `false` | - |
-| `expression` | `string` | `true` | - |
-| `expression_mode` | `SemanticMetricExpressionMode` | `false` | - |
-| `filter_sql` | `string` | `false` | - |
-| `format` | `string` | `false` | - |
-| `label` | `string` | `false` | - |
-| `metric_type` | `SemanticMetricMetricType` | `true` | - |
-| `name` | `string` | `true` | - |
-| `relationship_names` | `array[string]` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `certification_state` | `CreateSemanticMetricRequestCertificationState` | `false` | - | "DRAFT" |
+| `default_time_grain` | `string` | `false` | - | "example" |
+| `description` | `string` | `false` | - | "example" |
+| `expression` | `string` | `true` | - | "example" |
+| `expression_mode` | `SemanticMetricExpressionMode` | `false` | - | "DSL" |
+| `filter_sql` | `string` | `false` | - | "example" |
+| `format` | `string` | `false` | - | "example" |
+| `label` | `string` | `false` | - | "example" |
+| `metric_type` | `SemanticMetricMetricType` | `true` | - | "SUM" |
+| `name` | `string` | `true` | - | "example" |
+| `relationship_names` | `array[string]` | `false` | - | [ "example" ] |
 

@@ -2,13 +2,31 @@
 
 # Schema: `PaginatedAPIKeys`
 
+## Example
+
+```json
+{
+  "data": [
+    {
+      "created_at": "2026-01-02T15:04:05Z",
+      "expires_at": "2026-01-02T15:04:05Z",
+      "id": "example",
+      "key_prefix": "example",
+      "name": "example",
+      "principal_id": "example"
+    }
+  ],
+  "next_page_token": "example"
+}
+```
+
 - Type: `object`
 - Required fields: `data`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `data` | `array[APIKeyInfo]` | `true` | - |
-| `next_page_token` | `string` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `data` | `array[APIKeyInfo]` | `true` | - | [ { "created_at": "2026-01-02T15:04:05Z", "expires_at": "2026-01-02T15:04:05Z", "id": "example", "key_prefix": "example", "name": "example", "principal_id": "example" } ] |
+| `next_page_token` | `string` | `false` | - | "example" |
 

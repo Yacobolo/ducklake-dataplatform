@@ -2,12 +2,50 @@
 
 # Schema: `CreateAssetBackfillResponse`
 
+## Example
+
+```json
+{
+  "request": {
+    "asset_id": "example",
+    "created_at": "2026-01-02T15:04:05Z",
+    "error_message": "example",
+    "finished_at": "2026-01-02T15:04:05Z",
+    "id": "example",
+    "max_parallelism": 1,
+    "partition_from": "example",
+    "partition_to": "example",
+    "requested_by": "example",
+    "started_at": "2026-01-02T15:04:05Z",
+    "status": "example"
+  },
+  "slices": [
+    {
+      "asset_id": "example",
+      "attempt_count": 1,
+      "created_at": "2026-01-02T15:04:05Z",
+      "error_message": "example",
+      "finished_at": "2026-01-02T15:04:05Z",
+      "id": "example",
+      "max_attempts": 1,
+      "partition_from": "example",
+      "partition_key": "example",
+      "partition_to": "example",
+      "request_id": "example",
+      "run_id": "example",
+      "started_at": "2026-01-02T15:04:05Z",
+      "status": "example"
+    }
+  ]
+}
+```
+
 - Type: `object`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `request` | `BackfillRequest` | `false` | - |
-| `slices` | `array[BackfillSlice]` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `request` | `BackfillRequest` | `false` | - | { "asset_id": "example", "created_at": "2026-01-02T15:04:05Z", "error_message": "example", "finished_at": "2026-01-02T15:04:05Z", "id": "example", "max_parallelism": 1, "partition_from": "example", "partition_to": "example", "requested_by": "example", "started_at": "2026-01-02T15:04:05Z", "status": "example" } |
+| `slices` | `array[BackfillSlice]` | `false` | - | [ { "asset_id": "example", "attempt_count": 1, "created_at": "2026-01-02T15:04:05Z", "error_message": "example", "finished_at": "2026-01-02T15:04:05Z", "id": "example", "max_attempts": 1, "partition_from": "example", "partition_key": "example", "partition_to": "example", "request_id": "example", "run_id": "example", "started_at": "2026-01-02T15:04:05Z", "status": "example" } ] |
 

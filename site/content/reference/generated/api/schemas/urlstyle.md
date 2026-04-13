@@ -2,5 +2,11 @@
 
 # Schema: `URLStyle`
 
+## Example
+
+```json
+"path"
+```
+
 - Type: `string`
 

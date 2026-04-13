@@ -2,19 +2,54 @@
 
 # Schema: `VisualSpecUpdate`
 
+## Example
+
+```json
+{
+  "chart_type": "bar",
+  "color_palette": "example",
+  "encodings": {
+    "label": {
+      "field": "example"
+    },
+    "secondary": {
+      "field": "example"
+    },
+    "series": {
+      "field": "example"
+    },
+    "value": {
+      "field": "example"
+    },
+    "x": {
+      "field": "example"
+    },
+    "y": {
+      "field": "example"
+    }
+  },
+  "kind": "table",
+  "legend": true,
+  "legend_position": "top",
+  "stacked": true,
+  "subtitle": "example",
+  "title": "example"
+}
+```
+
 - Type: `object`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `chart_type` | `VisualChartType` | `false` | - |
-| `color_palette` | `string` | `false` | - |
-| `encodings` | `VisualEncodingsUpdate` | `false` | - |
-| `kind` | `VisualOutputKind` | `false` | - |
-| `legend` | `boolean` | `false` | - |
-| `legend_position` | `VisualLegendPosition` | `false` | - |
-| `stacked` | `boolean` | `false` | - |
-| `subtitle` | `string` | `false` | - |
-| `title` | `string` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `chart_type` | `VisualChartType` | `false` | - | "bar" |
+| `color_palette` | `string` | `false` | - | "example" |
+| `encodings` | `VisualEncodingsUpdate` | `false` | - | { "label": { "field": "example" }, "secondary": { "field": "example" }, "series": { "field": "example" }, "value": { "field": "example" }, "x": { "field": "example" }, "y": { "field": "example" } } |
+| `kind` | `VisualOutputKind` | `false` | - | "table" |
+| `legend` | `boolean` | `false` | - | true |
+| `legend_position` | `VisualLegendPosition` | `false` | - | "top" |
+| `stacked` | `boolean` | `false` | - | true |
+| `subtitle` | `string` | `false` | - | "example" |
+| `title` | `string` | `false` | - | "example" |
 

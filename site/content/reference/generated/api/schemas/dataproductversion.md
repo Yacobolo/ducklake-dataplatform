@@ -2,23 +2,68 @@
 
 # Schema: `DataProductVersion`
 
+## Example
+
+```json
+{
+  "access_request_path": "example",
+  "compatibility_level": "example",
+  "contract": {
+    "breaking_change_policy": "example",
+    "data_grain": "example",
+    "dimensions": [
+      "example"
+    ],
+    "join_keys": [
+      "example"
+    ],
+    "measures": [
+      "example"
+    ],
+    "primary_keys": [
+      "example"
+    ],
+    "quality_expectations": [
+      "example"
+    ],
+    "retention_window": "example",
+    "sample_queries": [
+      "example"
+    ],
+    "update_cadence": "example"
+  },
+  "created_at": "2026-01-02T15:04:05Z",
+  "created_by": "example",
+  "docs_url": "example",
+  "id": "example",
+  "producing_build_id": "example",
+  "product_id": "example",
+  "release_state": "example",
+  "slo": {
+    "freshness_slo": "example",
+    "latency_slo": "example"
+  },
+  "version": 1
+}
+```
+
 - Type: `object`
 - Required fields: `compatibility_level`, `id`, `product_id`, `release_state`, `version`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `access_request_path` | `string` | `false` | - |
-| `compatibility_level` | `string` | `true` | - |
-| `contract` | `ProductContract` | `false` | - |
-| `created_at` | `string` | `false` | - |
-| `created_by` | `string` | `false` | - |
-| `docs_url` | `string` | `false` | - |
-| `id` | `string` | `true` | - |
-| `producing_build_id` | `string` | `false` | - |
-| `product_id` | `string` | `true` | - |
-| `release_state` | `string` | `true` | - |
-| `slo` | `ProductSLO` | `false` | - |
-| `version` | `integer` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `access_request_path` | `string` | `false` | - | "example" |
+| `compatibility_level` | `string` | `true` | - | "example" |
+| `contract` | `ProductContract` | `false` | - | { "breaking_change_policy": "example", "data_grain": "example", "dimensions": [ "example" ], "join_keys": [ "example" ], "measures": [ "example" ], "primary_keys": [ "example" ], "quality_expectations": [ "example" ], "retention_window": "example", "sample_queries": [ "example" ], "update_cadence": "example" } |
+| `created_at` | `string` | `false` | - | "2026-01-02T15:04:05Z" |
+| `created_by` | `string` | `false` | - | "example" |
+| `docs_url` | `string` | `false` | - | "example" |
+| `id` | `string` | `true` | - | "example" |
+| `producing_build_id` | `string` | `false` | - | "example" |
+| `product_id` | `string` | `true` | - | "example" |
+| `release_state` | `string` | `true` | - | "example" |
+| `slo` | `ProductSLO` | `false` | - | { "freshness_slo": "example", "latency_slo": "example" } |
+| `version` | `integer` | `true` | - | 1 |
 

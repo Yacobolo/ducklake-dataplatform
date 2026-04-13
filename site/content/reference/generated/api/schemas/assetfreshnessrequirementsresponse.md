@@ -2,12 +2,50 @@
 
 # Schema: `AssetFreshnessRequirementsResponse`
 
+## Example
+
+```json
+{
+  "asset": {
+    "asset_id": "example",
+    "asset_key": "example",
+    "asset_type": "TABLE",
+    "basis": [
+      "example"
+    ],
+    "effective_max_lag_seconds": 1,
+    "freshness_status": "example",
+    "last_materialized_at": "2026-01-02T15:04:05Z",
+    "reason": "example",
+    "stale_since": "2026-01-02T15:04:05Z"
+  },
+  "requirements": [
+    {
+      "asset": {
+        "asset_id": "example",
+        "asset_key": "example",
+        "asset_type": "TABLE",
+        "basis": [
+          "example"
+        ],
+        "effective_max_lag_seconds": 1,
+        "freshness_status": "example",
+        "last_materialized_at": "2026-01-02T15:04:05Z",
+        "reason": "example",
+        "stale_since": "2026-01-02T15:04:05Z"
+      },
+      "dependency_type": "example"
+    }
+  ]
+}
+```
+
 - Type: `object`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `asset` | `AssetFreshnessStatus` | `false` | - |
-| `requirements` | `array[AssetFreshnessRequirement]` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `asset` | `AssetFreshnessStatus` | `false` | - | { "asset_id": "example", "asset_key": "example", "asset_type": "TABLE", "basis": [ "example" ], "effective_max_lag_seconds": 1, "freshness_status": "example", "last_materialized_at": "2026-01-02T15:04:05Z", "reason": "example", "stale_since": "2026-01-02T15:04:05Z" } |
+| `requirements` | `array[AssetFreshnessRequirement]` | `false` | - | [ { "asset": { "asset_id": "example", "asset_key": "example", "asset_type": "TABLE", "basis": [ "example" ], "effective_max_lag_seconds": 1, "freshness_status": "example", "last_materialized_at": "2026-01-02T15:04:05Z", "reason": "example", "stale_since": "2026-01-02T15:04:05Z" }, "dependency_type": "example" } ] |
 

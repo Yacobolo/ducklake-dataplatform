@@ -2,12 +2,30 @@
 
 # Schema: `ProductOutputList`
 
+## Example
+
+```json
+{
+  "data": [
+    {
+      "asset_id": "example",
+      "asset_key": "example",
+      "asset_type": "example",
+      "created_at": "2026-01-02T15:04:05Z",
+      "id": "example",
+      "is_primary": true,
+      "product_version_id": "example"
+    }
+  ]
+}
+```
+
 - Type: `object`
 - Required fields: `data`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `data` | `array[ProductOutput]` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `data` | `array[ProductOutput]` | `true` | - | [ { "asset_id": "example", "asset_key": "example", "asset_type": "example", "created_at": "2026-01-02T15:04:05Z", "id": "example", "is_primary": true, "product_version_id": "example" } ] |
 

@@ -2,15 +2,27 @@
 
 # Schema: `VersionedObjectSummary`
 
+## Example
+
+```json
+{
+  "active_count": 1,
+  "has_history": true,
+  "historical_count": 1,
+  "latest_snapshot_id": 1,
+  "total_count": 1
+}
+```
+
 - Type: `object`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `active_count` | `integer` | `false` | - |
-| `has_history` | `boolean` | `false` | - |
-| `historical_count` | `integer` | `false` | - |
-| `latest_snapshot_id` | `integer` | `false` | - |
-| `total_count` | `integer` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `active_count` | `integer` | `false` | - | 1 |
+| `has_history` | `boolean` | `false` | - | true |
+| `historical_count` | `integer` | `false` | - | 1 |
+| `latest_snapshot_id` | `integer` | `false` | - | 1 |
+| `total_count` | `integer` | `false` | - | 1 |
 

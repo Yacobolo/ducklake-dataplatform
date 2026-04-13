@@ -2,18 +2,32 @@
 
 # Schema: `RecentResource`
 
+## Example
+
+```json
+{
+  "accessed_at": "2026-01-02T15:04:05Z",
+  "display_name": "example",
+  "href": "example",
+  "resource_key": "example",
+  "resource_path": "example",
+  "resource_type": "example",
+  "section": "example"
+}
+```
+
 - Type: `object`
 - Required fields: `display_name`, `resource_key`, `resource_type`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `accessed_at` | `string` | `false` | - |
-| `display_name` | `string` | `true` | - |
-| `href` | `string` | `false` | - |
-| `resource_key` | `string` | `true` | - |
-| `resource_path` | `string` | `false` | - |
-| `resource_type` | `string` | `true` | - |
-| `section` | `string` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `accessed_at` | `string` | `false` | - | "2026-01-02T15:04:05Z" |
+| `display_name` | `string` | `true` | - | "example" |
+| `href` | `string` | `false` | - | "example" |
+| `resource_key` | `string` | `true` | - | "example" |
+| `resource_path` | `string` | `false` | - | "example" |
+| `resource_type` | `string` | `true` | - | "example" |
+| `section` | `string` | `false` | - | "example" |
 

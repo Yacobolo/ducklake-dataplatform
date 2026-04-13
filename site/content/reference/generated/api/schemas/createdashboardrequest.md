@@ -2,18 +2,36 @@
 
 # Schema: `CreateDashboardRequest`
 
+## Example
+
+```json
+{
+  "compute": {
+    "endpoint_name": "example",
+    "fallback_local": true,
+    "mode": "example"
+  },
+  "description": "example",
+  "folder_id": "example",
+  "name": "example",
+  "owner": "example",
+  "semantic_model_name": "example",
+  "semantic_project_name": "example"
+}
+```
+
 - Type: `object`
 - Required fields: `name`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `compute` | `DashboardComputePolicy` | `false` | - |
-| `description` | `string` | `false` | - |
-| `folder_id` | `string` | `false` | - |
-| `name` | `string` | `true` | - |
-| `owner` | `string` | `false` | - |
-| `semantic_model_name` | `string` | `false` | - |
-| `semantic_project_name` | `string` | `false` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `compute` | `DashboardComputePolicy` | `false` | - | { "endpoint_name": "example", "fallback_local": true, "mode": "example" } |
+| `description` | `string` | `false` | - | "example" |
+| `folder_id` | `string` | `false` | - | "example" |
+| `name` | `string` | `true` | - | "example" |
+| `owner` | `string` | `false` | - | "example" |
+| `semantic_model_name` | `string` | `false` | - | "example" |
+| `semantic_project_name` | `string` | `false` | - | "example" |
 

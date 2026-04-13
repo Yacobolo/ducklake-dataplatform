@@ -2,15 +2,26 @@
 
 # Schema: `CreateColumnRequest`
 
+## Example
+
+```json
+{
+  "comment": "example",
+  "name": "example",
+  "nullable": true,
+  "type": "example"
+}
+```
+
 - Type: `object`
 - Required fields: `name`, `type`
 
 ## Properties
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `comment` | `string` | `false` | - |
-| `name` | `string` | `true` | - |
-| `nullable` | `boolean` | `false` | - |
-| `type` | `string` | `true` | - |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `comment` | `string` | `false` | - | "example" |
+| `name` | `string` | `true` | - | "example" |
+| `nullable` | `boolean` | `false` | - | true |
+| `type` | `string` | `true` | - | "example" |
 
