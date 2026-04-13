@@ -1,8 +1,6 @@
 package api
 
-// OpenAPI-only authored schema set used for canonical parity.
-
-openapi_extra_schemas: schemas_generated
+// Shared authored helper schemas that support generated request/update models.
 
 schemas_generated: {
   CatalogInfo: #objectSchema & {

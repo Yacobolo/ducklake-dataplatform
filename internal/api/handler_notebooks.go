@@ -740,7 +740,7 @@ func (h *APIHandler) UpdateCell(ctx context.Context, req GenUpdateCellRequest) (
 		domReq.Test = notebookCellTestConfigFromAPI(req.Body.Test)
 	}
 	if req.Body.VisualSpec != nil {
-		domReq.VisualSpec = visualSpecFromAPI(req.Body.VisualSpec)
+		domReq.VisualSpec = visualSpecUpdateFromAPI(req.Body.VisualSpec)
 	}
 	if req.Body.Position != nil {
 		pos := int(*req.Body.Position)
@@ -1843,7 +1843,7 @@ func cellExecutionResultToAPI(r domain.CellExecutionResult) CellExecutionResult 
 	return CellExecutionResult{
 		CellId:     &r.CellID,
 		Columns:    ptrTabularColumns(tabularColumns(r.Columns, r.Rows)),
-		Rows:       ptrRecords(rowsToRecords(r.Columns, r.Rows)),
+		Rows:       ptrAnyMaps(rowsToAnyMaps(r.Columns, r.Rows)),
 		RowCount:   &rowCount,
 		Error:      r.Error,
 		DurationMs: &durationMs,

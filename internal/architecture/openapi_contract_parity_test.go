@@ -24,7 +24,7 @@ type openAPICoreOperation struct {
 func TestOpenAPIContractParity_CoreOperationShape(t *testing.T) {
 	t.Helper()
 
-	canonicalDoc := loadOpenAPISpec(t, filepath.Join(repoRootDir(), "api", "gen", "openapi.yaml"))
+	canonicalDoc := loadOpenAPISpec(t, filepath.Join(repoRootDir(), "internal", "api", "gen", "openapi.yaml"))
 	generatedDoc := loadEmbeddedOpenAPISpec(t)
 
 	canonicalOps := collectOpenAPICoreOperations(t, canonicalDoc)
@@ -43,7 +43,7 @@ func TestOpenAPIContractParity_CoreOperationShape(t *testing.T) {
 func TestCanonicalOpenAPI_HardeningEndpointsExposeExpectedDomainErrors(t *testing.T) {
 	t.Helper()
 
-	doc := loadOpenAPISpec(t, filepath.Join(repoRootDir(), "api", "gen", "openapi.yaml"))
+	doc := loadOpenAPISpec(t, filepath.Join(repoRootDir(), "internal", "api", "gen", "openapi.yaml"))
 	operations := collectOpenAPICoreOperations(t, doc)
 
 	expects := map[string][]string{
@@ -74,7 +74,7 @@ func TestCanonicalOpenAPI_HardeningEndpointsExposeExpectedDomainErrors(t *testin
 		"updateComputeEndpoint":     {"403", "404"},
 		"deleteComputeEndpoint":     {"403", "404"},
 		"deleteComputeAssignment":   {"403", "404"},
-		"getCatalog":               {"403", "404"},
+		"getCatalog":                {"403", "404"},
 		"updateCatalogRegistration": {"403", "404"},
 		"deleteCatalogRegistration": {"403", "404"},
 		"createManifest":            {"403"},

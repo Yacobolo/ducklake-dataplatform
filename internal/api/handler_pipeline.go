@@ -337,7 +337,7 @@ func (h *APIHandler) DeletePipelineJob(ctx context.Context, req GenDeletePipelin
 func (h *APIHandler) TriggerPipelineRun(ctx context.Context, req GenTriggerPipelineRunRequest) (GenTriggerPipelineRunResponse, error) {
 	var params map[string]string
 	if req.Body != nil && req.Body.Parameters != nil {
-		params = recordToStringMap(req.Body.Parameters)
+		params = anyMapToStringMap(req.Body.Parameters)
 	}
 
 	cp, _ := domain.PrincipalFromContext(ctx)
@@ -546,7 +546,7 @@ func pipelineRunToAPI(r domain.PipelineRun) PipelineRun {
 		CreatedAt:   formatTimePtr(&r.CreatedAt),
 	}
 	if len(r.Parameters) > 0 {
-		resp.Parameters = stringMapToRecord(r.Parameters)
+		resp.Parameters = stringMapToAnyMap(r.Parameters)
 	}
 	if r.GitCommitHash != nil {
 		resp.GitCommitHash = r.GitCommitHash

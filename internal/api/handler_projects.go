@@ -257,8 +257,8 @@ func (h *APIHandler) CreateProjectEnvironment(ctx context.Context, req GenCreate
 		TargetSchema:       req.Body.TargetSchema,
 		ComputeEndpoint:    req.Body.ComputeEndpoint,
 		DeferToEnvironment: req.Body.DeferToEnvironment,
-		Variables:          recordToStringMap(req.Body.Variables),
-		SourceOverrides:    recordToStringMap(req.Body.SourceOverrides),
+		Variables:          anyMapToStringMap(req.Body.Variables),
+		SourceOverrides:    anyMapToStringMap(req.Body.SourceOverrides),
 	})
 	if err != nil {
 		if resp, ok := respondDomainErrorForOperation[GenCreateProjectEnvironmentResponse]("createProjectEnvironment", err, domainErrorResponder[GenCreateProjectEnvironmentResponse]{
@@ -302,8 +302,8 @@ func (h *APIHandler) UpdateProjectEnvironment(ctx context.Context, req GenUpdate
 		TargetSchema:       req.Body.TargetSchema,
 		ComputeEndpoint:    req.Body.ComputeEndpoint,
 		DeferToEnvironment: req.Body.DeferToEnvironment,
-		Variables:          recordPtrToStringMap(req.Body.Variables),
-		SourceOverrides:    recordPtrToStringMap(req.Body.SourceOverrides),
+		Variables:          anyMapPtrToStringMap(req.Body.Variables),
+		SourceOverrides:    anyMapPtrToStringMap(req.Body.SourceOverrides),
 	})
 	if err != nil {
 		if resp, ok := respondDomainErrorForOperation[GenUpdateProjectEnvironmentResponse]("updateProjectEnvironment", err, domainErrorResponder[GenUpdateProjectEnvironmentResponse]{
@@ -474,8 +474,8 @@ func environmentToAPI(item domain.Environment) Environment {
 		TargetSchema:       item.TargetSchema,
 		ComputeEndpoint:    item.ComputeEndpoint,
 		DeferToEnvironment: item.DeferToEnvironment,
-		Variables:          stringMapToRecord(item.Variables),
-		SourceOverrides:    stringMapToRecord(item.SourceOverrides),
+		Variables:          stringMapToAnyMap(item.Variables),
+		SourceOverrides:    stringMapToAnyMap(item.SourceOverrides),
 		CreatedAt:          formatTimePtr(&item.CreatedAt),
 		UpdatedAt:          formatTimePtr(&item.UpdatedAt),
 	}

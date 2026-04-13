@@ -648,8 +648,8 @@ func (h *APIHandler) CheckMetricFreshness(ctx context.Context, req GenCheckMetri
 
 	match := matches[0]
 	plan, err := h.semantics.ExplainMetricQuery(ctx, semantic.MetricQueryRequest{
-		SemanticModelID:   match.semanticModelID,
-		Metrics:           []string{req.MetricName},
+		SemanticModelID: match.semanticModelID,
+		Metrics:         []string{req.MetricName},
 	})
 	if err != nil {
 		if resp, ok := respondDomainErrorForOperation[GenCheckMetricFreshnessResponse]("checkMetricFreshness", err, domainErrorResponder[GenCheckMetricFreshnessResponse]{
@@ -720,7 +720,7 @@ func (h *APIHandler) RunMetricQuery(ctx context.Context, req GenRunMetricQueryRe
 	rowCount := safeIntToInt32(result.Result.RowCount)
 	apiResult := QueryResult{
 		Columns:  tabularColumns(result.Result.Columns, result.Result.Rows),
-		Rows:     rowsToRecords(result.Result.Columns, result.Result.Rows),
+		Rows:     rowsToAnyMaps(result.Result.Columns, result.Result.Rows),
 		RowCount: &rowCount,
 	}
 	return RunMetricQuery200JSONResponse{Body: MetricQueryRunResponse{Plan: &apiPlan, Result: &apiResult}, Headers: RunMetricQuery200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
@@ -850,8 +850,8 @@ func semanticReqToService(semanticModelID string, req *GenSchemaMetricQueryReque
 		return semantic.MetricQueryRequest{SemanticModelID: semanticModelID}
 	}
 	out := semantic.MetricQueryRequest{
-		SemanticModelID:   semanticModelID,
-		Metrics:           req.Metrics,
+		SemanticModelID: semanticModelID,
+		Metrics:         req.Metrics,
 	}
 	if req.RelationshipNames != nil {
 		out.RelationshipNames = *req.RelationshipNames

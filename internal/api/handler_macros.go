@@ -79,7 +79,7 @@ func (h *APIHandler) CreateMacro(ctx context.Context, req GenCreateMacroRequest)
 		domReq.Owner = *req.Body.Owner
 	}
 	if req.Body.Properties != nil {
-		domReq.Properties = recordToStringMap(req.Body.Properties)
+		domReq.Properties = anyMapToStringMap(req.Body.Properties)
 	}
 	if req.Body.Tags != nil {
 		domReq.Tags = *req.Body.Tags
@@ -294,7 +294,7 @@ func (h *APIHandler) UpdateMacro(ctx context.Context, req GenUpdateMacroRequest)
 		domReq.Owner = req.Body.Owner
 	}
 	if req.Body.Properties != nil {
-		domReq.Properties = recordToStringMap(req.Body.Properties)
+		domReq.Properties = anyMapToStringMap(req.Body.Properties)
 	}
 	if req.Body.Tags != nil {
 		domReq.Tags = *req.Body.Tags
@@ -363,7 +363,7 @@ func macroToAPI(m domain.Macro) Macro {
 		resp.Owner = &m.Owner
 	}
 	if len(m.Properties) > 0 {
-		resp.Properties = stringMapToRecord(m.Properties)
+		resp.Properties = stringMapToAnyMap(m.Properties)
 	}
 	if len(m.Tags) > 0 {
 		resp.Tags = &m.Tags

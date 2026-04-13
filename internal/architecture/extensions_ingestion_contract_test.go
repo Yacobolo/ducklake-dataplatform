@@ -10,7 +10,7 @@ import (
 func TestCanonicalOpenAPI_IngestionEndpointsUseConcreteSchemas(t *testing.T) {
 	t.Helper()
 
-	doc := loadOpenAPISpec(t, filepath.Join(repoRootDir(), "api", "gen", "openapi.yaml"))
+	doc := loadOpenAPISpec(t, filepath.Join(repoRootDir(), "internal", "api", "gen", "openapi.yaml"))
 
 	assertOperationSchemas(t, doc, "POST", "/catalogs/{catalog_name}/schemas/{schema_name}/tables/{table_name}/upload-urls", "#/components/schemas/UploadUrlRequest", "#/components/schemas/UploadUrlResponse")
 	assertOperationSchemas(t, doc, "POST", "/catalogs/{catalog_name}/schemas/{schema_name}/tables/{table_name}/ingestion-commits", "#/components/schemas/CommitIngestionRequest", "#/components/schemas/IngestionResult")

@@ -267,10 +267,11 @@ func TestHandler_UpdateAsset(t *testing.T) {
 		}, nil
 	}}}
 
+	assetType := AssetType(domain.AssetTypeTable)
 	resp, err := h.UpdateAsset(assetTestCtx(true), GenUpdateAssetRequest{AssetKey: "showcase.rides.silver", Body: &UpdateAssetJSONRequestBody{
-		AssetType:       domain.AssetTypeTable,
-		ProductSlug:     "rides",
-		Owner:           "analytics",
+		AssetType:       &assetType,
+		ProductSlug:     assetStrPtr("rides"),
+		Owner:           assetStrPtr("analytics"),
 		Description:     assetStrPtr("Silver showcase asset"),
 		FreshnessPolicy: &AssetFreshnessPolicy{MaxLagSeconds: assetInt32Ptr(600)},
 		AutoMaterializePolicy: &AssetAutoMaterializePolicy{
@@ -765,7 +766,7 @@ func TestHandler_TriggerAssetMaterialization(t *testing.T) {
 			return &domain.OrchestrationEvent{ID: "event-1", Status: domain.OrchestrationEventStatusPending}, nil
 		},
 	}}
-	payload := Record{"source": "manual"}
+	payload := map[string]any{"source": "manual"}
 	body := TriggerAssetMaterializationJSONRequestBody{PartitionKey: &partition, IdempotencyKey: &idem, Payload: &payload}
 
 	resp, err := h.TriggerAssetMaterialization(assetTestCtx(false), GenTriggerAssetMaterializationRequest{AssetKey: "sales.daily", Body: &body})

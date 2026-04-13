@@ -156,7 +156,7 @@ func schemaDetailToAPI(s domain.SchemaDetail) SchemaDetail {
 		Comment:     &s.Comment,
 		Tags:        &tags,
 		Owner:       &s.Owner,
-		Properties:  stringMapToRecord(s.Properties),
+		Properties:  stringMapToAnyMap(s.Properties),
 		CreatedAt:   formatTimePtr(&s.CreatedAt),
 		UpdatedAt:   formatTimePtr(&s.UpdatedAt),
 	}
@@ -179,7 +179,7 @@ func tableDetailToAPI(t domain.TableDetail) TableDetail {
 		TableType:   &t.TableType,
 		Columns:     &cols,
 		Comment:     &t.Comment,
-		Properties:  stringMapToRecord(t.Properties),
+		Properties:  stringMapToAnyMap(t.Properties),
 		Owner:       &t.Owner,
 		Tags:        &tags,
 		Statistics:  tableStatisticsPtr(t.Statistics),
@@ -297,23 +297,23 @@ func int32PtrToInt64Ptr(v *int32) *int64 {
 	return &out
 }
 
-func stringMapToRecord(m map[string]string) *Record {
+func stringMapToAnyMap(m map[string]string) *map[string]any {
 	if len(m) == 0 {
 		return nil
 	}
-	record := make(Record, len(m))
+	out := make(map[string]any, len(m))
 	for k, v := range m {
-		record[k] = v
+		out[k] = v
 	}
-	return &record
+	return &out
 }
 
-func recordToStringMap(record *Record) map[string]string {
-	if record == nil {
+func anyMapToStringMap(values *map[string]any) map[string]string {
+	if values == nil {
 		return nil
 	}
-	out := make(map[string]string, len(*record))
-	for k, v := range *record {
+	out := make(map[string]string, len(*values))
+	for k, v := range *values {
 		switch typed := v.(type) {
 		case string:
 			out[k] = typed
@@ -324,11 +324,11 @@ func recordToStringMap(record *Record) map[string]string {
 	return out
 }
 
-func recordPtrToStringMap(record *Record) *map[string]string {
-	if record == nil {
+func anyMapPtrToStringMap(values *map[string]any) *map[string]string {
+	if values == nil {
 		return nil
 	}
-	out := recordToStringMap(record)
+	out := anyMapToStringMap(values)
 	return &out
 }
 
@@ -437,14 +437,14 @@ func ptrURLStyle(value string) *URLStyle {
 	return &typed
 }
 
-func rowsToRecords(columns []string, rows [][]interface{}) []Record {
+func rowsToAnyMaps(columns []string, rows [][]interface{}) []map[string]any {
 	if len(rows) == 0 {
-		return []Record{}
+		return []map[string]any{}
 	}
 	names := normalizedColumnNames(columns, rows)
-	out := make([]Record, len(rows))
+	out := make([]map[string]any, len(rows))
 	for i, row := range rows {
-		record := make(Record, len(names))
+		record := make(map[string]any, len(names))
 		for j, name := range names {
 			if j < len(row) {
 				record[name] = row[j]
@@ -464,7 +464,7 @@ func ptrTabularColumns(columns []TabularColumn) *[]TabularColumn {
 	return &columns
 }
 
-func ptrRecords(rows []Record) *[]Record {
+func ptrAnyMaps(rows []map[string]any) *[]map[string]any {
 	if len(rows) == 0 {
 		return nil
 	}

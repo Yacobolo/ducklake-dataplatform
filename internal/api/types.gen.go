@@ -397,6 +397,14 @@ type CatalogHistoryResponse struct {
 	Data []CatalogHistoryEntry `json:"data"`
 }
 
+type CatalogInfo struct {
+	Comment       *string `json:"comment,omitempty"`
+	CreatedAt     *string `json:"created_at,omitempty"`
+	Name          string  `json:"name"`
+	SystemManaged *bool   `json:"system_managed,omitempty"`
+	UpdatedAt     *string `json:"updated_at,omitempty"`
+}
+
 type CatalogRegistration struct {
 	Comment       *string        `json:"comment,omitempty"`
 	CreatedAt     *string        `json:"created_at,omitempty"`
@@ -1086,10 +1094,21 @@ type DashboardNotebookCellSource struct {
 	NotebookId string `json:"notebook_id"`
 }
 
+type DashboardNotebookCellSourceUpdate struct {
+	CellId     *string `json:"cell_id,omitempty"`
+	NotebookId *string `json:"notebook_id,omitempty"`
+}
+
 type DashboardSQLQuerySource struct {
 	Catalog *string `json:"catalog,omitempty"`
 	Schema  *string `json:"schema,omitempty"`
 	Sql     string  `json:"sql"`
+}
+
+type DashboardSQLQuerySourceUpdate struct {
+	Catalog *string `json:"catalog,omitempty"`
+	Schema  *string `json:"schema,omitempty"`
+	Sql     *string `json:"sql,omitempty"`
 }
 
 type DashboardSemanticQuerySource struct {
@@ -1100,6 +1119,17 @@ type DashboardSemanticQuerySource struct {
 	OrderBy           *[]string `json:"order_by,omitempty"`
 	RelationshipNames *[]string `json:"relationship_names,omitempty"`
 	SemanticModelId   string    `json:"semantic_model_id"`
+	TimeGrain         *string   `json:"time_grain,omitempty"`
+}
+
+type DashboardSemanticQuerySourceUpdate struct {
+	Dimensions        *[]string `json:"dimensions,omitempty"`
+	Filters           *[]string `json:"filters,omitempty"`
+	Limit             *int32    `json:"limit,omitempty"`
+	Metrics           *[]string `json:"metrics,omitempty"`
+	OrderBy           *[]string `json:"order_by,omitempty"`
+	RelationshipNames *[]string `json:"relationship_names,omitempty"`
+	SemanticModelId   *string   `json:"semantic_model_id,omitempty"`
 	TimeGrain         *string   `json:"time_grain,omitempty"`
 }
 
@@ -1124,6 +1154,13 @@ type DashboardWidgetLayout struct {
 	Y int32 `json:"y"`
 }
 
+type DashboardWidgetLayoutUpdate struct {
+	H *int32 `json:"h,omitempty"`
+	W *int32 `json:"w,omitempty"`
+	X *int32 `json:"x,omitempty"`
+	Y *int32 `json:"y,omitempty"`
+}
+
 type DashboardWidgetSource struct {
 	Kind          DashboardWidgetSourceKind     `json:"kind"`
 	NotebookCell  *DashboardNotebookCellSource  `json:"notebook_cell,omitempty"`
@@ -1138,6 +1175,13 @@ const (
 	DashboardWidgetSourceKindNotebookCell  DashboardWidgetSourceKind = "notebook_cell"
 	DashboardWidgetSourceKindSemanticQuery DashboardWidgetSourceKind = "semantic_query"
 )
+
+type DashboardWidgetSourceUpdate struct {
+	Kind          *DashboardWidgetSourceKind          `json:"kind,omitempty"`
+	NotebookCell  *DashboardNotebookCellSourceUpdate  `json:"notebook_cell,omitempty"`
+	SemanticQuery *DashboardSemanticQuerySourceUpdate `json:"semantic_query,omitempty"`
+	SqlQuery      *DashboardSQLQuerySourceUpdate      `json:"sql_query,omitempty"`
+}
 
 type DataProduct struct {
 	AccessRequestPath   *string          `json:"access_request_path,omitempty"`
@@ -2130,6 +2174,11 @@ type PaginatedSearchResults struct {
 type PaginatedSemanticModels struct {
 	Data          []SemanticModel `json:"data"`
 	NextPageToken *string         `json:"next_page_token,omitempty"`
+}
+
+type PaginatedSemanticRelationships struct {
+	Data          []SemanticRelationship `json:"data"`
+	NextPageToken *string                `json:"next_page_token,omitempty"`
 }
 
 type PaginatedStorageCredentials struct {
@@ -3194,8 +3243,21 @@ type VisualEncodings struct {
 	Y         *VisualFieldBinding `json:"y,omitempty"`
 }
 
+type VisualEncodingsUpdate struct {
+	Label     *VisualFieldBindingUpdate `json:"label,omitempty"`
+	Secondary *VisualFieldBindingUpdate `json:"secondary,omitempty"`
+	Series    *VisualFieldBindingUpdate `json:"series,omitempty"`
+	Value     *VisualFieldBindingUpdate `json:"value,omitempty"`
+	X         *VisualFieldBindingUpdate `json:"x,omitempty"`
+	Y         *VisualFieldBindingUpdate `json:"y,omitempty"`
+}
+
 type VisualFieldBinding struct {
 	Field string `json:"field"`
+}
+
+type VisualFieldBindingUpdate struct {
+	Field *string `json:"field,omitempty"`
 }
 
 type VisualLegendPosition string
@@ -3225,6 +3287,18 @@ type VisualSpec struct {
 	Stacked        *bool                 `json:"stacked,omitempty"`
 	Subtitle       *string               `json:"subtitle,omitempty"`
 	Title          *string               `json:"title,omitempty"`
+}
+
+type VisualSpecUpdate struct {
+	ChartType      *VisualChartType       `json:"chart_type,omitempty"`
+	ColorPalette   *string                `json:"color_palette,omitempty"`
+	Encodings      *VisualEncodingsUpdate `json:"encodings,omitempty"`
+	Kind           *VisualOutputKind      `json:"kind,omitempty"`
+	Legend         *bool                  `json:"legend,omitempty"`
+	LegendPosition *VisualLegendPosition  `json:"legend_position,omitempty"`
+	Stacked        *bool                  `json:"stacked,omitempty"`
+	Subtitle       *string                `json:"subtitle,omitempty"`
+	Title          *string                `json:"title,omitempty"`
 }
 
 type VolumeDetail struct {

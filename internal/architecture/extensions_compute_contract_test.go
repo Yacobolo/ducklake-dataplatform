@@ -11,7 +11,7 @@ import (
 func TestCanonicalOpenAPI_ComputeEndpointsUseConcreteSchemas(t *testing.T) {
 	t.Helper()
 
-	doc := loadOpenAPISpec(t, filepath.Join(repoRootDir(), "api", "gen", "openapi.yaml"))
+	doc := loadOpenAPISpec(t, filepath.Join(repoRootDir(), "internal", "api", "gen", "openapi.yaml"))
 
 	assertOperationSchemas(t, doc, "GET", "/compute-endpoints", "", "#/components/schemas/PaginatedComputeEndpoints")
 	assertOperationSchemas(t, doc, "POST", "/compute-endpoints", "#/components/schemas/CreateComputeEndpointRequest", "#/components/schemas/ComputeEndpoint")

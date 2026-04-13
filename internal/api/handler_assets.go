@@ -656,9 +656,9 @@ func domainUpdateAssetRequest(req *UpdateAssetJSONRequestBody) domain.UpdateAsse
 		return domain.UpdateAssetRequest{}
 	}
 	return domain.UpdateAssetRequest{
-		AssetType:             string(req.AssetType),
-		ProductSlug:           req.ProductSlug,
-		Owner:                 req.Owner,
+		AssetType:             derefStringEnum(req.AssetType),
+		ProductSlug:           derefString(req.ProductSlug),
+		Owner:                 derefString(req.Owner),
 		Description:           derefString(req.Description),
 		Tags:                  derefStringSlice(req.Tags),
 		FreshnessPolicy:       domainAssetFreshnessPolicy(req.FreshnessPolicy),
@@ -768,7 +768,7 @@ func domainAssetChecks(checks *[]AssetCheckInput) []domain.AssetCheckInput {
 			CheckType:  (*checks)[i].CheckType,
 			Severity:   derefStringEnum((*checks)[i].Severity),
 			Enabled:    derefBoolDefault((*checks)[i].Enabled, true),
-			ConfigJSON: derefRecordMap((*checks)[i].ConfigJson),
+			ConfigJSON: derefAnyMap((*checks)[i].ConfigJson),
 		})
 	}
 	return out
@@ -802,7 +802,7 @@ func derefBoolDefault(value *bool, fallback bool) bool {
 	return *value
 }
 
-func derefRecordMap(value *Record) map[string]any {
+func derefAnyMap(value *map[string]any) map[string]any {
 	if value == nil {
 		return map[string]any{}
 	}
@@ -1056,10 +1056,9 @@ func assetTypePtr(value string) *AssetType {
 }
 
 func assetCheckResultToAPI(r domain.AssetCheckResult) AssetCheckResult {
-	var metrics *Record
+	var metrics *map[string]any
 	if r.MetricsJSON != nil {
-		record := Record(r.MetricsJSON)
-		metrics = &record
+		metrics = &r.MetricsJSON
 	}
 	return AssetCheckResult{
 		Id:           &r.ID,
