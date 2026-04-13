@@ -27,6 +27,32 @@ schemas_notebooks_dashboards: {
     ]
   },
   CellExecutionResult: #objectSchema & {
+    example: {
+      cell_id: "cell_01hzycellsql"
+      columns: [
+        {
+          name: "region"
+          type: "VARCHAR"
+        },
+        {
+          name: "orders"
+          type: "BIGINT"
+        },
+      ]
+      rows: [
+        {
+          region: "EMEA"
+          orders: 128
+        },
+        {
+          region: "NA"
+          orders: 212
+        },
+      ]
+      row_count:    2
+      error:        ""
+      duration_ms:  184
+    }
     #fields: {
       cell_id: #stringProperty,
       columns: #arrayRefProperty & {#ref: "TabularColumn"},
@@ -53,6 +79,27 @@ schemas_notebooks_dashboards: {
     ]
   },
   CreateCellRequest: #objectSchema & {
+    example: {
+      cell_type: "sql"
+      name:      "regional_orders"
+      role:      "output"
+      content:   "select region, count(*) as orders from analytics.orders group by 1"
+      position:  2
+      visual_spec: {
+        kind:       "chart"
+        chart_type: "bar"
+        encodings: {
+          x: {
+            field: "region"
+          }
+          value: {
+            field: "orders"
+          }
+        }
+        title:  "Orders by region"
+        legend: false
+      }
+    }
     #fields: {
       cell_type: #refProperty & {#ref: "CellCellType"},
       name: #nameProperty,
@@ -68,6 +115,19 @@ schemas_notebooks_dashboards: {
     ]
   },
   CreateDashboardRequest: #objectSchema & {
+    example: {
+      name:                "Revenue overview"
+      description:         "Executive dashboard for weekly revenue and pipeline health."
+      owner:               "team-analytics"
+      folder_id:           "fld_01hzydashboards"
+      semantic_project_name: "revenue"
+      semantic_model_name: "executive_metrics"
+      compute: {
+        mode:          "warehouse"
+        endpoint_name: "analytics-prod"
+        fallback_local: false
+      }
+    }
     #fields: {
       name: #nameProperty,
       description: #descriptionProperty,
@@ -82,6 +142,43 @@ schemas_notebooks_dashboards: {
     ]
   },
   CreateDashboardWidgetRequest: #objectSchema & {
+    example: {
+      key:       "mrr_by_plan"
+      page_name: "overview"
+      name:      "MRR by plan tier"
+      description: "Monthly recurring revenue split by commercial plan."
+      source: {
+        kind: "semantic_query"
+        semantic_query: {
+          semantic_model_id: "sem_01hzymetrics"
+          metrics:           ["monthly_recurring_revenue"]
+          dimensions:        ["plan_tier"]
+          order_by:          ["monthly_recurring_revenue DESC"]
+          limit:             10
+          time_grain:        "month"
+        }
+      }
+      visual_spec: {
+        kind:       "chart"
+        chart_type: "bar"
+        encodings: {
+          x: {
+            field: "plan_tier"
+          }
+          value: {
+            field: "monthly_recurring_revenue"
+          }
+        }
+        title:  "MRR by plan tier"
+        legend: false
+      }
+      layout: {
+        x: 0
+        y: 0
+        w: 6
+        h: 4
+      }
+    }
     #fields: {
       key: #stringProperty,
       page_name: #stringProperty,
@@ -98,6 +195,12 @@ schemas_notebooks_dashboards: {
     ]
   },
   CreateNotebookRequest: #objectSchema & {
+    example: {
+      name:        "Revenue diagnostics"
+      description: "Notebook for digging into weekly revenue variance."
+      source:      "manual"
+      folder_id:   "fld_01hzynotebooks"
+    }
     #fields: {
       name: #nameProperty,
       description: #descriptionProperty,
@@ -123,6 +226,11 @@ schemas_notebooks_dashboards: {
     }
   },
   DashboardComputePolicy: #objectSchema & {
+    example: {
+      mode:           "warehouse"
+      endpoint_name:  "analytics-prod"
+      fallback_local: false
+    }
     #fields: {
       mode: #stringProperty,
       endpoint_name: #stringProperty,
@@ -136,6 +244,10 @@ schemas_notebooks_dashboards: {
     }
   },
   DashboardNotebookCellSource: #objectSchema & {
+    example: {
+      notebook_id: "nb_01hzynotebook"
+      cell_id:     "cell_01hzycellsql"
+    }
     #fields: {
       notebook_id: #stringProperty,
       cell_id: #stringProperty
@@ -146,6 +258,11 @@ schemas_notebooks_dashboards: {
     ]
   },
   DashboardSQLQuerySource: #objectSchema & {
+    example: {
+      sql:     "select plan_tier, sum(mrr) as monthly_recurring_revenue from mart_revenue group by 1"
+      catalog: "analytics"
+      schema:  "mart"
+    }
     #fields: {
       sql: #stringProperty,
       catalog: #stringProperty,
@@ -156,6 +273,16 @@ schemas_notebooks_dashboards: {
     ]
   },
   DashboardSemanticQuerySource: #objectSchema & {
+    example: {
+      semantic_model_id:   "sem_01hzymetrics"
+      metrics:             ["monthly_recurring_revenue"]
+      relationship_names:  ["account_to_subscription"]
+      dimensions:          ["plan_tier"]
+      filters:             ["billing_month >= '2026-01-01'"]
+      order_by:            ["monthly_recurring_revenue DESC"]
+      limit:               10
+      time_grain:          "month"
+    }
     #fields: {
       semantic_model_id: #stringProperty,
       metrics: #stringArrayProperty,
@@ -187,6 +314,12 @@ schemas_notebooks_dashboards: {
     }
   },
   DashboardWidgetLayout: #objectSchema & {
+    example: {
+      x: 0
+      y: 0
+      w: 6
+      h: 4
+    }
     #fields: {
       x: #int32Property,
       y: #int32Property,
@@ -201,6 +334,17 @@ schemas_notebooks_dashboards: {
     ]
   },
   DashboardWidgetSource: #objectSchema & {
+    example: {
+      kind: "semantic_query"
+      semantic_query: {
+        semantic_model_id: "sem_01hzymetrics"
+        metrics:           ["monthly_recurring_revenue"]
+        dimensions:        ["plan_tier"]
+        order_by:          ["monthly_recurring_revenue DESC"]
+        limit:             10
+        time_grain:        "month"
+      }
+    }
     #fields: {
       kind: #refProperty & {#ref: "DashboardWidgetSourceKind"},
       sql_query: #refProperty & {#ref: "DashboardSQLQuerySource"},
@@ -359,6 +503,9 @@ schemas_notebooks_dashboards: {
     ]
   },
   ReorderCellsRequest: #objectSchema & {
+    example: {
+      cell_ids: ["cell_01hzyintro", "cell_01hzycellsql", "cell_01hzychart"]
+    }
     #fields: {
       cell_ids: #stringArrayProperty
     },
@@ -373,6 +520,10 @@ schemas_notebooks_dashboards: {
     }
   },
   ShareNotebookRequest: #objectSchema & {
+    example: {
+      principal_name: "analytics-reviewers"
+      role:           "viewer"
+    }
     #fields: {
       principal_name: #principalNameProperty,
       role: #refProperty & {#ref: "NotebookShareRole"}
@@ -382,6 +533,24 @@ schemas_notebooks_dashboards: {
     ]
   },
   UpdateCellRequest: #objectSchema & {
+    example: {
+      name:    "regional_orders"
+      role:    "output"
+      content: "select region, count(*) as orders from analytics.orders where order_status = 'COMPLETED' group by 1"
+      visual_spec: {
+        chart_type: "bar"
+        title:      "Completed orders by region"
+        encodings: {
+          x: {
+            field: "region"
+          }
+          value: {
+            field: "orders"
+          }
+        }
+      }
+      position: 2
+    }
     #fields: {
       name: #nameProperty,
       role: #refProperty & {#ref: "CellRole"},
@@ -393,6 +562,13 @@ schemas_notebooks_dashboards: {
     }
   },
   UpdateDashboardRequest: #objectSchema & {
+    example: {
+      owner:                 "team-finance"
+      name:                  "Revenue overview"
+      description:           "Weekly revenue dashboard for GTM and finance stakeholders."
+      semantic_project_name: "revenue"
+      semantic_model_name:   "executive_metrics"
+    }
     #fields: {
       owner: #ownerProperty,
       name: #nameProperty,
@@ -404,6 +580,27 @@ schemas_notebooks_dashboards: {
     }
   },
   UpdateDashboardWidgetRequest: #objectSchema & {
+    example: {
+      name: "MRR by plan tier"
+      source: {
+        kind: "semantic_query"
+        semantic_query: {
+          metrics:    ["monthly_recurring_revenue"]
+          dimensions: ["plan_tier", "sales_region"]
+          limit:      12
+        }
+      }
+      visual_spec: {
+        title:      "MRR by plan tier and region"
+        chart_type: "stacked_bar"
+      }
+      layout: {
+        x: 0
+        y: 0
+        w: 8
+        h: 4
+      }
+    }
     #fields: {
       key: #stringProperty,
       page_name: #stringProperty,
@@ -415,6 +612,12 @@ schemas_notebooks_dashboards: {
     }
   },
   UpdateNotebookRequest: #objectSchema & {
+    example: {
+      name:                    "Revenue diagnostics"
+      description:             "Updated notebook for finance weekly review."
+      project_override_id:     "prj_01hzyfinance"
+      environment_override_id: "env_01hzyprod"
+    }
     #fields: {
       name: #nameProperty,
       description: #descriptionProperty,

@@ -135,6 +135,7 @@ package api
 	type: "object"
 	title?: string
 	description?: string
+	example?: _
 	#fields: [string]: #SchemaProperty
 	properties: #fields
 	#required?: [...string]
@@ -147,6 +148,7 @@ package api
 	type: "string"
 	title?: string
 	description?: string
+	example?: _
 	#values: [...string]
 	enum: #values
 }

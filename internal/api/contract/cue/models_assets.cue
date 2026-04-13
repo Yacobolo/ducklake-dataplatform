@@ -46,6 +46,36 @@ package api
 
 schemas_assets: {
 	Asset: #objectSchema & {
+		example: {
+			id:          "asset_01hzyorders"
+			asset_key:   "mart.orders_daily"
+			asset_type:  "TABLE"
+			owner:       "team-analytics"
+			description: "Daily order fact table powering revenue and fulfillment reporting."
+			tags:        ["finance", "orders", "gold"]
+			freshness_policy: {
+				max_lag_seconds: 21600
+				cron_schedule:   "0 */6 * * *"
+			}
+			materialization_policy: {
+				mode:             "incremental"
+				allow_concurrent: false
+			}
+			auto_materialize_policy: {
+				mode:                     "scheduled"
+				min_interval_seconds:     21600
+				require_all_upstreams:    true
+				on_freshness_breach:      true
+				on_upstream_materialized: true
+				respect_downtime_windows: true
+				downtime_windows_cron_expr: ["0 0 * * 0"]
+			}
+			io_profile:  "warehouse-heavy"
+			is_active:   true
+			created_by:  "alice@example.com"
+			created_at:  "2026-04-01T06:00:00Z"
+			updated_at:  "2026-04-13T08:15:00Z"
+		}
 		#fields: #assetFields
 	}
 
@@ -82,6 +112,17 @@ schemas_assets: {
 	}
 
 	AssetCheckInput: #objectSchema & {
+		example: {
+			name:       "row_count_non_zero"
+			check_type: "row_count_threshold"
+			severity:   "ERROR"
+			enabled:    true
+			config_json: {
+				operator:    ">"
+				threshold:   0
+				aggregation: "row_count"
+			}
+		}
 		#fields: {
 			name:        #nameProperty
 			check_type:  #stringProperty
@@ -100,6 +141,19 @@ schemas_assets: {
 	}
 
 	AssetCheckResult: #objectSchema & {
+		example: {
+			id:            "checkres_01hzyasset"
+			check_id:      "check_01hzyrowcount"
+			run_id:        "run_01hzydailyorders"
+			partition_key: "2026-04-13"
+			status:        "PASS"
+			message:       "Row count exceeded the configured minimum threshold."
+			metrics_json: {
+				row_count: 152340
+				threshold: 0
+			}
+			created_at: "2026-04-13T08:04:00Z"
+		}
 		#fields: {
 			id:            #idProperty
 			check_id:      #stringProperty
@@ -182,6 +236,17 @@ schemas_assets: {
 	}
 
 	AssetFreshnessStatus: #objectSchema & {
+		example: {
+			asset_id:                   "asset_01hzyorders"
+			asset_key:                  "mart.orders_daily"
+			asset_type:                 "TABLE"
+			freshness_status:           "HEALTHY"
+			effective_max_lag_seconds:  21600
+			last_materialized_at:       "2026-04-13T06:05:00Z"
+			stale_since:                ""
+			reason:                     "Latest successful materialization is within the freshness target."
+			basis:                      ["asset policy", "upstream materialization"]
+		}
 		#fields: #assetReferenceFields & {
 			freshness_status:         #statusProperty
 			effective_max_lag_seconds: #int64Property
@@ -193,6 +258,11 @@ schemas_assets: {
 	}
 
 	AssetGraph: #objectSchema & {
+		example: {
+			asset_key:             "mart.orders_daily"
+			upstream_asset_keys:   ["stg.orders", "dim.customers"]
+			downstream_asset_keys: ["prod.customer_360", "dash.revenue_overview"]
+		}
 		#fields: {
 			asset_key:             #stringProperty
 			upstream_asset_keys:   #stringArrayProperty
@@ -232,6 +302,24 @@ schemas_assets: {
 	}
 
 	AssetRun: #objectSchema & {
+		example: {
+			id:             "run_01hzydailyorders"
+			asset_id:       "asset_01hzyorders"
+			run_group_id:   "rungroup_01hzyscheduled"
+			partition_key:  "2026-04-13"
+			partition_from: "2026-04-13"
+			partition_to:   "2026-04-13"
+			status:         "SUCCESS"
+			trigger_type:   "SCHEDULED"
+			triggered_by:   "system:scheduler"
+			attempt_count:  1
+			max_attempts:   3
+			started_at:     "2026-04-13T06:00:00Z"
+			finished_at:    "2026-04-13T06:05:00Z"
+			error_message:  ""
+			created_at:     "2026-04-13T06:00:00Z"
+			updated_at:     "2026-04-13T06:05:00Z"
+		}
 		#fields: #timedStatusFields & {
 			id:            #idProperty
 			asset_id:      #stringProperty
@@ -288,6 +376,11 @@ schemas_assets: {
 	}
 
 	CreateAssetBackfillRequest: #objectSchema & {
+		example: {
+			partition_from:  "2026-04-01"
+			partition_to:    "2026-04-07"
+			max_parallelism: 4
+		}
 		#fields: {
 			partition_from:  #stringProperty
 			partition_to:    #stringProperty
@@ -304,6 +397,41 @@ schemas_assets: {
 	}
 
 	CreateAssetRequest: #objectSchema & {
+		example: {
+			asset_key:    "mart.orders_daily"
+			asset_type:   "TABLE"
+			product_slug: "orders-analytics"
+			owner:        "team-analytics"
+			description:  "Daily order fact table powering revenue and fulfillment reporting."
+			tags:         ["finance", "orders", "gold"]
+			freshness_policy: {
+				max_lag_seconds: 21600
+				cron_schedule:   "0 */6 * * *"
+			}
+			materialization_policy: {
+				mode:             "incremental"
+				allow_concurrent: false
+			}
+			auto_materialize_policy: {
+				mode:                 "scheduled"
+				min_interval_seconds: 21600
+			}
+			io_profile:          "warehouse-heavy"
+			is_active:           true
+			upstream_asset_keys: ["stg.orders", "dim.customers"]
+			checks: [
+				{
+					name:       "row_count_non_zero"
+					check_type: "row_count_threshold"
+					severity:   "ERROR"
+					enabled:    true
+					config_json: {
+						operator:  ">"
+						threshold: 0
+					}
+				},
+			]
+		}
 		#fields: {
 			asset_key:               #stringProperty
 			asset_type:              #refProperty & {#ref: "AssetType"}

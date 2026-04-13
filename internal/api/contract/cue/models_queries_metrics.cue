@@ -4,6 +4,10 @@ package api
 
 schemas_queries_metrics: {
   CancelQueryResponse: #objectSchema & {
+    example: {
+      query_id: "qry_01hzysubmit9pzm2k"
+      status:   "CANCELED"
+    }
     #fields: {
       query_id: #stringProperty,
       status: #refProperty & {#ref: "QueryJobStatus"}
@@ -77,6 +81,15 @@ schemas_queries_metrics: {
     }
   },
   MetricQueryRequest: #objectSchema & {
+    example: {
+      metrics:            ["monthly_recurring_revenue"]
+      relationship_names: ["account_to_subscription"]
+      dimensions:         ["account_name", "plan_tier"]
+      filters:            ["billing_month >= '2026-01-01'"]
+      order_by:           ["monthly_recurring_revenue DESC"]
+      limit:              25
+      time_grain:         "month"
+    }
     #fields: {
       metrics: #stringArrayProperty,
       relationship_names: #stringArrayProperty,
@@ -115,6 +128,16 @@ schemas_queries_metrics: {
     ]
   },
   QueryJob: #objectSchema & {
+    example: {
+      query_id:     "qry_01hzysubmit9pzm2k"
+      status:       "SUCCEEDED"
+      row_count:    2
+      request_id:   "req_01hzyquery1"
+      error:        ""
+      created_at:   "2026-04-13T10:00:00Z"
+      started_at:   "2026-04-13T10:00:01Z"
+      completed_at: "2026-04-13T10:00:02Z"
+    }
     #fields: {
       query_id: #stringProperty,
       status: #refProperty & {#ref: "QueryJobStatus"},
@@ -143,6 +166,9 @@ schemas_queries_metrics: {
   QueryRequest: #objectSchema & {
     title:       "Synchronous SQL query request."
     description: "Submits a SQL statement for immediate execution and returns a tabular result when the request completes."
+    example: {
+      sql: "select order_id, total_amount from analytics.orders order by created_at desc limit 10"
+    }
     #fields: {
       sql: #stringProperty
     },
@@ -153,6 +179,30 @@ schemas_queries_metrics: {
   QueryResult: #objectSchema & {
     title: "Tabular SQL query result."
     description: "Contains result-set columns, row data, and an optional continuation token when additional rows are available."
+    example: {
+      columns: [
+        {
+          name: "order_id"
+          type: "VARCHAR"
+        },
+        {
+          name: "total_amount"
+          type: "DOUBLE"
+        },
+      ]
+      rows: [
+        {
+          order_id:     "ord_1001"
+          total_amount: 1250.75
+        },
+        {
+          order_id:     "ord_1002"
+          total_amount: 842.10
+        },
+      ]
+      row_count:       2
+      next_page_token: ""
+    }
     #fields: {
       columns: #arrayRefProperty & {#ref: "TabularColumn"},
       rows: #anyMapArrayProperty,
@@ -165,6 +215,10 @@ schemas_queries_metrics: {
     ]
   },
   SubmitQueryRequest: #objectSchema & {
+    example: {
+      sql:        "select * from analytics.orders where order_status = 'PENDING' limit 100"
+      request_id: "req_01hzyquery1"
+    }
     #fields: {
       sql: #stringProperty,
       request_id: #stringProperty
@@ -174,6 +228,10 @@ schemas_queries_metrics: {
     ]
   },
   SubmitQueryResponse: #objectSchema & {
+    example: {
+      query_id: "qry_01hzysubmit9pzm2k"
+      status:   "QUEUED"
+    }
     #fields: {
       query_id: #stringProperty,
       status: #refProperty & {#ref: "QueryJobStatus"}
@@ -184,6 +242,12 @@ schemas_queries_metrics: {
     ]
   },
   TriggerModelRunRequest: #objectSchema & {
+    example: {
+      project_name:      "finance-platform"
+      environment_name:  "prod"
+      model_names:       ["fct_daily_revenue", "dim_customer"]
+      full_refresh:      false
+    }
     #fields: {
       project_name: #stringProperty,
       environment_name: #stringProperty,

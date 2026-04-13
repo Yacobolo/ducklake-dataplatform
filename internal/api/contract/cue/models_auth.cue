@@ -61,11 +61,27 @@ schemas_auth: {
 	APIKeyInfo: #objectSchema & {
 		title:       "API key metadata."
 		description: "Represents a stored API key without returning the full secret value."
+		example: {
+			id:           "key_01hzyapi7m7p5x4t3"
+			principal_id: "user_01hzyadmin8km6w2n"
+			name:         "CI deploy key"
+			key_prefix:   "duck_prod_"
+			expires_at:   "2026-06-30T00:00:00Z"
+			created_at:   "2026-04-13T09:30:00Z"
+		}
 		#fields: #apiKeyInfoFields
 		#required: ["id", "principal_id", "name"]
 	}
 
 	AuthLoginResponse: #objectSchema & {
+		example: {
+			token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.example"
+			principal: {
+				id:       "user_01hzyadmin8km6w2n"
+				name:     "platform-admin"
+				is_admin: true
+			}
+		}
 		#fields: {
 			token:     #stringProperty
 			principal: #refProperty & {#ref: "AuthPrincipalSummary"}
@@ -79,6 +95,12 @@ schemas_auth: {
 	}
 
 	BootstrapCompleteRequest: #objectSchema & {
+		example: {
+			username:        "admin"
+			password:        "correct-horse-battery-staple"
+			principal_name:  "platform-admin"
+			bootstrap_token: "bootstrap_01hzytoken"
+		}
 		#fields: {
 			username:        #stringProperty
 			password:        #stringProperty
@@ -89,12 +111,19 @@ schemas_auth: {
 	}
 
 	BootstrapTokenRequest: #objectSchema & {
+		example: {
+			ttl_seconds: 900
+		}
 		#fields: {
 			ttl_seconds: #int64Property
 		}
 	}
 
 	BootstrapTokenResponse: #objectSchema & {
+		example: {
+			bootstrap_token: "bootstrap_01hzytoken"
+			ttl_seconds:     900
+		}
 		#fields: {
 			bootstrap_token: #stringProperty
 			ttl_seconds:     #int64Property
@@ -103,6 +132,9 @@ schemas_auth: {
 	}
 
 	CleanupAPIKeysResponse: #objectSchema & {
+		example: {
+			deleted_count: 3
+		}
 		#fields: {
 			deleted_count: #int32Property
 		}
@@ -110,6 +142,11 @@ schemas_auth: {
 	}
 
 	CreateAPIKeyRequest: #objectSchema & {
+		example: {
+			principal_id: "user_01hzyreader4b8dm9q"
+			name:         "dbt-cloud"
+			expires_at:   "2026-12-31T00:00:00Z"
+		}
 		#fields: {
 			principal_id: #principalIDProperty
 			name:         #nameProperty
@@ -119,6 +156,14 @@ schemas_auth: {
 	}
 
 	CreateAPIKeyResponse: #objectSchema & {
+		example: {
+			id:         "key_01hzyapi7m7p5x4t3"
+			key:        "duck_prod_live_2mY5...redacted"
+			name:       "dbt-cloud"
+			key_prefix: "duck_prod_"
+			expires_at: "2026-12-31T00:00:00Z"
+			created_at: "2026-04-13T09:30:00Z"
+		}
 		#fields: {
 			id:         #idProperty
 			key:        #stringProperty
@@ -140,16 +185,39 @@ schemas_auth: {
 	}
 
 	LocalLoginRequest: #objectSchema & {
+		example: {
+			username: "admin"
+			password: "correct-horse-battery-staple"
+		}
 		#fields:    #usernamePasswordFields
 		#required: ["username", "password"]
 	}
 
 	OIDCProviderRequest: #objectSchema & {
+		example: {
+			enabled:       true
+			issuer_url:    "https://login.example.com"
+			jwks_url:      "https://login.example.com/.well-known/jwks.json"
+			audience:      "duck-demo"
+			client_id:     "duck-demo-web"
+			client_secret: "client-secret-ref"
+			scopes:        "openid profile email"
+		}
 		#fields: #oidcProviderFields
 		#required: ["enabled"]
 	}
 
 	OIDCProviderResponse: #objectSchema & {
+		example: {
+			enabled:       true
+			issuer_url:    "https://login.example.com"
+			jwks_url:      "https://login.example.com/.well-known/jwks.json"
+			audience:      "duck-demo"
+			client_id:     "duck-demo-web"
+			scopes:        "openid profile email"
+			updated_at:    "2026-04-13T09:30:00Z"
+			secret_stored: true
+		}
 		#fields: {
 			enabled:       #enabledProperty
 			issuer_url:    #stringProperty
@@ -165,6 +233,13 @@ schemas_auth: {
 
 	Principal: #objectSchema & {
 		title:       "Authenticated principal."
+		example: {
+			id:         "user_01hzyadmin8km6w2n"
+			name:       "platform-admin"
+			type:       "user"
+			is_admin:   true
+			created_at: "2026-04-01T08:00:00Z"
+		}
 		#fields:    #principalFields
 		#required: ["id", "name", "type", "is_admin"]
 	}
@@ -174,6 +249,9 @@ schemas_auth: {
 	}
 
 	RevokeWebSessionsRequest: #objectSchema & {
+		example: {
+			principal_id: "user_01hzyreader4b8dm9q"
+		}
 		#fields: {
 			principal_id: #principalIDProperty
 		}
@@ -181,6 +259,17 @@ schemas_auth: {
 	}
 
 	WebSessionStatsResponse: #objectSchema & {
+		example: {
+			absolute_ttl_seconds: 604800
+			active_sessions:      5
+			created_total:        42
+			idle_ttl_seconds:     86400
+			reaped_total:         7
+			resolve_failed_total: 1
+			resolved_total:       41
+			revoked_all_total:    2
+			revoked_total:        6
+		}
 		#fields:    #webSessionStatsFields
 		#required: ["created_total", "resolved_total", "resolve_failed_total", "revoked_total", "revoked_all_total", "reaped_total", "active_sessions", "idle_ttl_seconds", "absolute_ttl_seconds"]
 	}

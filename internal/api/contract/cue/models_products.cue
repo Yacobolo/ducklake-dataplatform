@@ -4,6 +4,42 @@ package api
 
 schemas_products: {
   CreateDataProductRequest: #objectSchema & {
+    example: {
+      slug:                "customer-360"
+      name:                "Customer 360"
+      description:         "Unified customer profile product for downstream activation and analytics."
+      domain_name:         "growth"
+      team_name:           "customer-platform"
+      steward_principal:   "alice@example.com"
+      contact_channel:     "#customer-data"
+      visibility:          "internal"
+      consumer_audience:   "sales, marketing, support"
+      docs_url:            "https://docs.example.com/products/customer-360"
+      access_request_path: "https://jira.example.com/servicedesk/customer-360"
+      business_definitions: {
+        customer: "A billing-account level customer record."
+        mrr:      "Monthly recurring revenue attributed to the customer."
+      }
+      contract: {
+        data_grain:             "one row per active customer per day"
+        primary_keys:           ["customer_id", "snapshot_date"]
+        dimensions:             ["customer_id", "segment", "region"]
+        measures:               ["mrr", "active_subscriptions"]
+        quality_expectations:   ["customer_id is never null", "mrr is non-negative"]
+        retention_window:       "730d"
+        update_cadence:         "daily by 06:00 UTC"
+        breaking_change_policy: "90 day notice"
+        sample_queries:         ["select customer_id, mrr from mart.customer_360 where snapshot_date = current_date"]
+      }
+      slo: {
+        freshness_slo: "6h"
+        latency_slo:   "p95 < 3s"
+      }
+      producing_build_id: "build_01hzyprod123"
+      primary_asset_key:  "mart.customer_360"
+      semantic_model_refs:["semantic.customer_360"]
+      created_by:         "alice@example.com"
+    }
     #fields: {
       slug: #stringProperty,
       name: #nameProperty,
@@ -55,6 +91,10 @@ schemas_products: {
     ]
   },
   CreateProductDomainRequest: #objectSchema & {
+    example: {
+      name:        "growth"
+      description: "Data products supporting acquisition, activation, and retention use cases."
+    }
     #fields: {
       name: #nameProperty,
       description: #descriptionProperty
@@ -75,6 +115,10 @@ schemas_products: {
     ]
   },
   CreateProductTeamRequest: #objectSchema & {
+    example: {
+      name:            "customer-platform"
+      contact_channel: "#customer-data"
+    }
     #fields: {
       name: #nameProperty,
       contact_channel: #stringProperty
@@ -84,6 +128,37 @@ schemas_products: {
     ]
   },
   DataProduct: #objectSchema & {
+    example: {
+      id:                  "prd_01hzycust360"
+      slug:                "customer-360"
+      name:                "Customer 360"
+      description:         "Unified customer profile product for downstream activation and analytics."
+      domain_id:           "dom_growth"
+      owner_team_id:       "team_customer_platform"
+      steward_principal:   "alice@example.com"
+      contact_channel:     "#customer-data"
+      visibility:          "internal"
+      consumer_audience:   "sales, marketing, support"
+      docs_url:            "https://docs.example.com/products/customer-360"
+      access_request_path: "https://jira.example.com/servicedesk/customer-360"
+      business_definitions: {
+        customer: "A billing-account level customer record."
+      }
+      contract: {
+        data_grain:   "one row per active customer per day"
+        primary_keys: ["customer_id", "snapshot_date"]
+        dimensions:   ["customer_id", "segment", "region"]
+        measures:     ["mrr", "active_subscriptions"]
+      }
+      created_by:         "alice@example.com"
+      publication_intent: "published"
+      slo: {
+        freshness_slo: "6h"
+        latency_slo:   "p95 < 3s"
+      }
+      created_at: "2026-04-12T10:00:00Z"
+      updated_at: "2026-04-13T09:00:00Z"
+    }
     #fields: {
       id: #idProperty,
       slug: #stringProperty,
@@ -157,6 +232,23 @@ schemas_products: {
     ]
   },
   DataProductStatus: #objectSchema & {
+    example: {
+      product_id:                 "prd_01hzycust360"
+      publication_state:          "published"
+      certification_state:        "certified"
+      freshness_status:           "healthy"
+      quality_status:             "passing"
+      last_successful_update_at:  "2026-04-13T08:30:00Z"
+      failing_checks_count:       0
+      lineage_coverage:           0.96
+      adoption_metrics: {
+        monthly_active_consumers: 47
+        weekly_queries:           1820
+      }
+      open_warnings: []
+      replacement_product_id: ""
+      updated_at: "2026-04-13T08:31:00Z"
+    }
     #fields: {
       product_id: #stringProperty,
       publication_state: #stringProperty,
@@ -278,6 +370,18 @@ schemas_products: {
     ]
   },
   ProductContract: #objectSchema & {
+    example: {
+      data_grain:             "one row per active customer per day"
+      primary_keys:           ["customer_id", "snapshot_date"]
+      join_keys:              ["customer_id", "account_id"]
+      dimensions:             ["customer_id", "segment", "region"]
+      measures:               ["mrr", "active_subscriptions"]
+      quality_expectations:   ["customer_id is never null", "mrr is non-negative"]
+      retention_window:       "730d"
+      update_cadence:         "daily by 06:00 UTC"
+      breaking_change_policy: "90 day notice"
+      sample_queries:         ["select customer_id, mrr from mart.customer_360 where snapshot_date = current_date"]
+    }
     #fields: {
       data_grain: #stringProperty,
       primary_keys: #stringArrayProperty,
@@ -300,6 +404,13 @@ schemas_products: {
     ]
   },
   ProductDomain: #objectSchema & {
+    example: {
+      id:          "dom_growth"
+      name:        "growth"
+      description: "Data products supporting acquisition, activation, and retention use cases."
+      created_at:  "2026-03-01T09:00:00Z"
+      updated_at:  "2026-04-01T09:00:00Z"
+    }
     #fields: {
       id: #idProperty,
       name: #nameProperty,
@@ -314,6 +425,18 @@ schemas_products: {
     ]
   },
   ProductEvent: #objectSchema & {
+    example: {
+      id:          "evt_01hzylaunch"
+      product_id:  "prd_01hzycust360"
+      event_type:  "release_published"
+      title:       "Customer 360 v3 published"
+      description: "Version 3 added churn propensity and lifecycle segmentation."
+      metadata: {
+        version:       3
+        release_notes: "https://docs.example.com/products/customer-360/releases/v3"
+      }
+      created_at: "2026-04-13T09:00:00Z"
+    }
     #fields: {
       id: #idProperty,
       product_id: #stringProperty,
@@ -341,6 +464,15 @@ schemas_products: {
     ]
   },
   ProductOutput: #objectSchema & {
+    example: {
+      id:                 "out_01hzyasset"
+      product_version_id: "ver_01hzycust360_v3"
+      asset_id:           "asset_01hzycust360"
+      asset_key:          "mart.customer_360"
+      asset_type:         "table"
+      is_primary:         true
+      created_at:         "2026-04-13T08:55:00Z"
+    }
     #fields: {
       id: #idProperty,
       product_version_id: #stringProperty,
@@ -404,6 +536,10 @@ schemas_products: {
     ]
   },
   ProductSLO: #objectSchema & {
+    example: {
+      freshness_slo: "6h"
+      latency_slo:   "p95 < 3s"
+    }
     #fields: {
       freshness_slo: #stringProperty,
       latency_slo: #stringProperty
@@ -453,6 +589,13 @@ schemas_products: {
     ]
   },
   ProductSemanticEntrypoint: #objectSchema & {
+    example: {
+      id:                 "sementry_01hzycust360"
+      product_version_id: "ver_01hzycust360_v3"
+      semantic_model_id:  "sem_01hzymetrics"
+      model_name:         "customer_360"
+      created_at:         "2026-04-13T08:56:00Z"
+    }
     #fields: {
       id: #idProperty,
       product_version_id: #stringProperty,
@@ -501,6 +644,14 @@ schemas_products: {
     ]
   },
   ProductTeam: #objectSchema & {
+    example: {
+      id:              "team_customer_platform"
+      domain_id:       "dom_growth"
+      name:            "customer-platform"
+      contact_channel: "#customer-data"
+      created_at:      "2026-03-01T09:00:00Z"
+      updated_at:      "2026-04-01T09:00:00Z"
+    }
     #fields: {
       id: #idProperty,
       domain_id: #stringProperty,
@@ -517,6 +668,31 @@ schemas_products: {
     ]
   },
   UpdateDataProductRequest: #objectSchema & {
+    example: {
+      name:                "Customer 360"
+      description:         "Unified customer profile product for analytics and activation."
+      domain_name:         "growth"
+      team_name:           "customer-platform"
+      steward_principal:   "alice@example.com"
+      contact_channel:     "#customer-data"
+      visibility:          "internal"
+      consumer_audience:   "sales, marketing, support"
+      docs_url:            "https://docs.example.com/products/customer-360"
+      access_request_path: "https://jira.example.com/servicedesk/customer-360"
+      business_definitions: {
+        customer: "A billing-account level customer record."
+      }
+      contract: {
+        data_grain:   "one row per active customer per day"
+        primary_keys: ["customer_id", "snapshot_date"]
+        measures:     ["mrr", "active_subscriptions"]
+      }
+      slo: {
+        freshness_slo: "6h"
+        latency_slo:   "p95 < 3s"
+      }
+      publication_intent: "published"
+    }
     #fields: {
       name: #nameProperty,
       description: #descriptionProperty,
