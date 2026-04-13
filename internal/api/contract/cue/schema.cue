@@ -115,8 +115,6 @@ package api
 	servers?: [...#Server]
 	tags?: [..._]
 	schemas?: [string]: #Schema
-	openapi_extra_schemas?: [string]: #Schema
 	endpoints: [...#Endpoint]
-	openapi_extra_endpoints?: [...#Endpoint]
 	extensions?: [string]: _
 }

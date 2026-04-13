@@ -9,6 +9,7 @@ endpoints: list.Concat([
   endpoints_compute,
   endpoints_dashboards,
   endpoints_folders,
+  endpoints_generated,
   endpoints_governance,
   endpoints_health,
   endpoints_identity,

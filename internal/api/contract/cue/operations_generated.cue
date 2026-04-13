@@ -1,8 +1,7 @@
 package api
 
-// OpenAPI-only authored endpoint set used for canonical parity.
-
-openapi_extra_endpoints: endpoints_generated
+// Authored manual endpoints that belong in canonical OpenAPI but are filtered
+// out of APIGen codegen via x-apigen-manual.
 
 endpoints_generated: [
   {

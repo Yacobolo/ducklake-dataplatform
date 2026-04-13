@@ -21,16 +21,14 @@ import (
 
 // Source is the parity-first CUE representation for the APIGen contract.
 type Source struct {
-	SchemaVersion             string                       `json:"schema_version"`
-	Info                      ir.Info                      `json:"info"`
-	OpenAPI                   ir.OpenAPI                   `json:"openapi,omitempty"`
-	Servers                   []ir.Server                  `json:"servers,omitempty"`
-	Tags                      []ir.Tag                     `json:"tags,omitempty"`
-	Schemas                   map[string]ir.Schema         `json:"schemas,omitempty"`
-	OpenAPIExtraSchemas       map[string]ir.Schema         `json:"openapi_extra_schemas,omitempty"`
-	Endpoints                 []ir.Endpoint                `json:"endpoints"`
-	OpenAPIExtraEndpoints     []ir.Endpoint                `json:"openapi_extra_endpoints,omitempty"`
-	Extensions                map[string]any               `json:"extensions,omitempty"`
+	SchemaVersion string               `json:"schema_version"`
+	Info          ir.Info              `json:"info"`
+	OpenAPI       ir.OpenAPI           `json:"openapi,omitempty"`
+	Servers       []ir.Server          `json:"servers,omitempty"`
+	Tags          []ir.Tag             `json:"tags,omitempty"`
+	Schemas       map[string]ir.Schema `json:"schemas,omitempty"`
+	Endpoints     []ir.Endpoint        `json:"endpoints"`
+	Extensions    map[string]any       `json:"extensions,omitempty"`
 }
 
 // Bundle contains the IR document plus the canonical OpenAPI artifact emitted
@@ -61,7 +59,6 @@ func CompileDir(dir string) (Bundle, error) {
 		return Bundle{}, fmt.Errorf("decode cue package %q: %w", dir, err)
 	}
 	applySchemaPropertyOrderFromSource(value, source.Schemas, "schemas")
-	applySchemaPropertyOrderFromSource(value, source.OpenAPIExtraSchemas, "openapi_extra_schemas")
 
 	fullDoc := ir.Document{
 		SchemaVersion: source.SchemaVersion,
@@ -69,8 +66,8 @@ func CompileDir(dir string) (Bundle, error) {
 		OpenAPI:       source.OpenAPI,
 		Servers:       source.Servers,
 		Tags:          source.Tags,
-		Schemas:       mergeSchemas(source.Schemas, source.OpenAPIExtraSchemas),
-		Endpoints:     append(cloneEndpoints(source.Endpoints), cloneEndpoints(source.OpenAPIExtraEndpoints)...),
+		Schemas:       cloneSchemas(source.Schemas),
+		Endpoints:     cloneEndpoints(source.Endpoints),
 		Extensions:    source.Extensions,
 	}
 	doc := ir.Document{
@@ -165,17 +162,6 @@ func cloneSchemas(in map[string]ir.Schema) map[string]ir.Schema {
 		out[key] = cloneSchema(value)
 	}
 	return out
-}
-
-func mergeSchemas(primary, extras map[string]ir.Schema) map[string]ir.Schema {
-	merged := cloneSchemas(primary)
-	if merged == nil && len(extras) > 0 {
-		merged = make(map[string]ir.Schema, len(extras))
-	}
-	for key, value := range extras {
-		merged[key] = value
-	}
-	return merged
 }
 
 func cloneSchema(in ir.Schema) ir.Schema {
