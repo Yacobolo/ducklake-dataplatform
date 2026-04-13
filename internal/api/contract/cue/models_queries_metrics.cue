@@ -25,13 +25,13 @@ schemas_queries_metrics: {
   },
   ManifestResponse: #objectSchema & {
     #fields: {
-      column_masks: #refProperty & {#ref: "Record"},
+      table: #stringProperty,
+      schema: #stringProperty,
       columns: #arrayRefProperty & {#ref: "ManifestColumn"},
-      expires_at: #expiresAtProperty,
       files: #stringArrayProperty,
       row_filters: #stringArrayProperty,
-      schema: #stringProperty,
-      table: #stringProperty
+      column_masks: #stringMapProperty,
+      expires_at: #expiresAtProperty
     },
     #required: [
       "table"
@@ -39,13 +39,13 @@ schemas_queries_metrics: {
   },
   MetricFreshnessStatus: #objectSchema & {
     #fields: {
-      checked_at: #stringProperty,
-      freshness_basis: #stringArrayProperty,
-      freshness_status: #stringProperty,
       metric_name: #stringProperty,
-      selected_pre_aggregation: #stringProperty,
       semantic_model_id: #stringProperty,
-      semantic_model_name: #stringProperty
+      semantic_model_name: #stringProperty,
+      freshness_status: #stringProperty,
+      freshness_basis: #stringArrayProperty,
+      selected_pre_aggregation: #stringProperty,
+      checked_at: #dateTimeProperty
     }
   },
   MetricQueryExplainResponse: #objectSchema & {
@@ -55,35 +55,35 @@ schemas_queries_metrics: {
   },
   MetricQueryJoinStep: #objectSchema & {
     #fields: {
-      from_model: #stringProperty,
-      join_sql: #stringProperty,
       relationship_name: #stringProperty,
+      from_model: #stringProperty,
+      to_model: #stringProperty,
       relationship_type: #stringProperty,
-      to_model: #stringProperty
+      join_sql: #stringProperty
     }
   },
   MetricQueryPlan: #objectSchema & {
     #fields: {
       base_model_name: #stringProperty,
       base_relation: #stringProperty,
+      metrics: #stringArrayProperty,
       dimensions: #stringArrayProperty,
+      time_grain: #stringProperty,
+      join_path: #arrayRefProperty & {#ref: "MetricQueryJoinStep"},
+      selected_pre_aggregation: #stringProperty,
+      generated_sql: #stringProperty,
       freshness_basis: #stringArrayProperty,
       freshness_status: #stringProperty,
-      generated_sql: #stringProperty,
-      join_path: #arrayRefProperty & {#ref: "MetricQueryJoinStep"},
-      metrics: #stringArrayProperty,
-      selected_pre_aggregation: #stringProperty,
-      time_grain: #stringProperty
     }
   },
   MetricQueryRequest: #objectSchema & {
     #fields: {
+      metrics: #stringArrayProperty,
+      relationship_names: #stringArrayProperty,
       dimensions: #stringArrayProperty,
       filters: #stringArrayProperty,
-      limit: #int32Property,
-      metrics: #stringArrayProperty,
       order_by: #stringArrayProperty,
-      relationship_names: #stringArrayProperty,
+      limit: #int32Property,
       time_grain: #stringProperty
     },
     #required: [
@@ -98,17 +98,17 @@ schemas_queries_metrics: {
   },
   QueryHistoryEntry: #objectSchema & {
     #fields: {
-      created_at: #createdAtProperty,
-      duration_ms: #int64Property,
-      error_message: #stringProperty,
       id: #idProperty,
-      original_sql: #stringProperty,
       principal_name: #principalNameProperty,
+      original_sql: #stringProperty,
       rewritten_sql: #stringProperty,
-      rows_returned: #int64Property,
       statement_type: #stringProperty,
+      tables_accessed: #stringArrayProperty,
       status: #refProperty & {#ref: "AuditDecisionStatus"},
-      tables_accessed: #stringArrayProperty
+      error_message: #stringProperty,
+      duration_ms: #int64Property,
+      rows_returned: #int64Property,
+      created_at: #createdAtProperty
     },
     #required: [
       "id"
@@ -116,14 +116,14 @@ schemas_queries_metrics: {
   },
   QueryJob: #objectSchema & {
     #fields: {
-      completed_at: #stringProperty,
-      created_at: #createdAtProperty,
-      error: #stringProperty,
       query_id: #stringProperty,
-      request_id: #stringProperty,
+      status: #refProperty & {#ref: "QueryJobStatus"},
       row_count: #int64Property,
-      started_at: #stringProperty,
-      status: #refProperty & {#ref: "QueryJobStatus"}
+      request_id: #stringProperty,
+      error: #stringProperty,
+      created_at: #createdAtProperty,
+      started_at: #dateTimeProperty,
+      completed_at: #dateTimeProperty
     },
     #required: [
       "query_id",
@@ -141,6 +141,8 @@ schemas_queries_metrics: {
     ]
   },
   QueryRequest: #objectSchema & {
+    title:       "Synchronous SQL query request."
+    description: "Submits a SQL statement for immediate execution and returns a tabular result when the request completes."
     #fields: {
       sql: #stringProperty
     },
@@ -149,11 +151,13 @@ schemas_queries_metrics: {
     ]
   },
   QueryResult: #objectSchema & {
+    title: "Tabular SQL query result."
+    description: "Contains result-set columns, row data, and an optional continuation token when additional rows are available."
     #fields: {
       columns: #arrayRefProperty & {#ref: "TabularColumn"},
-      next_page_token: #stringProperty,
+      rows: #anyMapArrayProperty,
       row_count: #int64Property,
-      rows: #arrayRefProperty & {#ref: "Record"}
+      next_page_token: #stringProperty
     },
     #required: [
       "columns",
@@ -162,8 +166,8 @@ schemas_queries_metrics: {
   },
   SubmitQueryRequest: #objectSchema & {
     #fields: {
-      request_id: #stringProperty,
-      sql: #stringProperty
+      sql: #stringProperty,
+      request_id: #stringProperty
     },
     #required: [
       "sql"
@@ -181,10 +185,10 @@ schemas_queries_metrics: {
   },
   TriggerModelRunRequest: #objectSchema & {
     #fields: {
+      project_name: #stringProperty,
       environment_name: #stringProperty,
-      full_refresh: #boolProperty,
       model_names: #stringArrayProperty,
-      project_name: #stringProperty
+      full_refresh: #boolProperty
     },
     #required: [
       "project_name"

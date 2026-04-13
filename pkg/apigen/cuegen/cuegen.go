@@ -31,21 +31,6 @@ type Source struct {
 	Endpoints                 []ir.Endpoint                `json:"endpoints"`
 	OpenAPIExtraEndpoints     []ir.Endpoint                `json:"openapi_extra_endpoints,omitempty"`
 	Extensions                map[string]any               `json:"extensions,omitempty"`
-	OpenAPISchemaOverrides    map[string]schemaOverride    `json:"openapi_schema_overrides,omitempty"`
-}
-
-type schemaOverride struct {
-	Title         string                            `json:"title,omitempty"`
-	Description   string                            `json:"description,omitempty"`
-	Required      []string                          `json:"required,omitempty"`
-	PropertyOrder []string                          `json:"property_order,omitempty"`
-	Properties    map[string]schemaPropertyOverride `json:"properties,omitempty"`
-}
-
-type schemaPropertyOverride struct {
-	Description          string                   `json:"description,omitempty"`
-	Schema               *ir.SchemaRef            `json:"schema,omitempty"`
-	AdditionalProperties *ir.AdditionalProperties `json:"additional_properties,omitempty"`
 }
 
 // Bundle contains the IR document plus the canonical OpenAPI artifact emitted
@@ -88,7 +73,6 @@ func CompileDir(dir string) (Bundle, error) {
 		Endpoints:     append(cloneEndpoints(source.Endpoints), cloneEndpoints(source.OpenAPIExtraEndpoints)...),
 		Extensions:    source.Extensions,
 	}
-	applySchemaOverrides(&fullDoc, source.OpenAPISchemaOverrides)
 	doc := ir.Document{
 		SchemaVersion: source.SchemaVersion,
 		Info:          source.Info,
@@ -417,44 +401,6 @@ func Bootstrap(doc ir.Document, outDir string) error {
 	return nil
 }
 
-func applySchemaOverrides(doc *ir.Document, overrides map[string]schemaOverride) {
-	for name, override := range overrides {
-		schema, ok := doc.Schemas[name]
-		if !ok {
-			continue
-		}
-		if override.Title != "" {
-			schema.Title = override.Title
-		}
-		if override.Description != "" {
-			schema.Description = override.Description
-		}
-		if override.Required != nil {
-			schema.Required = append([]string(nil), override.Required...)
-		}
-		if len(override.PropertyOrder) > 0 {
-			schema.PropertyOrder = append([]string(nil), override.PropertyOrder...)
-		}
-		for propertyName, propertyOverride := range override.Properties {
-			property, ok := schema.Properties[propertyName]
-			if !ok {
-				continue
-			}
-			if propertyOverride.Description != "" {
-				property.Description = propertyOverride.Description
-			}
-			if propertyOverride.Schema != nil {
-				property.Schema = *propertyOverride.Schema
-			}
-			if propertyOverride.AdditionalProperties != nil {
-				property.Schema.AdditionalProperties = propertyOverride.AdditionalProperties
-			}
-			schema.Properties[propertyName] = property
-		}
-		doc.Schemas[name] = schema
-	}
-}
-
 func isZeroOpenAPI(openapi ir.OpenAPI) bool {
 	return openapi.Version == "" &&
 		len(openapi.TagOrder) == 0 &&
@@ -685,19 +631,6 @@ const schemaFile = `package api
 	security_schemes?: [string]: #SecurityScheme
 }
 
-#OpenAPISchemaPropertyOverride: {
-	description?: string
-	schema?: #SchemaRef
-	additional_properties?: #AdditionalProperties
-}
-
-#OpenAPISchemaOverride: {
-	title?: string
-	description?: string
-	property_order?: [...string]
-	properties?: [string]: #OpenAPISchemaPropertyOverride
-}
-
 #Endpoint: {
 	method: string
 	path: string
@@ -724,6 +657,5 @@ const schemaFile = `package api
 	schemas?: [string]: #Schema
 	endpoints: [...#Endpoint]
 	extensions?: [string]: _
-	openapi_schema_overrides?: [string]: #OpenAPISchemaOverride
 }
 `

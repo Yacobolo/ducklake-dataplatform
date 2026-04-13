@@ -89,20 +89,6 @@ package api
 	security_schemes?: [string]: #SecurityScheme
 }
 
-#OpenAPISchemaPropertyOverride: {
-	description?: string
-	schema?: #SchemaRef
-	additional_properties?: #AdditionalProperties
-}
-
-#OpenAPISchemaOverride: {
-	title?: string
-	description?: string
-	required?: [...string]
-	property_order?: [...string]
-	properties?: [string]: #OpenAPISchemaPropertyOverride
-}
-
 #Source: {
 	schema_version: string
 	info: {
@@ -118,7 +104,6 @@ package api
 	endpoints: [...#Endpoint]
 	openapi_extra_endpoints?: [...#Endpoint]
 	extensions?: [string]: _
-	openapi_schema_overrides?: [string]: #OpenAPISchemaOverride
 }
 
 #Endpoint: {

@@ -3,19 +3,19 @@ package api
 // Authored asset schemas.
 
 #assetFields: {
+	id:                        #idProperty
 	asset_key:                 #stringProperty
 	asset_type:                #refProperty & {#ref: "AssetType"}
-	auto_materialize_policy:   #refProperty & {#ref: "AssetAutoMaterializePolicy"}
-	created_at:                #createdAtProperty
-	created_by:                #stringProperty
+	owner:                     #ownerProperty
 	description:               #descriptionProperty
+	tags:                      #stringArrayProperty
 	freshness_policy:          #refProperty & {#ref: "AssetFreshnessPolicy"}
-	id:                        #idProperty
+	materialization_policy:    #refProperty & {#ref: "AssetMaterializationPolicy"}
+	auto_materialize_policy:   #refProperty & {#ref: "AssetAutoMaterializePolicy"}
 	io_profile:                #stringProperty
 	is_active:                 #boolProperty
-	materialization_policy:    #refProperty & {#ref: "AssetMaterializationPolicy"}
-	owner:                     #ownerProperty
-	tags:                      #stringArrayProperty
+	created_by:                #stringProperty
+	created_at:                #createdAtProperty
 	updated_at:                #updatedAtProperty
 	...
 }
@@ -35,11 +35,11 @@ package api
 #backfillRunFields: #timedStatusFields & {
 	asset_id:        #stringProperty
 	error_message:   #stringProperty
-	finished_at:     #stringProperty
+	finished_at:     #dateTimeProperty
 	id:              #idProperty
 	partition_from:  #stringProperty
 	partition_to:    #stringProperty
-	started_at:      #stringProperty
+	started_at:      #dateTimeProperty
 	status:          #statusProperty
 	...
 }
@@ -51,13 +51,13 @@ schemas_assets: {
 
 	AssetAutoMaterializePolicy: #objectSchema & {
 		#fields: {
-			downtime_windows_cron_expr: #stringArrayProperty
-			min_interval_seconds:       #int64Property
 			mode:                       #stringProperty
+			min_interval_seconds:       #int64Property
+			require_all_upstreams:      #boolProperty
 			on_freshness_breach:        #boolProperty
 			on_upstream_materialized:   #boolProperty
-			require_all_upstreams:      #boolProperty
 			respect_downtime_windows:   #boolProperty
+			downtime_windows_cron_expr: #stringArrayProperty
 		}
 	}
 
@@ -70,24 +70,24 @@ schemas_assets: {
 
 	AssetCheck: #objectSchema & {
 		#fields: {
-			asset_id:   #stringProperty
-			check_type: #stringProperty
-			created_at: #createdAtProperty
-			enabled:    #enabledProperty
 			id:         #idProperty
+			asset_id:   #stringProperty
 			name:       #nameProperty
+			check_type: #stringProperty
 			severity:   #refProperty & {#ref: "AssetCheckSeverity"}
+			enabled:    #enabledProperty
+			created_at: #createdAtProperty
 			updated_at: #updatedAtProperty
 		}
 	}
 
 	AssetCheckInput: #objectSchema & {
 		#fields: {
-			check_type:  #stringProperty
-			config_json: #refProperty & {#ref: "Record"}
-			enabled:     #enabledProperty
 			name:        #nameProperty
+			check_type:  #stringProperty
 			severity:    #refProperty & {#ref: "AssetCheckSeverity"}
+			enabled:     #enabledProperty
+			config_json: #anyMapProperty
 		}
 		#required: ["name", "check_type"]
 	}
@@ -101,14 +101,14 @@ schemas_assets: {
 
 	AssetCheckResult: #objectSchema & {
 		#fields: {
-			check_id:      #stringProperty
-			created_at:    #createdAtProperty
 			id:            #idProperty
-			message:       #stringProperty
-			metrics_json:  #refProperty & {#ref: "Record"}
-			partition_key: #stringProperty
+			check_id:      #stringProperty
 			run_id:        #stringProperty
+			partition_key: #stringProperty
 			status:        #statusProperty
+			message:       #stringProperty
+			metrics_json:  #anyMapProperty
+			created_at:    #createdAtProperty
 		}
 	}
 
@@ -132,24 +132,24 @@ schemas_assets: {
 
 	AssetFreshnessEdge: #objectSchema & {
 		#fields: {
-			dependency_type: #stringProperty
 			from_asset_key:  #stringProperty
 			to_asset_key:    #stringProperty
+			dependency_type: #stringProperty
 		}
 	}
 
 	AssetFreshnessExplanation: #objectSchema & {
 		#fields: {
 			asset: #refProperty & {#ref: "AssetFreshnessStatus"}
-			edges: #arrayRefProperty & {#ref: "AssetFreshnessEdge"}
 			nodes: #arrayRefProperty & {#ref: "AssetFreshnessStatus"}
+			edges: #arrayRefProperty & {#ref: "AssetFreshnessEdge"}
 		}
 	}
 
 	AssetFreshnessPolicy: #objectSchema & {
 		#fields: {
-			cron_schedule:   #stringProperty
 			max_lag_seconds: #int64Property
+			cron_schedule:   #stringProperty
 		}
 	}
 
@@ -162,8 +162,8 @@ schemas_assets: {
 
 	AssetFreshnessReconcileTarget: #objectSchema & {
 		#fields: #assetReferenceFields & {
-			event_id:         #stringProperty
 			freshness_status: #statusProperty
+			event_id:         #stringProperty
 		}
 	}
 
@@ -183,70 +183,70 @@ schemas_assets: {
 
 	AssetFreshnessStatus: #objectSchema & {
 		#fields: #assetReferenceFields & {
-			basis:                    #stringArrayProperty
-			effective_max_lag_seconds: #int64Property
 			freshness_status:         #statusProperty
-			last_materialized_at:     #stringProperty
+			effective_max_lag_seconds: #int64Property
+			last_materialized_at:     #dateTimeProperty
+			stale_since:              #dateTimeProperty
 			reason:                   #stringProperty
-			stale_since:              #stringProperty
+			basis:                    #stringArrayProperty
 		}
 	}
 
 	AssetGraph: #objectSchema & {
 		#fields: {
 			asset_key:             #stringProperty
-			downstream_asset_keys: #stringArrayProperty
 			upstream_asset_keys:   #stringArrayProperty
+			downstream_asset_keys: #stringArrayProperty
 		}
 	}
 
 	AssetMaterialization: #objectSchema & {
 		#fields: {
-			asset_id:        #stringProperty
-			created_at:      #createdAtProperty
 			id:              #idProperty
-			materialized_at: #stringProperty
+			asset_id:        #stringProperty
+			run_id:          #stringProperty
 			partition_key:   #stringProperty
 			row_count:       #int64Property
-			run_id:          #stringProperty
 			schema_hash:     #stringProperty
+			materialized_at: #dateTimeProperty
+			created_at:      #createdAtProperty
 		}
 	}
 
 	AssetMaterializationPolicy: #objectSchema & {
 		#fields: {
-			allow_concurrent: #boolProperty
 			mode:             #stringProperty
+			allow_concurrent: #boolProperty
 		}
 	}
 
 	AssetPartition: #objectSchema & {
 		#fields: {
-			asset_id:      #stringProperty
-			created_at:    #createdAtProperty
 			id:            #idProperty
+			asset_id:      #stringProperty
 			partition_key: #stringProperty
 			status:        #statusProperty
+			created_at:    #createdAtProperty
 			updated_at:    #updatedAtProperty
 		}
 	}
 
 	AssetRun: #objectSchema & {
 		#fields: #timedStatusFields & {
-			asset_id:      #stringProperty
-			attempt_count: #int32Property
-			error_message: #stringProperty
-			finished_at:   #stringProperty
 			id:            #idProperty
-			max_attempts:  #int32Property
-			partition_from: #stringProperty
-			partition_key:  #stringProperty
-			partition_to:   #stringProperty
+			asset_id:      #stringProperty
 			run_group_id:   #stringProperty
-			started_at:     #stringProperty
+			partition_key:  #stringProperty
+			partition_from: #stringProperty
+			partition_to:   #stringProperty
 			status:         #refProperty & {#ref: "AssetRunStatus"}
 			trigger_type:   #refProperty & {#ref: "AssetTriggerType"}
 			triggered_by:   #stringProperty
+			attempt_count: #int32Property
+			max_attempts:  #int32Property
+			started_at:     #dateTimeProperty
+			finished_at:    #dateTimeProperty
+			error_message:  #stringProperty
 			updated_at:     #updatedAtProperty
 		}
 	}
@@ -272,26 +272,26 @@ schemas_assets: {
 
 	BackfillRequest: #objectSchema & {
 		#fields: #backfillRunFields & {
-			max_parallelism: #int32Property
 			requested_by:    #stringProperty
+			max_parallelism: #int32Property
 		}
 	}
 
 	BackfillSlice: #objectSchema & {
 		#fields: #backfillRunFields & {
+			request_id:    #stringProperty
+			partition_key: #stringProperty
+			run_id:        #stringProperty
 			attempt_count: #int32Property
 			max_attempts:  #int32Property
-			partition_key: #stringProperty
-			request_id:    #stringProperty
-			run_id:        #stringProperty
 		}
 	}
 
 	CreateAssetBackfillRequest: #objectSchema & {
 		#fields: {
-			max_parallelism: #int32Property
 			partition_from:  #stringProperty
 			partition_to:    #stringProperty
+			max_parallelism: #int32Property
 		}
 		#required: ["partition_from", "partition_to"]
 	}
@@ -307,44 +307,43 @@ schemas_assets: {
 		#fields: {
 			asset_key:               #stringProperty
 			asset_type:              #refProperty & {#ref: "AssetType"}
-			auto_materialize_policy: #refProperty & {#ref: "AssetAutoMaterializePolicy"}
-			checks:                  #arrayRefProperty & {#ref: "AssetCheckInput"}
+			product_slug:            #stringProperty
+			owner:                   #ownerProperty
 			description:             #descriptionProperty
+			tags:                    #stringArrayProperty
 			freshness_policy:        #refProperty & {#ref: "AssetFreshnessPolicy"}
+			materialization_policy:  #refProperty & {#ref: "AssetMaterializationPolicy"}
+			auto_materialize_policy: #refProperty & {#ref: "AssetAutoMaterializePolicy"}
 			io_profile:              #stringProperty
 			is_active:               #boolProperty
-			materialization_policy:  #refProperty & {#ref: "AssetMaterializationPolicy"}
-			owner:                   #ownerProperty
-			product_slug:            #stringProperty
-			tags:                    #stringArrayProperty
 			upstream_asset_keys:     #stringArrayProperty
+			checks:                  #arrayRefProperty & {#ref: "AssetCheckInput"}
 		}
 		#required: ["asset_key", "asset_type", "product_slug", "owner"]
 	}
 
 	TriggerAssetMaterializationRequest: #objectSchema & {
 		#fields: {
-			idempotency_key: #stringProperty
 			partition_key:   #stringProperty
-			payload:         #refProperty & {#ref: "Record"}
+			idempotency_key: #stringProperty
+			payload:         #anyMapProperty
 		}
 	}
 
 	UpdateAssetRequest: #objectSchema & {
 		#fields: {
 			asset_type:              #refProperty & {#ref: "AssetType"}
-			auto_materialize_policy: #refProperty & {#ref: "AssetAutoMaterializePolicy"}
-			checks:                  #arrayRefProperty & {#ref: "AssetCheckInput"}
+			product_slug:            #stringProperty
+			owner:                   #ownerProperty
 			description:             #descriptionProperty
+			tags:                    #stringArrayProperty
 			freshness_policy:        #refProperty & {#ref: "AssetFreshnessPolicy"}
+			materialization_policy:  #refProperty & {#ref: "AssetMaterializationPolicy"}
+			auto_materialize_policy: #refProperty & {#ref: "AssetAutoMaterializePolicy"}
 			io_profile:              #stringProperty
 			is_active:               #boolProperty
-			materialization_policy:  #refProperty & {#ref: "AssetMaterializationPolicy"}
-			owner:                   #ownerProperty
-			product_slug:            #stringProperty
-			tags:                    #stringArrayProperty
 			upstream_asset_keys:     #stringArrayProperty
+			checks:                  #arrayRefProperty & {#ref: "AssetCheckInput"}
 		}
-		#required: ["asset_type", "product_slug", "owner"]
 	}
 }

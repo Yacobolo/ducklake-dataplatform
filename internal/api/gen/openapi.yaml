@@ -19062,6 +19062,9 @@ components:
     AssetRun:
       type: object
       properties:
+        created_at:
+          type: string
+          format: date-time
         id:
           type: string
         asset_id:
@@ -19094,9 +19097,6 @@ components:
           format: date-time
         error_message:
           type: string
-        created_at:
-          type: string
-          format: date-time
         updated_at:
           type: string
           format: date-time
@@ -19206,57 +19206,56 @@ components:
     BackfillRequest:
       type: object
       properties:
-        id:
-          type: string
         asset_id:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        error_message:
+          type: string
+        finished_at:
+          type: string
+          format: date-time
+        id:
           type: string
         partition_from:
           type: string
         partition_to:
-          type: string
-        status:
           type: string
         requested_by:
           type: string
         max_parallelism:
           type: integer
           format: int32
-        created_at:
-          type: string
-          format: date-time
         started_at:
           type: string
           format: date-time
-        finished_at:
-          type: string
-          format: date-time
-        error_message:
+        status:
           type: string
     BackfillSlice:
       type: object
       properties:
-        id:
-          type: string
-        request_id:
-          type: string
         asset_id:
-          type: string
-        partition_key:
-          type: string
-        status:
-          type: string
-        run_id:
           type: string
         created_at:
           type: string
           format: date-time
-        started_at:
+        error_message:
           type: string
-          format: date-time
         finished_at:
           type: string
           format: date-time
-        error_message:
+        id:
+          type: string
+        partition_from:
+          type: string
+        partition_to:
+          type: string
+        request_id:
+          type: string
+        partition_key:
+          type: string
+        run_id:
           type: string
         attempt_count:
           type: integer
@@ -19264,9 +19263,10 @@ components:
         max_attempts:
           type: integer
           format: int32
-        partition_from:
+        started_at:
           type: string
-        partition_to:
+          format: date-time
+        status:
           type: string
     BootstrapCompleteRequest:
       type: object
@@ -19591,13 +19591,13 @@ components:
           format: int64
         lineage_edge_id:
           type: string
-        target_column:
+        source_column:
           type: string
         source_schema:
           type: string
         source_table:
           type: string
-        source_column:
+        target_column:
           type: string
         transform_type:
           $ref: '#/components/schemas/ColumnLineageEdgeTransformType'
@@ -19621,11 +19621,11 @@ components:
           type: string
         table_id:
           type: string
+        mask_expression:
+          type: string
         name:
           type: string
         column_name:
-          type: string
-        mask_expression:
           type: string
         description:
           type: string
@@ -19724,6 +19724,8 @@ components:
     ComputeEndpointHealth:
       type: object
       properties:
+        duckdb_version:
+          type: string
         endpoint_name:
           type: string
         status:
@@ -19737,8 +19739,6 @@ components:
         uptime_seconds:
           type: integer
           format: int32
-        duckdb_version:
-          type: string
     ComputeEndpointSize:
       type: string
       enum:
@@ -19996,11 +19996,11 @@ components:
       required:
         - name
       properties:
-        owner:
-          type: string
         name:
           type: string
         description:
+          type: string
+        owner:
           type: string
         folder_id:
           type: string
@@ -20244,8 +20244,6 @@ components:
           type: string
         project_name:
           type: string
-        visibility:
-          $ref: '#/components/schemas/MacroVisibility'
         owner:
           type: string
         properties:
@@ -20258,6 +20256,8 @@ components:
             type: string
         status:
           $ref: '#/components/schemas/MacroStatus'
+        visibility:
+          $ref: '#/components/schemas/MacroVisibility'
     CreateModelRequest:
       type: object
       required:
@@ -20539,9 +20539,9 @@ components:
             type: string
         grain:
           type: string
-        target_relation:
-          type: string
         refresh_policy:
+          type: string
+        target_relation:
           type: string
     CreateSemanticRelationshipRequest:
       type: object
@@ -20661,9 +20661,9 @@ components:
           type: string
         owner_principal:
           type: string
-        default_project_id:
-          type: string
         default_environment_id:
+          type: string
+        default_project_id:
           type: string
         git_repo_id:
           type: string
@@ -20946,12 +20946,12 @@ components:
             type: string
         contract:
           $ref: '#/components/schemas/ProductContract'
-        slo:
-          $ref: '#/components/schemas/ProductSLO'
-        publication_intent:
-          type: string
         created_by:
           type: string
+        publication_intent:
+          type: string
+        slo:
+          $ref: '#/components/schemas/ProductSLO'
         created_at:
           type: string
           format: date-time
@@ -21078,9 +21078,6 @@ components:
           type: string
         producing_build_id:
           type: string
-        version:
-          type: integer
-          format: int32
         release_state:
           type: string
         compatibility_level:
@@ -21098,6 +21095,9 @@ components:
         created_at:
           type: string
           format: date-time
+        version:
+          type: integer
+          format: int32
     DataProductVersionDetail:
       type: object
       required:
@@ -21642,8 +21642,6 @@ components:
           type: string
         from_status:
           $ref: '#/components/schemas/MacroStatus'
-        to_status:
-          $ref: '#/components/schemas/MacroStatus'
         impact_changed:
           type: boolean
         impacted_models_added:
@@ -21658,6 +21656,8 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/MacroImpactModel'
+        to_status:
+          $ref: '#/components/schemas/MacroStatus'
     MacroRevisionList:
       type: object
       required:
@@ -21808,12 +21808,12 @@ components:
           type: string
         generated_sql:
           type: string
-        freshness_status:
-          type: string
         freshness_basis:
           type: array
           items:
             type: string
+        freshness_status:
+          type: string
     MetricQueryRequest:
       type: object
       required:
@@ -22220,11 +22220,11 @@ components:
           type: string
         effective_git_root_path:
           type: string
-        project_source_folder_id:
-          type: string
         environment_source_id:
           type: string
         git_source_folder_id:
+          type: string
+        project_source_folder_id:
           type: string
     NotebookDetail:
       type: object
@@ -22278,10 +22278,10 @@ components:
           type: string
         name:
           type: string
-        materialization:
-          $ref: '#/components/schemas/ModelMaterialization'
         output_cell_id:
           type: string
+        materialization:
+          $ref: '#/components/schemas/ModelMaterialization'
     NotebookSession:
       type: object
       properties:
@@ -23198,31 +23198,31 @@ components:
         - semantic_entrypoint_count
         - adoption_score
       properties:
-        product_id:
-          type: string
-        product_slug:
-          type: string
-        product_name:
-          type: string
-        domain_name:
-          type: string
-        team_name:
-          type: string
-        subscriber_count:
+        adoption_score:
           type: integer
           format: int64
+        domain_name:
+          type: string
         downstream_product_count:
           type: integer
           format: int64
         output_count:
           type: integer
           format: int64
+        product_id:
+          type: string
+        product_name:
+          type: string
+        product_slug:
+          type: string
         semantic_entrypoint_count:
           type: integer
           format: int64
-        adoption_score:
+        subscriber_count:
           type: integer
           format: int64
+        team_name:
+          type: string
     ProductContract:
       type: object
       properties:
@@ -23244,14 +23244,14 @@ components:
           type: array
           items:
             type: string
-        retention_window:
-          type: string
-        update_cadence:
-          type: string
         quality_expectations:
           type: array
           items:
             type: string
+        retention_window:
+          type: string
+        update_cadence:
+          type: string
         breaking_change_policy:
           type: string
         sample_queries:
@@ -24226,12 +24226,12 @@ components:
           type: object
           additionalProperties:
             type: string
-        owner:
-          type: string
         tags:
           type: array
           items:
             $ref: '#/components/schemas/Tag'
+        owner:
+          type: string
         statistics:
           $ref: '#/components/schemas/TableStatistics'
         created_at:
@@ -24744,9 +24744,9 @@ components:
             type: string
         grain:
           type: string
-        target_relation:
-          type: string
         refresh_policy:
+          type: string
+        target_relation:
           type: string
     UpdateSemanticRelationshipRequest:
       type: object
@@ -24877,16 +24877,16 @@ components:
           type: string
         name:
           type: string
+        source_tables:
+          type: array
+          items:
+            type: string
         view_definition:
           type: string
         comment:
           type: string
         owner:
           type: string
-        source_tables:
-          type: array
-          items:
-            type: string
         created_at:
           type: string
           format: date-time
@@ -25018,9 +25018,9 @@ components:
           type: string
         catalog_name:
           type: string
-        volume_type:
-          type: string
         storage_location:
+          type: string
+        volume_type:
           type: string
         comment:
           type: string

@@ -5,17 +5,17 @@ package api
 schemas_catalog_compute: {
   CatalogHistoryEntry: #objectSchema & {
     #fields: {
-      begin_snapshot_id: #int64Property,
-      column_name: #stringProperty,
-      end_snapshot_id: #int64Property,
       entity_type: #stringProperty,
-      has_history: #boolProperty,
-      is_active: #boolProperty,
-      latest_snapshot_id: #int64Property,
-      object_id: #stringProperty,
-      object_name: #stringProperty,
       schema_name: #stringProperty,
-      table_name: #stringProperty
+      table_name: #stringProperty,
+      column_name: #stringProperty,
+      object_name: #stringProperty,
+      object_id: #stringProperty,
+      begin_snapshot_id: #int64Property,
+      end_snapshot_id: #int64Property,
+      latest_snapshot_id: #int64Property,
+      is_active: #boolProperty,
+      has_history: #boolProperty
     }
   },
   CatalogHistoryResponse: #objectSchema & {
@@ -28,17 +28,17 @@ schemas_catalog_compute: {
   },
   CatalogRegistration: #objectSchema & {
     #fields: {
+      id: #idProperty,
+      name: #nameProperty,
+      metastore_type: #refProperty & {#ref: "MetastoreType"},
+      dsn: #stringProperty,
+      data_path: #stringProperty,
+      status: #refProperty & {#ref: "CatalogStatus"},
+      is_default: #boolProperty,
       comment: #commentProperty,
       created_at: #createdAtProperty,
-      data_path: #stringProperty,
-      dsn: #stringProperty,
-      id: #idProperty,
-      is_default: #boolProperty,
-      metastore_type: #refProperty & {#ref: "MetastoreType"},
-      name: #nameProperty,
-      status: #refProperty & {#ref: "CatalogStatus"},
+      updated_at: #updatedAtProperty,
       system_managed: #boolProperty,
-      updated_at: #updatedAtProperty
     },
     #required: [
       "id",
@@ -65,23 +65,23 @@ schemas_catalog_compute: {
   CatalogVersionSummary: #objectSchema & {
     #fields: {
       catalog_name: #stringProperty,
-      columns: #refProperty & {#ref: "VersionedObjectSummary"},
+      version: #stringProperty,
       created_by: #stringProperty,
-      data_path: #stringProperty,
       encrypted: #boolProperty,
+      data_path: #stringProperty,
       latest_snapshot_id: #int64Property,
       schemas: #refProperty & {#ref: "VersionedObjectSummary"},
       tables: #refProperty & {#ref: "VersionedObjectSummary"},
-      version: #stringProperty
+      columns: #refProperty & {#ref: "VersionedObjectSummary"}
     }
   },
   ColumnDetail: #objectSchema & {
     #fields: {
-      comment: #commentProperty,
       name: #nameProperty,
-      nullable: #boolProperty,
+      type: #stringProperty,
       position: #int32Property,
-      type: #stringProperty
+      nullable: #boolProperty,
+      comment: #commentProperty
     },
     #required: [
       "name",
@@ -90,14 +90,14 @@ schemas_catalog_compute: {
   },
   ColumnLineageEdge: #objectSchema & {
     #fields: {
-      function: #stringProperty,
       id: #int64Property,
       lineage_edge_id: #stringProperty,
       source_column: #stringProperty,
       source_schema: #stringProperty,
       source_table: #stringProperty,
       target_column: #stringProperty,
-      transform_type: #refProperty & {#ref: "ColumnLineageEdgeTransformType"}
+      transform_type: #refProperty & {#ref: "ColumnLineageEdgeTransformType"},
+      function: #stringProperty
     }
   },
   ColumnLineageEdgeTransformType: #enumSchema & {
@@ -108,13 +108,13 @@ schemas_catalog_compute: {
   },
   ColumnMask: #objectSchema & {
     #fields: {
-      column_name: #stringProperty,
-      created_at: #createdAtProperty,
-      description: #descriptionProperty,
       id: #idProperty,
+      table_id: #stringProperty,
       mask_expression: #stringProperty,
       name: #nameProperty,
-      table_id: #stringProperty
+      column_name: #stringProperty,
+      description: #descriptionProperty,
+      created_at: #createdAtProperty
     },
     #required: [
       "id",
@@ -126,8 +126,8 @@ schemas_catalog_compute: {
   },
   ColumnMaskBinding: #objectSchema & {
     #fields: {
-      column_mask_id: #stringProperty,
       id: #idProperty,
+      column_mask_id: #stringProperty,
       principal_id: #principalIDProperty,
       principal_type: #refProperty & {#ref: "PrincipalType"},
       see_original: #boolProperty
@@ -146,14 +146,14 @@ schemas_catalog_compute: {
   },
   ComputeAssignment: #objectSchema & {
     #fields: {
-      created_at: #createdAtProperty,
+      id: #idProperty,
       endpoint_id: #stringProperty,
       endpoint_name: #stringProperty,
-      fallback_local: #boolProperty,
-      id: #idProperty,
-      is_default: #boolProperty,
       principal_id: #principalIDProperty,
-      principal_type: #refProperty & {#ref: "ComputeAssignmentPrincipalType"}
+      principal_type: #refProperty & {#ref: "ComputeAssignmentPrincipalType"},
+      fallback_local: #boolProperty,
+      is_default: #boolProperty,
+      created_at: #createdAtProperty
     }
   },
   ComputeAssignmentPrincipalType: #enumSchema & {
@@ -164,26 +164,26 @@ schemas_catalog_compute: {
   },
   ComputeEndpoint: #objectSchema & {
     #fields: {
-      created_at: #createdAtProperty,
-      external_id: #stringProperty,
       id: #idProperty,
-      max_memory_gb: #int64Property,
       name: #nameProperty,
-      owner: #ownerProperty,
+      type: #refProperty & {#ref: "ComputeEndpointType"},
       size: #refProperty & {#ref: "ComputeEndpointSize"},
       status: #refProperty & {#ref: "ComputeEndpointStatus"},
-      type: #refProperty & {#ref: "ComputeEndpointType"},
-      updated_at: #updatedAtProperty,
-      url: #stringProperty
+      url: #stringProperty,
+      external_id: #stringProperty,
+      max_memory_gb: #int64Property,
+      owner: #ownerProperty,
+      created_at: #createdAtProperty,
+      updated_at: #updatedAtProperty
     }
   },
   ComputeEndpointHealth: #objectSchema & {
     #fields: {
       duckdb_version: #stringProperty,
       endpoint_name: #stringProperty,
-      max_memory_gb: #int32Property,
-      memory_used_mb: #int32Property,
       status: #statusProperty,
+      memory_used_mb: #int32Property,
+      max_memory_gb: #int32Property,
       uptime_seconds: #int32Property
     }
   },
@@ -212,17 +212,17 @@ schemas_catalog_compute: {
   ComputeRoutingDefaults: #objectSchema & {
     #fields: {
       interactive_mode: #stringProperty,
-      notebook_mode: #stringProperty,
-      scheduled_mode: #stringProperty
+      scheduled_mode: #stringProperty,
+      notebook_mode: #stringProperty
     }
   },
   CreateCatalogRequest: #objectSchema & {
     #fields: {
-      comment: #commentProperty,
-      data_path: #stringProperty,
-      dsn: #stringProperty,
+      name: #nameProperty,
       metastore_type: #refProperty & {#ref: "MetastoreType"},
-      name: #nameProperty
+      dsn: #stringProperty,
+      data_path: #stringProperty,
+      comment: #commentProperty
     },
     #required: [
       "name"
@@ -230,11 +230,11 @@ schemas_catalog_compute: {
   },
   CreateColumnMaskRequest: #objectSchema & {
     #fields: {
-      column_name: #stringProperty,
-      description: #descriptionProperty,
-      mask_expression: #stringProperty,
+      table_id: #stringProperty,
       name: #nameProperty,
-      table_id: #stringProperty
+      column_name: #stringProperty,
+      mask_expression: #stringProperty,
+      description: #descriptionProperty
     },
     #required: [
       "name",
@@ -244,10 +244,10 @@ schemas_catalog_compute: {
   },
   CreateColumnRequest: #objectSchema & {
     #fields: {
-      comment: #commentProperty,
       name: #nameProperty,
+      type: #stringProperty,
       nullable: #boolProperty,
-      type: #stringProperty
+      comment: #commentProperty
     },
     #required: [
       "name",
@@ -256,10 +256,10 @@ schemas_catalog_compute: {
   },
   CreateComputeAssignmentRequest: #objectSchema & {
     #fields: {
-      fallback_local: #boolProperty,
-      is_default: #boolProperty,
       principal_id: #principalIDProperty,
-      principal_type: #refProperty & {#ref: "ComputeAssignmentPrincipalType"}
+      principal_type: #refProperty & {#ref: "ComputeAssignmentPrincipalType"},
+      fallback_local: #boolProperty,
+      is_default: #boolProperty
     },
     #required: [
       "principal_id",
@@ -268,12 +268,17 @@ schemas_catalog_compute: {
   },
   CreateComputeEndpointRequest: #objectSchema & {
     #fields: {
+      name: #nameProperty,
+      type: #refProperty & {#ref: "ComputeEndpointType"},
+      url: {
+        description: "Endpoint URI. REMOTE endpoints must use grpc:// or grpcs://; LOCAL endpoints use local routing URLs."
+        schema: {
+          type: "string"
+        }
+      },
       auth_token: #stringProperty,
       max_memory_gb: #int64Property,
-      name: #nameProperty,
-      size: #refProperty & {#ref: "ComputeEndpointSize"},
-      type: #refProperty & {#ref: "ComputeEndpointType"},
-      url: #stringProperty
+      size: #refProperty & {#ref: "ComputeEndpointSize"}
     },
     #required: [
       "name",
@@ -283,10 +288,10 @@ schemas_catalog_compute: {
   },
   CreateSchemaRequest: #objectSchema & {
     #fields: {
+      name: #nameProperty,
       comment: #commentProperty,
       location_name: #stringProperty,
-      name: #nameProperty,
-      properties: #refProperty & {#ref: "Record"}
+      properties: #stringMapProperty
     },
     #required: [
       "name"
@@ -294,14 +299,14 @@ schemas_catalog_compute: {
   },
   CreateStorageCredentialRequest: #objectSchema & {
     #fields: {
-      comment: #commentProperty,
-      credential_type: #refProperty & {#ref: "StorageCredentialType"},
-      endpoint: #stringProperty,
-      key_id: #stringProperty,
       name: #nameProperty,
-      region: #stringProperty,
+      credential_type: #refProperty & {#ref: "StorageCredentialType"},
+      key_id: #stringProperty,
       secret: #stringProperty,
-      url_style: #refProperty & {#ref: "URLStyle"}
+      endpoint: #stringProperty,
+      region: #stringProperty,
+      url_style: #refProperty & {#ref: "URLStyle"},
+      comment: #commentProperty
     },
     #required: [
       "name"
@@ -309,9 +314,9 @@ schemas_catalog_compute: {
   },
   CreateTableRequest: #objectSchema & {
     #fields: {
+      name: #nameProperty,
       columns: #arrayRefProperty & {#ref: "CreateColumnRequest"},
-      comment: #commentProperty,
-      name: #nameProperty
+      comment: #commentProperty
     },
     #required: [
       "name"
@@ -319,9 +324,9 @@ schemas_catalog_compute: {
   },
   CreateViewRequest: #objectSchema & {
     #fields: {
-      comment: #commentProperty,
       name: #nameProperty,
-      view_definition: #stringProperty
+      view_definition: #stringProperty,
+      comment: #commentProperty
     },
     #required: [
       "name",
@@ -330,10 +335,10 @@ schemas_catalog_compute: {
   },
   CreateVolumeRequest: #objectSchema & {
     #fields: {
-      comment: #commentProperty,
       name: #nameProperty,
+      volume_type: #stringProperty,
       storage_location: #stringProperty,
-      volume_type: #stringProperty
+      comment: #commentProperty
     },
     #required: [
       "name"
@@ -341,14 +346,14 @@ schemas_catalog_compute: {
   },
   SchemaDetail: #objectSchema & {
     #fields: {
+      schema_id: #stringProperty,
+      name: #nameProperty,
       catalog_name: #stringProperty,
       comment: #commentProperty,
-      created_at: #createdAtProperty,
-      name: #nameProperty,
-      owner: #ownerProperty,
-      properties: #refProperty & {#ref: "Record"},
-      schema_id: #stringProperty,
+      properties: #stringMapProperty,
       tags: #arrayRefProperty & {#ref: "Tag"},
+      owner: #ownerProperty,
+      created_at: #createdAtProperty,
       updated_at: #updatedAtProperty
     },
     #required: [
@@ -359,16 +364,16 @@ schemas_catalog_compute: {
   },
   StorageCredential: #objectSchema & {
     #fields: {
-      comment: #commentProperty,
-      created_at: #createdAtProperty,
-      credential_type: #refProperty & {#ref: "StorageCredentialType"},
-      endpoint: #stringProperty,
       id: #idProperty,
       name: #nameProperty,
-      owner: #ownerProperty,
+      credential_type: #refProperty & {#ref: "StorageCredentialType"},
+      endpoint: #stringProperty,
       region: #stringProperty,
-      updated_at: #updatedAtProperty,
-      url_style: #refProperty & {#ref: "URLStyle"}
+      url_style: #refProperty & {#ref: "URLStyle"},
+      comment: #commentProperty,
+      owner: #ownerProperty,
+      created_at: #createdAtProperty,
+      updated_at: #updatedAtProperty
     },
     #required: [
       "id",
@@ -384,18 +389,18 @@ schemas_catalog_compute: {
   },
   TableDetail: #objectSchema & {
     #fields: {
+      table_id: #stringProperty,
+      name: #nameProperty,
+      schema_name: #stringProperty,
       catalog_name: #stringProperty,
+      table_type: #stringProperty,
       columns: #arrayRefProperty & {#ref: "ColumnDetail"},
       comment: #commentProperty,
-      created_at: #createdAtProperty,
-      name: #nameProperty,
-      owner: #ownerProperty,
-      properties: #refProperty & {#ref: "Record"},
-      schema_name: #stringProperty,
-      statistics: #refProperty & {#ref: "TableStatistics"},
-      table_id: #stringProperty,
-      table_type: #stringProperty,
+      properties: #stringMapProperty,
       tags: #arrayRefProperty & {#ref: "Tag"},
+      owner: #ownerProperty,
+      statistics: #refProperty & {#ref: "TableStatistics"},
+      created_at: #createdAtProperty,
       updated_at: #updatedAtProperty
     },
     #required: [
@@ -407,10 +412,10 @@ schemas_catalog_compute: {
   },
   UpdateColumnMaskRequest: #objectSchema & {
     #fields: {
+      name: #nameProperty,
       column_name: #stringProperty,
-      description: #descriptionProperty,
       mask_expression: #stringProperty,
-      name: #nameProperty
+      description: #descriptionProperty
     }
   },
   UpdateColumnRequest: #objectSchema & {
@@ -431,24 +436,24 @@ schemas_catalog_compute: {
   UpdateSchemaRequest: #objectSchema & {
     #fields: {
       comment: #commentProperty,
-      properties: #refProperty & {#ref: "Record"}
+      properties: #stringMapProperty
     }
   },
   UpdateStorageCredentialRequest: #objectSchema & {
     #fields: {
-      comment: #commentProperty,
-      endpoint: #stringProperty,
       key_id: #stringProperty,
-      region: #stringProperty,
       secret: #stringProperty,
-      url_style: #refProperty & {#ref: "URLStyle"}
+      endpoint: #stringProperty,
+      region: #stringProperty,
+      url_style: #refProperty & {#ref: "URLStyle"},
+      comment: #commentProperty
     }
   },
   UpdateTableRequest: #objectSchema & {
     #fields: {
       comment: #commentProperty,
-      owner: #ownerProperty,
-      properties: #refProperty & {#ref: "Record"}
+      properties: #stringMapProperty,
+      owner: #ownerProperty
     }
   },
   UpdateViewRequest: #objectSchema & {
@@ -466,17 +471,17 @@ schemas_catalog_compute: {
   },
   ViewDetail: #objectSchema & {
     #fields: {
-      catalog_name: #stringProperty,
-      comment: #commentProperty,
-      created_at: #createdAtProperty,
       id: #idProperty,
-      name: #nameProperty,
-      owner: #ownerProperty,
       schema_id: #stringProperty,
       schema_name: #stringProperty,
+      catalog_name: #stringProperty,
+      name: #nameProperty,
       source_tables: #stringArrayProperty,
-      updated_at: #updatedAtProperty,
-      view_definition: #stringProperty
+      view_definition: #stringProperty,
+      comment: #commentProperty,
+      owner: #ownerProperty,
+      created_at: #createdAtProperty,
+      updated_at: #updatedAtProperty
     },
     #required: [
       "id",
@@ -487,16 +492,16 @@ schemas_catalog_compute: {
   },
   VolumeDetail: #objectSchema & {
     #fields: {
-      catalog_name: #stringProperty,
-      comment: #commentProperty,
-      created_at: #createdAtProperty,
       id: #idProperty,
       name: #nameProperty,
-      owner: #ownerProperty,
       schema_name: #stringProperty,
+      catalog_name: #stringProperty,
       storage_location: #stringProperty,
-      updated_at: #updatedAtProperty,
-      volume_type: #stringProperty
+      volume_type: #stringProperty,
+      comment: #commentProperty,
+      owner: #ownerProperty,
+      created_at: #createdAtProperty,
+      updated_at: #updatedAtProperty
     },
     #required: [
       "id",

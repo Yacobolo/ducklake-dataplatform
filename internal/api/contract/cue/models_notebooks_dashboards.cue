@@ -5,19 +5,19 @@ package api
 schemas_notebooks_dashboards: {
   Cell: #objectSchema & {
     #fields: {
-      cell_type: #refProperty & {#ref: "CellCellType"},
-      content: #stringProperty,
-      created_at: #createdAtProperty,
-      disabled: #boolProperty,
       id: #idProperty,
-      last_result: #stringProperty,
-      name: #nameProperty,
       notebook_id: #stringProperty,
-      position: #int32Property,
+      cell_type: #refProperty & {#ref: "CellCellType"},
+      name: #nameProperty,
       role: #refProperty & {#ref: "CellRole"},
+      disabled: #boolProperty,
       test: #refProperty & {#ref: "NotebookCellTestConfig"},
-      updated_at: #updatedAtProperty,
-      visual_spec: #refProperty & {#ref: "VisualSpec"}
+      visual_spec: #refProperty & {#ref: "VisualSpec"},
+      content: #stringProperty,
+      position: #int32Property,
+      last_result: #stringProperty,
+      created_at: #createdAtProperty,
+      updated_at: #updatedAtProperty
     }
   },
   CellCellType: #enumSchema & {
@@ -30,10 +30,10 @@ schemas_notebooks_dashboards: {
     #fields: {
       cell_id: #stringProperty,
       columns: #arrayRefProperty & {#ref: "TabularColumn"},
-      duration_ms: #int64Property,
-      error: #stringProperty,
+      rows: #anyMapArrayProperty,
       row_count: #int32Property,
-      rows: #arrayRefProperty & {#ref: "Record"}
+      error: #stringProperty,
+      duration_ms: #int64Property
     }
   },
   CellList: #objectSchema & {
@@ -55,13 +55,13 @@ schemas_notebooks_dashboards: {
   CreateCellRequest: #objectSchema & {
     #fields: {
       cell_type: #refProperty & {#ref: "CellCellType"},
-      content: #stringProperty,
-      disabled: #boolProperty,
       name: #nameProperty,
-      position: #int32Property,
       role: #refProperty & {#ref: "CellRole"},
+      disabled: #boolProperty,
       test: #refProperty & {#ref: "NotebookCellTestConfig"},
-      visual_spec: #refProperty & {#ref: "VisualSpec"}
+      visual_spec: #refProperty & {#ref: "VisualSpec"},
+      content: #stringProperty,
+      position: #int32Property
     },
     #required: [
       "cell_type"
@@ -69,10 +69,10 @@ schemas_notebooks_dashboards: {
   },
   CreateDashboardRequest: #objectSchema & {
     #fields: {
-      owner: #ownerProperty,
-      description: #descriptionProperty,
-      folder_id: #stringProperty,
       name: #nameProperty,
+      description: #descriptionProperty,
+      owner: #ownerProperty,
+      folder_id: #stringProperty,
       semantic_project_name: #stringProperty,
       semantic_model_name: #stringProperty,
       compute: #refProperty & {#ref: "DashboardComputePolicy"}
@@ -85,11 +85,11 @@ schemas_notebooks_dashboards: {
     #fields: {
       key: #stringProperty,
       page_name: #stringProperty,
-      description: #descriptionProperty,
-      layout: #refProperty & {#ref: "DashboardWidgetLayout"},
       name: #nameProperty,
+      description: #descriptionProperty,
       source: #refProperty & {#ref: "DashboardWidgetSource"},
-      visual_spec: #refProperty & {#ref: "VisualSpec"}
+      visual_spec: #refProperty & {#ref: "VisualSpec"},
+      layout: #refProperty & {#ref: "DashboardWidgetLayout"}
     },
     #required: [
       "name",
@@ -99,10 +99,10 @@ schemas_notebooks_dashboards: {
   },
   CreateNotebookRequest: #objectSchema & {
     #fields: {
-      description: #descriptionProperty,
-      folder_id: #stringProperty,
       name: #nameProperty,
-      source: #stringProperty
+      description: #descriptionProperty,
+      source: #stringProperty,
+      folder_id: #stringProperty
     },
     #required: [
       "name"
@@ -110,15 +110,15 @@ schemas_notebooks_dashboards: {
   },
   Dashboard: #objectSchema & {
     #fields: {
-      created_at: #createdAtProperty,
-      description: #descriptionProperty,
-      folder_id: #stringProperty,
       id: #idProperty,
       name: #nameProperty,
+      description: #descriptionProperty,
       owner: #ownerProperty,
+      folder_id: #stringProperty,
       semantic_project_name: #stringProperty,
       semantic_model_name: #stringProperty,
       compute: #refProperty & {#ref: "DashboardComputePolicy"},
+      created_at: #createdAtProperty,
       updated_at: #updatedAtProperty
     }
   },
@@ -137,8 +137,8 @@ schemas_notebooks_dashboards: {
   },
   DashboardNotebookCellSource: #objectSchema & {
     #fields: {
-      cell_id: #stringProperty,
-      notebook_id: #stringProperty
+      notebook_id: #stringProperty,
+      cell_id: #stringProperty
     },
     #required: [
       "notebook_id",
@@ -147,9 +147,9 @@ schemas_notebooks_dashboards: {
   },
   DashboardSQLQuerySource: #objectSchema & {
     #fields: {
+      sql: #stringProperty,
       catalog: #stringProperty,
-      schema: #stringProperty,
-      sql: #stringProperty
+      schema: #stringProperty
     },
     #required: [
       "sql"
@@ -157,13 +157,13 @@ schemas_notebooks_dashboards: {
   },
   DashboardSemanticQuerySource: #objectSchema & {
     #fields: {
+      semantic_model_id: #stringProperty,
+      metrics: #stringArrayProperty,
+      relationship_names: #stringArrayProperty,
       dimensions: #stringArrayProperty,
       filters: #stringArrayProperty,
-      limit: #int32Property,
-      metrics: #stringArrayProperty,
       order_by: #stringArrayProperty,
-      relationship_names: #stringArrayProperty,
-      semantic_model_id: #stringProperty,
+      limit: #int32Property,
       time_grain: #stringProperty
     },
     #required: [
@@ -173,25 +173,25 @@ schemas_notebooks_dashboards: {
   },
   DashboardWidget: #objectSchema & {
     #fields: {
-      created_at: #createdAtProperty,
+      id: #idProperty,
       dashboard_id: #stringProperty,
       key: #stringProperty,
       page_name: #stringProperty,
-      description: #descriptionProperty,
-      id: #idProperty,
-      layout: #refProperty & {#ref: "DashboardWidgetLayout"},
       name: #nameProperty,
+      description: #descriptionProperty,
       source: #refProperty & {#ref: "DashboardWidgetSource"},
-      updated_at: #updatedAtProperty,
-      visual_spec: #refProperty & {#ref: "VisualSpec"}
+      visual_spec: #refProperty & {#ref: "VisualSpec"},
+      layout: #refProperty & {#ref: "DashboardWidgetLayout"},
+      created_at: #createdAtProperty,
+      updated_at: #updatedAtProperty
     }
   },
   DashboardWidgetLayout: #objectSchema & {
     #fields: {
-      h: #int32Property,
-      w: #int32Property,
       x: #int32Property,
-      y: #int32Property
+      y: #int32Property,
+      w: #int32Property,
+      h: #int32Property
     },
     #required: [
       "x",
@@ -203,9 +203,9 @@ schemas_notebooks_dashboards: {
   DashboardWidgetSource: #objectSchema & {
     #fields: {
       kind: #refProperty & {#ref: "DashboardWidgetSourceKind"},
+      sql_query: #refProperty & {#ref: "DashboardSQLQuerySource"},
       notebook_cell: #refProperty & {#ref: "DashboardNotebookCellSource"},
-      semantic_query: #refProperty & {#ref: "DashboardSemanticQuerySource"},
-      sql_query: #refProperty & {#ref: "DashboardSQLQuerySource"}
+      semantic_query: #refProperty & {#ref: "DashboardSemanticQuerySource"}
     },
     #required: [
       "kind"
@@ -221,8 +221,8 @@ schemas_notebooks_dashboards: {
   DuplicateNotebookRequest: #objectSchema & {
     #fields: {
       folder_id: #stringProperty,
-      git_path: #stringProperty,
-      name: #nameProperty
+      name: #nameProperty,
+      git_path: #stringProperty
     },
     #required: [
       "folder_id"
@@ -230,10 +230,10 @@ schemas_notebooks_dashboards: {
   },
   MoveNotebookRequest: #objectSchema & {
     #fields: {
-      confirm_context_change: #boolProperty,
-      confirm_leave_git: #boolProperty,
       folder_id: #stringProperty,
-      git_path: #stringProperty
+      git_path: #stringProperty,
+      confirm_leave_git: #boolProperty,
+      confirm_context_change: #boolProperty
     },
     #required: [
       "folder_id"
@@ -241,16 +241,16 @@ schemas_notebooks_dashboards: {
   },
   Notebook: #objectSchema & {
     #fields: {
-      created_at: #createdAtProperty,
-      description: #descriptionProperty,
-      environment_override_id: #stringProperty,
-      folder_id: #stringProperty,
-      git_path: #stringProperty,
-      git_repo_id: #stringProperty,
       id: #idProperty,
+      folder_id: #stringProperty,
       name: #nameProperty,
+      description: #descriptionProperty,
       owner: #ownerProperty,
+      git_repo_id: #stringProperty,
+      git_path: #stringProperty,
       project_override_id: #stringProperty,
+      environment_override_id: #stringProperty,
+      created_at: #createdAtProperty,
       updated_at: #updatedAtProperty
     }
   },
@@ -261,36 +261,36 @@ schemas_notebooks_dashboards: {
   },
   NotebookContext: #objectSchema & {
     #fields: {
+      notebook_id: #stringProperty,
+      folder_id: #stringProperty,
+      workspace_id: #stringProperty,
+      effective_project_id: #stringProperty,
       effective_environment_id: #stringProperty,
       effective_git_repo_id: #stringProperty,
       effective_git_root_path: #stringProperty,
-      effective_project_id: #stringProperty,
       environment_source_id: #stringProperty,
-      folder_id: #stringProperty,
       git_source_folder_id: #stringProperty,
-      notebook_id: #stringProperty,
-      project_source_folder_id: #stringProperty,
-      workspace_id: #stringProperty
+      project_source_folder_id: #stringProperty
     }
   },
   NotebookDetail: #objectSchema & {
     #fields: {
+      notebook: #refProperty & {#ref: "Notebook"},
       cells: #arrayRefProperty & {#ref: "Cell"},
       context: #refProperty & {#ref: "NotebookContext"},
-      notebook: #refProperty & {#ref: "Notebook"},
-      publish_model: #refProperty & {#ref: "NotebookPublishModel"},
-      shares: #arrayRefProperty & {#ref: "NotebookShare"}
+      shares: #arrayRefProperty & {#ref: "NotebookShare"},
+      publish_model: #refProperty & {#ref: "NotebookPublishModel"}
     }
   },
   NotebookJob: #objectSchema & {
     #fields: {
-      created_at: #createdAtProperty,
-      error: #stringProperty,
       id: #idProperty,
       notebook_id: #stringProperty,
-      result: #stringProperty,
       session_id: #stringProperty,
       state: #refProperty & {#ref: "NotebookJobState"},
+      result: #stringProperty,
+      error: #stringProperty,
+      created_at: #createdAtProperty,
       updated_at: #updatedAtProperty
     }
   },
@@ -304,20 +304,20 @@ schemas_notebooks_dashboards: {
   },
   NotebookPublishModel: #objectSchema & {
     #fields: {
-      materialization: #refProperty & {#ref: "ModelMaterialization"},
+      project_name: #stringProperty,
       name: #nameProperty,
       output_cell_id: #stringProperty,
-      project_name: #stringProperty
+      materialization: #refProperty & {#ref: "ModelMaterialization"}
     }
   },
   NotebookSession: #objectSchema & {
     #fields: {
-      created_at: #createdAtProperty,
       id: #idProperty,
-      last_used_at: #stringProperty,
       notebook_id: #stringProperty,
       principal: #stringProperty,
-      state: #refProperty & {#ref: "NotebookSessionState"}
+      state: #refProperty & {#ref: "NotebookSessionState"},
+      created_at: #createdAtProperty,
+      last_used_at: #dateTimeProperty
     }
   },
   NotebookSessionState: #enumSchema & {
@@ -348,9 +348,9 @@ schemas_notebooks_dashboards: {
   PromoteNotebookRequest: #objectSchema & {
     #fields: {
       cell_index: #int32Property,
-      materialization: #refProperty & {#ref: "ModelMaterialization"},
+      project_name: #stringProperty,
       name: #nameProperty,
-      project_name: #stringProperty
+      materialization: #refProperty & {#ref: "ModelMaterialization"}
     },
     #required: [
       "cell_index",
@@ -383,21 +383,21 @@ schemas_notebooks_dashboards: {
   },
   UpdateCellRequest: #objectSchema & {
     #fields: {
-      content: #stringProperty,
-      disabled: #boolProperty,
       name: #nameProperty,
-      position: #int32Property,
       role: #refProperty & {#ref: "CellRole"},
+      disabled: #boolProperty,
       test: #refProperty & {#ref: "NotebookCellTestConfig"},
-      visual_spec: #refProperty & {#ref: "VisualSpec"}
+      visual_spec: #refProperty & {#ref: "VisualSpecUpdate"},
+      content: #stringProperty,
+      position: #int32Property
     }
   },
   UpdateDashboardRequest: #objectSchema & {
     #fields: {
       owner: #ownerProperty,
+      name: #nameProperty,
       description: #descriptionProperty,
       folder_id: #stringProperty,
-      name: #nameProperty,
       semantic_project_name: #stringProperty,
       semantic_model_name: #stringProperty,
       compute: #refProperty & {#ref: "DashboardComputePolicy"}
@@ -407,19 +407,19 @@ schemas_notebooks_dashboards: {
     #fields: {
       key: #stringProperty,
       page_name: #stringProperty,
-      description: #descriptionProperty,
-      layout: #refProperty & {#ref: "DashboardWidgetLayout"},
       name: #nameProperty,
-      source: #refProperty & {#ref: "DashboardWidgetSource"},
-      visual_spec: #refProperty & {#ref: "VisualSpec"}
+      description: #descriptionProperty,
+      source: #refProperty & {#ref: "DashboardWidgetSourceUpdate"},
+      visual_spec: #refProperty & {#ref: "VisualSpecUpdate"},
+      layout: #refProperty & {#ref: "DashboardWidgetLayoutUpdate"}
     }
   },
   UpdateNotebookRequest: #objectSchema & {
     #fields: {
-      description: #descriptionProperty,
-      environment_override_id: #stringProperty,
       name: #nameProperty,
+      description: #descriptionProperty,
       project_override_id: #stringProperty
+      environment_override_id: #stringProperty,
     }
   },
 }

@@ -5,8 +5,8 @@ package api
 schemas_ingestion: {
   CommitIngestionRequest: #objectSchema & {
     #fields: {
-      options: #refProperty & {#ref: "IngestionOptions"},
-      s3_keys: #stringArrayProperty
+      s3_keys: #stringArrayProperty,
+      options: #refProperty & {#ref: "IngestionOptions"}
     },
     #required: [
       "s3_keys"
@@ -34,8 +34,8 @@ schemas_ingestion: {
   },
   LoadExternalRequest: #objectSchema & {
     #fields: {
-      options: #refProperty & {#ref: "IngestionOptions"},
-      paths: #stringArrayProperty
+      paths: #stringArrayProperty,
+      options: #refProperty & {#ref: "IngestionOptions"}
     },
     #required: [
       "paths"
@@ -48,9 +48,9 @@ schemas_ingestion: {
   },
   UploadUrlResponse: #objectSchema & {
     #fields: {
-      expires_at: #expiresAtProperty,
+      upload_url: #stringProperty,
       s3_key: #stringProperty,
-      upload_url: #stringProperty
+      expires_at: #expiresAtProperty
     },
     #required: [
       "upload_url",
@@ -59,4 +59,3 @@ schemas_ingestion: {
     ]
   }
 }
-

@@ -5,17 +5,17 @@ package api
 schemas_semantic_models: {
   CreateMacroRequest: #objectSchema & {
     #fields: {
-      body: #stringProperty,
-      catalog_name: #stringProperty,
-      description: #descriptionProperty,
-      macro_type: #refProperty & {#ref: "MacroType"},
       name: #nameProperty,
-      owner: #ownerProperty,
+      body: #stringProperty,
+      macro_type: #refProperty & {#ref: "MacroType"},
       parameters: #stringArrayProperty,
+      description: #descriptionProperty,
+      catalog_name: #stringProperty,
       project_name: #stringProperty,
-      properties: #refProperty & {#ref: "Record"},
-      status: #refProperty & {#ref: "MacroStatus"},
+      owner: #ownerProperty,
+      properties: #stringMapProperty,
       tags: #stringArrayProperty,
+      status: #refProperty & {#ref: "MacroStatus"},
       visibility: #refProperty & {#ref: "MacroVisibility"}
     },
     #required: [
@@ -25,15 +25,15 @@ schemas_semantic_models: {
   },
   CreateModelRequest: #objectSchema & {
     #fields: {
+      project_name: #stringProperty,
+      name: #nameProperty,
+      sql: #stringProperty,
+      materialization: #refProperty & {#ref: "ModelMaterialization"},
+      description: #descriptionProperty,
+      tags: #stringArrayProperty,
       config: #refProperty & {#ref: "ModelConfig"},
       contract: #refProperty & {#ref: "ModelContract"},
-      description: #descriptionProperty,
-      freshness_policy: #refProperty & {#ref: "FreshnessPolicy"},
-      materialization: #refProperty & {#ref: "ModelMaterialization"},
-      name: #nameProperty,
-      project_name: #stringProperty,
-      sql: #stringProperty,
-      tags: #stringArrayProperty
+      freshness_policy: #refProperty & {#ref: "FreshnessPolicy"}
     },
     #required: [
       "project_name",
@@ -43,10 +43,10 @@ schemas_semantic_models: {
   },
   CreateModelTestRequest: #objectSchema & {
     #fields: {
+      name: #nameProperty,
+      test_type: #refProperty & {#ref: "ModelTestTestType"},
       column: #stringProperty,
       config: #refProperty & {#ref: "ModelTestConfig"},
-      name: #nameProperty,
-      test_type: #refProperty & {#ref: "ModelTestTestType"}
     },
     #required: [
       "name",
@@ -55,17 +55,17 @@ schemas_semantic_models: {
   },
   CreateSemanticMetricRequest: #objectSchema & {
     #fields: {
-      certification_state: #refProperty & {#ref: "CreateSemanticMetricRequestCertificationState"},
-      default_time_grain: #stringProperty,
+      name: #nameProperty,
       description: #descriptionProperty,
-      expression: #stringProperty,
-      expression_mode: #refProperty & {#ref: "SemanticMetricExpressionMode"},
-      filter_sql: #stringProperty,
-      format: #stringProperty,
       label: #stringProperty,
       metric_type: #refProperty & {#ref: "SemanticMetricMetricType"},
-      name: #nameProperty,
-      relationship_names: #stringArrayProperty
+      expression_mode: #refProperty & {#ref: "SemanticMetricExpressionMode"},
+      expression: #stringProperty,
+      relationship_names: #stringArrayProperty,
+      filter_sql: #stringProperty,
+      default_time_grain: #stringProperty,
+      format: #stringProperty,
+      certification_state: #refProperty & {#ref: "CreateSemanticMetricRequestCertificationState"}
     },
     #required: [
       "name",
@@ -82,10 +82,10 @@ schemas_semantic_models: {
   },
   CreateSemanticModelRequest: #objectSchema & {
     #fields: {
+      name: #nameProperty,
+      description: #descriptionProperty,
       base_model_ref: #stringProperty,
       default_time_dimension: #stringProperty,
-      description: #descriptionProperty,
-      name: #nameProperty,
       tags: #stringArrayProperty
     },
     #required: [
@@ -95,10 +95,10 @@ schemas_semantic_models: {
   },
   CreateSemanticPreAggregationRequest: #objectSchema & {
     #fields: {
+      name: #nameProperty,
+      metric_set: #stringArrayProperty,
       dimension_set: #stringArrayProperty,
       grain: #stringProperty,
-      metric_set: #stringArrayProperty,
-      name: #nameProperty,
       refresh_policy: #stringProperty,
       target_relation: #stringProperty
     },
@@ -109,13 +109,13 @@ schemas_semantic_models: {
   },
   CreateSemanticRelationshipRequest: #objectSchema & {
     #fields: {
-      cost: #int32Property,
-      from_semantic_id: #stringProperty,
-      join_sql: #stringProperty,
-      max_hops: #int32Property,
       name: #nameProperty,
+      from_semantic_id: #stringProperty,
+      to_semantic_id: #stringProperty,
       relationship_type: #refProperty & {#ref: "SemanticRelationshipRelationshipType"},
-      to_semantic_id: #stringProperty
+      join_sql: #stringProperty,
+      cost: #int32Property,
+      max_hops: #int32Property,
     },
     #required: [
       "name",
@@ -127,22 +127,22 @@ schemas_semantic_models: {
   },
   Macro: #objectSchema & {
     #fields: {
-      body: #stringProperty,
-      catalog_name: #stringProperty,
-      created_at: #createdAtProperty,
-      created_by: #stringProperty,
-      description: #descriptionProperty,
       id: #idProperty,
-      macro_type: #refProperty & {#ref: "MacroType"},
       name: #nameProperty,
-      owner: #ownerProperty,
+      macro_type: #refProperty & {#ref: "MacroType"},
       parameters: #stringArrayProperty,
+      body: #stringProperty,
+      description: #descriptionProperty,
+      catalog_name: #stringProperty,
       project_name: #stringProperty,
-      properties: #refProperty & {#ref: "Record"},
-      status: #refProperty & {#ref: "MacroStatus"},
+      visibility: #refProperty & {#ref: "MacroVisibility"},
+      owner: #ownerProperty,
+      properties: #stringMapProperty,
       tags: #stringArrayProperty,
+      status: #refProperty & {#ref: "MacroStatus"},
+      created_by: #stringProperty,
+      created_at: #createdAtProperty,
       updated_at: #updatedAtProperty,
-      visibility: #refProperty & {#ref: "MacroVisibility"}
     }
   },
   MacroImpactList: #objectSchema & {
@@ -156,50 +156,50 @@ schemas_semantic_models: {
   },
   MacroImpactModel: #objectSchema & {
     #fields: {
-      last_seen_at: #stringProperty,
-      model_name: #stringProperty,
+      target_table: #stringProperty,
       target_schema: #stringProperty,
-      target_table: #stringProperty
+      model_name: #stringProperty,
+      last_seen_at: #dateTimeProperty
     }
   },
   MacroRevision: #objectSchema & {
     #fields: {
-      body: #stringProperty,
-      content_hash: #stringProperty,
-      created_at: #createdAtProperty,
-      created_by: #stringProperty,
-      description: #descriptionProperty,
       id: #idProperty,
       macro_name: #stringProperty,
+      version: #int32Property,
+      content_hash: #stringProperty,
       parameters: #stringArrayProperty,
+      body: #stringProperty,
+      description: #descriptionProperty,
       status: #refProperty & {#ref: "MacroStatus"},
-      version: #int32Property
+      created_by: #stringProperty,
+      created_at: #createdAtProperty
     }
   },
   MacroRevisionDiff: #objectSchema & {
     #fields: {
-      body_changed: #boolProperty,
-      changed: #boolProperty,
-      description_changed: #boolProperty,
-      from_body: #stringProperty,
-      from_content_hash: #stringProperty,
-      from_description: #stringProperty,
-      from_parameters: #stringArrayProperty,
-      from_status: #refProperty & {#ref: "MacroStatus"},
+      macro_name: #stringProperty,
       from_version: #int32Property,
+      to_version: #int32Property,
+      from_content_hash: #stringProperty,
+      to_content_hash: #stringProperty,
+      changed: #boolProperty,
+      parameters_changed: #boolProperty,
+      body_changed: #boolProperty,
+      description_changed: #boolProperty,
+      status_changed: #boolProperty,
+      from_parameters: #stringArrayProperty,
+      to_parameters: #stringArrayProperty,
+      from_body: #stringProperty,
+      to_body: #stringProperty,
+      from_description: #stringProperty,
+      to_description: #stringProperty,
+      from_status: #refProperty & {#ref: "MacroStatus"},
       impact_changed: #boolProperty,
       impacted_models_added: #arrayRefProperty & {#ref: "MacroImpactModel"},
       impacted_models_removed: #arrayRefProperty & {#ref: "MacroImpactModel"},
       impacted_models_unchanged: #arrayRefProperty & {#ref: "MacroImpactModel"},
-      macro_name: #stringProperty,
-      parameters_changed: #boolProperty,
-      status_changed: #boolProperty,
-      to_body: #stringProperty,
-      to_content_hash: #stringProperty,
-      to_description: #stringProperty,
-      to_parameters: #stringArrayProperty,
-      to_status: #refProperty & {#ref: "MacroStatus"},
-      to_version: #int32Property
+      to_status: #refProperty & {#ref: "MacroStatus"}
     }
   },
   MacroRevisionList: #objectSchema & {
@@ -231,28 +231,28 @@ schemas_semantic_models: {
   },
   Model: #objectSchema & {
     #fields: {
+      id: #idProperty,
+      project_name: #stringProperty,
+      name: #nameProperty,
+      sql: #stringProperty,
+      materialization: #refProperty & {#ref: "ModelMaterialization"},
+      description: #descriptionProperty,
+      owner: #ownerProperty,
+      depends_on: #stringArrayProperty,
+      tags: #stringArrayProperty,
       config: #refProperty & {#ref: "ModelConfig"},
       contract: #refProperty & {#ref: "ModelContract"},
-      created_at: #createdAtProperty,
-      created_by: #stringProperty,
-      depends_on: #stringArrayProperty,
-      description: #descriptionProperty,
       freshness_policy: #refProperty & {#ref: "FreshnessPolicy"},
-      id: #idProperty,
-      materialization: #refProperty & {#ref: "ModelMaterialization"},
-      name: #nameProperty,
-      owner: #ownerProperty,
-      project_name: #stringProperty,
-      sql: #stringProperty,
-      tags: #stringArrayProperty,
+      created_by: #stringProperty,
+      created_at: #createdAtProperty,
       updated_at: #updatedAtProperty
     }
   },
   ModelConfig: #objectSchema & {
     #fields: {
+      unique_key: #stringArrayProperty,
       incremental_strategy: #stringProperty,
-      on_schema_change: #refProperty & {#ref: "ModelConfigOnSchemaChange"},
-      unique_key: #stringArrayProperty
+      on_schema_change: #refProperty & {#ref: "ModelConfigOnSchemaChange"}
     }
   },
   ModelConfigOnSchemaChange: #enumSchema & {
@@ -263,15 +263,15 @@ schemas_semantic_models: {
   },
   ModelContract: #objectSchema & {
     #fields: {
-      columns: #arrayRefProperty & {#ref: "ModelContractColumn"},
-      enforce: #boolProperty
+      enforce: #boolProperty,
+      columns: #arrayRefProperty & {#ref: "ModelContractColumn"}
     }
   },
   ModelContractColumn: #objectSchema & {
     #fields: {
       name: #nameProperty,
-      nullable: #boolProperty,
-      type: #stringProperty
+      type: #stringProperty,
+      nullable: #boolProperty
     },
     #required: [
       "name",
@@ -285,16 +285,16 @@ schemas_semantic_models: {
   },
   ModelDAGNode: #objectSchema & {
     #fields: {
-      depends_on: #stringArrayProperty,
-      materialization: #refProperty & {#ref: "ModelMaterialization"},
+      project_name: #stringProperty,
       model_name: #stringProperty,
-      project_name: #stringProperty
+      materialization: #refProperty & {#ref: "ModelMaterialization"},
+      depends_on: #stringArrayProperty
     }
   },
   ModelDAGTier: #objectSchema & {
     #fields: {
-      nodes: #arrayRefProperty & {#ref: "ModelDAGNode"},
-      tier: #int32Property
+      tier: #int32Property,
+      nodes: #arrayRefProperty & {#ref: "ModelDAGNode"}
     }
   },
   ModelMaterialization: #enumSchema & {
@@ -309,45 +309,45 @@ schemas_semantic_models: {
   },
   ModelRun: #objectSchema & {
     #fields: {
-      build_id: #stringProperty,
-      compile_diagnostics: #refProperty & {#ref: "ModelRunCompileDiagnostics"},
-      compile_manifest: #stringProperty,
-      created_at: #createdAtProperty,
-      environment_name: #stringProperty,
-      error_message: #stringProperty,
-      finished_at: #stringProperty,
-      full_refresh: #boolProperty,
       id: #idProperty,
-      model_names: #stringArrayProperty,
-      project_name: #stringProperty,
-      started_at: #stringProperty,
       status: #statusProperty,
       trigger_type: #stringProperty,
-      triggered_by: #stringProperty
+      triggered_by: #stringProperty,
+      project_name: #stringProperty,
+      environment_name: #stringProperty,
+      build_id: #stringProperty,
+      model_names: #stringArrayProperty,
+      full_refresh: #boolProperty,
+      compile_manifest: #stringProperty,
+      compile_diagnostics: #refProperty & {#ref: "ModelRunCompileDiagnostics"},
+      started_at: #dateTimeProperty,
+      finished_at: #dateTimeProperty,
+      error_message: #stringProperty,
+      created_at: #createdAtProperty,
     }
   },
   ModelRunCompileDiagnostics: #objectSchema & {
     #fields: {
-      errors: #stringArrayProperty,
-      warnings: #stringArrayProperty
+      warnings: #stringArrayProperty,
+      errors: #stringArrayProperty
     }
   },
   ModelRunStep: #objectSchema & {
     #fields: {
-      compiled_hash: #stringProperty,
-      compiled_sql: #stringProperty,
-      created_at: #createdAtProperty,
-      depends_on: #stringArrayProperty,
-      error_message: #stringProperty,
-      finished_at: #stringProperty,
       id: #idProperty,
-      macros_used: #stringArrayProperty,
-      model_name: #stringProperty,
-      rows_affected: #int64Property,
       run_id: #stringProperty,
-      started_at: #stringProperty,
+      model_name: #stringProperty,
+      compiled_sql: #stringProperty,
+      compiled_hash: #stringProperty,
+      depends_on: #stringArrayProperty,
+      vars_used: #stringArrayProperty,
+      macros_used: #stringArrayProperty,
       status: #statusProperty,
-      vars_used: #stringArrayProperty
+      rows_affected: #int64Property,
+      started_at: #dateTimeProperty,
+      finished_at: #dateTimeProperty,
+      error_message: #stringProperty,
+      created_at: #createdAtProperty
     }
   },
   ModelRunStepList: #objectSchema & {
@@ -360,21 +360,21 @@ schemas_semantic_models: {
   },
   ModelTest: #objectSchema & {
     #fields: {
-      column: #stringProperty,
-      config: #refProperty & {#ref: "ModelTestConfig"},
-      created_at: #createdAtProperty,
       id: #idProperty,
       model_id: #stringProperty,
       name: #nameProperty,
-      test_type: #refProperty & {#ref: "ModelTestTestType"}
+      test_type: #refProperty & {#ref: "ModelTestTestType"},
+      column: #stringProperty,
+      config: #refProperty & {#ref: "ModelTestConfig"},
+      created_at: #createdAtProperty
     }
   },
   ModelTestConfig: #objectSchema & {
     #fields: {
-      custom_sql: #stringProperty,
-      to_column: #stringProperty,
+      values: #stringArrayProperty,
       to_model: #stringProperty,
-      values: #stringArrayProperty
+      to_column: #stringProperty,
+      custom_sql: #stringProperty
     }
   },
   ModelTestList: #objectSchema & {
@@ -387,14 +387,14 @@ schemas_semantic_models: {
   },
   ModelTestResult: #objectSchema & {
     #fields: {
-      created_at: #createdAtProperty,
-      error_message: #stringProperty,
       id: #idProperty,
-      rows_returned: #int64Property,
       run_step_id: #stringProperty,
-      status: #refProperty & {#ref: "ModelTestResultStatus"},
       test_id: #stringProperty,
-      test_name: #stringProperty
+      test_name: #stringProperty,
+      status: #refProperty & {#ref: "ModelTestResultStatus"},
+      rows_returned: #int64Property,
+      error_message: #stringProperty,
+      created_at: #createdAtProperty
     }
   },
   ModelTestResultList: #objectSchema & {
@@ -423,22 +423,22 @@ schemas_semantic_models: {
   },
   SemanticMetric: #objectSchema & {
     #fields: {
-      certification_state: #refProperty & {#ref: "CreateSemanticMetricRequestCertificationState"},
-      created_at: #createdAtProperty,
-      created_by: #stringProperty,
-      default_time_grain: #stringProperty,
-      description: #descriptionProperty,
-      expression: #stringProperty,
-      expression_mode: #refProperty & {#ref: "SemanticMetricExpressionMode"},
-      filter_sql: #stringProperty,
-      format: #stringProperty,
       id: #idProperty,
+      semantic_model_id: #stringProperty,
+      name: #nameProperty,
+      description: #descriptionProperty,
       label: #stringProperty,
       metric_type: #refProperty & {#ref: "SemanticMetricMetricType"},
-      name: #nameProperty,
-      owner: #ownerProperty,
+      expression_mode: #refProperty & {#ref: "SemanticMetricExpressionMode"},
+      expression: #stringProperty,
       relationship_names: #stringArrayProperty,
-      semantic_model_id: #stringProperty,
+      filter_sql: #stringProperty,
+      default_time_grain: #stringProperty,
+      format: #stringProperty,
+      owner: #ownerProperty,
+      certification_state: #refProperty & {#ref: "CreateSemanticMetricRequestCertificationState"},
+      created_by: #stringProperty,
+      created_at: #createdAtProperty,
       updated_at: #updatedAtProperty
     }
   },
@@ -469,30 +469,30 @@ schemas_semantic_models: {
   },
   SemanticModel: #objectSchema & {
     #fields: {
-      base_model_ref: #stringProperty,
-      created_at: #createdAtProperty,
-      created_by: #stringProperty,
-      default_time_dimension: #stringProperty,
-      description: #descriptionProperty,
       id: #idProperty,
       name: #nameProperty,
+      description: #descriptionProperty,
       owner: #ownerProperty,
+      base_model_ref: #stringProperty,
+      default_time_dimension: #stringProperty,
       tags: #stringArrayProperty,
+      created_by: #stringProperty,
+      created_at: #createdAtProperty,
       updated_at: #updatedAtProperty
     }
   },
   SemanticPreAggregation: #objectSchema & {
     #fields: {
-      created_at: #createdAtProperty,
-      created_by: #stringProperty,
+      id: #idProperty,
+      semantic_model_id: #stringProperty,
+      name: #nameProperty,
+      metric_set: #stringArrayProperty,
       dimension_set: #stringArrayProperty,
       grain: #stringProperty,
-      id: #idProperty,
-      metric_set: #stringArrayProperty,
-      name: #nameProperty,
-      refresh_policy: #stringProperty,
-      semantic_model_id: #stringProperty,
       target_relation: #stringProperty,
+      refresh_policy: #stringProperty,
+      created_by: #stringProperty,
+      created_at: #createdAtProperty,
       updated_at: #updatedAtProperty
     }
   },
@@ -506,16 +506,16 @@ schemas_semantic_models: {
   },
   SemanticRelationship: #objectSchema & {
     #fields: {
-      cost: #int32Property,
-      created_at: #createdAtProperty,
-      created_by: #stringProperty,
-      from_semantic_id: #stringProperty,
       id: #idProperty,
-      join_sql: #stringProperty,
-      max_hops: #int32Property,
       name: #nameProperty,
-      relationship_type: #refProperty & {#ref: "SemanticRelationshipRelationshipType"},
+      from_semantic_id: #stringProperty,
       to_semantic_id: #stringProperty,
+      relationship_type: #refProperty & {#ref: "SemanticRelationshipRelationshipType"},
+      join_sql: #stringProperty,
+      cost: #int32Property,
+      max_hops: #int32Property,
+      created_by: #stringProperty,
+      created_at: #createdAtProperty,
       updated_at: #updatedAtProperty
     }
   },
@@ -538,76 +538,76 @@ schemas_semantic_models: {
   UpdateMacroRequest: #objectSchema & {
     #fields: {
       body: #stringProperty,
-      catalog_name: #stringProperty,
       description: #descriptionProperty,
-      owner: #ownerProperty,
       parameters: #stringArrayProperty,
-      project_name: #stringProperty,
-      properties: #refProperty & {#ref: "Record"},
       status: #refProperty & {#ref: "MacroStatus"},
-      tags: #stringArrayProperty,
-      visibility: #refProperty & {#ref: "MacroVisibility"}
+      catalog_name: #stringProperty,
+      project_name: #stringProperty,
+      visibility: #refProperty & {#ref: "MacroVisibility"},
+      owner: #ownerProperty,
+      properties: #stringMapProperty,
+      tags: #stringArrayProperty
     }
   },
   UpdateModelRequest: #objectSchema & {
     #fields: {
+      sql: #stringProperty,
+      materialization: #refProperty & {#ref: "ModelMaterialization"},
+      description: #descriptionProperty,
+      tags: #stringArrayProperty,
       config: #refProperty & {#ref: "ModelConfig"},
       contract: #refProperty & {#ref: "ModelContract"},
-      description: #descriptionProperty,
-      freshness_policy: #refProperty & {#ref: "FreshnessPolicy"},
-      materialization: #refProperty & {#ref: "ModelMaterialization"},
-      sql: #stringProperty,
-      tags: #stringArrayProperty
+      freshness_policy: #refProperty & {#ref: "FreshnessPolicy"}
     }
   },
   UpdateSemanticMetricRequest: #objectSchema & {
     #fields: {
-      certification_state: #refProperty & {#ref: "CreateSemanticMetricRequestCertificationState"},
-      default_time_grain: #stringProperty,
       description: #descriptionProperty,
-      expression: #stringProperty,
-      expression_mode: #refProperty & {#ref: "SemanticMetricExpressionMode"},
-      filter_sql: #stringProperty,
-      format: #stringProperty,
       label: #stringProperty,
       metric_type: #refProperty & {#ref: "SemanticMetricMetricType"},
+      expression_mode: #refProperty & {#ref: "SemanticMetricExpressionMode"},
+      expression: #stringProperty,
+      relationship_names: #stringArrayProperty,
+      filter_sql: #stringProperty,
+      default_time_grain: #stringProperty,
+      format: #stringProperty,
       owner: #ownerProperty,
-      relationship_names: #stringArrayProperty
+      certification_state: #refProperty & {#ref: "CreateSemanticMetricRequestCertificationState"}
     }
   },
   UpdateSemanticModelRequest: #objectSchema & {
     #fields: {
-      base_model_ref: #stringProperty,
-      default_time_dimension: #stringProperty,
       description: #descriptionProperty,
       owner: #ownerProperty,
+      base_model_ref: #stringProperty,
+      default_time_dimension: #stringProperty,
       tags: #stringArrayProperty
     }
   },
   UpdateSemanticPreAggregationRequest: #objectSchema & {
     #fields: {
+      metric_set: #stringArrayProperty,
       dimension_set: #stringArrayProperty,
       grain: #stringProperty,
-      metric_set: #stringArrayProperty,
       refresh_policy: #stringProperty,
       target_relation: #stringProperty
     }
   },
   UpdateSemanticRelationshipRequest: #objectSchema & {
     #fields: {
-      cost: #int32Property,
+      relationship_type: #refProperty & {#ref: "SemanticRelationshipRelationshipType"},
       join_sql: #stringProperty,
+      cost: #int32Property,
       max_hops: #int32Property,
-      relationship_type: #refProperty & {#ref: "SemanticRelationshipRelationshipType"}
     }
   },
   VersionedObjectSummary: #objectSchema & {
     #fields: {
+      total_count: #int64Property,
       active_count: #int64Property,
-      has_history: #boolProperty,
       historical_count: #int64Property,
-      latest_snapshot_id: #int64Property,
-      total_count: #int64Property
+      has_history: #boolProperty,
+      latest_snapshot_id: #int64Property
     }
   },
 }

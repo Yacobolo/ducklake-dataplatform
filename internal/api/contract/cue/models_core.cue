@@ -90,10 +90,12 @@ schemas_core: {
     }
   },
   Error: #objectSchema & {
+    title:       "Standard API error response."
+    description: "Errors use a shared schema across the API so clients can handle failure responses consistently."
     #fields: {
       code: #int32Property,
-      details: #refProperty & {#ref: "Record"},
-      message: #stringProperty
+      message: #stringProperty,
+      details: #stringMapProperty
     },
     #required: [
       "code",
@@ -102,10 +104,10 @@ schemas_core: {
   },
   GitSyncResult: #objectSchema & {
     #fields: {
-      commit_sha: #stringProperty,
       notebooks_created: #int32Property,
+      notebooks_updated: #int32Property,
       notebooks_deleted: #int32Property,
-      notebooks_updated: #int32Property
+      commit_sha: #stringProperty
     }
   },
   HealthResponse: #objectSchema & {

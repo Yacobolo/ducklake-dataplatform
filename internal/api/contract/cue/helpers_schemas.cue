@@ -52,6 +52,13 @@ package api
 	}
 }
 
+#doubleProperty: {
+	schema: {
+		type:   "number"
+		format: "double"
+	}
+}
+
 #refProperty: {
 	#ref: string
 
@@ -98,6 +105,27 @@ package api
 		additional_properties: {
 			schema: {
 				type: "string"
+			}
+		}
+	}
+}
+
+#anyMapProperty: {
+	schema: {
+		type: "object"
+		additional_properties: {
+			any: true
+		}
+	}
+}
+
+#anyMapArrayProperty: {
+	schema: {
+		type: "array"
+		items: {
+			type: "object"
+			additional_properties: {
+				any: true
 			}
 		}
 	}
