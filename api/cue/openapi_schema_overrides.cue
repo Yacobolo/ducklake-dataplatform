@@ -584,13 +584,19 @@ openapi_schema_overrides: {
   },
   "CreateDashboardRequest": {
     "property_order": [
+      "owner",
       "name",
       "description",
-      "folder_id"
+      "folder_id",
+      "semantic_project_name",
+      "semantic_model_name",
+      "compute"
     ]
   },
   "CreateDashboardWidgetRequest": {
     "property_order": [
+      "key",
+      "page_name",
       "name",
       "description",
       "source",
@@ -949,6 +955,9 @@ openapi_schema_overrides: {
       "description",
       "owner",
       "folder_id",
+      "semantic_project_name",
+      "semantic_model_name",
+      "compute",
       "created_at",
       "updated_at"
     ]
@@ -982,6 +991,8 @@ openapi_schema_overrides: {
     "property_order": [
       "id",
       "dashboard_id",
+      "key",
+      "page_name",
       "name",
       "description",
       "source",
@@ -2488,13 +2499,19 @@ openapi_schema_overrides: {
   },
   "UpdateDashboardRequest": {
     "property_order": [
+      "owner",
       "name",
       "description",
-      "folder_id"
+      "folder_id",
+      "semantic_project_name",
+      "semantic_model_name",
+      "compute"
     ]
   },
   "UpdateDashboardWidgetRequest": {
     "property_order": [
+      "key",
+      "page_name",
       "name",
       "description",
       "source",
@@ -2783,8 +2800,49 @@ openapi_schema_overrides: {
       "title",
       "subtitle",
       "legend",
+      "legend_position",
       "stacked",
       "color_palette"
+    ]
+  },
+  "UpdateEnvironmentRequest": {
+    "property_order": [
+      "description",
+      "target_catalog",
+      "target_schema",
+      "compute_endpoint",
+      "defer_to_environment",
+      "variables",
+      "source_overrides"
+    ],
+    "properties": {
+      "source_overrides": {
+        "schema": {
+          "type": "object",
+          "additional_properties": {
+            "schema": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "variables": {
+        "schema": {
+          "type": "object",
+          "additional_properties": {
+            "schema": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    }
+  },
+  "UpdateProjectRequest": {
+    "property_order": [
+      "description",
+      "product_id",
+      "default_branch"
     ]
   },
   "VolumeDetail": {

@@ -127,8 +127,10 @@ func run() error {
 	}
 
 	catalogRegRepo := repository.NewCatalogRegistrationRepo(writeDB)
-	if _, err := sampledata.EnsureCatalogRegistration(ctx, catalogRegRepo, cfg.MetaDBPath); err != nil {
-		return fmt.Errorf("ensure sample catalog registration: %w", err)
+	if cfg.SampleDataBootstrap {
+		if _, err := sampledata.EnsureCatalogRegistration(ctx, catalogRegRepo, cfg.MetaDBPath); err != nil {
+			return fmt.Errorf("ensure sample catalog registration: %w", err)
+		}
 	}
 
 	// Wire application dependencies
@@ -147,8 +149,12 @@ func run() error {
 	if err := application.Services.CatalogRegistration.AttachAll(ctx); err != nil {
 		logger.Warn("catalog AttachAll failed", "error", err)
 	}
-	if err := sampledata.Bootstrap(ctx, writeDB, duckDB, logger.With("component", "sample-data")); err != nil {
-		return fmt.Errorf("bootstrap sample data: %w", err)
+	if cfg.SampleDataBootstrap {
+		if err := sampledata.Bootstrap(ctx, writeDB, duckDB, logger.With("component", "sample-data")); err != nil {
+			return fmt.Errorf("bootstrap sample data: %w", err)
+		}
+	} else {
+		logger.Info("sample data bootstrap disabled")
 	}
 
 	if application.Reconciler != nil {

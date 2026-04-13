@@ -39,21 +39,22 @@ func (m *mockSemanticService) CreateSemanticModel(ctx context.Context, principal
 	panic("CreateSemanticModel not implemented")
 }
 
-func (m *mockSemanticService) GetSemanticModel(ctx context.Context, semanticModelID string) (*domain.SemanticModel, error) {
+func (m *mockSemanticService) GetSemanticModel(ctx context.Context, identifiers ...string) (*domain.SemanticModel, error) {
 	if m.getSemanticModelFn != nil {
-		return m.getSemanticModelFn(ctx, semanticModelID)
+		return m.getSemanticModelFn(ctx, identifiers[0])
 	}
 	panic("GetSemanticModel not implemented")
 }
 
-func (m *mockSemanticService) ListSemanticModels(ctx context.Context, page domain.PageRequest) ([]domain.SemanticModel, int64, error) {
+func (m *mockSemanticService) ListSemanticModels(ctx context.Context, args ...any) ([]domain.SemanticModel, int64, error) {
 	if m.listSemanticModelsFn != nil {
+		page, _ := args[len(args)-1].(domain.PageRequest)
 		return m.listSemanticModelsFn(ctx, page)
 	}
 	panic("ListSemanticModels not implemented")
 }
 
-func (m *mockSemanticService) UpdateSemanticModel(context.Context, string, domain.UpdateSemanticModelRequest) (*domain.SemanticModel, error) {
+func (m *mockSemanticService) UpdateSemanticModel(context.Context, string, ...any) (*domain.SemanticModel, error) {
 	panic("UpdateSemanticModel not implemented")
 }
 
@@ -61,14 +62,15 @@ func (m *mockSemanticService) DeleteSemanticModel(context.Context, string) error
 	panic("DeleteSemanticModel not implemented")
 }
 
-func (m *mockSemanticService) CreateMetric(ctx context.Context, principal, semanticModelID string, req domain.CreateSemanticMetricRequest) (*domain.SemanticMetric, error) {
+func (m *mockSemanticService) CreateMetric(ctx context.Context, principal, semanticModelID string, args ...any) (*domain.SemanticMetric, error) {
 	if m.createMetricFn != nil {
+		req, _ := args[len(args)-1].(domain.CreateSemanticMetricRequest)
 		return m.createMetricFn(ctx, principal, semanticModelID, req)
 	}
 	panic("CreateMetric not implemented")
 }
 
-func (m *mockSemanticService) ListMetrics(ctx context.Context, semanticModelID string) ([]domain.SemanticMetric, error) {
+func (m *mockSemanticService) ListMetrics(ctx context.Context, semanticModelID string, _ ...string) ([]domain.SemanticMetric, error) {
 	if m.listMetricsFn != nil {
 		return m.listMetricsFn(ctx, semanticModelID)
 	}
@@ -82,25 +84,28 @@ func (m *mockSemanticService) GetMetric(ctx context.Context, semanticModelID, me
 	panic("GetMetric not implemented")
 }
 
-func (m *mockSemanticService) UpdateMetric(ctx context.Context, semanticModelID, metricName string, req domain.UpdateSemanticMetricRequest) (*domain.SemanticMetric, error) {
+func (m *mockSemanticService) UpdateMetric(ctx context.Context, semanticModelID string, args ...any) (*domain.SemanticMetric, error) {
 	if m.updateMetricFn != nil {
+		metricName, _ := args[len(args)-2].(string)
+		req, _ := args[len(args)-1].(domain.UpdateSemanticMetricRequest)
 		return m.updateMetricFn(ctx, semanticModelID, metricName, req)
 	}
 	panic("UpdateMetric not implemented")
 }
 
-func (m *mockSemanticService) DeleteMetric(ctx context.Context, semanticModelID, metricName string) error {
+func (m *mockSemanticService) DeleteMetric(ctx context.Context, semanticModelID string, args ...string) error {
 	if m.deleteMetricFn != nil {
+		metricName := args[len(args)-1]
 		return m.deleteMetricFn(ctx, semanticModelID, metricName)
 	}
 	panic("DeleteMetric not implemented")
 }
 
-func (m *mockSemanticService) CreatePreAggregation(context.Context, string, string, domain.CreateSemanticPreAggregationRequest) (*domain.SemanticPreAggregation, error) {
+func (m *mockSemanticService) CreatePreAggregation(context.Context, string, string, ...any) (*domain.SemanticPreAggregation, error) {
 	panic("CreatePreAggregation not implemented")
 }
 
-func (m *mockSemanticService) ListPreAggregations(context.Context, string) ([]domain.SemanticPreAggregation, error) {
+func (m *mockSemanticService) ListPreAggregations(context.Context, string, ...string) ([]domain.SemanticPreAggregation, error) {
 	panic("ListPreAggregations not implemented")
 }
 
@@ -111,11 +116,11 @@ func (m *mockSemanticService) GetPreAggregation(ctx context.Context, semanticMod
 	panic("GetPreAggregation not implemented")
 }
 
-func (m *mockSemanticService) UpdatePreAggregation(context.Context, string, string, domain.UpdateSemanticPreAggregationRequest) (*domain.SemanticPreAggregation, error) {
+func (m *mockSemanticService) UpdatePreAggregation(context.Context, string, ...any) (*domain.SemanticPreAggregation, error) {
 	panic("UpdatePreAggregation not implemented")
 }
 
-func (m *mockSemanticService) DeletePreAggregation(context.Context, string, string) error {
+func (m *mockSemanticService) DeletePreAggregation(context.Context, string, ...string) error {
 	panic("DeletePreAggregation not implemented")
 }
 

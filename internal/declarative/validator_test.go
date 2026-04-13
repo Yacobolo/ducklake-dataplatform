@@ -6,6 +6,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"duck-demo/internal/domain"
 )
 
 // containsStr is a helper wrapping strings.Contains for readability.
@@ -229,6 +231,119 @@ func TestValidate_PrincipalErrors(t *testing.T) {
 			assert.Contains(t, errs[0].Error(), tt.contains)
 		})
 	}
+}
+
+func TestValidate_DashboardErrors(t *testing.T) {
+	state := &DesiredState{
+		Notebooks: []NotebookResource{{
+			Name: "sales-kpis",
+			Spec: NotebookSpec{
+				Owner: "alice",
+				Cells: []CellSpec{{Name: "zone_output", Type: "sql", Content: "select 1"}},
+			},
+		}},
+		SemanticModels: []SemanticModelResource{{
+			ModelName: "revenue",
+			Spec:      SemanticModelSpec{BaseModelRef: "analytics.revenue"},
+		}},
+		Dashboards: []DashboardResource{{
+			Name: "revenue-overview",
+			Spec: DashboardSpec{
+				Compute: &domain.DashboardComputePolicy{Mode: domain.ComputeModeSharedEndpoint},
+				Widgets: []DashboardWidgetSpec{
+					{
+						Key:  "bad key",
+						Name: "Revenue",
+						Source: DashboardWidgetSourceSpec{
+							Kind: domain.DashboardWidgetSourceNotebookCell,
+							NotebookCell: &DashboardNotebookCellRefSpec{
+								NotebookName: "sales-kpis",
+								CellName:     "missing_cell",
+							},
+						},
+						Layout: domain.DashboardWidgetLayout{X: 0, Y: 0, W: 6, H: 4},
+					},
+					{
+						Key:  "bad key",
+						Name: "Revenue Duplicate",
+						Source: DashboardWidgetSourceSpec{
+							Kind: domain.DashboardWidgetSourceSemanticQuery,
+							SemanticQuery: &DashboardSemanticQuerySpec{
+								Metrics: []string{"revenue"},
+							},
+						},
+						Layout: domain.DashboardWidgetLayout{X: 0, Y: 0, W: 6, H: 4},
+					},
+				},
+			},
+		}},
+	}
+
+	errs := Validate(state)
+	require.NotEmpty(t, errs)
+
+	messages := make([]string, 0, len(errs))
+	for _, err := range errs {
+		messages = append(messages, err.Error())
+	}
+
+	assert.Contains(t, strings.Join(messages, "\n"), "owner is required")
+	assert.Contains(t, strings.Join(messages, "\n"), "endpoint_name is required")
+	assert.Contains(t, strings.Join(messages, "\n"), "widget key must contain only lowercase letters, digits, and hyphens")
+	assert.Contains(t, strings.Join(messages, "\n"), "duplicate widget key")
+	assert.Contains(t, strings.Join(messages, "\n"), "unknown cell")
+}
+
+func TestValidate_DashboardValidNotebookAndSemanticBindings(t *testing.T) {
+	state := &DesiredState{
+		Notebooks: []NotebookResource{{
+			Name: "sales-kpis",
+			Spec: NotebookSpec{
+				Owner: "alice",
+				Cells: []CellSpec{{Name: "zone_output", Type: "sql", Content: "select 1"}},
+			},
+		}},
+		SemanticModels: []SemanticModelResource{{
+			ModelName: "revenue",
+			Spec:      SemanticModelSpec{BaseModelRef: "analytics.revenue"},
+		}},
+		Dashboards: []DashboardResource{{
+			Name: "revenue-overview",
+			Spec: DashboardSpec{
+				Owner:               "alice",
+				SemanticProjectName: "analytics",
+				SemanticModelName:   "revenue",
+				Compute:             &domain.DashboardComputePolicy{Mode: domain.ComputeModeByocLocal},
+				Widgets: []DashboardWidgetSpec{
+					{
+						Key:  "table-zones",
+						Name: "Zone Detail",
+						Source: DashboardWidgetSourceSpec{
+							Kind: domain.DashboardWidgetSourceNotebookCell,
+							NotebookCell: &DashboardNotebookCellRefSpec{
+								NotebookName: "sales-kpis",
+								CellName:     "zone_output",
+							},
+						},
+						Layout: domain.DashboardWidgetLayout{X: 0, Y: 0, W: 6, H: 4},
+					},
+					{
+						Key:  "chart-revenue",
+						Name: "Revenue",
+						Source: DashboardWidgetSourceSpec{
+							Kind: domain.DashboardWidgetSourceSemanticQuery,
+							SemanticQuery: &DashboardSemanticQuerySpec{
+								Metrics: []string{"revenue"},
+							},
+						},
+						Layout: domain.DashboardWidgetLayout{X: 0, Y: 0, W: 6, H: 4},
+					},
+				},
+			},
+		}},
+	}
+
+	assert.Empty(t, Validate(state))
 }
 
 func TestValidate_GroupErrors(t *testing.T) {
@@ -1026,8 +1141,8 @@ func TestValidate_ProductControlPlaneRefs(t *testing.T) {
 			Spec: AssetSpec{AssetType: "table", ProductRef: "daily-orders"},
 		}},
 		SemanticModels: []SemanticModelResource{{
-			ModelName:   "orders",
-			Spec:        SemanticModelSpec{BaseModelRef: "sales.orders"},
+			ModelName: "orders",
+			Spec:      SemanticModelSpec{BaseModelRef: "sales.orders"},
 		}},
 	}
 
@@ -1075,6 +1190,130 @@ func TestValidate_ProductControlPlaneRefs(t *testing.T) {
 		"release_state must be DRAFT, PUBLISHED, DEPRECATED, or RETIRED",
 		"compatibility_level must be BACKWARD_COMPATIBLE or BREAKING",
 		"product_ref references unknown data product",
+	}
+	for _, needle := range expected {
+		found := false
+		for _, err := range errs {
+			if containsStr(err.Error(), needle) {
+				found = true
+				break
+			}
+		}
+		assert.True(t, found, "expected validation error containing %q, got %v", needle, errs)
+	}
+}
+
+func TestValidate_AuthoringCoreRefs(t *testing.T) {
+	t.Parallel()
+
+	valid := &DesiredState{
+		Workspaces: []WorkspaceResource{{
+			Name: "personal",
+			Spec: WorkspaceSpec{
+				Kind:                  "personal",
+				OwnerPrincipal:        "alice",
+				DefaultProjectRef:     "personal/core",
+				DefaultEnvironmentRef: "personal/core/dev",
+			},
+		}},
+		Folders: []FolderResource{{
+			Name: "analysis",
+			Spec: FolderSpec{
+				WorkspaceRef:          "personal",
+				DefaultProjectRef:     "personal/core",
+				DefaultEnvironmentRef: "personal/core/dev",
+			},
+		}},
+		Projects: []ProjectResource{{
+			Name: "core",
+			Spec: ProjectSpec{
+				WorkspaceRef:  "personal",
+				Kind:          "personal",
+				DefaultBranch: "main",
+			},
+		}},
+		Environments: []EnvironmentResource{{
+			Name: "dev",
+			Spec: EnvironmentSpec{
+				ProjectRef:    "personal/core",
+				Kind:          "development",
+				TargetCatalog: "main",
+				TargetSchema:  "analytics",
+			},
+		}},
+		Notebooks: []NotebookResource{{
+			Name: "orders",
+			Spec: NotebookSpec{
+				WorkspaceRef:   "personal",
+				FolderRef:      "personal/analysis",
+				ProjectRef:     "personal/core",
+				EnvironmentRef: "personal/core/dev",
+				Cells: []CellSpec{{
+					Type:    "sql",
+					Name:    "output",
+					Role:    "output",
+					Content: "select 1",
+				}},
+			},
+		}},
+	}
+
+	assert.Empty(t, Validate(valid))
+
+	invalid := &DesiredState{
+		Workspaces: []WorkspaceResource{{
+			Name: "shared",
+			Spec: WorkspaceSpec{Kind: "shared"},
+		}},
+		Folders: []FolderResource{{
+			Name: "analysis",
+			Spec: FolderSpec{
+				WorkspaceRef:      "shared",
+				ParentFolderRef:   "personal/root",
+				DefaultProjectRef: "personal/core",
+			},
+		}},
+		Projects: []ProjectResource{{
+			Name: "core",
+			Spec: ProjectSpec{
+				WorkspaceRef: "missing",
+				Kind:         "shared",
+			},
+		}},
+		Environments: []EnvironmentResource{{
+			Name: "prod",
+			Spec: EnvironmentSpec{
+				ProjectRef: "shared/core",
+				Kind:       "production",
+			},
+		}},
+		Notebooks: []NotebookResource{{
+			Name: "broken",
+			Spec: NotebookSpec{
+				WorkspaceRef:   "shared",
+				FolderRef:      "personal/root",
+				ProjectRef:     "personal/core",
+				EnvironmentRef: "personal/core/dev",
+				Cells: []CellSpec{{
+					Type:    "sql",
+					Name:    "output",
+					Role:    "output",
+					Content: "select 1",
+				}},
+			},
+		}},
+	}
+
+	errs := Validate(invalid)
+	require.NotEmpty(t, errs)
+
+	expected := []string{
+		"owner_team_id is required for shared workspaces",
+		"parent_folder_ref must be in the same workspace",
+		"default_project_ref references unknown project",
+		"workspace_ref references unknown workspace",
+		"target_catalog is required",
+		"folder_ref references unknown folder",
 	}
 	for _, needle := range expected {
 		found := false

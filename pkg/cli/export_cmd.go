@@ -18,8 +18,8 @@ func newExportCmd(client *apiruntime.Client) *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:   "export",
-		Short: "Export current server state as declarative YAML configuration",
-		Long:  "Reads the current state from the server and writes it as YAML configuration files.",
+		Short: "Export current server state as declarative CUE configuration",
+		Long:  "Reads the current state from the server and writes it as declarative CUE files.",
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			isJSON := getOutputFormat(cmd) == "json"
 			if !isJSON {
@@ -47,7 +47,7 @@ func newExportCmd(client *apiruntime.Client) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&configDir, "config-dir", "./duck-config", "Path to output configuration directory")
+	cmd.Flags().StringVar(&configDir, "config-dir", "./duck-config", "Path to the output CUE configuration module")
 	cmd.Flags().BoolVar(&overwrite, "overwrite", false, "Overwrite existing files in the output directory")
 
 	return cmd

@@ -59,4 +59,4 @@ A team may start with local execution in development and early shared environmen
 ## Related Reference
 
 - [Compute API](/reference/generated/api/endpoints/compute)
-- [Declarative Compute Routing Defaults Kind](/reference/generated/declarative/kinds/compute-routing-defaults)
+- [Declarative Reference](/reference/generated/declarative/)

@@ -14449,6 +14449,128 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Projects
+    delete:
+      operationId: deleteProject
+      summary: Delete project
+      parameters:
+        - name: project_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: 'There is no content to send for this request, but the headers may be useful. '
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: The server cannot find the requested resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: The request conflicts with the current state of the server.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Projects
+    patch:
+      operationId: updateProject
+      summary: Update project
+      parameters:
+        - name: project_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Project'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: The server cannot find the requested resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: The request conflicts with the current state of the server.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Projects
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateProjectRequest'
   /projects/{project_id}/builds:
     get:
       operationId: listProjectBuilds
@@ -14717,6 +14839,139 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/CreateEnvironmentRequest'
+  /projects/{project_id}/environments/{environment_id}:
+    delete:
+      operationId: deleteProjectEnvironment
+      summary: Delete project environment
+      parameters:
+        - name: project_id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: environment_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: 'There is no content to send for this request, but the headers may be useful. '
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: The server cannot find the requested resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: The request conflicts with the current state of the server.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Projects
+    patch:
+      operationId: updateProjectEnvironment
+      summary: Update project environment
+      parameters:
+        - name: project_id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: environment_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Environment'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: The server cannot find the requested resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: The request conflicts with the current state of the server.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Projects
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateEnvironmentRequest'
   /queries:
     post:
       operationId: submitQuery
@@ -19733,12 +19988,20 @@ components:
       required:
         - name
       properties:
+        owner:
+          type: string
         name:
           type: string
         description:
           type: string
         folder_id:
           type: string
+        semantic_project_name:
+          type: string
+        semantic_model_name:
+          type: string
+        compute:
+          $ref: '#/components/schemas/DashboardComputePolicy'
     CreateDashboardWidgetRequest:
       type: object
       required:
@@ -19746,6 +20009,10 @@ components:
         - source
         - layout
       properties:
+        key:
+          type: string
+        page_name:
+          type: string
         name:
           type: string
         description:
@@ -20407,12 +20674,27 @@ components:
           type: string
         folder_id:
           type: string
+        semantic_project_name:
+          type: string
+        semantic_model_name:
+          type: string
+        compute:
+          $ref: '#/components/schemas/DashboardComputePolicy'
         created_at:
           type: string
           format: date-time
         updated_at:
           type: string
           format: date-time
+    DashboardComputePolicy:
+      type: object
+      properties:
+        mode:
+          type: string
+        endpoint_name:
+          type: string
+        fallback_local:
+          type: boolean
     DashboardDetail:
       type: object
       properties:
@@ -20528,6 +20810,10 @@ components:
         id:
           type: string
         dashboard_id:
+          type: string
+        key:
+          type: string
+        page_name:
           type: string
         name:
           type: string
@@ -24140,15 +24426,27 @@ components:
     UpdateDashboardRequest:
       type: object
       properties:
+        owner:
+          type: string
         name:
           type: string
         description:
           type: string
         folder_id:
           type: string
+        semantic_project_name:
+          type: string
+        semantic_model_name:
+          type: string
+        compute:
+          $ref: '#/components/schemas/DashboardComputePolicy'
     UpdateDashboardWidgetRequest:
       type: object
       properties:
+        key:
+          type: string
+        page_name:
+          type: string
         name:
           type: string
         description:
@@ -24192,6 +24490,27 @@ components:
           $ref: '#/components/schemas/ProductSLO'
         publication_intent:
           type: string
+    UpdateEnvironmentRequest:
+      type: object
+      properties:
+        description:
+          type: string
+        target_catalog:
+          type: string
+        target_schema:
+          type: string
+        compute_endpoint:
+          type: string
+        defer_to_environment:
+          type: string
+        variables:
+          type: object
+          additionalProperties:
+            type: string
+        source_overrides:
+          type: object
+          additionalProperties:
+            type: string
     UpdateExternalLocationRequest:
       type: object
       properties:
@@ -24334,6 +24653,15 @@ components:
       type: object
       properties:
         contact_channel:
+          type: string
+    UpdateProjectRequest:
+      type: object
+      properties:
+        description:
+          type: string
+        product_id:
+          type: string
+        default_branch:
           type: string
     UpdateRowFilterRequest:
       type: object
@@ -24609,6 +24937,13 @@ components:
       properties:
         field:
           type: string
+    VisualLegendPosition:
+      type: string
+      enum:
+        - top
+        - right
+        - bottom
+        - left
     VisualOutputKind:
       type: string
       enum:
@@ -24632,6 +24967,8 @@ components:
           type: string
         legend:
           type: boolean
+        legend_position:
+          $ref: '#/components/schemas/VisualLegendPosition'
         stacked:
           type: boolean
         color_palette:
@@ -24651,6 +24988,8 @@ components:
           type: string
         legend:
           type: boolean
+        legend_position:
+          $ref: '#/components/schemas/VisualLegendPosition'
         stacked:
           type: boolean
         color_palette:

@@ -10,13 +10,20 @@ import (
 
 func dashboardFromDB(row dbstore.Dashboard) *domain.Dashboard {
 	return &domain.Dashboard{
-		ID:          row.ID,
-		Name:        row.Name,
-		Description: row.Description,
-		Owner:       row.Owner,
-		FolderID:    row.FolderID.String,
-		CreatedAt:   parseDBTime(row.CreatedAt, "dashboards.created_at"),
-		UpdatedAt:   parseDBTime(row.UpdatedAt, "dashboards.updated_at"),
+		ID:                  row.ID,
+		Name:                row.Name,
+		Description:         row.Description,
+		Owner:               row.Owner,
+		FolderID:            row.FolderID.String,
+		SemanticProjectName: row.SemanticProjectName,
+		SemanticModelName:   row.SemanticModelName,
+		Compute: domain.DashboardComputePolicy{
+			Mode:         row.ComputeMode,
+			EndpointName: row.ComputeEndpointName,
+			FallbackLocal: row.ComputeFallbackLocal != 0,
+		}.Normalize(),
+		CreatedAt:           parseDBTime(row.CreatedAt, "dashboards.created_at"),
+		UpdatedAt:           parseDBTime(row.UpdatedAt, "dashboards.updated_at"),
 	}
 }
 
@@ -35,12 +42,14 @@ func dashboardWidgetFromDB(row dbstore.DashboardWidget) (*domain.DashboardWidget
 	}
 
 	return &domain.DashboardWidget{
-		ID:          row.ID,
-		DashboardID: row.DashboardID,
-		Name:        row.Name,
-		Description: row.Description,
-		Source:      source,
-		VisualSpec:  visualSpec,
+		ID:              row.ID,
+		DashboardID:     row.DashboardID,
+		FilterOriginKey: row.FilterOriginKey,
+		PageName:        domain.NormalizeDashboardPageName(row.PageName),
+		Name:            row.Name,
+		Description:     row.Description,
+		Source:          source,
+		VisualSpec:      visualSpec,
 		Layout: domain.DashboardWidgetLayout{
 			X: int(row.LayoutX),
 			Y: int(row.LayoutY),

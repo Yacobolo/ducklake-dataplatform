@@ -84,6 +84,7 @@ schemas_generated: {
       title: #stringProperty
       subtitle: #stringProperty
       legend: #boolProperty
+      legend_position: #refProperty & {#ref: "VisualLegendPosition"}
       stacked: #boolProperty
       color_palette: #stringProperty
     }

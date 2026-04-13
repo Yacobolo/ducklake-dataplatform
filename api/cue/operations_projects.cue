@@ -20,8 +20,17 @@ package api
 	#projectIDPathParameter,
 ]
 
+#environmentIDPathParameter: #pathStringParameter & {
+	#name: "environment_id"
+}
+
 #workspaceProjectPathParameters: [
 	#projectWorkspaceIDPathParameter,
+]
+
+#projectEnvironmentPathParameters: [
+	#projectIDPathParameter,
+	#environmentIDPathParameter,
 ]
 
 #workspaceProjectListParameters: [
@@ -72,6 +81,27 @@ package api
 	},
 	#plainProjectOperation & {
 		kind:         "response"
+		method:       "patch"
+		op:           "updateProject"
+		path:         "/projects/{project_id}"
+		summary:      "Update project"
+		returns:      "Project"
+		error_family: "resource_conflict"
+		params:       #projectPathParameters
+		body_ref:     "UpdateProjectRequest"
+		body_description: "Request payload"
+	},
+	#plainProjectOperation & {
+		kind:         "no_content"
+		method:       "delete"
+		op:           "deleteProject"
+		path:         "/projects/{project_id}"
+		summary:      "Delete project"
+		error_family: "resource_conflict"
+		params:       #projectPathParameters
+	},
+	#plainProjectOperation & {
+		kind:         "response"
 		method:       "get"
 		op:           "listProjectEnvironments"
 		path:         "/projects/{project_id}/environments"
@@ -92,6 +122,27 @@ package api
 		params:         #projectPathParameters
 		body_ref:       "CreateEnvironmentRequest"
 		body_description: "Request payload"
+	},
+	#plainProjectOperation & {
+		kind:         "response"
+		method:       "patch"
+		op:           "updateProjectEnvironment"
+		path:         "/projects/{project_id}/environments/{environment_id}"
+		summary:      "Update project environment"
+		returns:      "Environment"
+		error_family: "resource_conflict"
+		params:       #projectEnvironmentPathParameters
+		body_ref:     "UpdateEnvironmentRequest"
+		body_description: "Request payload"
+	},
+	#plainProjectOperation & {
+		kind:         "no_content"
+		method:       "delete"
+		op:           "deleteProjectEnvironment"
+		path:         "/projects/{project_id}/environments/{environment_id}"
+		summary:      "Delete project environment"
+		error_family: "resource_conflict"
+		params:       #projectEnvironmentPathParameters
 	},
 	#plainProjectOperation & {
 		kind:         "response"

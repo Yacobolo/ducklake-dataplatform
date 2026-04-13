@@ -7,8 +7,8 @@ type Action struct {
 	Operation    Operation
 	ResourceKind ResourceKind
 	ResourceName string // human-readable identifier e.g. "analyst1" or "main.analytics.orders"
-	FilePath     string // source YAML file path (empty for deletes of server-only resources)
-	Desired      any    // the spec from YAML (nil for Delete)
+	FilePath     string // source CUE file path (empty for deletes of server-only resources)
+	Desired      any    // the compiled desired spec (nil for Delete)
 	Actual       any    // the current server state (nil for Create)
 	Changes      []FieldDiff
 }
@@ -23,7 +23,7 @@ type FieldDiff struct {
 // Plan is an ordered list of actions grouped by dependency layer.
 type Plan struct {
 	Actions []Action
-	Errors  []PlanError // e.g. deletion-protected resources that are missing from YAML
+	Errors  []PlanError // e.g. deletion-protected resources that are missing from desired config
 }
 
 // PlanError represents a non-actionable issue found during planning.
@@ -79,8 +79,8 @@ func (p *Plan) SortActions() {
 			return !iIsDelete
 		}
 
-		li := ai.ResourceKind.Layer()
-		lj := aj.ResourceKind.Layer()
+		li := actionSortLayer(ai)
+		lj := actionSortLayer(aj)
 
 		if iIsDelete {
 			// Deletes: descending layer order (high layers first).
@@ -97,4 +97,28 @@ func (p *Plan) SortActions() {
 		// Within same layer and operation group, sort alphabetically.
 		return ai.ResourceName < aj.ResourceName
 	})
+}
+
+func actionSortLayer(action Action) int {
+	if action.Operation == OpUpdate && actionHasDeferredAuthoringDefaults(action) {
+		// Workspace/folder default refs can depend on projects and environments that
+		// are created later in the same apply, so bind them after environment creation.
+		return KindEnvironment.Layer() + 1
+	}
+	return action.ResourceKind.Layer()
+}
+
+func actionHasDeferredAuthoringDefaults(action Action) bool {
+	switch action.ResourceKind {
+	case KindWorkspace, KindFolder:
+	default:
+		return false
+	}
+
+	for _, change := range action.Changes {
+		if change.Field == "default_project_ref" || change.Field == "default_environment_ref" {
+			return true
+		}
+	}
+	return false
 }

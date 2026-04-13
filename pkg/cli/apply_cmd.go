@@ -23,11 +23,11 @@ func newApplyCmd(client *apiruntime.Client) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "apply",
 		Short: "Apply declarative configuration changes to the server",
-		Long:  "Reads YAML configuration files, compares with the current server state, and applies the changes.",
+		Long:  "Reads declarative CUE configuration, compares with the current server state, and applies the changes.",
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			isJSON := getOutputFormat(cmd) == "json"
 
-			// 1. Load desired state from YAML files.
+			// 1. Load desired state from the CUE config tree.
 			desired, err := declarative.LoadDirectoryWithOptions(configDir, declarative.LoadOptions{
 				AllowUnknownFields: allowUnknownFields,
 			})
@@ -210,10 +210,10 @@ func newApplyCmd(client *apiruntime.Client) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&configDir, "config-dir", "./duck-config", "Path to configuration directory")
+	cmd.Flags().StringVar(&configDir, "config-dir", "./duck-config", "Path to the CUE configuration module")
 	cmd.Flags().BoolVar(&autoApprove, "auto-approve", false, "Skip interactive confirmation prompt")
 	cmd.Flags().BoolVar(&noColor, "no-color", false, "Disable colored output")
-	cmd.Flags().BoolVar(&allowUnknownFields, "allow-unknown-fields", false, "Allow unknown YAML fields in declarative config")
+	cmd.Flags().BoolVar(&allowUnknownFields, "allow-unknown-fields", false, "Deprecated no-op retained for compatibility with existing CLI wiring")
 
 	return cmd
 }

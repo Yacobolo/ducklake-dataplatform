@@ -69,9 +69,13 @@ schemas_notebooks_dashboards: {
   },
   CreateDashboardRequest: #objectSchema & {
     #fields: {
+      owner: #ownerProperty,
       description: #descriptionProperty,
       folder_id: #stringProperty,
-      name: #nameProperty
+      name: #nameProperty,
+      semantic_project_name: #stringProperty,
+      semantic_model_name: #stringProperty,
+      compute: #refProperty & {#ref: "DashboardComputePolicy"}
     },
     #required: [
       "name"
@@ -79,6 +83,8 @@ schemas_notebooks_dashboards: {
   },
   CreateDashboardWidgetRequest: #objectSchema & {
     #fields: {
+      key: #stringProperty,
+      page_name: #stringProperty,
       description: #descriptionProperty,
       layout: #refProperty & {#ref: "DashboardWidgetLayout"},
       name: #nameProperty,
@@ -110,7 +116,17 @@ schemas_notebooks_dashboards: {
       id: #idProperty,
       name: #nameProperty,
       owner: #ownerProperty,
+      semantic_project_name: #stringProperty,
+      semantic_model_name: #stringProperty,
+      compute: #refProperty & {#ref: "DashboardComputePolicy"},
       updated_at: #updatedAtProperty
+    }
+  },
+  DashboardComputePolicy: #objectSchema & {
+    #fields: {
+      mode: #stringProperty,
+      endpoint_name: #stringProperty,
+      fallback_local: #boolProperty
     }
   },
   DashboardDetail: #objectSchema & {
@@ -159,6 +175,8 @@ schemas_notebooks_dashboards: {
     #fields: {
       created_at: #createdAtProperty,
       dashboard_id: #stringProperty,
+      key: #stringProperty,
+      page_name: #stringProperty,
       description: #descriptionProperty,
       id: #idProperty,
       layout: #refProperty & {#ref: "DashboardWidgetLayout"},
@@ -376,13 +394,19 @@ schemas_notebooks_dashboards: {
   },
   UpdateDashboardRequest: #objectSchema & {
     #fields: {
+      owner: #ownerProperty,
       description: #descriptionProperty,
       folder_id: #stringProperty,
-      name: #nameProperty
+      name: #nameProperty,
+      semantic_project_name: #stringProperty,
+      semantic_model_name: #stringProperty,
+      compute: #refProperty & {#ref: "DashboardComputePolicy"}
     }
   },
   UpdateDashboardWidgetRequest: #objectSchema & {
     #fields: {
+      key: #stringProperty,
+      page_name: #stringProperty,
       description: #descriptionProperty,
       layout: #refProperty & {#ref: "DashboardWidgetLayout"},
       name: #nameProperty,

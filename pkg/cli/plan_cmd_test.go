@@ -62,56 +62,56 @@ func TestApplyCmd_AssetActionsExecute(t *testing.T) {
 	t.Cleanup(srv.Close)
 
 	configDir := t.TempDir()
-	domainPath := filepath.Join(configDir, "domains", "revenue.yaml")
+	require.NoError(t, os.MkdirAll(filepath.Join(configDir, "cue.mod"), 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(configDir, "cue.mod", "module.cue"), []byte(`module: "duck.local/test"
+language: {
+	version: "v0.14.0"
+}
+`), 0o600))
+
+	domainPath := filepath.Join(configDir, "domains", "revenue.cue")
 	require.NoError(t, os.MkdirAll(filepath.Dir(domainPath), 0o755))
-	require.NoError(t, os.WriteFile(domainPath, []byte(`apiVersion: duck/v1
-kind: Domain
-metadata:
-  name: revenue
-spec:
-  description: Revenue domain
+	require.NoError(t, os.WriteFile(domainPath, []byte(`package duckconfig
+
+platform: domains: revenue: {
+	description: "Revenue domain"
+}
 `), 0o600))
 
-	teamPath := filepath.Join(configDir, "teams", "analytics-engineering.yaml")
+	teamPath := filepath.Join(configDir, "teams", "analytics-engineering.cue")
 	require.NoError(t, os.MkdirAll(filepath.Dir(teamPath), 0o755))
-	require.NoError(t, os.WriteFile(teamPath, []byte(`apiVersion: duck/v1
-kind: Team
-metadata:
-  name: analytics-engineering
-spec:
-  domain_ref: revenue
-  contact_channel: "#rev-data"
+	require.NoError(t, os.WriteFile(teamPath, []byte(`package duckconfig
+
+platform: teams: "analytics-engineering": {
+	domain_ref: "revenue"
+	contact_channel: "#rev-data"
+}
 `), 0o600))
 
-	productPath := filepath.Join(configDir, "data-products", "daily-kpi-product.yaml")
+	productPath := filepath.Join(configDir, "data-products", "daily-kpi-product.cue")
 	require.NoError(t, os.MkdirAll(filepath.Dir(productPath), 0o755))
-	require.NoError(t, os.WriteFile(productPath, []byte(`apiVersion: duck/v1
-kind: DataProduct
-metadata:
-  name: daily-kpi-product
-spec:
-  name: Daily KPI Product
-  domain_ref: revenue
-  owner_team_ref: analytics-engineering
-  steward_principal: alice
-  contact_channel: "#rev-data"
-  contract:
-    data_grain: one row per day
-  slo:
-    freshness_slo: 60m
-  outputs:
-    - daily_kpi
+	require.NoError(t, os.WriteFile(productPath, []byte(`package duckconfig
+
+platform: data_products: "daily-kpi-product": {
+	name: "Daily KPI Product"
+	domain_ref: "revenue"
+	owner_team_ref: "analytics-engineering"
+	steward_principal: "alice"
+	contact_channel: "#rev-data"
+	contract: data_grain: "one row per day"
+	slo: freshness_slo: "60m"
+	outputs: ["daily_kpi"]
+}
 `), 0o600))
 
-	assetPath := filepath.Join(configDir, "assets", "daily_kpi.yaml")
+	assetPath := filepath.Join(configDir, "assets", "daily_kpi.cue")
 	require.NoError(t, os.MkdirAll(filepath.Dir(assetPath), 0o755))
-	require.NoError(t, os.WriteFile(assetPath, []byte(`apiVersion: duck/v1
-kind: Asset
-metadata:
-  name: daily_kpi
-spec:
-  asset_type: table
-  product_ref: daily-kpi-product
+	require.NoError(t, os.WriteFile(assetPath, []byte(`package duckconfig
+
+platform: assets: daily_kpi: {
+	asset_type: "table"
+	product_ref: "daily-kpi-product"
+}
 `), 0o600))
 
 	rootCmd := newRootCmd()

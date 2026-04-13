@@ -70,6 +70,34 @@ func TestBindQueryParameter(t *testing.T) {
 		assert.Equal(t, "user", *principalType)
 	})
 
+	t.Run("binds repeated string slices", func(t *testing.T) {
+		params := url.Values{
+			"f": []string{"borough:Queens", "borough:Brooklyn"},
+		}
+
+		var filters *[]string
+
+		err := bindQueryParameter(params, "f", false, &filters)
+
+		require.NoError(t, err)
+		require.NotNil(t, filters)
+		assert.Equal(t, []string{"borough:Queens", "borough:Brooklyn"}, *filters)
+	})
+
+	t.Run("binds comma separated string slices", func(t *testing.T) {
+		params := url.Values{
+			"f": []string{"borough:Queens,borough:Brooklyn"},
+		}
+
+		var filters *[]string
+
+		err := bindQueryParameter(params, "f", false, &filters)
+
+		require.NoError(t, err)
+		require.NotNil(t, filters)
+		assert.Equal(t, []string{"borough:Queens", "borough:Brooklyn"}, *filters)
+	})
+
 	t.Run("binds required booleans", func(t *testing.T) {
 		params := url.Values{"force": []string{"true"}}
 		var force bool

@@ -5,6 +5,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"duck-demo/internal/domain"
 )
 
 func TestDiff_EmptyStates(t *testing.T) {
@@ -216,6 +218,79 @@ func TestDiff_UpdateGroup(t *testing.T) {
 		}
 	}
 	assert.True(t, hasUpdate, "should have an update action for the group")
+}
+
+func TestDiff_DashboardLifecycle(t *testing.T) {
+	t.Run("create", func(t *testing.T) {
+		desired := &DesiredState{
+			Dashboards: []DashboardResource{{
+				Name: "revenue-overview",
+				Spec: DashboardSpec{
+					Owner: "alice",
+					Widgets: []DashboardWidgetSpec{{
+						Key:    "chart-revenue",
+						Name:   "Revenue",
+						Source: DashboardWidgetSourceSpec{Kind: "sql_query", SQLQuery: &domain.DashboardSQLQuerySource{SQL: "select 1"}},
+						Layout: domain.DashboardWidgetLayout{X: 0, Y: 0, W: 6, H: 4},
+					}},
+				},
+			}},
+		}
+
+		plan := Diff(desired, &DesiredState{})
+		require.Len(t, plan.Actions, 1)
+		assert.Equal(t, OpCreate, plan.Actions[0].Operation)
+		assert.Equal(t, KindDashboard, plan.Actions[0].ResourceKind)
+		assert.Equal(t, "revenue-overview", plan.Actions[0].ResourceName)
+	})
+
+	t.Run("update", func(t *testing.T) {
+		actual := &DesiredState{
+			Dashboards: []DashboardResource{{
+				Name: "revenue-overview",
+				Spec: DashboardSpec{
+					Owner: "alice",
+					Widgets: []DashboardWidgetSpec{{
+						Key:    "chart-revenue",
+						Name:   "Old Revenue",
+						Source: DashboardWidgetSourceSpec{Kind: "sql_query", SQLQuery: &domain.DashboardSQLQuerySource{SQL: "select 1"}},
+						Layout: domain.DashboardWidgetLayout{X: 0, Y: 0, W: 6, H: 4},
+					}},
+				},
+			}},
+		}
+		desired := &DesiredState{
+			Dashboards: []DashboardResource{{
+				Name: "revenue-overview",
+				Spec: DashboardSpec{
+					Owner: "alice",
+					Widgets: []DashboardWidgetSpec{{
+						Key:    "chart-revenue",
+						Name:   "Revenue",
+						Source: DashboardWidgetSourceSpec{Kind: "sql_query", SQLQuery: &domain.DashboardSQLQuerySource{SQL: "select 1"}},
+						Layout: domain.DashboardWidgetLayout{X: 0, Y: 0, W: 6, H: 4},
+					}},
+				},
+			}},
+		}
+
+		plan := Diff(desired, actual)
+		require.Len(t, plan.Actions, 1)
+		assert.Equal(t, OpUpdate, plan.Actions[0].Operation)
+		assert.Equal(t, KindDashboard, plan.Actions[0].ResourceKind)
+		assert.NotEmpty(t, plan.Actions[0].Changes)
+	})
+
+	t.Run("delete", func(t *testing.T) {
+		actual := &DesiredState{
+			Dashboards: []DashboardResource{{Name: "revenue-overview", Spec: DashboardSpec{Owner: "alice"}}},
+		}
+		plan := Diff(&DesiredState{}, actual)
+		require.Len(t, plan.Actions, 1)
+		assert.Equal(t, OpDelete, plan.Actions[0].Operation)
+		assert.Equal(t, KindDashboard, plan.Actions[0].ResourceKind)
+		assert.Equal(t, "revenue-overview", plan.Actions[0].ResourceName)
+	})
 }
 
 func TestDiff_TableColumnDiff(t *testing.T) {
@@ -1514,4 +1589,181 @@ func TestDiff_DataProducts(t *testing.T) {
 	assert.True(t, fields["outputs"])
 	assert.True(t, fields["publication_intent"])
 	assert.True(t, fields["versions"])
+}
+
+func TestDiff_AuthoringCore(t *testing.T) {
+	t.Parallel()
+
+	desired := &DesiredState{
+		Workspaces: []WorkspaceResource{{
+			Name: "personal",
+			Spec: WorkspaceSpec{
+				Kind:                  "personal",
+				OwnerPrincipal:        "alice",
+				DefaultProjectRef:     "personal/core",
+				DefaultEnvironmentRef: "personal/core/dev",
+			},
+		}},
+		Folders: []FolderResource{{
+			Name: "analysis",
+			Spec: FolderSpec{
+				WorkspaceRef: "personal",
+				GitRootPath:  "analysis",
+			},
+		}},
+		Projects: []ProjectResource{{
+			Name: "core",
+			Spec: ProjectSpec{
+				WorkspaceRef:  "personal",
+				Kind:          "personal",
+				Description:   "new",
+				DefaultBranch: "main",
+			},
+		}},
+		Environments: []EnvironmentResource{{
+			Name: "dev",
+			Spec: EnvironmentSpec{
+				ProjectRef:    "personal/core",
+				Kind:          "development",
+				TargetCatalog: "main",
+				TargetSchema:  "analytics",
+			},
+		}},
+	}
+
+	actual := &DesiredState{
+		Workspaces: []WorkspaceResource{{
+			Name: "personal",
+			Spec: WorkspaceSpec{
+				Kind:           "personal",
+				OwnerPrincipal: "alice",
+			},
+		}},
+		Folders: []FolderResource{{
+			Name: "stale",
+			Spec: FolderSpec{WorkspaceRef: "personal"},
+		}},
+		Projects: []ProjectResource{{
+			Name: "core",
+			Spec: ProjectSpec{
+				WorkspaceRef:  "personal",
+				Kind:          "personal",
+				Description:   "old",
+				DefaultBranch: "main",
+			},
+		}},
+	}
+
+	plan := Diff(desired, actual)
+	require.NotEmpty(t, plan.Actions)
+
+	foundKinds := map[ResourceKind]bool{}
+	for _, action := range plan.Actions {
+		foundKinds[action.ResourceKind] = true
+	}
+	assert.True(t, foundKinds[KindWorkspace])
+	assert.True(t, foundKinds[KindFolder])
+	assert.True(t, foundKinds[KindProject])
+	assert.True(t, foundKinds[KindEnvironment])
+}
+
+func TestDiff_AuthoringCoreDeferredDefaultsOrder(t *testing.T) {
+	t.Parallel()
+
+	plan := Diff(&DesiredState{
+		Workspaces: []WorkspaceResource{{
+			Name: "personal",
+			Spec: WorkspaceSpec{
+				Kind:                  "personal",
+				OwnerPrincipal:        "alice",
+				DefaultProjectRef:     "personal/core",
+				DefaultEnvironmentRef: "personal/core/dev",
+			},
+		}},
+		Folders: []FolderResource{{
+			Name: "analysis",
+			Spec: FolderSpec{
+				WorkspaceRef:          "personal",
+				DefaultProjectRef:     "personal/core",
+				DefaultEnvironmentRef: "personal/core/dev",
+			},
+		}},
+		Projects: []ProjectResource{{
+			Name: "core",
+			Spec: ProjectSpec{
+				WorkspaceRef: "personal",
+				Kind:         "personal",
+			},
+		}},
+		Environments: []EnvironmentResource{{
+			Name: "dev",
+			Spec: EnvironmentSpec{
+				ProjectRef:    "personal/core",
+				Kind:          "development",
+				TargetCatalog: "main",
+				TargetSchema:  "analytics",
+			},
+		}},
+	}, &DesiredState{})
+
+	require.Len(t, plan.Actions, 6)
+
+	expected := []struct {
+		kind ResourceKind
+		op   Operation
+		name string
+	}{
+		{kind: KindWorkspace, op: OpCreate, name: "personal"},
+		{kind: KindFolder, op: OpCreate, name: "personal/analysis"},
+		{kind: KindProject, op: OpCreate, name: "personal/core"},
+		{kind: KindEnvironment, op: OpCreate, name: "personal/core/dev"},
+		{kind: KindWorkspace, op: OpUpdate, name: "personal"},
+		{kind: KindFolder, op: OpUpdate, name: "personal/analysis"},
+	}
+	for i, want := range expected {
+		assert.Equal(t, want.kind, plan.Actions[i].ResourceKind)
+		assert.Equal(t, want.op, plan.Actions[i].Operation)
+		assert.Equal(t, want.name, plan.Actions[i].ResourceName)
+	}
+
+	assert.Empty(t, plan.Actions[0].Desired.(WorkspaceResource).Spec.DefaultProjectRef)
+	assert.Empty(t, plan.Actions[1].Desired.(FolderResource).Spec.DefaultProjectRef)
+	assert.Equal(t, "personal/core", plan.Actions[4].Desired.(WorkspaceResource).Spec.DefaultProjectRef)
+	assert.Equal(t, "personal/core", plan.Actions[5].Desired.(FolderResource).Spec.DefaultProjectRef)
+}
+
+func TestDiff_NotebookOmittedOwnerDoesNotDrift(t *testing.T) {
+	t.Parallel()
+
+	plan := Diff(&DesiredState{
+		Notebooks: []NotebookResource{{
+			Name: "orders",
+			Spec: NotebookSpec{
+				FolderRef: "personal/analysis",
+				Cells: []CellSpec{{
+					Type:    "sql",
+					Name:    "output",
+					Role:    "output",
+					Content: "select 1",
+				}},
+			},
+		}},
+	}, &DesiredState{
+		Notebooks: []NotebookResource{{
+			Name: "orders",
+			Spec: NotebookSpec{
+				Owner:     "admin",
+				FolderRef: "personal/analysis",
+				Cells: []CellSpec{{
+					Type:    "sql",
+					Name:    "output",
+					Role:    "output",
+					Content: "select 1",
+				}},
+			},
+		}},
+	})
+
+	assert.Empty(t, plan.Actions)
+	assert.Empty(t, plan.Errors)
 }

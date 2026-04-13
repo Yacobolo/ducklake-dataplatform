@@ -31,7 +31,7 @@ A governed package of outputs, semantic entrypoints, ownership, contract, and re
 
 ## Declarative config
 
-YAML documents that define desired platform state and are applied through validate-plan-apply workflows.
+CUE configuration fragments that unify into desired platform state and are applied through validate-plan-apply workflows.
 
 ## Domain
 

@@ -33,6 +33,7 @@ const (
 // SemanticModel defines business-facing semantic metadata anchored to a base model.
 type SemanticModel struct {
 	ID                   string
+	ProjectName          string
 	Name                 string
 	Description          string
 	Owner                string
@@ -46,6 +47,7 @@ type SemanticModel struct {
 
 // CreateSemanticModelRequest holds parameters for creating a semantic model.
 type CreateSemanticModelRequest struct {
+	ProjectName          string
 	Name                 string
 	Description          string
 	BaseModelRef         string
@@ -177,6 +179,7 @@ type SemanticRelationship struct {
 	ToSemanticID     string
 	RelationshipType string
 	JoinSQL          string
+	IsDefault        bool
 	Cost             int
 	MaxHops          int
 	CreatedBy        string
@@ -191,6 +194,7 @@ type CreateSemanticRelationshipRequest struct {
 	ToSemanticID     string
 	RelationshipType string
 	JoinSQL          string
+	IsDefault        bool
 	Cost             int
 	MaxHops          int
 }

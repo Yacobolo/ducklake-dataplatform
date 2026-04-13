@@ -45,7 +45,7 @@ task site:check
 ```
 
 The canonical public API contract is `api/gen/openapi.yaml`.
-Generated reference under `site/content/reference/generated` is derived from that contract plus the declarative schema artifacts.
+Generated reference under `site/content/reference/generated` is derived from that contract plus the declarative CUE reference output.
 
 ## APIGen Pipeline
 
@@ -67,12 +67,16 @@ Notes:
 - `api/gen/json-ir.json` is the APIGen compiler boundary consumed by the Go emitters.
 - Generated server code embeds the canonical OpenAPI contract for `/openapi.json` and `/docs`.
 
+## Declarative Seed Example
+
+Start with the checked-in seeded platform config:
+
+- [`duck-config/README.md`](./duck-config/README.md)
+- Run `task dev:seeded` to boot a clean local server and apply the rendered seed config automatically.
+
 ## Examples
 
-Start with the MovieLens showcase:
-
 - [`examples/README.md`](./examples/README.md)
-- [`examples/showcase-movielens/README.md`](./examples/showcase-movielens/README.md)
 
 ## API Surface
 

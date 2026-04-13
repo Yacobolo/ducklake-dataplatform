@@ -127,6 +127,55 @@ func (s *Service) GetProjectForPrincipal(ctx context.Context, principal string, 
 	return project, nil
 }
 
+// UpdateProjectForPrincipal updates mutable project fields after workspace access checks.
+func (s *Service) UpdateProjectForPrincipal(ctx context.Context, principal string, isAdmin bool, id string, req domain.UpdateProjectRequest) (*domain.Project, error) {
+	if err := domain.ValidateUpdateProjectRequest(req); err != nil {
+		return nil, err
+	}
+	project, err := s.GetProjectForPrincipal(ctx, principal, isAdmin, id)
+	if err != nil {
+		return nil, err
+	}
+	if !isAdmin {
+		if err := s.requireWorkspaceWrite(ctx, principal, project.WorkspaceID); err != nil {
+			return nil, err
+		}
+	}
+	if productID := normalizedStringPtr(req.ProductID); productID != nil {
+		product, err := s.products.GetByID(ctx, *productID)
+		if err != nil {
+			return nil, err
+		}
+		if project.OwnerTeamID != nil && product.OwnerTeamID != *project.OwnerTeamID {
+			return nil, domain.ErrValidation("project owner_team_id must match the attached product owner team")
+		}
+	}
+	updated, err := s.projects.Update(ctx, project.ID, req)
+	if err != nil {
+		return nil, err
+	}
+	s.logAudit(ctx, principal, "UPDATE_INTERNAL_PROJECT")
+	return updated, nil
+}
+
+// DeleteProjectForPrincipal deletes a project after workspace access checks.
+func (s *Service) DeleteProjectForPrincipal(ctx context.Context, principal string, isAdmin bool, id string) error {
+	project, err := s.GetProjectForPrincipal(ctx, principal, isAdmin, id)
+	if err != nil {
+		return err
+	}
+	if !isAdmin {
+		if err := s.requireWorkspaceWrite(ctx, principal, project.WorkspaceID); err != nil {
+			return err
+		}
+	}
+	if err := s.projects.Delete(ctx, project.ID); err != nil {
+		return err
+	}
+	s.logAudit(ctx, principal, "DELETE_INTERNAL_PROJECT")
+	return nil
+}
+
 // CreateEnvironmentForProject creates an environment beneath a project id.
 func (s *Service) CreateEnvironmentForProject(ctx context.Context, principal string, isAdmin bool, projectID string, req domain.CreateEnvironmentRequest) (*domain.Environment, error) {
 	project, err := s.GetProjectForPrincipal(ctx, principal, isAdmin, projectID)
@@ -153,6 +202,60 @@ func (s *Service) ListEnvironmentsForProject(ctx context.Context, principal stri
 		return nil, 0, err
 	}
 	return s.environments.ListByProject(ctx, project.ID, page)
+}
+
+// UpdateEnvironmentForProject updates mutable environment fields after project ownership checks.
+func (s *Service) UpdateEnvironmentForProject(ctx context.Context, principal string, isAdmin bool, projectID string, environmentID string, req domain.UpdateEnvironmentRequest) (*domain.Environment, error) {
+	if err := domain.ValidateUpdateEnvironmentRequest(req); err != nil {
+		return nil, err
+	}
+	project, err := s.GetProjectForPrincipal(ctx, principal, isAdmin, projectID)
+	if err != nil {
+		return nil, err
+	}
+	if !isAdmin {
+		if err := s.requireWorkspaceWrite(ctx, principal, project.WorkspaceID); err != nil {
+			return nil, err
+		}
+	}
+	environment, err := s.environments.GetByID(ctx, environmentID)
+	if err != nil {
+		return nil, err
+	}
+	if environment.ProjectID != project.ID {
+		return nil, domain.ErrValidation("environment does not belong to project")
+	}
+	updated, err := s.environments.Update(ctx, environment.ID, req)
+	if err != nil {
+		return nil, err
+	}
+	s.logAudit(ctx, principal, "UPDATE_INTERNAL_ENVIRONMENT")
+	return updated, nil
+}
+
+// DeleteEnvironmentForProject deletes an environment after project ownership checks.
+func (s *Service) DeleteEnvironmentForProject(ctx context.Context, principal string, isAdmin bool, projectID string, environmentID string) error {
+	project, err := s.GetProjectForPrincipal(ctx, principal, isAdmin, projectID)
+	if err != nil {
+		return err
+	}
+	if !isAdmin {
+		if err := s.requireWorkspaceWrite(ctx, principal, project.WorkspaceID); err != nil {
+			return err
+		}
+	}
+	environment, err := s.environments.GetByID(ctx, environmentID)
+	if err != nil {
+		return err
+	}
+	if environment.ProjectID != project.ID {
+		return domain.ErrValidation("environment does not belong to project")
+	}
+	if err := s.environments.Delete(ctx, environment.ID); err != nil {
+		return err
+	}
+	s.logAudit(ctx, principal, "DELETE_INTERNAL_ENVIRONMENT")
+	return nil
 }
 
 // CreateBuildForProject creates a build beneath a project id.

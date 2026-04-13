@@ -37,7 +37,7 @@ func (s *Service) RunMetricQuery(ctx context.Context, principal string, req Metr
 	return &MetricQueryResult{Plan: *plan, Result: result}, nil
 }
 
-func (s *Service) normalizeExecutionError(ctx context.Context, _ MetricQueryRequest, plan *MetricQueryPlan, err error) error {
+func (s *Service) normalizeExecutionError(ctx context.Context, req MetricQueryRequest, plan *MetricQueryPlan, err error) error {
 	if plan == nil || err == nil {
 		return err
 	}
@@ -55,7 +55,7 @@ func (s *Service) normalizeExecutionError(ctx context.Context, _ MetricQueryRequ
 	}
 
 	if s.modelRepo != nil {
-		if model, modelErr := s.resolveTransformationModel(ctx, plan.BaseRelation); modelErr == nil && model != nil {
+		if model, modelErr := s.resolveTransformationModel(ctx, plan.BaseRelation, req.ProjectName); modelErr == nil && model != nil {
 			return domain.ErrValidation(
 				"semantic model %q references transformation model %q, but its relation is not materialized; run the model first or point base_model_ref at a queryable relation",
 				plan.BaseModelName, model.QualifiedName(),
@@ -66,13 +66,20 @@ func (s *Service) normalizeExecutionError(ctx context.Context, _ MetricQueryRequ
 	return err
 }
 
-func (s *Service) resolveTransformationModel(ctx context.Context, relation string) (*domain.Model, error) {
+func (s *Service) resolveTransformationModel(ctx context.Context, relation string, fallbackProject string) (*domain.Model, error) {
 	relation = strings.TrimSpace(relation)
 	if relation == "" || s.modelRepo == nil {
 		return nil, fmt.Errorf("model repository not configured")
 	}
 
 	parts := strings.SplitN(relation, ".", 2)
+	if len(parts) == 1 {
+		fallbackProject = strings.TrimSpace(fallbackProject)
+		if fallbackProject == "" {
+			return nil, fmt.Errorf("relation %q is not project-qualified", relation)
+		}
+		parts = []string{fallbackProject, parts[0]}
+	}
 	if len(parts) != 2 {
 		return nil, fmt.Errorf("relation %q is not project-qualified", relation)
 	}

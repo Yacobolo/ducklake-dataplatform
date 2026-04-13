@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 
 	"duck-demo/internal/domain"
 	dashboardsvc "duck-demo/internal/service/dashboard"
@@ -16,6 +17,7 @@ type dashboardService interface {
 	ListWidgets(ctx context.Context, dashboardID string) ([]domain.DashboardWidget, error)
 	GetWidget(ctx context.Context, dashboardID, widgetID string) (*domain.DashboardWidget, error)
 	ResolveWidgets(ctx context.Context, principal string, widgets []domain.DashboardWidget) ([]dashboardsvc.ResolvedWidget, error)
+	ResolveWidgetsForDashboard(ctx context.Context, principal string, dashboard *domain.Dashboard, widgets []domain.DashboardWidget, filters []dashboardsvc.InteractiveFilter) ([]dashboardsvc.ResolvedWidget, error)
 	UpdateDashboard(ctx context.Context, principal string, isAdmin bool, id string, req domain.UpdateDashboardRequest) (*domain.Dashboard, error)
 	DeleteDashboard(ctx context.Context, principal string, isAdmin bool, id string) error
 	CreateWidget(ctx context.Context, principal string, isAdmin bool, dashboardID string, req domain.CreateDashboardWidgetRequest) (*domain.DashboardWidget, error)
@@ -52,10 +54,24 @@ func (h *APIHandler) ListDashboards(ctx context.Context, req GenListDashboardsRe
 // CreateDashboard implements the endpoint for creating dashboards.
 func (h *APIHandler) CreateDashboard(ctx context.Context, req GenCreateDashboardRequest) (GenCreateDashboardResponse, error) {
 	cp, _ := domain.PrincipalFromContext(ctx)
+	owner := cp.Name
+	if req.Body.Owner != nil {
+		owner = strings.TrimSpace(*req.Body.Owner)
+		if owner == "" {
+			return CreateDashboard400JSONResponse{BadRequestJSONResponse{Body: Error{Code: 400, Message: "dashboard owner is required"}, Headers: BadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+		}
+		if owner != cp.Name && !cp.IsAdmin {
+			return CreateDashboard403JSONResponse{ForbiddenJSONResponse{Body: Error{Code: 403, Message: "only an admin can assign dashboard owner"}, Headers: ForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+		}
+	}
 	item, err := h.dashboards.CreateDashboard(ctx, cp.Name, domain.CreateDashboardRequest{
-		Name:        req.Body.Name,
-		Description: valOrEmpty(req.Body.Description),
-		FolderID:    req.Body.FolderId,
+		Owner:               owner,
+		Name:                req.Body.Name,
+		Description:         valOrEmpty(req.Body.Description),
+		FolderID:            req.Body.FolderId,
+		SemanticProjectName: valOrEmpty(req.Body.SemanticProjectName),
+		SemanticModelName:   valOrEmpty(req.Body.SemanticModelName),
+		Compute:             dashboardComputePolicyFromAPI(req.Body.Compute),
 	})
 	if err != nil {
 		switch {
@@ -140,7 +156,7 @@ func (h *APIHandler) GetRenderedDashboard(ctx context.Context, req GenGetRendere
 		}
 		return nil, err
 	}
-	resolved, err := h.dashboards.ResolveWidgets(ctx, cp.Name, widgets)
+	resolved, err := h.dashboards.ResolveWidgetsForDashboard(ctx, cp.Name, item, widgets, dashboardFiltersFromAPI(req.Params.Filters))
 	if err != nil {
 		switch {
 		case errors.As(err, new(*domain.AccessDeniedError)):
@@ -174,9 +190,13 @@ func (h *APIHandler) GetRenderedDashboard(ctx context.Context, req GenGetRendere
 func (h *APIHandler) UpdateDashboard(ctx context.Context, req GenUpdateDashboardRequest) (GenUpdateDashboardResponse, error) {
 	cp, _ := domain.PrincipalFromContext(ctx)
 	item, err := h.dashboards.UpdateDashboard(ctx, cp.Name, cp.IsAdmin, req.DashboardId, domain.UpdateDashboardRequest{
-		Name:        req.Body.Name,
-		Description: req.Body.Description,
-		FolderID:    req.Body.FolderId,
+		Owner:               req.Body.Owner,
+		Name:                req.Body.Name,
+		Description:         req.Body.Description,
+		FolderID:            req.Body.FolderId,
+		SemanticProjectName: req.Body.SemanticProjectName,
+		SemanticModelName:   req.Body.SemanticModelName,
+		Compute:             dashboardComputePolicyFromAPI(req.Body.Compute),
 	})
 	if err != nil {
 		switch {
@@ -216,11 +236,13 @@ func (h *APIHandler) DeleteDashboard(ctx context.Context, req GenDeleteDashboard
 func (h *APIHandler) CreateDashboardWidget(ctx context.Context, req GenCreateDashboardWidgetRequest) (GenCreateDashboardWidgetResponse, error) {
 	cp, _ := domain.PrincipalFromContext(ctx)
 	item, err := h.dashboards.CreateWidget(ctx, cp.Name, cp.IsAdmin, req.DashboardId, domain.CreateDashboardWidgetRequest{
-		Name:        req.Body.Name,
-		Description: valOrEmpty(req.Body.Description),
-		Source:      dashboardWidgetSourceFromAPI(&req.Body.Source),
-		VisualSpec:  visualSpecFromAPI(req.Body.VisualSpec),
-		Layout:      dashboardWidgetLayoutFromAPI(&req.Body.Layout),
+		FilterOriginKey: valOrEmpty(req.Body.Key),
+		PageName:        valOrEmpty(req.Body.PageName),
+		Name:            req.Body.Name,
+		Description:     valOrEmpty(req.Body.Description),
+		Source:          dashboardWidgetSourceFromAPI(&req.Body.Source),
+		VisualSpec:      visualSpecFromAPI(req.Body.VisualSpec),
+		Layout:          dashboardWidgetLayoutFromAPI(&req.Body.Layout),
 	})
 	if err != nil {
 		switch {
@@ -244,9 +266,11 @@ func (h *APIHandler) CreateDashboardWidget(ctx context.Context, req GenCreateDas
 func (h *APIHandler) UpdateDashboardWidget(ctx context.Context, req GenUpdateDashboardWidgetRequest) (GenUpdateDashboardWidgetResponse, error) {
 	cp, _ := domain.PrincipalFromContext(ctx)
 	domReq := domain.UpdateDashboardWidgetRequest{
-		Name:        req.Body.Name,
-		Description: req.Body.Description,
-		VisualSpec:  visualSpecFromAPI(req.Body.VisualSpec),
+		FilterOriginKey: req.Body.Key,
+		PageName:        req.Body.PageName,
+		Name:            req.Body.Name,
+		Description:     req.Body.Description,
+		VisualSpec:      visualSpecFromAPI(req.Body.VisualSpec),
 	}
 	if req.Body.Source != nil {
 		source := dashboardWidgetSourceFromAPI(req.Body.Source)
@@ -293,20 +317,76 @@ func (h *APIHandler) DeleteDashboardWidget(ctx context.Context, req GenDeleteDas
 
 func dashboardToAPI(item domain.Dashboard) Dashboard {
 	return Dashboard{
-		Id:          optStr(item.ID),
-		Name:        optStr(item.Name),
-		Description: optStr(item.Description),
-		Owner:       optStr(item.Owner),
-		FolderId:    optStr(item.FolderID),
-		CreatedAt:   formatTimePtr(&item.CreatedAt),
-		UpdatedAt:   formatTimePtr(&item.UpdatedAt),
+		Id:                  optStr(item.ID),
+		Name:                optStr(item.Name),
+		Description:         optStr(item.Description),
+		Owner:               optStr(item.Owner),
+		FolderId:            optStr(item.FolderID),
+		SemanticProjectName: optStr(item.SemanticProjectName),
+		SemanticModelName:   optStr(item.SemanticModelName),
+		Compute:             ptrDashboardComputePolicy(dashboardComputePolicyToAPI(item.Compute)),
+		CreatedAt:           formatTimePtr(&item.CreatedAt),
+		UpdatedAt:           formatTimePtr(&item.UpdatedAt),
 	}
+}
+
+func dashboardComputePolicyFromAPI(policy *DashboardComputePolicy) *domain.DashboardComputePolicy {
+	if policy == nil {
+		return nil
+	}
+	return &domain.DashboardComputePolicy{
+		Mode:          valOrEmpty(policy.Mode),
+		EndpointName:  valOrEmpty(policy.EndpointName),
+		FallbackLocal: policy.FallbackLocal != nil && *policy.FallbackLocal,
+	}
+}
+
+func dashboardComputePolicyToAPI(policy domain.DashboardComputePolicy) DashboardComputePolicy {
+	policy = policy.Normalize()
+	fallback := policy.FallbackLocal
+	return DashboardComputePolicy{
+		Mode:          optStr(policy.Mode),
+		EndpointName:  optStr(policy.EndpointName),
+		FallbackLocal: &fallback,
+	}
+}
+
+func dashboardFiltersFromAPI(rawFilters *[]string) []dashboardsvc.InteractiveFilter {
+	if rawFilters == nil || len(*rawFilters) == 0 {
+		return nil
+	}
+
+	order := make([]string, 0, len(*rawFilters))
+	grouped := make(map[string][]string)
+	for _, raw := range *rawFilters {
+		dimension, value, ok := strings.Cut(raw, ":")
+		dimension = strings.TrimSpace(dimension)
+		value = strings.TrimSpace(value)
+		if !ok || dimension == "" || value == "" {
+			continue
+		}
+		if _, exists := grouped[dimension]; !exists {
+			order = append(order, dimension)
+		}
+		grouped[dimension] = append(grouped[dimension], value)
+	}
+
+	out := make([]dashboardsvc.InteractiveFilter, 0, len(order))
+	for _, dimension := range order {
+		out = append(out, dashboardsvc.InteractiveFilter{
+			Dimension: dimension,
+			Values:    grouped[dimension],
+		})
+	}
+	return out
 }
 
 func dashboardWidgetToAPI(item domain.DashboardWidget) DashboardWidget {
 	return DashboardWidget{
 		Id:          optStr(item.ID),
 		DashboardId: optStr(item.DashboardID),
+		Key:         optStr(item.FilterOriginKey),
+		PageName:    optStr(item.PageName),
 		Name:        optStr(item.Name),
 		Description: optStr(item.Description),
 		Source:      ptrDashboardWidgetSource(dashboardWidgetSourceToAPI(item.Source)),
@@ -407,7 +487,8 @@ func dashboardWidgetLayoutToAPI(layout domain.DashboardWidgetLayout) DashboardWi
 	}
 }
 
-func ptrDashboard(v Dashboard) *Dashboard { return &v }
+func ptrDashboard(v Dashboard) *Dashboard                                        { return &v }
+func ptrDashboardComputePolicy(v DashboardComputePolicy) *DashboardComputePolicy { return &v }
 
 func resolvedDashboardWidgetToAPI(item dashboardsvc.ResolvedWidget) ResolvedDashboardWidget {
 	rowCount := int64(item.RowCount)

@@ -11,13 +11,17 @@ const (
 	KindTag                                        // layer 0
 	KindMacro                                      // layer 0
 	KindDomain                                     // layer 0
+	KindWorkspace                                  // layer 0
 	KindGroup                                      // layer 1
 	KindExternalLocation                           // layer 1
 	KindComputeEndpoint                            // layer 1
 	KindComputeRoutingDefaults                     // layer 1
 	KindTeam                                       // layer 1
+	KindFolder                                     // layer 1
+	KindProject                                    // layer 1
 	KindGroupMembership                            // layer 2
 	KindCatalogRegistration                        // layer 2
+	KindEnvironment                                // layer 2
 	KindSchema                                     // layer 3
 	KindComputeAssignment                          // layer 3
 	KindTable                                      // layer 4
@@ -35,6 +39,7 @@ const (
 	KindAsset                                      // layer 8
 	KindModel                                      // layer 9
 	KindSemanticModel                              // layer 10
+	KindDashboard                                  // layer 11
 )
 
 // String returns a human-readable kebab-case name for the resource kind.
@@ -50,6 +55,8 @@ func (k ResourceKind) String() string {
 		return "macro"
 	case KindDomain:
 		return "domain"
+	case KindWorkspace:
+		return "workspace"
 	case KindGroup:
 		return "group"
 	case KindExternalLocation:
@@ -60,10 +67,16 @@ func (k ResourceKind) String() string {
 		return "compute-routing-defaults"
 	case KindTeam:
 		return "team"
+	case KindFolder:
+		return "folder"
+	case KindProject:
+		return "project"
 	case KindGroupMembership:
 		return "group-membership"
 	case KindCatalogRegistration:
 		return "catalog-registration"
+	case KindEnvironment:
+		return "environment"
 	case KindSchema:
 		return "schema"
 	case KindComputeAssignment:
@@ -98,6 +111,8 @@ func (k ResourceKind) String() string {
 		return "model"
 	case KindSemanticModel:
 		return "semantic-model"
+	case KindDashboard:
+		return "dashboard"
 	default:
 		return "unknown"
 	}
@@ -107,11 +122,11 @@ func (k ResourceKind) String() string {
 // Layer 0 has no dependencies; higher layers depend on lower ones.
 func (k ResourceKind) Layer() int {
 	switch k {
-	case KindStorageCredential, KindPrincipal, KindTag, KindMacro, KindDomain:
+	case KindStorageCredential, KindPrincipal, KindTag, KindMacro, KindDomain, KindWorkspace:
 		return 0
-	case KindGroup, KindExternalLocation, KindComputeEndpoint, KindComputeRoutingDefaults, KindTeam:
+	case KindGroup, KindExternalLocation, KindComputeEndpoint, KindComputeRoutingDefaults, KindTeam, KindFolder, KindProject:
 		return 1
-	case KindGroupMembership, KindCatalogRegistration:
+	case KindGroupMembership, KindCatalogRegistration, KindEnvironment:
 		return 2
 	case KindSchema, KindComputeAssignment:
 		return 3
@@ -129,13 +144,15 @@ func (k ResourceKind) Layer() int {
 		return 9
 	case KindSemanticModel:
 		return 10
+	case KindDashboard:
+		return 11
 	default:
 		return 99
 	}
 }
 
 // MaxLayer is the highest dependency layer.
-const MaxLayer = 10
+const MaxLayer = 11
 
 // Operation represents a planned change type.
 type Operation int
@@ -163,7 +180,7 @@ func (o Operation) String() string {
 	}
 }
 
-// Known Kind strings used in YAML documents.
+// Known legacy kind strings used by internal migration/test helpers.
 const (
 	KindNamePrincipalList          = "PrincipalList"
 	KindNameGroupList              = "GroupList"
@@ -185,6 +202,10 @@ const (
 	KindNameComputeAssignmentList  = "ComputeAssignmentList"
 	KindNameComputeRoutingDefaults = "ComputeRoutingDefaults"
 	KindNameDomain                 = "Domain"
+	KindNameWorkspace              = "Workspace"
+	KindNameFolder                 = "Folder"
+	KindNameProject                = "Project"
+	KindNameEnvironment            = "Environment"
 	KindNameTeam                   = "Team"
 	KindNameDataProduct            = "DataProduct"
 	KindNameNotebook               = "Notebook"
@@ -192,7 +213,8 @@ const (
 	KindNameModel                  = "Model"
 	KindNameSemanticModel          = "SemanticModel"
 	KindNameMacro                  = "Macro"
+	KindNameDashboard              = "Dashboard"
 )
 
-// SupportedAPIVersion is the current API version for YAML documents.
+// SupportedAPIVersion is retained only for internal migration/test helpers.
 const SupportedAPIVersion = "duck/v1"

@@ -71,6 +71,24 @@ schemas_core: {
       "name"
     ]
   },
+  UpdateEnvironmentRequest: #objectSchema & {
+    #fields: {
+      description: #descriptionProperty,
+      target_catalog: #stringProperty,
+      target_schema: #stringProperty,
+      compute_endpoint: #stringProperty,
+      defer_to_environment: #stringProperty,
+      variables: #refProperty & {#ref: "Record"},
+      source_overrides: #refProperty & {#ref: "Record"}
+    }
+  },
+  UpdateProjectRequest: #objectSchema & {
+    #fields: {
+      description: #descriptionProperty,
+      product_id: #stringProperty,
+      default_branch: #stringProperty
+    }
+  },
   Error: #objectSchema & {
     #fields: {
       code: #int32Property,
@@ -278,6 +296,14 @@ schemas_core: {
       "chart"
     ]
   },
+  VisualLegendPosition: #enumSchema & {
+    #values: [
+      "top",
+      "right",
+      "bottom",
+      "left"
+    ]
+  },
   VisualSpec: #objectSchema & {
     #fields: {
       chart_type: #refProperty & {#ref: "VisualChartType"},
@@ -285,6 +311,7 @@ schemas_core: {
       encodings: #refProperty & {#ref: "VisualEncodings"},
       kind: #refProperty & {#ref: "VisualOutputKind"},
       legend: #boolProperty,
+      legend_position: #refProperty & {#ref: "VisualLegendPosition"},
       stacked: #boolProperty,
       subtitle: #stringProperty,
       title: #stringProperty

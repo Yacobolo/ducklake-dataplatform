@@ -729,15 +729,21 @@ type CreateComputeEndpointRequest struct {
 }
 
 type CreateDashboardRequest struct {
-	Description *string `json:"description,omitempty"`
-	FolderId    *string `json:"folder_id,omitempty"`
-	Name        string  `json:"name"`
+	Compute             *DashboardComputePolicy `json:"compute,omitempty"`
+	Description         *string                 `json:"description,omitempty"`
+	FolderId            *string                 `json:"folder_id,omitempty"`
+	Name                string                  `json:"name"`
+	Owner               *string                 `json:"owner,omitempty"`
+	SemanticModelName   *string                 `json:"semantic_model_name,omitempty"`
+	SemanticProjectName *string                 `json:"semantic_project_name,omitempty"`
 }
 
 type CreateDashboardWidgetRequest struct {
 	Description *string               `json:"description,omitempty"`
+	Key         *string               `json:"key,omitempty"`
 	Layout      DashboardWidgetLayout `json:"layout"`
 	Name        string                `json:"name"`
+	PageName    *string               `json:"page_name,omitempty"`
 	Source      DashboardWidgetSource `json:"source"`
 	VisualSpec  *VisualSpec           `json:"visual_spec,omitempty"`
 }
@@ -1052,13 +1058,22 @@ type CreateWorkspaceRequest struct {
 }
 
 type Dashboard struct {
-	CreatedAt   *string `json:"created_at,omitempty"`
-	Description *string `json:"description,omitempty"`
-	FolderId    *string `json:"folder_id,omitempty"`
-	Id          *string `json:"id,omitempty"`
-	Name        *string `json:"name,omitempty"`
-	Owner       *string `json:"owner,omitempty"`
-	UpdatedAt   *string `json:"updated_at,omitempty"`
+	Compute             *DashboardComputePolicy `json:"compute,omitempty"`
+	CreatedAt           *string                 `json:"created_at,omitempty"`
+	Description         *string                 `json:"description,omitempty"`
+	FolderId            *string                 `json:"folder_id,omitempty"`
+	Id                  *string                 `json:"id,omitempty"`
+	Name                *string                 `json:"name,omitempty"`
+	Owner               *string                 `json:"owner,omitempty"`
+	SemanticModelName   *string                 `json:"semantic_model_name,omitempty"`
+	SemanticProjectName *string                 `json:"semantic_project_name,omitempty"`
+	UpdatedAt           *string                 `json:"updated_at,omitempty"`
+}
+
+type DashboardComputePolicy struct {
+	EndpointName  *string `json:"endpoint_name,omitempty"`
+	FallbackLocal *bool   `json:"fallback_local,omitempty"`
+	Mode          *string `json:"mode,omitempty"`
 }
 
 type DashboardDetail struct {
@@ -1093,8 +1108,10 @@ type DashboardWidget struct {
 	DashboardId *string                `json:"dashboard_id,omitempty"`
 	Description *string                `json:"description,omitempty"`
 	Id          *string                `json:"id,omitempty"`
+	Key         *string                `json:"key,omitempty"`
 	Layout      *DashboardWidgetLayout `json:"layout,omitempty"`
 	Name        *string                `json:"name,omitempty"`
+	PageName    *string                `json:"page_name,omitempty"`
 	Source      *DashboardWidgetSource `json:"source,omitempty"`
 	UpdatedAt   *string                `json:"updated_at,omitempty"`
 	VisualSpec  *VisualSpec            `json:"visual_spec,omitempty"`
@@ -2904,15 +2921,21 @@ type UpdateComputeEndpointRequest struct {
 }
 
 type UpdateDashboardRequest struct {
-	Description *string `json:"description,omitempty"`
-	FolderId    *string `json:"folder_id,omitempty"`
-	Name        *string `json:"name,omitempty"`
+	Compute             *DashboardComputePolicy `json:"compute,omitempty"`
+	Description         *string                 `json:"description,omitempty"`
+	FolderId            *string                 `json:"folder_id,omitempty"`
+	Name                *string                 `json:"name,omitempty"`
+	Owner               *string                 `json:"owner,omitempty"`
+	SemanticModelName   *string                 `json:"semantic_model_name,omitempty"`
+	SemanticProjectName *string                 `json:"semantic_project_name,omitempty"`
 }
 
 type UpdateDashboardWidgetRequest struct {
 	Description *string                `json:"description,omitempty"`
+	Key         *string                `json:"key,omitempty"`
 	Layout      *DashboardWidgetLayout `json:"layout,omitempty"`
 	Name        *string                `json:"name,omitempty"`
+	PageName    *string                `json:"page_name,omitempty"`
 	Source      *DashboardWidgetSource `json:"source,omitempty"`
 	VisualSpec  *VisualSpec            `json:"visual_spec,omitempty"`
 }
@@ -2932,6 +2955,16 @@ type UpdateDataProductRequest struct {
 	StewardPrincipal    string           `json:"steward_principal"`
 	TeamName            string           `json:"team_name"`
 	Visibility          *string          `json:"visibility,omitempty"`
+}
+
+type UpdateEnvironmentRequest struct {
+	ComputeEndpoint    *string `json:"compute_endpoint,omitempty"`
+	DeferToEnvironment *string `json:"defer_to_environment,omitempty"`
+	Description        *string `json:"description,omitempty"`
+	SourceOverrides    *Record `json:"source_overrides,omitempty"`
+	TargetCatalog      *string `json:"target_catalog,omitempty"`
+	TargetSchema       *string `json:"target_schema,omitempty"`
+	Variables          *Record `json:"variables,omitempty"`
 }
 
 type UpdateExternalLocationRequest struct {
@@ -3013,6 +3046,12 @@ type UpdateProductDomainRequest struct {
 
 type UpdateProductTeamRequest struct {
 	ContactChannel *string `json:"contact_channel,omitempty"`
+}
+
+type UpdateProjectRequest struct {
+	DefaultBranch *string `json:"default_branch,omitempty"`
+	Description   *string `json:"description,omitempty"`
+	ProductId     *string `json:"product_id,omitempty"`
 }
 
 type UpdateRowFilterRequest struct {
@@ -3159,6 +3198,15 @@ type VisualFieldBinding struct {
 	Field string `json:"field"`
 }
 
+type VisualLegendPosition string
+
+const (
+	VisualLegendPositionTop    VisualLegendPosition = "top"
+	VisualLegendPositionRight  VisualLegendPosition = "right"
+	VisualLegendPositionBottom VisualLegendPosition = "bottom"
+	VisualLegendPositionLeft   VisualLegendPosition = "left"
+)
+
 type VisualOutputKind string
 
 const (
@@ -3168,14 +3216,15 @@ const (
 )
 
 type VisualSpec struct {
-	ChartType    *VisualChartType `json:"chart_type,omitempty"`
-	ColorPalette *string          `json:"color_palette,omitempty"`
-	Encodings    *VisualEncodings `json:"encodings,omitempty"`
-	Kind         VisualOutputKind `json:"kind"`
-	Legend       *bool            `json:"legend,omitempty"`
-	Stacked      *bool            `json:"stacked,omitempty"`
-	Subtitle     *string          `json:"subtitle,omitempty"`
-	Title        *string          `json:"title,omitempty"`
+	ChartType      *VisualChartType      `json:"chart_type,omitempty"`
+	ColorPalette   *string               `json:"color_palette,omitempty"`
+	Encodings      *VisualEncodings      `json:"encodings,omitempty"`
+	Kind           VisualOutputKind      `json:"kind"`
+	Legend         *bool                 `json:"legend,omitempty"`
+	LegendPosition *VisualLegendPosition `json:"legend_position,omitempty"`
+	Stacked        *bool                 `json:"stacked,omitempty"`
+	Subtitle       *string               `json:"subtitle,omitempty"`
+	Title          *string               `json:"title,omitempty"`
 }
 
 type VolumeDetail struct {
@@ -3570,6 +3619,10 @@ type UpdatePrincipalJSONRequestBody = GenUpdatePrincipalJSONBody
 type UpdateProductDomainJSONRequestBody = GenUpdateProductDomainJSONBody
 
 type UpdateProductTeamJSONRequestBody = GenUpdateProductTeamJSONBody
+
+type UpdateProjectEnvironmentJSONRequestBody = GenUpdateProjectEnvironmentJSONBody
+
+type UpdateProjectJSONRequestBody = GenUpdateProjectJSONBody
 
 type UpdateRowFilterJSONRequestBody = GenUpdateRowFilterJSONBody
 

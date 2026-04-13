@@ -1,0 +1,27 @@
+package duckconfig
+
+platform: security: grants: [{
+	principal:      "analytics-users"
+	principal_type: "group"
+	securable_type: "catalog"
+	securable:      "seeded_local"
+	privilege:      "USAGE"
+}, {
+	principal:      "analytics-users"
+	principal_type: "group"
+	securable_type: "schema"
+	securable:      "seeded_local.nyc_taxi"
+	privilege:      "USAGE"
+}, {
+	principal:      "data-platform"
+	principal_type: "group"
+	securable_type: "catalog"
+	securable:      "seeded_local"
+	privilege:      "ALL_PRIVILEGES"
+}, {
+	principal:      "data-platform"
+	principal_type: "group"
+	securable_type: "schema"
+	securable:      "seeded_local.nyc_taxi"
+	privilege:      "ALL_PRIVILEGES"
+}]

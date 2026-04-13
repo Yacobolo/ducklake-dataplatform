@@ -154,7 +154,7 @@ func AppPage(title, active string, principal domain.ContextPrincipal, body ...No
   cursor: not-allowed;
 }
 `+dataTableGlobalStyles())),
-			Script(Type("module"), Src("https://cdn.jsdelivr.net/gh/starfederation/datastar@1.0.0-RC.7/bundles/datastar.js")),
+			Script(Type("module"), Src(UIScriptHref("datastar.js"))),
 			func() Node {
 				if !devInspector {
 					return nil

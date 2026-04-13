@@ -42,9 +42,14 @@ var declarativeSupportMatrix = []declarativeSupportMatrixEntry{
 	{Kind: declarative.KindNameComputeAssignmentList, LoadValidate: true, ReadExport: true, Diff: true, Apply: true, ReplanClean: true, Coverage: "Compute assignment declarative client tests and strict read/export coverage"},
 	{Kind: declarative.KindNameComputeRoutingDefaults, LoadValidate: true, ReadExport: true, Diff: true, Apply: true, ReplanClean: true, Coverage: "Strict read/export coverage after compute defaults API wiring"},
 	{Kind: declarative.KindNameDomain, LoadValidate: true, ReadExport: true, Diff: true, Apply: true, ReplanClean: true, Coverage: "Domain strict read/export coverage and data product lifecycle tests"},
+	{Kind: declarative.KindNameWorkspace, LoadValidate: true, ReadExport: true, Diff: true, Apply: true, ReplanClean: true, Coverage: "Authoring-core local E2E, exporter round-trip tests, and declarative client workspace lifecycle tests"},
+	{Kind: declarative.KindNameFolder, LoadValidate: true, ReadExport: true, Diff: true, Apply: true, ReplanClean: true, Coverage: "Authoring-core local E2E, exporter round-trip tests, and declarative client folder lifecycle tests"},
+	{Kind: declarative.KindNameProject, LoadValidate: true, ReadExport: true, Diff: true, Apply: true, ReplanClean: true, Coverage: "Authoring-core local E2E, exporter round-trip tests, and declarative client project lifecycle tests"},
+	{Kind: declarative.KindNameEnvironment, LoadValidate: true, ReadExport: true, Diff: true, Apply: true, ReplanClean: true, Coverage: "Authoring-core local E2E, exporter round-trip tests, and declarative client environment lifecycle tests"},
 	{Kind: declarative.KindNameTeam, LoadValidate: true, ReadExport: true, Diff: true, Apply: true, ReplanClean: true, Coverage: "Team strict read/export coverage and data product lifecycle tests"},
 	{Kind: declarative.KindNameDataProduct, LoadValidate: true, ReadExport: true, Diff: true, Apply: true, ReplanClean: true, Coverage: "Data product declarative client tests with version deletion convergence"},
 	{Kind: declarative.KindNameNotebook, LoadValidate: true, ReadExport: true, Diff: true, Apply: true, ReplanClean: true, Coverage: "TestDeclarative_NotebookPublishRemovalConverges and notebook declarative client tests"},
+	{Kind: declarative.KindNameDashboard, LoadValidate: true, ReadExport: true, Diff: true, Apply: true, ReplanClean: true, Coverage: "Dashboard declarative loader/validator/diff tests, declarative client reconciliation tests, and dashboard runtime state integration coverage"},
 	{Kind: declarative.KindNameAsset, LoadValidate: true, ReadExport: true, Diff: true, Apply: true, ReplanClean: true, Coverage: "Asset declarative diff and client tests"},
 	{Kind: declarative.KindNameModel, LoadValidate: true, ReadExport: true, Diff: true, Apply: true, ReplanClean: true, Coverage: "Model declarative integration and client tests"},
 	{Kind: declarative.KindNameSemanticModel, LoadValidate: true, ReadExport: true, Diff: true, Apply: true, ReplanClean: true, Coverage: "Semantic model declarative integration and client tests"},
@@ -61,16 +66,50 @@ func TestDeclarative_SupportMatrixCoversSchemaKinds(t *testing.T) {
 		matrixByKind[entry.Kind] = entry
 	}
 
-	for _, docType := range declarative.SchemaDocumentTypes() {
-		entry, ok := matrixByKind[docType.Kind]
-		require.Truef(t, ok, "missing declarative support matrix entry for schema kind %s", docType.Kind)
-		assert.Truef(t, entry.LoadValidate, "expected load/validate coverage for %s", docType.Kind)
-		assert.Truef(t, entry.ReadExport, "expected read/export coverage for %s", docType.Kind)
-		assert.Truef(t, entry.Diff, "expected diff coverage for %s", docType.Kind)
-		assert.Truef(t, entry.Apply, "expected apply coverage for %s", docType.Kind)
-		assert.Truef(t, entry.ReplanClean, "expected re-plan coverage for %s", docType.Kind)
-		assert.NotEmptyf(t, entry.Coverage, "expected coverage note for %s", docType.Kind)
+	supportedKinds := []string{
+		declarative.KindNamePrincipalList,
+		declarative.KindNameGroupList,
+		declarative.KindNameGrantList,
+		declarative.KindNamePrivilegePresetList,
+		declarative.KindNameBindingList,
+		declarative.KindNameAPIKeyList,
+		declarative.KindNameCatalog,
+		declarative.KindNameSchema,
+		declarative.KindNameTable,
+		declarative.KindNameView,
+		declarative.KindNameVolume,
+		declarative.KindNameRowFilterList,
+		declarative.KindNameColumnMaskList,
+		declarative.KindNameTagConfig,
+		declarative.KindNameStorageCredentialList,
+		declarative.KindNameExternalLocationList,
+		declarative.KindNameComputeEndpointList,
+		declarative.KindNameComputeAssignmentList,
+		declarative.KindNameComputeRoutingDefaults,
+		declarative.KindNameDomain,
+		declarative.KindNameWorkspace,
+		declarative.KindNameFolder,
+		declarative.KindNameProject,
+		declarative.KindNameEnvironment,
+		declarative.KindNameTeam,
+		declarative.KindNameDataProduct,
+		declarative.KindNameNotebook,
+		declarative.KindNameDashboard,
+		declarative.KindNameAsset,
+		declarative.KindNameModel,
+		declarative.KindNameSemanticModel,
+		declarative.KindNameMacro,
+	}
+	for _, kind := range supportedKinds {
+		entry, ok := matrixByKind[kind]
+		require.Truef(t, ok, "missing declarative support matrix entry for kind %s", kind)
+		assert.Truef(t, entry.LoadValidate, "expected load/validate coverage for %s", kind)
+		assert.Truef(t, entry.ReadExport, "expected read/export coverage for %s", kind)
+		assert.Truef(t, entry.Diff, "expected diff coverage for %s", kind)
+		assert.Truef(t, entry.Apply, "expected apply coverage for %s", kind)
+		assert.Truef(t, entry.ReplanClean, "expected re-plan coverage for %s", kind)
+		assert.NotEmptyf(t, entry.Coverage, "expected coverage note for %s", kind)
 	}
 
-	assert.Len(t, declarativeSupportMatrix, len(declarative.SchemaDocumentTypes()))
+	assert.Len(t, declarativeSupportMatrix, len(supportedKinds))
 }

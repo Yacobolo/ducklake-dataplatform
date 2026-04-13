@@ -239,6 +239,8 @@ type ComputeExecutionRequest struct {
 	Mode         string
 	EndpointName string
 	WorkloadType string
+	AuthoritativeEndpoint bool
+	FallbackLocal         bool
 }
 
 // ComputeRoutingDefaults stores the platform defaults for workload routing.

@@ -19,9 +19,9 @@ func newValidateCmd(_ *apiruntime.Client) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "validate",
 		Short: "Validate declarative configuration files offline",
-		Long:  "Reads YAML configuration files and checks them for errors without contacting the server.",
+		Long:  "Reads declarative CUE configuration and checks it for errors without contacting the server.",
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			// 1. Load desired state from YAML files.
+			// 1. Load desired state from the CUE config tree.
 			desired, err := declarative.LoadDirectoryWithOptions(configDir, declarative.LoadOptions{
 				AllowUnknownFields: allowUnknownFields,
 			})
@@ -62,8 +62,8 @@ func newValidateCmd(_ *apiruntime.Client) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&configDir, "config-dir", "./duck-config", "Path to configuration directory")
-	cmd.Flags().BoolVar(&allowUnknownFields, "allow-unknown-fields", false, "Allow unknown YAML fields in declarative config")
+	cmd.Flags().StringVar(&configDir, "config-dir", "./duck-config", "Path to the CUE configuration module")
+	cmd.Flags().BoolVar(&allowUnknownFields, "allow-unknown-fields", false, "Deprecated no-op retained for compatibility with existing CLI wiring")
 
 	return cmd
 }

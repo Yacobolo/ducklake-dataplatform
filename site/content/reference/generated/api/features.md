@@ -22,7 +22,7 @@ This page is generated from OpenAPI tags and operations.
 | [Notebooks](./endpoints/notebooks/) | Notebook authoring, shares, sessions, cells, and job execution endpoints. | 21 operations |
 | [Pipelines](./endpoints/pipelines) | Pipeline definitions, jobs, runs, and orchestration controls. | 15 operations |
 | [Products](./endpoints/products/) | Product-first control-plane APIs for domains, teams, product contracts, releases, discovery, and portfolio reporting. | 32 operations |
-| [Projects](./endpoints/projects) | Project, environment, and build APIs for authoring execution contexts within a workspace. | 7 operations |
+| [Projects](./endpoints/projects) | Project, environment, and build APIs for authoring execution contexts within a workspace. | 11 operations |
 | [Queries](./endpoints/queries) | Synchronous and asynchronous SQL query execution and query history endpoints. | 8 operations |
 | [Resources](./endpoints/resources) | Recent and saved resource APIs for personalized navigation and activity tracking. | 4 operations |
 | [Semantic Layer](./endpoints/semantic-layer/) | Semantic models, metrics, relationships, and metric query execution. | 24 operations |
