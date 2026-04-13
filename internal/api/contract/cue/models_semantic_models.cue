@@ -24,6 +24,38 @@ schemas_semantic_models: {
     ]
   },
   CreateModelRequest: #objectSchema & {
+    example: {
+      project_name:    "revenue"
+      name:            "fct_daily_revenue"
+      sql:             "select order_date, sum(net_revenue) as daily_revenue from stg_orders group by 1"
+      materialization: "TABLE"
+      description:     "Daily revenue fact model."
+      tags:            ["finance", "gold"]
+      config: {
+        unique_key:           ["order_date"]
+        incremental_strategy: "merge"
+        on_schema_change:     "fail"
+      }
+      contract: {
+        enforce: true
+        columns: [
+          {
+            name:     "order_date"
+            type:     "DATE"
+            nullable: false
+          },
+          {
+            name:     "daily_revenue"
+            type:     "DOUBLE"
+            nullable: false
+          },
+        ]
+      }
+      freshness_policy: {
+        max_lag_seconds: 21600
+        cron_schedule:   "0 */6 * * *"
+      }
+    }
     #fields: {
       project_name: #stringProperty,
       name: #nameProperty,
@@ -54,6 +86,19 @@ schemas_semantic_models: {
     ]
   },
   CreateSemanticMetricRequest: #objectSchema & {
+    example: {
+      name:                "monthly_recurring_revenue"
+      description:         "Monthly recurring revenue for active subscriptions."
+      label:               "MRR"
+      metric_type:         "SUM"
+      expression_mode:     "SQL"
+      expression:          "subscription_mrr"
+      relationship_names:  ["account_to_subscription"]
+      filter_sql:          "subscription_status = 'ACTIVE'"
+      default_time_grain:  "month"
+      format:              "currency_usd"
+      certification_state: "CERTIFIED"
+    }
     #fields: {
       name: #nameProperty,
       description: #descriptionProperty,
@@ -81,6 +126,13 @@ schemas_semantic_models: {
     ]
   },
   CreateSemanticModelRequest: #objectSchema & {
+    example: {
+      name:                   "customer_360"
+      description:            "Semantic model for customer lifecycle and commercial performance."
+      base_model_ref:         "revenue.fct_customer_360"
+      default_time_dimension: "snapshot_date"
+      tags:                   ["growth", "finance"]
+    }
     #fields: {
       name: #nameProperty,
       description: #descriptionProperty,
@@ -126,6 +178,26 @@ schemas_semantic_models: {
     ]
   },
   Macro: #objectSchema & {
+    example: {
+      id:           "macro_01hzysafe_divide"
+      name:         "safe_divide"
+      macro_type:   "SCALAR"
+      parameters:   ["numerator", "denominator"]
+      body:         "case when {{ denominator }} = 0 then null else {{ numerator }} / {{ denominator }} end"
+      description:  "Safely divides two expressions and returns null on zero denominator."
+      catalog_name: "analytics"
+      project_name: "revenue"
+      visibility:   "project"
+      owner:        "team-analytics"
+      properties: {
+        package: "finance"
+      }
+      tags:       ["macro", "utility"]
+      status:     "ACTIVE"
+      created_by: "alice@example.com"
+      created_at: "2026-03-01T08:00:00Z"
+      updated_at: "2026-04-13T08:00:00Z"
+    }
     #fields: {
       id: #idProperty,
       name: #nameProperty,
@@ -230,6 +302,44 @@ schemas_semantic_models: {
     ]
   },
   Model: #objectSchema & {
+    example: {
+      id:             "mdl_01hzydailyrevenue"
+      project_name:   "revenue"
+      name:           "fct_daily_revenue"
+      sql:            "select order_date, sum(net_revenue) as daily_revenue from stg_orders group by 1"
+      materialization:"TABLE"
+      description:    "Daily revenue fact model."
+      owner:          "team-analytics"
+      depends_on:     ["stg_orders"]
+      tags:           ["finance", "gold"]
+      config: {
+        unique_key:           ["order_date"]
+        incremental_strategy: "merge"
+        on_schema_change:     "fail"
+      }
+      contract: {
+        enforce: true
+        columns: [
+          {
+            name:     "order_date"
+            type:     "DATE"
+            nullable: false
+          },
+          {
+            name:     "daily_revenue"
+            type:     "DOUBLE"
+            nullable: false
+          },
+        ]
+      }
+      freshness_policy: {
+        max_lag_seconds: 21600
+        cron_schedule:   "0 */6 * * *"
+      }
+      created_by: "alice@example.com"
+      created_at: "2026-03-01T08:00:00Z"
+      updated_at: "2026-04-13T08:00:00Z"
+    }
     #fields: {
       id: #idProperty,
       project_name: #stringProperty,
@@ -308,6 +418,26 @@ schemas_semantic_models: {
     ]
   },
   ModelRun: #objectSchema & {
+    example: {
+      id:                  "run_01hzymodel"
+      status:              "SUCCESS"
+      trigger_type:        "manual"
+      triggered_by:        "alice@example.com"
+      project_name:        "revenue"
+      environment_name:    "prod"
+      build_id:            "build_01hzyprod123"
+      model_names:         ["fct_daily_revenue", "dim_customer"]
+      full_refresh:        false
+      compile_manifest:    "{...manifest json...}"
+      compile_diagnostics: {
+        warnings: []
+        errors:   []
+      }
+      started_at:    "2026-04-13T07:00:00Z"
+      finished_at:   "2026-04-13T07:05:00Z"
+      error_message: ""
+      created_at:    "2026-04-13T07:00:00Z"
+    }
     #fields: {
       id: #idProperty,
       status: #statusProperty,
@@ -422,6 +552,25 @@ schemas_semantic_models: {
     ]
   },
   SemanticMetric: #objectSchema & {
+    example: {
+      id:                  "metric_01hzymrr"
+      semantic_model_id:   "sem_01hzycust360"
+      name:                "monthly_recurring_revenue"
+      description:         "Monthly recurring revenue for active subscriptions."
+      label:               "MRR"
+      metric_type:         "SUM"
+      expression_mode:     "SQL"
+      expression:          "subscription_mrr"
+      relationship_names:  ["account_to_subscription"]
+      filter_sql:          "subscription_status = 'ACTIVE'"
+      default_time_grain:  "month"
+      format:              "currency_usd"
+      owner:               "team-analytics"
+      certification_state: "CERTIFIED"
+      created_by:          "alice@example.com"
+      created_at:          "2026-04-13T08:00:00Z"
+      updated_at:          "2026-04-13T08:00:00Z"
+    }
     #fields: {
       id: #idProperty,
       semantic_model_id: #stringProperty,
@@ -468,6 +617,18 @@ schemas_semantic_models: {
     ]
   },
   SemanticModel: #objectSchema & {
+    example: {
+      id:                     "sem_01hzycust360"
+      name:                   "customer_360"
+      description:            "Semantic model for customer lifecycle and commercial performance."
+      owner:                  "team-analytics"
+      base_model_ref:         "revenue.fct_customer_360"
+      default_time_dimension: "snapshot_date"
+      tags:                   ["growth", "finance"]
+      created_by:             "alice@example.com"
+      created_at:             "2026-04-13T08:00:00Z"
+      updated_at:             "2026-04-13T08:00:00Z"
+    }
     #fields: {
       id: #idProperty,
       name: #nameProperty,

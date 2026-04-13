@@ -4,6 +4,13 @@ package api
 
 schemas_generated: {
   CatalogInfo: #objectSchema & {
+    example: {
+      name:           "analytics"
+      comment:        "Primary analytics catalog."
+      created_at:     "2026-03-01T08:00:00Z"
+      updated_at:     "2026-04-13T08:00:00Z"
+      system_managed: false
+    }
     #fields: {
       name: #nameProperty
       comment: #commentProperty
@@ -41,6 +48,12 @@ schemas_generated: {
     }
   }
   DashboardWidgetLayoutUpdate: #objectSchema & {
+    example: {
+      x: 0
+      y: 0
+      w: 8
+      h: 4
+    }
     #fields: {
       x: #int32Property
       y: #int32Property
@@ -49,6 +62,15 @@ schemas_generated: {
     }
   }
   DashboardWidgetSourceUpdate: #objectSchema & {
+    example: {
+      kind: "semantic_query"
+      semantic_query: {
+        semantic_model_id: "sem_01hzymetrics"
+        metrics:           ["monthly_recurring_revenue"]
+        dimensions:        ["plan_tier"]
+        limit:             12
+      }
+    }
     #fields: {
       kind: #refProperty & {#ref: "DashboardWidgetSourceKind"}
       sql_query: #refProperty & {#ref: "DashboardSQLQuerySourceUpdate"}
@@ -75,6 +97,23 @@ schemas_generated: {
     }
   }
   VisualSpecUpdate: #objectSchema & {
+    example: {
+      kind:       "chart"
+      chart_type: "stacked_bar"
+      title:      "MRR by plan tier and region"
+      legend:     true
+      encodings: {
+        x: {
+          field: "plan_tier"
+        }
+        value: {
+          field: "monthly_recurring_revenue"
+        }
+        series: {
+          field: "sales_region"
+        }
+      }
+    }
     #fields: {
       kind: #refProperty & {#ref: "VisualOutputKind"}
       chart_type: #refProperty & {#ref: "VisualChartType"}

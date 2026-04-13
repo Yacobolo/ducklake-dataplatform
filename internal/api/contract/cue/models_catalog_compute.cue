@@ -27,6 +27,19 @@ schemas_catalog_compute: {
     ]
   },
   CatalogRegistration: #objectSchema & {
+    example: {
+      id:             "cat_analytics"
+      name:           "analytics"
+      metastore_type: "sqlite"
+      dsn:            "file:metadata/analytics.db"
+      data_path:      "s3://duck-demo/analytics"
+      status:         "ACTIVE"
+      is_default:     true
+      comment:        "Primary analytics catalog."
+      created_at:     "2026-03-01T08:00:00Z"
+      updated_at:     "2026-04-13T07:30:00Z"
+      system_managed: false
+    }
     #fields: {
       id: #idProperty,
       name: #nameProperty,
@@ -145,6 +158,16 @@ schemas_catalog_compute: {
     ]
   },
   ComputeAssignment: #objectSchema & {
+    example: {
+      id:             "cmpasg_01hzyanalysts"
+      endpoint_id:    "cmp_analytics_prod"
+      endpoint_name:  "analytics-prod"
+      principal_id:   "group_analytics_reviewers"
+      principal_type: "group"
+      fallback_local: false
+      is_default:     true
+      created_at:     "2026-04-01T08:00:00Z"
+    }
     #fields: {
       id: #idProperty,
       endpoint_id: #stringProperty,
@@ -163,6 +186,19 @@ schemas_catalog_compute: {
     ]
   },
   ComputeEndpoint: #objectSchema & {
+    example: {
+      id:            "cmp_analytics_prod"
+      name:          "analytics-prod"
+      type:          "REMOTE"
+      size:          "MEDIUM"
+      status:        "ACTIVE"
+      url:           "https://compute.example.com/endpoints/analytics-prod"
+      external_id:   "wh_analytics_prod"
+      max_memory_gb: 64
+      owner:         "team-analytics"
+      created_at:    "2026-03-01T08:00:00Z"
+      updated_at:    "2026-04-13T08:00:00Z"
+    }
     #fields: {
       id: #idProperty,
       name: #nameProperty,
@@ -178,6 +214,14 @@ schemas_catalog_compute: {
     }
   },
   ComputeEndpointHealth: #objectSchema & {
+    example: {
+      duckdb_version:  "1.2.2"
+      endpoint_name:   "analytics-prod"
+      status:          "healthy"
+      memory_used_mb:  9216
+      max_memory_gb:   64
+      uptime_seconds:  864000
+    }
     #fields: {
       duckdb_version: #stringProperty,
       endpoint_name: #stringProperty,
@@ -267,6 +311,15 @@ schemas_catalog_compute: {
     ]
   },
   CreateComputeEndpointRequest: #objectSchema & {
+    example: {
+      name:          "analytics-prod"
+      type:          "REMOTE"
+      size:          "MEDIUM"
+      url:           "https://compute.example.com/endpoints/analytics-prod"
+      external_id:   "wh_analytics_prod"
+      max_memory_gb: 64
+      owner:         "team-analytics"
+    }
     #fields: {
       name: #nameProperty,
       type: #refProperty & {#ref: "ComputeEndpointType"},
@@ -345,6 +398,19 @@ schemas_catalog_compute: {
     ]
   },
   SchemaDetail: #objectSchema & {
+    example: {
+      id:              "schema_mart"
+      catalog_id:      "cat_analytics"
+      catalog_name:    "analytics"
+      name:            "mart"
+      owner:           "team-analytics"
+      comment:         "Business-ready modeled datasets."
+      properties: {
+        purpose: "gold layer"
+      }
+      created_at:      "2026-03-01T08:00:00Z"
+      updated_at:      "2026-04-13T08:00:00Z"
+    }
     #fields: {
       schema_id: #stringProperty,
       name: #nameProperty,
@@ -388,6 +454,40 @@ schemas_catalog_compute: {
     ]
   },
   TableDetail: #objectSchema & {
+    example: {
+      id:             "tbl_orders_daily"
+      schema_id:      "schema_mart"
+      schema_name:    "mart"
+      catalog_name:   "analytics"
+      name:           "orders_daily"
+      columns: [
+        {
+          name:     "order_date"
+          type:     "DATE"
+          position: 1
+          nullable: false
+          comment:  "UTC business date for the order."
+        },
+        {
+          name:     "gross_revenue"
+          type:     "DOUBLE"
+          position: 2
+          nullable: false
+          comment:  "Gross revenue before discounts."
+        },
+      ]
+      statistics: {
+        row_count:        365000
+        size_bytes:       104857600
+        column_count:     12
+        last_profiled_at: "2026-04-13T07:45:00Z"
+        profiled_by:      "system:profiler"
+      }
+      comment:          "Daily revenue fact table."
+      owner:            "team-analytics"
+      created_at:       "2026-03-01T08:00:00Z"
+      updated_at:       "2026-04-13T08:00:00Z"
+    }
     #fields: {
       table_id: #stringProperty,
       name: #nameProperty,

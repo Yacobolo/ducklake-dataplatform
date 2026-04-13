@@ -11,6 +11,19 @@ schemas_core: {
     ]
   },
   AuditEntry: #objectSchema & {
+    example: {
+      id:             "audit_01hzyquery1"
+      principal_name: "alice@example.com"
+      action:         "query.execute"
+      statement_type: "SELECT"
+      original_sql:   "select * from mart.orders_daily limit 10"
+      rewritten_sql:  "select * from mart.orders_daily limit 10"
+      tables_accessed:["mart.orders_daily"]
+      status:         "ALLOWED"
+      error_message:  ""
+      duration_ms:    184
+      created_at:     "2026-04-13T10:12:00Z"
+    }
     #fields: {
       id: #idProperty,
       principal_name: #principalNameProperty,
@@ -92,6 +105,14 @@ schemas_core: {
   Error: #objectSchema & {
     title:       "Standard API error response."
     description: "Errors use a shared schema across the API so clients can handle failure responses consistently."
+    example: {
+      code:    400
+      message: "validation failed"
+      details: {
+        field:  "name"
+        reason: "must not be empty"
+      }
+    }
     #fields: {
       code: #int32Property,
       message: #stringProperty,
@@ -112,6 +133,9 @@ schemas_core: {
   },
   HealthResponse: #objectSchema & {
     title: "Service health status."
+    example: {
+      status: "ok"
+    }
     #fields: {
       status: #statusProperty
     },
@@ -120,6 +144,16 @@ schemas_core: {
     ]
   },
   LineageEdge: #objectSchema & {
+    example: {
+      id:             "edge_01hzylineage"
+      source_table:   "stg_orders"
+      target_table:   "mart_orders_daily"
+      source_schema:  "staging"
+      target_schema:  "mart"
+      edge_type:      "transforms_into"
+      principal_name: "alice@example.com"
+      created_at:     "2026-04-13T08:00:00Z"
+    }
     #fields: {
       id: #idProperty,
       source_table: #stringProperty,
@@ -132,6 +166,22 @@ schemas_core: {
     }
   },
   LineageNode: #objectSchema & {
+    example: {
+      table_name: "mart.orders_daily"
+      upstream: [
+        {
+          id:             "edge_01hzylineage"
+          source_table:   "stg_orders"
+          target_table:   "mart_orders_daily"
+          source_schema:  "staging"
+          target_schema:  "mart"
+          edge_type:      "transforms_into"
+          principal_name: "alice@example.com"
+          created_at:     "2026-04-13T08:00:00Z"
+        },
+      ]
+      downstream: []
+    }
     #fields: {
       table_name: #stringProperty,
       upstream: #arrayRefProperty & {
@@ -169,6 +219,9 @@ schemas_core: {
     }
   },
   PurgeLineageRequest: #objectSchema & {
+    example: {
+      older_than_days: 30
+    }
     #fields: {
       older_than_days: #int32Property
     },
@@ -183,6 +236,38 @@ schemas_core: {
   },
   Record: #objectSchema,
   ResolvedDashboardWidget: #objectSchema & {
+    example: {
+      widget: {
+        id:          "wgt_01hzymrr"
+        dashboard_id:"dash_01hzyrev"
+        key:         "mrr_by_plan"
+        page_name:   "overview"
+        name:        "MRR by plan tier"
+        description: "Monthly recurring revenue by plan."
+        source: {
+          kind: "semantic_query"
+        }
+        visual_spec: {
+          kind:       "chart"
+          chart_type: "bar"
+        }
+        layout: {
+          x: 0
+          y: 0
+          w: 6
+          h: 4
+        }
+        created_at: "2026-04-13T09:00:00Z"
+        updated_at: "2026-04-13T09:00:00Z"
+      }
+      columns: ["plan_tier", "monthly_recurring_revenue"]
+      rows: [
+        ["Enterprise", 182340.12],
+        ["Pro", 98340.55],
+      ]
+      row_count:      2
+      generated_sql:  "select plan_tier, sum(mrr) as monthly_recurring_revenue from mart_revenue group by 1"
+    }
     #fields: {
       widget: #refProperty & {#ref: "DashboardWidget"},
       columns: #stringArrayProperty,
@@ -227,6 +312,9 @@ schemas_core: {
   },
   TabularColumn: #objectSchema & {
     title: "Metadata for a result-set column."
+    example: {
+      name: "monthly_recurring_revenue"
+    }
     #fields: {
       name: #nameProperty
     },

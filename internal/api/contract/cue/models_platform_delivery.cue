@@ -4,6 +4,24 @@ package api
 
 schemas_platform_delivery: {
   Build: #objectSchema & {
+    example: {
+      id:                  "build_01hzyprod123"
+      project_id:          "prj_revenue"
+      project_name:        "revenue"
+      product_id:          "prd_01hzycust360"
+      environment_id:      "env_prod"
+      environment_name:    "prod"
+      state:               "released"
+      git_ref:             "refs/heads/main"
+      commit_sha:          "8f3d9e2a"
+      selector:            "tag:daily"
+      target_catalog:      "analytics"
+      target_schema:       "mart"
+      source_model_run_id: "run_01hzymodel"
+      compile_manifest:    "{...manifest json...}"
+      compile_diagnostics: "{...diagnostics json...}"
+      created_at:          "2026-04-13T07:00:00Z"
+    }
     #fields: {
       id: #idProperty,
       project_id: #stringProperty,
@@ -38,6 +56,17 @@ schemas_platform_delivery: {
     ]
   },
   CreateBuildRequest: #objectSchema & {
+    example: {
+      environment_name:    "prod"
+      git_ref:             "refs/heads/main"
+      commit_sha:          "8f3d9e2a"
+      selector:            "tag:daily"
+      target_catalog:      "analytics"
+      target_schema:       "mart"
+      source_model_run_id: "run_01hzymodel"
+      compile_manifest:    "{...manifest json...}"
+      compile_diagnostics: "{...diagnostics json...}"
+    }
     #fields: {
       environment_name: #stringProperty,
       git_ref: #stringProperty,
@@ -113,6 +142,26 @@ schemas_platform_delivery: {
     ]
   },
   Environment: #objectSchema & {
+    example: {
+      id:               "env_prod"
+      project_id:       "prj_revenue"
+      project_name:     "revenue"
+      name:             "prod"
+      kind:             "production"
+      description:      "Production environment for revenue reporting."
+      target_catalog:   "analytics"
+      target_schema:    "mart"
+      compute_endpoint: "analytics-prod"
+      defer_to_environment: ""
+      variables: {
+        dbt_target: "prod"
+      }
+      source_overrides: {
+        raw_schema: "landing"
+      }
+      created_at: "2026-03-01T08:00:00Z"
+      updated_at: "2026-04-13T08:00:00Z"
+    }
     #fields: {
       id: #idProperty,
       project_id: #stringProperty,
@@ -163,6 +212,17 @@ schemas_platform_delivery: {
     ]
   },
   GitRepo: #objectSchema & {
+    example: {
+      id:           "repo_revops"
+      url:          "https://github.com/example/revenue-analytics.git"
+      branch:       "main"
+      path:         "analytics/revenue"
+      owner:        "team-analytics"
+      last_sync_at: "2026-04-13T08:45:00Z"
+      last_commit:  "8f3d9e2a"
+      created_at:   "2026-03-01T08:00:00Z"
+      updated_at:   "2026-04-13T08:45:00Z"
+    }
     #fields: {
       id: #idProperty,
       url: #stringProperty,
@@ -176,6 +236,18 @@ schemas_platform_delivery: {
     }
   },
   Pipeline: #objectSchema & {
+    example: {
+      id:                "pipe_01hzydailyrev"
+      name:              "daily-revenue-refresh"
+      description:       "Refreshes revenue notebooks and downstream models every morning."
+      schedule_cron:     "0 6 * * *"
+      is_paused:         false
+      concurrency_limit: 1
+      created_by:        "alice@example.com"
+      folder_id:         "fld_01hzyfinance"
+      created_at:        "2026-04-01T08:00:00Z"
+      updated_at:        "2026-04-13T08:00:00Z"
+    }
     #fields: {
       id: #idProperty,
       name: #nameProperty,
@@ -252,6 +324,18 @@ schemas_platform_delivery: {
     ]
   },
   PipelineRun: #objectSchema & {
+    example: {
+      id:           "pirun_01hzydailyrev"
+      pipeline_id:  "pipe_01hzydailyrev"
+      status:       "SUCCESS"
+      trigger_type: "SCHEDULED"
+      triggered_by: "system:scheduler"
+      started_at:   "2026-04-13T06:00:00Z"
+      finished_at:  "2026-04-13T06:14:00Z"
+      error_message:""
+      created_at:   "2026-04-13T06:00:00Z"
+      updated_at:   "2026-04-13T06:14:00Z"
+    }
     #fields: {
       id: #idProperty,
       pipeline_id: #stringProperty,

@@ -4,6 +4,10 @@ package api
 
 schemas_security_workspace: {
   AddWorkspaceMemberRequest: #objectSchema & {
+    example: {
+      principal_name: "analytics-reviewers"
+      role:           "viewer"
+    }
     #fields: {
       principal_name: #principalNameProperty,
       role: #refProperty & {#ref: "NotebookShareRole"}
@@ -13,6 +17,13 @@ schemas_security_workspace: {
     ]
   },
   CreateGrantRequest: #objectSchema & {
+    example: {
+      principal_id:   "group_analytics_reviewers"
+      principal_type: "group"
+      securable_type: "catalog"
+      securable_id:   "analytics"
+      privilege:      "SELECT"
+    }
     #fields: {
       principal_id: #principalIDProperty,
       principal_type: #refProperty & {#ref: "PrincipalType"},
@@ -93,6 +104,16 @@ schemas_security_workspace: {
     ]
   },
   CreateWorkspaceRequest: #objectSchema & {
+    example: {
+      name:                   "Revenue Analytics"
+      kind:                   "shared"
+      owner_team_id:          "team_analytics"
+      owner_principal:        "alice@example.com"
+      default_environment_id: "env_prod"
+      default_project_id:     "prj_revenue"
+      git_repo_id:            "repo_revops"
+      git_root_path:          "analytics/revenue"
+    }
     #fields: {
       name: #nameProperty,
       kind: #refProperty & {#ref: "WorkspaceKind"},
@@ -108,6 +129,22 @@ schemas_security_workspace: {
     ]
   },
   Folder: #objectSchema & {
+    example: {
+      id:                     "fld_01hzyfinance"
+      workspace_id:           "ws_01hzyrevenue"
+      name:                   "Executive dashboards"
+      owner:                  "team-finance"
+      parent_folder_id:       "fld_root"
+      path:                   "/Revenue Analytics/Executive dashboards"
+      depth:                  1
+      system_role:            "workspace"
+      git_repo_id:            "repo_revops"
+      git_root_path:          "dashboards/executive"
+      default_project_id:     "prj_revenue"
+      default_environment_id: "env_prod"
+      created_at:             "2026-04-01T09:00:00Z"
+      updated_at:             "2026-04-13T09:00:00Z"
+    }
     #fields: {
       id: #idProperty,
       workspace_id: #stringProperty,
@@ -169,6 +206,12 @@ schemas_security_workspace: {
     }
   },
   Group: #objectSchema & {
+    example: {
+      id:          "group_analytics_reviewers"
+      name:        "analytics-reviewers"
+      description: "Read-only group for revenue analytics stakeholders."
+      created_at:  "2026-03-15T08:00:00Z"
+    }
     #fields: {
       id: #idProperty,
       name: #nameProperty,
@@ -193,6 +236,16 @@ schemas_security_workspace: {
     ]
   },
   PrivilegeGrant: #objectSchema & {
+    example: {
+      id:             "grant_01hzycatalogselect"
+      principal_id:   "group_analytics_reviewers"
+      principal_type: "group"
+      securable_type: "catalog"
+      securable_id:   "analytics"
+      privilege:      "SELECT"
+      granted_by:     "alice@example.com"
+      granted_at:     "2026-04-13T09:30:00Z"
+    }
     #fields: {
       id: #idProperty,
       principal_id: #principalIDProperty,
@@ -393,6 +446,19 @@ schemas_security_workspace: {
     }
   },
   Workspace: #objectSchema & {
+    example: {
+      id:                     "ws_01hzyrevenue"
+      name:                   "Revenue Analytics"
+      kind:                   "shared"
+      owner_team_id:          "team_analytics"
+      owner_principal:        "alice@example.com"
+      default_project_id:     "prj_revenue"
+      default_environment_id: "env_prod"
+      git_repo_id:            "repo_revops"
+      git_root_path:          "analytics/revenue"
+      created_at:             "2026-04-01T09:00:00Z"
+      updated_at:             "2026-04-13T09:00:00Z"
+    }
     #fields: {
       id: #idProperty,
       name: #nameProperty,
@@ -419,6 +485,13 @@ schemas_security_workspace: {
     ]
   },
   WorkspaceMember: #objectSchema & {
+    example: {
+      workspace_id:   "ws_01hzyrevenue"
+      principal_name: "analytics-reviewers"
+      role:           "viewer"
+      created_at:     "2026-04-13T09:30:00Z"
+      updated_at:     "2026-04-13T09:30:00Z"
+    }
     #fields: {
       workspace_id: #stringProperty,
       principal_name: #principalNameProperty,
