@@ -787,10 +787,10 @@ type CreateEnvironmentRequest struct {
 	Description        *string          `json:"description,omitempty"`
 	Kind               *EnvironmentKind `json:"kind,omitempty"`
 	Name               string           `json:"name"`
-	SourceOverrides    *Record          `json:"source_overrides,omitempty"`
+	SourceOverrides    *map[string]any  `json:"source_overrides,omitempty"`
 	TargetCatalog      string           `json:"target_catalog"`
 	TargetSchema       string           `json:"target_schema"`
-	Variables          *Record          `json:"variables,omitempty"`
+	Variables          *map[string]any  `json:"variables,omitempty"`
 }
 
 type CreateExternalLocationRequest struct {
@@ -2548,7 +2548,7 @@ type ResolvedDashboardWidget struct {
 	Columns      []string         `json:"columns"`
 	GeneratedSql *string          `json:"generated_sql,omitempty"`
 	RowCount     *int32           `json:"row_count,omitempty"`
-	Rows         *[][]string      `json:"rows,omitempty"`
+	Rows         *[][]any         `json:"rows,omitempty"`
 	Widget       *DashboardWidget `json:"widget,omitempty"`
 }
 
@@ -2958,13 +2958,13 @@ type UpdateDataProductRequest struct {
 }
 
 type UpdateEnvironmentRequest struct {
-	ComputeEndpoint    *string `json:"compute_endpoint,omitempty"`
-	DeferToEnvironment *string `json:"defer_to_environment,omitempty"`
-	Description        *string `json:"description,omitempty"`
-	SourceOverrides    *Record `json:"source_overrides,omitempty"`
-	TargetCatalog      *string `json:"target_catalog,omitempty"`
-	TargetSchema       *string `json:"target_schema,omitempty"`
-	Variables          *Record `json:"variables,omitempty"`
+	ComputeEndpoint    *string         `json:"compute_endpoint,omitempty"`
+	DeferToEnvironment *string         `json:"defer_to_environment,omitempty"`
+	Description        *string         `json:"description,omitempty"`
+	SourceOverrides    *map[string]any `json:"source_overrides,omitempty"`
+	TargetCatalog      *string         `json:"target_catalog,omitempty"`
+	TargetSchema       *string         `json:"target_schema,omitempty"`
+	Variables          *map[string]any `json:"variables,omitempty"`
 }
 
 type UpdateExternalLocationRequest struct {

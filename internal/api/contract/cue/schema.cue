@@ -105,21 +105,6 @@ package api
 	properties?: [string]: #OpenAPISchemaPropertyOverride
 }
 
-#OpenAPIParameterOverride: {
-	explode?: bool
-	schema?: #SchemaRef
-}
-
-#OpenAPIResponseOverride: {
-	any_of?: [...#SchemaRef]
-}
-
-#OpenAPIOperationOverride: {
-	security?: [...#SecurityRequirement]
-	parameters?: [string]: #OpenAPIParameterOverride
-	responses?: [string]: #OpenAPIResponseOverride
-}
-
 #Endpoint: {
 	method: string
 	path: string
@@ -149,5 +134,4 @@ package api
 	openapi_extra_endpoints?: [...#Endpoint]
 	extensions?: [string]: _
 	openapi_schema_overrides?: [string]: #OpenAPISchemaOverride
-	openapi_operation_overrides?: [string]: #OpenAPIOperationOverride
 }

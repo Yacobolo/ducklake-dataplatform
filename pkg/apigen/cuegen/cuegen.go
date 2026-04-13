@@ -9,7 +9,6 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
-	"strconv"
 	"strings"
 
 	"cuelang.org/go/cue"
@@ -33,7 +32,6 @@ type Source struct {
 	OpenAPIExtraEndpoints     []ir.Endpoint                `json:"openapi_extra_endpoints,omitempty"`
 	Extensions                map[string]any               `json:"extensions,omitempty"`
 	OpenAPISchemaOverrides    map[string]schemaOverride    `json:"openapi_schema_overrides,omitempty"`
-	OpenAPIOperationOverrides map[string]operationOverride `json:"openapi_operation_overrides,omitempty"`
 }
 
 type schemaOverride struct {
@@ -48,21 +46,6 @@ type schemaPropertyOverride struct {
 	Description          string                   `json:"description,omitempty"`
 	Schema               *ir.SchemaRef            `json:"schema,omitempty"`
 	AdditionalProperties *ir.AdditionalProperties `json:"additional_properties,omitempty"`
-}
-
-type operationOverride struct {
-	Security   []ir.SecurityRequirement     `json:"security,omitempty"`
-	Parameters map[string]parameterOverride `json:"parameters,omitempty"`
-	Responses  map[string]responseOverride  `json:"responses,omitempty"`
-}
-
-type parameterOverride struct {
-	Explode *bool         `json:"explode,omitempty"`
-	Schema  *ir.SchemaRef `json:"schema,omitempty"`
-}
-
-type responseOverride struct {
-	AnyOf []ir.SchemaRef `json:"any_of,omitempty"`
 }
 
 // Bundle contains the IR document plus the canonical OpenAPI artifact emitted
@@ -106,7 +89,6 @@ func CompileDir(dir string) (Bundle, error) {
 		Extensions:    source.Extensions,
 	}
 	applySchemaOverrides(&fullDoc, source.OpenAPISchemaOverrides)
-	applyOperationOverrides(&fullDoc, source.OpenAPIOperationOverrides, true)
 	doc := ir.Document{
 		SchemaVersion: source.SchemaVersion,
 		Info:          source.Info,
@@ -117,7 +99,6 @@ func CompileDir(dir string) (Bundle, error) {
 		Endpoints:     filterGeneratedEndpoints(cloneEndpoints(source.Endpoints)),
 		Extensions:    source.Extensions,
 	}
-	applyOperationOverrides(&doc, source.OpenAPIOperationOverrides, false)
 	if err := ir.Validate(doc); err != nil {
 		return Bundle{}, fmt.Errorf("validate cue-derived ir: %w", err)
 	}
@@ -474,40 +455,6 @@ func applySchemaOverrides(doc *ir.Document, overrides map[string]schemaOverride)
 	}
 }
 
-func applyOperationOverrides(doc *ir.Document, overrides map[string]operationOverride, includeCanonicalResponses bool) {
-	for i := range doc.Endpoints {
-		override, ok := overrides[doc.Endpoints[i].OperationID]
-		if !ok {
-			continue
-		}
-		if len(override.Security) > 0 {
-			doc.Endpoints[i].Security = append([]ir.SecurityRequirement(nil), override.Security...)
-		}
-		for j := range doc.Endpoints[i].Parameters {
-			if parameterOverride, ok := override.Parameters[doc.Endpoints[i].Parameters[j].Name]; ok {
-				if parameterOverride.Explode != nil {
-					value := *parameterOverride.Explode
-					doc.Endpoints[i].Parameters[j].Explode = &value
-				}
-				if includeCanonicalResponses && parameterOverride.Schema != nil {
-					doc.Endpoints[i].Parameters[j].Schema = *parameterOverride.Schema
-				}
-			}
-		}
-		if includeCanonicalResponses {
-			for j := range doc.Endpoints[i].Responses {
-				responseOverride, ok := override.Responses[strconv.Itoa(doc.Endpoints[i].Responses[j].StatusCode)]
-				if !ok {
-					continue
-				}
-				if len(responseOverride.AnyOf) > 0 {
-					doc.Endpoints[i].Responses[j].AnyOf = append([]ir.SchemaRef(nil), responseOverride.AnyOf...)
-				}
-			}
-		}
-	}
-}
-
 func isZeroOpenAPI(openapi ir.OpenAPI) bool {
 	return openapi.Version == "" &&
 		len(openapi.TagOrder) == 0 &&
@@ -751,15 +698,6 @@ const schemaFile = `package api
 	properties?: [string]: #OpenAPISchemaPropertyOverride
 }
 
-#OpenAPIParameterOverride: {
-	explode?: bool
-}
-
-#OpenAPIOperationOverride: {
-	security?: [...#SecurityRequirement]
-	parameters?: [string]: #OpenAPIParameterOverride
-}
-
 #Endpoint: {
 	method: string
 	path: string
@@ -787,6 +725,5 @@ const schemaFile = `package api
 	endpoints: [...#Endpoint]
 	extensions?: [string]: _
 	openapi_schema_overrides?: [string]: #OpenAPISchemaOverride
-	openapi_operation_overrides?: [string]: #OpenAPIOperationOverride
 }
 `

@@ -216,21 +216,6 @@ openapi_schema_overrides: {
       }
     }
   },
-  "AuditEntry": {
-    "property_order": [
-      "id",
-      "principal_name",
-      "action",
-      "statement_type",
-      "original_sql",
-      "rewritten_sql",
-      "tables_accessed",
-      "status",
-      "error_message",
-      "duration_ms",
-      "created_at"
-    ]
-  },
   "BackfillRequest": {
     "property_order": [
       "id",
@@ -650,30 +635,6 @@ openapi_schema_overrides: {
       "semantic_model_refs",
       "created_by"
     ]
-  },
-  "CreateEnvironmentRequest": {
-    "properties": {
-      "source_overrides": {
-        "schema": {
-          "type": "object",
-          "additional_properties": {
-            "schema": {
-              "type": "string"
-            }
-          }
-        }
-      },
-      "variables": {
-        "schema": {
-          "type": "object",
-          "additional_properties": {
-            "schema": {
-              "type": "string"
-            }
-          }
-        }
-      }
-    }
   },
   "CreateExternalLocationRequest": {
     "property_order": [
@@ -1331,12 +1292,6 @@ openapi_schema_overrides: {
       "options"
     ]
   },
-  "LocalLoginRequest": {
-    "property_order": [
-      "username",
-      "password"
-    ]
-  },
   "Macro": {
     "property_order": [
       "id",
@@ -1447,16 +1402,6 @@ openapi_schema_overrides: {
         }
       }
     }
-  },
-  "MetastoreSummary": {
-    "property_order": [
-      "catalog_name",
-      "metastore_type",
-      "storage_backend",
-      "data_path",
-      "schema_count",
-      "table_count"
-    ]
   },
   "MetricFreshnessStatus": {
     "property_order": [
@@ -1749,29 +1694,6 @@ openapi_schema_overrides: {
         }
       }
     }
-  },
-  "OIDCProviderRequest": {
-    "property_order": [
-      "enabled",
-      "issuer_url",
-      "jwks_url",
-      "audience",
-      "client_id",
-      "client_secret",
-      "scopes"
-    ]
-  },
-  "OIDCProviderResponse": {
-    "property_order": [
-      "enabled",
-      "issuer_url",
-      "jwks_url",
-      "audience",
-      "client_id",
-      "scopes",
-      "updated_at",
-      "secret_stored"
-    ]
   },
   "OrphanResource": {
     "property_order": [
@@ -2143,26 +2065,6 @@ openapi_schema_overrides: {
       }
     }
   },
-  "ResolvedDashboardWidget": {
-    "property_order": [
-      "widget",
-      "columns",
-      "rows",
-      "row_count",
-      "generated_sql"
-    ],
-    "properties": {
-      "rows": {
-        "schema": {
-          "type": "array",
-          "items": {
-            "type": "array",
-            "items": {}
-          }
-        }
-      }
-    }
-  },
   "RowFilter": {
     "property_order": [
       "id",
@@ -2465,12 +2367,6 @@ openapi_schema_overrides: {
       "checks"
     ]
   },
-  "UpdateCatalogRegistrationRequest": {
-    "property_order": [
-      "data_path",
-      "comment"
-    ]
-  },
   "UpdateCellRequest": {
     "property_order": [
       "name",
@@ -2573,15 +2469,6 @@ openapi_schema_overrides: {
       "credential_name",
       "comment",
       "read_only"
-    ]
-  },
-  "UpdateFolderRequest": {
-    "property_order": [
-      "name",
-      "git_repo_id",
-      "git_root_path",
-      "default_project_id",
-      "default_environment_id"
     ]
   },
   "UpdateMacroRequest": {
@@ -2781,62 +2668,6 @@ openapi_schema_overrides: {
       "created_at",
       "updated_at"
     ]
-  },
-  "VisualEncodings": {
-    "property_order": [
-      "x",
-      "y",
-      "series",
-      "label",
-      "value",
-      "secondary"
-    ]
-  },
-  "VisualSpec": {
-    "property_order": [
-      "kind",
-      "chart_type",
-      "encodings",
-      "title",
-      "subtitle",
-      "legend",
-      "legend_position",
-      "stacked",
-      "color_palette"
-    ]
-  },
-  "UpdateEnvironmentRequest": {
-    "property_order": [
-      "description",
-      "target_catalog",
-      "target_schema",
-      "compute_endpoint",
-      "defer_to_environment",
-      "variables",
-      "source_overrides"
-    ],
-    "properties": {
-      "source_overrides": {
-        "schema": {
-          "type": "object",
-          "additional_properties": {
-            "schema": {
-              "type": "string"
-            }
-          }
-        }
-      },
-      "variables": {
-        "schema": {
-          "type": "object",
-          "additional_properties": {
-            "schema": {
-              "type": "string"
-            }
-          }
-        }
-      }
-    }
   },
   "UpdateProjectRequest": {
     "property_order": [

@@ -12,17 +12,17 @@ schemas_core: {
   },
   AuditEntry: #objectSchema & {
     #fields: {
-      action: #stringProperty,
-      created_at: #createdAtProperty,
-      duration_ms: #int64Property,
-      error_message: #stringProperty,
       id: #idProperty,
-      original_sql: #stringProperty,
       principal_name: #principalNameProperty,
-      rewritten_sql: #stringProperty,
+      action: #stringProperty,
       statement_type: #stringProperty,
+      original_sql: #stringProperty,
+      rewritten_sql: #stringProperty,
+      tables_accessed: #stringArrayProperty,
       status: #refProperty & {#ref: "AuditDecisionStatus"},
-      tables_accessed: #stringArrayProperty
+      error_message: #stringProperty,
+      duration_ms: #int64Property,
+      created_at: #createdAtProperty
     },
     #required: [
       "id"
@@ -37,8 +37,8 @@ schemas_core: {
       target_schema: #stringProperty,
       compute_endpoint: #stringProperty,
       defer_to_environment: #stringProperty,
-      variables: #refProperty & {#ref: "Record"},
-      source_overrides: #refProperty & {#ref: "Record"}
+      variables: #stringMapProperty,
+      source_overrides: #stringMapProperty
     },
     #required: [
       "name",
@@ -78,8 +78,8 @@ schemas_core: {
       target_schema: #stringProperty,
       compute_endpoint: #stringProperty,
       defer_to_environment: #stringProperty,
-      variables: #refProperty & {#ref: "Record"},
-      source_overrides: #refProperty & {#ref: "Record"}
+      variables: #stringMapProperty,
+      source_overrides: #stringMapProperty
     }
   },
   UpdateProjectRequest: #objectSchema & {
@@ -143,10 +143,10 @@ schemas_core: {
   MetastoreSummary: #objectSchema & {
     #fields: {
       catalog_name: #stringProperty,
-      data_path: #stringProperty,
       metastore_type: #stringProperty,
-      schema_count: #int32Property,
       storage_backend: #stringProperty,
+      data_path: #stringProperty,
+      schema_count: #int32Property,
       table_count: #int32Property
     },
     #required: [
@@ -182,21 +182,19 @@ schemas_core: {
   Record: #objectSchema,
   ResolvedDashboardWidget: #objectSchema & {
     #fields: {
+      widget: #refProperty & {#ref: "DashboardWidget"},
       columns: #stringArrayProperty,
-      generated_sql: #stringProperty,
-      row_count: #int64Property,
       rows: {
         schema: {
           type: "array",
           items: {
             type: "array",
-            items: {
-              type: "string"
-            }
+            items: {}
           }
         }
       },
-      widget: #refProperty & {#ref: "DashboardWidget"}
+      row_count: #int64Property,
+      generated_sql: #stringProperty
     },
     #required: [
       "columns"
@@ -242,17 +240,17 @@ schemas_core: {
   },
   UpdateCatalogRegistrationRequest: #objectSchema & {
     #fields: {
-      comment: #commentProperty,
-      data_path: #stringProperty
+      data_path: #stringProperty,
+      comment: #commentProperty
     }
   },
   UpdateFolderRequest: #objectSchema & {
     #fields: {
-      default_environment_id: #stringProperty,
-      default_project_id: #stringProperty,
+      name: #nameProperty,
       git_repo_id: #stringProperty,
       git_root_path: #stringProperty,
-      name: #nameProperty
+      default_project_id: #stringProperty,
+      default_environment_id: #stringProperty
     }
   },
   UpdatePrincipalRequest: #objectSchema & {
@@ -273,12 +271,12 @@ schemas_core: {
   },
   VisualEncodings: #objectSchema & {
     #fields: {
-      label: #refProperty & {#ref: "VisualFieldBinding"},
-      secondary: #refProperty & {#ref: "VisualFieldBinding"},
-      series: #refProperty & {#ref: "VisualFieldBinding"},
-      value: #refProperty & {#ref: "VisualFieldBinding"},
       x: #refProperty & {#ref: "VisualFieldBinding"},
-      y: #refProperty & {#ref: "VisualFieldBinding"}
+      y: #refProperty & {#ref: "VisualFieldBinding"},
+      series: #refProperty & {#ref: "VisualFieldBinding"},
+      label: #refProperty & {#ref: "VisualFieldBinding"},
+      value: #refProperty & {#ref: "VisualFieldBinding"},
+      secondary: #refProperty & {#ref: "VisualFieldBinding"}
     }
   },
   VisualFieldBinding: #objectSchema & {
@@ -306,15 +304,15 @@ schemas_core: {
   },
   VisualSpec: #objectSchema & {
     #fields: {
-      chart_type: #refProperty & {#ref: "VisualChartType"},
-      color_palette: #stringProperty,
-      encodings: #refProperty & {#ref: "VisualEncodings"},
       kind: #refProperty & {#ref: "VisualOutputKind"},
+      chart_type: #refProperty & {#ref: "VisualChartType"},
+      encodings: #refProperty & {#ref: "VisualEncodings"},
+      title: #stringProperty,
+      subtitle: #stringProperty,
       legend: #boolProperty,
       legend_position: #refProperty & {#ref: "VisualLegendPosition"},
       stacked: #boolProperty,
-      subtitle: #stringProperty,
-      title: #stringProperty
+      color_palette: #stringProperty
     },
     #required: [
       "kind"

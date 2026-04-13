@@ -21502,9 +21502,9 @@ components:
         - username
         - password
       properties:
-        username:
-          type: string
         password:
+          type: string
+        username:
           type: string
     Macro:
       type: object

@@ -34,12 +34,12 @@ package api
 }
 
 #oidcProviderFields: {
-	audience:      #stringProperty
-	client_id:     #stringProperty
-	client_secret: #stringProperty
 	enabled:       #enabledProperty
 	issuer_url:    #stringProperty
 	jwks_url:      #stringProperty
+	audience:      #stringProperty
+	client_id:     #stringProperty
+	client_secret: #stringProperty
 	scopes:        #stringProperty
 	...
 }
@@ -151,14 +151,14 @@ schemas_auth: {
 
 	OIDCProviderResponse: #objectSchema & {
 		#fields: {
-			audience:      #stringProperty
-			client_id:     #stringProperty
 			enabled:       #enabledProperty
 			issuer_url:    #stringProperty
 			jwks_url:      #stringProperty
+			audience:      #stringProperty
+			client_id:     #stringProperty
 			scopes:        #stringProperty
-			secret_stored: #boolProperty
 			updated_at:    #updatedAtProperty
+			secret_stored: #boolProperty
 		}
 		#required: ["enabled", "secret_stored"]
 	}
