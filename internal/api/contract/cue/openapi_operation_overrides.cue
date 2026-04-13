@@ -2,10 +2,6 @@ package api
 
 openapi_operation_overrides: {
   "listCatalogs": {
-    "parameter_order": [
-      "max_results",
-      "page_token"
-    ],
     "parameters": {
       "max_results": {
         "schema": {
@@ -23,13 +19,6 @@ openapi_operation_overrides: {
     }
   },
   "searchCatalog": {
-    "parameter_order": [
-      "query",
-      "type",
-      "catalog",
-      "max_results",
-      "page_token"
-    ],
     "parameters": {
       "query": {
         "schema": {
@@ -65,9 +54,6 @@ openapi_operation_overrides: {
     }
   },
   "getCatalog": {
-    "parameter_order": [
-      "catalog_name"
-    ],
     "parameters": {
       "catalog_name": {
         "schema": {
@@ -77,9 +63,6 @@ openapi_operation_overrides: {
     }
   },
   "updateCatalogRegistration": {
-    "parameter_order": [
-      "catalog_name"
-    ],
     "parameters": {
       "catalog_name": {
         "schema": {
@@ -89,9 +72,6 @@ openapi_operation_overrides: {
     }
   },
   "deleteCatalogRegistration": {
-    "parameter_order": [
-      "catalog_name"
-    ],
     "parameters": {
       "catalog_name": {
         "schema": {
@@ -101,9 +81,6 @@ openapi_operation_overrides: {
     }
   },
   "setDefaultCatalog": {
-    "parameter_order": [
-      "catalog_name"
-    ],
     "parameters": {
       "catalog_name": {
         "schema": {
@@ -113,13 +90,6 @@ openapi_operation_overrides: {
     }
   },
   "listCatalogHistory": {
-    "parameter_order": [
-      "catalog_name",
-      "entity_type",
-      "schema_name",
-      "table_name",
-      "limit"
-    ],
     "parameters": {
       "catalog_name": {
         "schema": {
@@ -154,9 +124,6 @@ openapi_operation_overrides: {
     }
   },
   "getMetastoreSummary": {
-    "parameter_order": [
-      "catalog_name"
-    ],
     "parameters": {
       "catalog_name": {
         "schema": {
@@ -166,11 +133,6 @@ openapi_operation_overrides: {
     }
   },
   "listSchemas": {
-    "parameter_order": [
-      "catalog_name",
-      "max_results",
-      "page_token"
-    ],
     "parameters": {
       "catalog_name": {
         "schema": {
@@ -193,9 +155,6 @@ openapi_operation_overrides: {
     }
   },
   "createSchema": {
-    "parameter_order": [
-      "catalog_name"
-    ],
     "parameters": {
       "catalog_name": {
         "schema": {
@@ -205,10 +164,6 @@ openapi_operation_overrides: {
     }
   },
   "getSchema": {
-    "parameter_order": [
-      "catalog_name",
-      "schema_name"
-    ],
     "parameters": {
       "catalog_name": {
         "schema": {
@@ -223,10 +178,6 @@ openapi_operation_overrides: {
     }
   },
   "updateSchema": {
-    "parameter_order": [
-      "catalog_name",
-      "schema_name"
-    ],
     "parameters": {
       "catalog_name": {
         "schema": {
@@ -241,11 +192,6 @@ openapi_operation_overrides: {
     }
   },
   "deleteSchema": {
-    "parameter_order": [
-      "catalog_name",
-      "schema_name",
-      "force"
-    ],
     "parameters": {
       "catalog_name": {
         "schema": {
@@ -266,12 +212,6 @@ openapi_operation_overrides: {
     }
   },
   "listTables": {
-    "parameter_order": [
-      "catalog_name",
-      "schema_name",
-      "max_results",
-      "page_token"
-    ],
     "parameters": {
       "catalog_name": {
         "schema": {
@@ -299,10 +239,6 @@ openapi_operation_overrides: {
     }
   },
   "createTable": {
-    "parameter_order": [
-      "catalog_name",
-      "schema_name"
-    ],
     "parameters": {
       "catalog_name": {
         "schema": {
@@ -317,11 +253,6 @@ openapi_operation_overrides: {
     }
   },
   "getTable": {
-    "parameter_order": [
-      "catalog_name",
-      "schema_name",
-      "table_name"
-    ],
     "parameters": {
       "catalog_name": {
         "schema": {
@@ -341,11 +272,6 @@ openapi_operation_overrides: {
     }
   },
   "updateTable": {
-    "parameter_order": [
-      "catalog_name",
-      "schema_name",
-      "table_name"
-    ],
     "parameters": {
       "catalog_name": {
         "schema": {
@@ -365,11 +291,6 @@ openapi_operation_overrides: {
     }
   },
   "deleteTable": {
-    "parameter_order": [
-      "catalog_name",
-      "schema_name",
-      "table_name"
-    ],
     "parameters": {
       "catalog_name": {
         "schema": {
@@ -389,13 +310,6 @@ openapi_operation_overrides: {
     }
   },
   "listTableColumns": {
-    "parameter_order": [
-      "catalog_name",
-      "schema_name",
-      "table_name",
-      "max_results",
-      "page_token"
-    ],
     "parameters": {
       "catalog_name": {
         "schema": {
@@ -428,12 +342,6 @@ openapi_operation_overrides: {
     }
   },
   "updateColumn": {
-    "parameter_order": [
-      "catalog_name",
-      "schema_name",
-      "table_name",
-      "column_name"
-    ],
     "parameters": {
       "catalog_name": {
         "schema": {
@@ -458,11 +366,6 @@ openapi_operation_overrides: {
     }
   },
   "commitTableIngestion": {
-    "parameter_order": [
-      "catalog_name",
-      "schema_name",
-      "table_name"
-    ],
     "parameters": {
       "catalog_name": {
         "schema": {
@@ -482,11 +385,6 @@ openapi_operation_overrides: {
     }
   },
   "loadTableExternalFiles": {
-    "parameter_order": [
-      "catalog_name",
-      "schema_name",
-      "table_name"
-    ],
     "parameters": {
       "catalog_name": {
         "schema": {
@@ -506,11 +404,6 @@ openapi_operation_overrides: {
     }
   },
   "createManifest": {
-    "parameter_order": [
-      "catalog_name",
-      "schema_name",
-      "table_name"
-    ],
     "parameters": {
       "catalog_name": {
         "schema": {
@@ -530,11 +423,6 @@ openapi_operation_overrides: {
     }
   },
   "profileTable": {
-    "parameter_order": [
-      "catalog_name",
-      "schema_name",
-      "table_name"
-    ],
     "parameters": {
       "catalog_name": {
         "schema": {
@@ -554,11 +442,6 @@ openapi_operation_overrides: {
     }
   },
   "createUploadUrl": {
-    "parameter_order": [
-      "catalog_name",
-      "schema_name",
-      "table_name"
-    ],
     "parameters": {
       "catalog_name": {
         "schema": {
@@ -578,12 +461,6 @@ openapi_operation_overrides: {
     }
   },
   "listViews": {
-    "parameter_order": [
-      "catalog_name",
-      "schema_name",
-      "max_results",
-      "page_token"
-    ],
     "parameters": {
       "catalog_name": {
         "schema": {
@@ -611,10 +488,6 @@ openapi_operation_overrides: {
     }
   },
   "createView": {
-    "parameter_order": [
-      "catalog_name",
-      "schema_name"
-    ],
     "parameters": {
       "catalog_name": {
         "schema": {
@@ -629,11 +502,6 @@ openapi_operation_overrides: {
     }
   },
   "getView": {
-    "parameter_order": [
-      "catalog_name",
-      "schema_name",
-      "view_name"
-    ],
     "parameters": {
       "catalog_name": {
         "schema": {
@@ -653,11 +521,6 @@ openapi_operation_overrides: {
     }
   },
   "updateView": {
-    "parameter_order": [
-      "catalog_name",
-      "schema_name",
-      "view_name"
-    ],
     "parameters": {
       "catalog_name": {
         "schema": {
@@ -677,11 +540,6 @@ openapi_operation_overrides: {
     }
   },
   "deleteView": {
-    "parameter_order": [
-      "catalog_name",
-      "schema_name",
-      "view_name"
-    ],
     "parameters": {
       "catalog_name": {
         "schema": {
@@ -701,12 +559,6 @@ openapi_operation_overrides: {
     }
   },
   "listVolumes": {
-    "parameter_order": [
-      "catalog_name",
-      "schema_name",
-      "max_results",
-      "page_token"
-    ],
     "parameters": {
       "catalog_name": {
         "schema": {
@@ -734,10 +586,6 @@ openapi_operation_overrides: {
     }
   },
   "createVolume": {
-    "parameter_order": [
-      "catalog_name",
-      "schema_name"
-    ],
     "parameters": {
       "catalog_name": {
         "schema": {
@@ -752,11 +600,6 @@ openapi_operation_overrides: {
     }
   },
   "getVolume": {
-    "parameter_order": [
-      "catalog_name",
-      "schema_name",
-      "volume_name"
-    ],
     "parameters": {
       "catalog_name": {
         "schema": {
@@ -776,11 +619,6 @@ openapi_operation_overrides: {
     }
   },
   "updateVolume": {
-    "parameter_order": [
-      "catalog_name",
-      "schema_name",
-      "volume_name"
-    ],
     "parameters": {
       "catalog_name": {
         "schema": {
@@ -800,11 +638,6 @@ openapi_operation_overrides: {
     }
   },
   "deleteVolume": {
-    "parameter_order": [
-      "catalog_name",
-      "schema_name",
-      "volume_name"
-    ],
     "parameters": {
       "catalog_name": {
         "schema": {
@@ -824,9 +657,6 @@ openapi_operation_overrides: {
     }
   },
   "getCatalogVersionSummary": {
-    "parameter_order": [
-      "catalog_name"
-    ],
     "parameters": {
       "catalog_name": {
         "schema": {
@@ -836,10 +666,6 @@ openapi_operation_overrides: {
     }
   },
   "listClassifications": {
-    "parameter_order": [
-      "max_results",
-      "page_token"
-    ],
     "parameters": {
       "max_results": {
         "schema": {
@@ -857,11 +683,6 @@ openapi_operation_overrides: {
     }
   },
   "listColumnMasks": {
-    "parameter_order": [
-      "table_id",
-      "max_results",
-      "page_token"
-    ],
     "parameters": {
       "table_id": {
         "schema": {
@@ -885,9 +706,6 @@ openapi_operation_overrides: {
     }
   },
   "getColumnMask": {
-    "parameter_order": [
-      "column_mask_id"
-    ],
     "parameters": {
       "column_mask_id": {
         "schema": {
@@ -897,9 +715,6 @@ openapi_operation_overrides: {
     }
   },
   "updateColumnMask": {
-    "parameter_order": [
-      "column_mask_id"
-    ],
     "parameters": {
       "column_mask_id": {
         "schema": {
@@ -909,9 +724,6 @@ openapi_operation_overrides: {
     }
   },
   "deleteColumnMask": {
-    "parameter_order": [
-      "column_mask_id"
-    ],
     "parameters": {
       "column_mask_id": {
         "schema": {
@@ -921,11 +733,6 @@ openapi_operation_overrides: {
     }
   },
   "listColumnMaskBindings": {
-    "parameter_order": [
-      "column_mask_id",
-      "max_results",
-      "page_token"
-    ],
     "parameters": {
       "column_mask_id": {
         "schema": {
@@ -948,9 +755,6 @@ openapi_operation_overrides: {
     }
   },
   "bindColumnMask": {
-    "parameter_order": [
-      "column_mask_id"
-    ],
     "parameters": {
       "column_mask_id": {
         "schema": {
@@ -960,11 +764,6 @@ openapi_operation_overrides: {
     }
   },
   "unbindColumnMask": {
-    "parameter_order": [
-      "column_mask_id",
-      "principal_type",
-      "principal_id"
-    ],
     "parameters": {
       "column_mask_id": {
         "schema": {
@@ -984,16 +783,6 @@ openapi_operation_overrides: {
     }
   },
   "listDataProducts": {
-    "parameter_order": [
-      "q",
-      "domain",
-      "team",
-      "publication_state",
-      "certification_state",
-      "freshness_state",
-      "max_results",
-      "page_token"
-    ],
     "parameters": {
       "q": {
         "schema": {
@@ -1047,10 +836,6 @@ openapi_operation_overrides: {
     }
   },
   "listProductScorecards": {
-    "parameter_order": [
-      "max_results",
-      "page_token"
-    ],
     "parameters": {
       "max_results": {
         "schema": {
@@ -1068,9 +853,6 @@ openapi_operation_overrides: {
     }
   },
   "getDataProduct": {
-    "parameter_order": [
-      "product_slug"
-    ],
     "parameters": {
       "product_slug": {
         "schema": {
@@ -1080,9 +862,6 @@ openapi_operation_overrides: {
     }
   },
   "updateDataProduct": {
-    "parameter_order": [
-      "product_slug"
-    ],
     "parameters": {
       "product_slug": {
         "schema": {
@@ -1092,9 +871,6 @@ openapi_operation_overrides: {
     }
   },
   "deleteDataProduct": {
-    "parameter_order": [
-      "product_slug"
-    ],
     "parameters": {
       "product_slug": {
         "schema": {
@@ -1104,9 +880,6 @@ openapi_operation_overrides: {
     }
   },
   "listDataProductDependencies": {
-    "parameter_order": [
-      "product_slug"
-    ],
     "parameters": {
       "product_slug": {
         "schema": {
@@ -1116,9 +889,6 @@ openapi_operation_overrides: {
     }
   },
   "createDataProductDependency": {
-    "parameter_order": [
-      "product_slug"
-    ],
     "parameters": {
       "product_slug": {
         "schema": {
@@ -1128,11 +898,6 @@ openapi_operation_overrides: {
     }
   },
   "listDataProductEvents": {
-    "parameter_order": [
-      "product_slug",
-      "max_results",
-      "page_token"
-    ],
     "parameters": {
       "product_slug": {
         "schema": {
@@ -1155,9 +920,6 @@ openapi_operation_overrides: {
     }
   },
   "listDataProductOutputs": {
-    "parameter_order": [
-      "product_slug"
-    ],
     "parameters": {
       "product_slug": {
         "schema": {
@@ -1167,9 +929,6 @@ openapi_operation_overrides: {
     }
   },
   "listDataProductSemanticEntrypoints": {
-    "parameter_order": [
-      "product_slug"
-    ],
     "parameters": {
       "product_slug": {
         "schema": {
@@ -1179,9 +938,6 @@ openapi_operation_overrides: {
     }
   },
   "getDataProductStatus": {
-    "parameter_order": [
-      "product_slug"
-    ],
     "parameters": {
       "product_slug": {
         "schema": {
@@ -1191,9 +947,6 @@ openapi_operation_overrides: {
     }
   },
   "listDataProductSubscriptions": {
-    "parameter_order": [
-      "product_slug"
-    ],
     "parameters": {
       "product_slug": {
         "schema": {
@@ -1203,9 +956,6 @@ openapi_operation_overrides: {
     }
   },
   "createDataProductSubscription": {
-    "parameter_order": [
-      "product_slug"
-    ],
     "parameters": {
       "product_slug": {
         "schema": {
@@ -1215,9 +965,6 @@ openapi_operation_overrides: {
     }
   },
   "listDataProductVersions": {
-    "parameter_order": [
-      "product_slug"
-    ],
     "parameters": {
       "product_slug": {
         "schema": {
@@ -1227,9 +974,6 @@ openapi_operation_overrides: {
     }
   },
   "createDataProductVersion": {
-    "parameter_order": [
-      "product_slug"
-    ],
     "parameters": {
       "product_slug": {
         "schema": {
@@ -1239,10 +983,6 @@ openapi_operation_overrides: {
     }
   },
   "getDataProductVersion": {
-    "parameter_order": [
-      "product_slug",
-      "version"
-    ],
     "parameters": {
       "product_slug": {
         "schema": {
@@ -1258,10 +998,6 @@ openapi_operation_overrides: {
     }
   },
   "deleteDataProductVersion": {
-    "parameter_order": [
-      "product_slug",
-      "version"
-    ],
     "parameters": {
       "product_slug": {
         "schema": {
@@ -1277,10 +1013,6 @@ openapi_operation_overrides: {
     }
   },
   "deprecateDataProductVersion": {
-    "parameter_order": [
-      "product_slug",
-      "version"
-    ],
     "parameters": {
       "product_slug": {
         "schema": {
@@ -1296,10 +1028,6 @@ openapi_operation_overrides: {
     }
   },
   "publishDataProductVersion": {
-    "parameter_order": [
-      "product_slug",
-      "version"
-    ],
     "parameters": {
       "product_slug": {
         "schema": {
@@ -1315,10 +1043,6 @@ openapi_operation_overrides: {
     }
   },
   "retireDataProductVersion": {
-    "parameter_order": [
-      "product_slug",
-      "version"
-    ],
     "parameters": {
       "product_slug": {
         "schema": {
@@ -1334,10 +1058,6 @@ openapi_operation_overrides: {
     }
   },
   "listGitRepos": {
-    "parameter_order": [
-      "max_results",
-      "page_token"
-    ],
     "parameters": {
       "max_results": {
         "schema": {
@@ -1355,9 +1075,6 @@ openapi_operation_overrides: {
     }
   },
   "getGitRepo": {
-    "parameter_order": [
-      "git_repo_id"
-    ],
     "parameters": {
       "git_repo_id": {
         "schema": {
@@ -1367,9 +1084,6 @@ openapi_operation_overrides: {
     }
   },
   "deleteGitRepo": {
-    "parameter_order": [
-      "git_repo_id"
-    ],
     "parameters": {
       "git_repo_id": {
         "schema": {
@@ -1379,9 +1093,6 @@ openapi_operation_overrides: {
     }
   },
   "syncGitRepo": {
-    "parameter_order": [
-      "git_repo_id"
-    ],
     "parameters": {
       "git_repo_id": {
         "schema": {
@@ -1391,14 +1102,6 @@ openapi_operation_overrides: {
     }
   },
   "listGrants": {
-    "parameter_order": [
-      "principal_id",
-      "principal_type",
-      "securable_type",
-      "securable_id",
-      "max_results",
-      "page_token"
-    ],
     "parameters": {
       "principal_id": {
         "schema": {
@@ -1440,9 +1143,6 @@ openapi_operation_overrides: {
     }
   },
   "deleteGrant": {
-    "parameter_order": [
-      "grant_id"
-    ],
     "parameters": {
       "grant_id": {
         "schema": {
@@ -1452,10 +1152,6 @@ openapi_operation_overrides: {
     }
   },
   "listMacros": {
-    "parameter_order": [
-      "max_results",
-      "page_token"
-    ],
     "parameters": {
       "max_results": {
         "schema": {
@@ -1473,9 +1169,6 @@ openapi_operation_overrides: {
     }
   },
   "getMacro": {
-    "parameter_order": [
-      "macro_name"
-    ],
     "parameters": {
       "macro_name": {
         "schema": {
@@ -1485,9 +1178,6 @@ openapi_operation_overrides: {
     }
   },
   "updateMacro": {
-    "parameter_order": [
-      "macro_name"
-    ],
     "parameters": {
       "macro_name": {
         "schema": {
@@ -1497,9 +1187,6 @@ openapi_operation_overrides: {
     }
   },
   "deleteMacro": {
-    "parameter_order": [
-      "macro_name"
-    ],
     "parameters": {
       "macro_name": {
         "schema": {
@@ -1509,11 +1196,6 @@ openapi_operation_overrides: {
     }
   },
   "getMacroImpact": {
-    "parameter_order": [
-      "macro_name",
-      "max_results",
-      "page_token"
-    ],
     "parameters": {
       "macro_name": {
         "schema": {
@@ -1536,11 +1218,6 @@ openapi_operation_overrides: {
     }
   },
   "diffMacroRevisions": {
-    "parameter_order": [
-      "macro_name",
-      "from_version",
-      "to_version"
-    ],
     "parameters": {
       "macro_name": {
         "schema": {
@@ -1564,9 +1241,6 @@ openapi_operation_overrides: {
     }
   },
   "listMacroRevisions": {
-    "parameter_order": [
-      "macro_name"
-    ],
     "parameters": {
       "macro_name": {
         "schema": {
@@ -1576,11 +1250,6 @@ openapi_operation_overrides: {
     }
   },
   "listModelRuns": {
-    "parameter_order": [
-      "status",
-      "max_results",
-      "page_token"
-    ],
     "parameters": {
       "status": {
         "schema": {
@@ -1604,9 +1273,6 @@ openapi_operation_overrides: {
     }
   },
   "getModelRun": {
-    "parameter_order": [
-      "run_id"
-    ],
     "parameters": {
       "run_id": {
         "schema": {
@@ -1616,9 +1282,6 @@ openapi_operation_overrides: {
     }
   },
   "cancelModelRun": {
-    "parameter_order": [
-      "run_id"
-    ],
     "parameters": {
       "run_id": {
         "schema": {
@@ -1628,9 +1291,6 @@ openapi_operation_overrides: {
     }
   },
   "listModelRunSteps": {
-    "parameter_order": [
-      "run_id"
-    ],
     "parameters": {
       "run_id": {
         "schema": {
@@ -1640,10 +1300,6 @@ openapi_operation_overrides: {
     }
   },
   "listModelTestResults": {
-    "parameter_order": [
-      "run_id",
-      "step_id"
-    ],
     "parameters": {
       "run_id": {
         "schema": {
@@ -1658,11 +1314,6 @@ openapi_operation_overrides: {
     }
   },
   "listModels": {
-    "parameter_order": [
-      "project_name",
-      "max_results",
-      "page_token"
-    ],
     "parameters": {
       "project_name": {
         "schema": {
@@ -1686,9 +1337,6 @@ openapi_operation_overrides: {
     }
   },
   "getModelDAG": {
-    "parameter_order": [
-      "project_name"
-    ],
     "parameters": {
       "project_name": {
         "schema": {
@@ -1699,10 +1347,6 @@ openapi_operation_overrides: {
     }
   },
   "getModel": {
-    "parameter_order": [
-      "project_name",
-      "model_name"
-    ],
     "parameters": {
       "project_name": {
         "schema": {
@@ -1717,10 +1361,6 @@ openapi_operation_overrides: {
     }
   },
   "updateModel": {
-    "parameter_order": [
-      "project_name",
-      "model_name"
-    ],
     "parameters": {
       "project_name": {
         "schema": {
@@ -1735,10 +1375,6 @@ openapi_operation_overrides: {
     }
   },
   "deleteModel": {
-    "parameter_order": [
-      "project_name",
-      "model_name"
-    ],
     "parameters": {
       "project_name": {
         "schema": {
@@ -1753,10 +1389,6 @@ openapi_operation_overrides: {
     }
   },
   "checkModelFreshness": {
-    "parameter_order": [
-      "project_name",
-      "model_name"
-    ],
     "parameters": {
       "project_name": {
         "schema": {
@@ -1771,10 +1403,6 @@ openapi_operation_overrides: {
     }
   },
   "createModelTest": {
-    "parameter_order": [
-      "project_name",
-      "model_name"
-    ],
     "parameters": {
       "project_name": {
         "schema": {
@@ -1789,10 +1417,6 @@ openapi_operation_overrides: {
     }
   },
   "listModelTests": {
-    "parameter_order": [
-      "project_name",
-      "model_name"
-    ],
     "parameters": {
       "project_name": {
         "schema": {
@@ -1807,11 +1431,6 @@ openapi_operation_overrides: {
     }
   },
   "deleteModelTest": {
-    "parameter_order": [
-      "project_name",
-      "model_name",
-      "test_id"
-    ],
     "parameters": {
       "project_name": {
         "schema": {
@@ -1831,9 +1450,6 @@ openapi_operation_overrides: {
     }
   },
   "promoteNotebookToModel": {
-    "parameter_order": [
-      "notebook_id"
-    ],
     "parameters": {
       "notebook_id": {
         "schema": {
@@ -1843,9 +1459,6 @@ openapi_operation_overrides: {
     }
   },
   "unpublishNotebookModel": {
-    "parameter_order": [
-      "notebook_id"
-    ],
     "parameters": {
       "notebook_id": {
         "schema": {
@@ -1855,10 +1468,6 @@ openapi_operation_overrides: {
     }
   },
   "listProductDomains": {
-    "parameter_order": [
-      "max_results",
-      "page_token"
-    ],
     "parameters": {
       "max_results": {
         "schema": {
@@ -1876,9 +1485,6 @@ openapi_operation_overrides: {
     }
   },
   "getProductDomain": {
-    "parameter_order": [
-      "domain_name"
-    ],
     "parameters": {
       "domain_name": {
         "schema": {
@@ -1888,9 +1494,6 @@ openapi_operation_overrides: {
     }
   },
   "updateProductDomain": {
-    "parameter_order": [
-      "domain_name"
-    ],
     "parameters": {
       "domain_name": {
         "schema": {
@@ -1900,9 +1503,6 @@ openapi_operation_overrides: {
     }
   },
   "deleteProductDomain": {
-    "parameter_order": [
-      "domain_name"
-    ],
     "parameters": {
       "domain_name": {
         "schema": {
@@ -1912,11 +1512,6 @@ openapi_operation_overrides: {
     }
   },
   "listProductTeams": {
-    "parameter_order": [
-      "domain_name",
-      "max_results",
-      "page_token"
-    ],
     "parameters": {
       "domain_name": {
         "schema": {
@@ -1939,9 +1534,6 @@ openapi_operation_overrides: {
     }
   },
   "createProductTeam": {
-    "parameter_order": [
-      "domain_name"
-    ],
     "parameters": {
       "domain_name": {
         "schema": {
@@ -1951,10 +1543,6 @@ openapi_operation_overrides: {
     }
   },
   "getProductTeam": {
-    "parameter_order": [
-      "domain_name",
-      "team_name"
-    ],
     "parameters": {
       "domain_name": {
         "schema": {
@@ -1969,10 +1557,6 @@ openapi_operation_overrides: {
     }
   },
   "updateProductTeam": {
-    "parameter_order": [
-      "domain_name",
-      "team_name"
-    ],
     "parameters": {
       "domain_name": {
         "schema": {
@@ -1987,10 +1571,6 @@ openapi_operation_overrides: {
     }
   },
   "deleteProductTeam": {
-    "parameter_order": [
-      "domain_name",
-      "team_name"
-    ],
     "parameters": {
       "domain_name": {
         "schema": {
@@ -2005,11 +1585,6 @@ openapi_operation_overrides: {
     }
   },
   "listRowFilters": {
-    "parameter_order": [
-      "table_id",
-      "max_results",
-      "page_token"
-    ],
     "parameters": {
       "table_id": {
         "schema": {
@@ -2033,9 +1608,6 @@ openapi_operation_overrides: {
     }
   },
   "getRowFilter": {
-    "parameter_order": [
-      "row_filter_id"
-    ],
     "parameters": {
       "row_filter_id": {
         "schema": {
@@ -2045,9 +1617,6 @@ openapi_operation_overrides: {
     }
   },
   "updateRowFilter": {
-    "parameter_order": [
-      "row_filter_id"
-    ],
     "parameters": {
       "row_filter_id": {
         "schema": {
@@ -2057,9 +1626,6 @@ openapi_operation_overrides: {
     }
   },
   "deleteRowFilter": {
-    "parameter_order": [
-      "row_filter_id"
-    ],
     "parameters": {
       "row_filter_id": {
         "schema": {
@@ -2069,11 +1635,6 @@ openapi_operation_overrides: {
     }
   },
   "listRowFilterBindings": {
-    "parameter_order": [
-      "row_filter_id",
-      "max_results",
-      "page_token"
-    ],
     "parameters": {
       "row_filter_id": {
         "schema": {
@@ -2096,9 +1657,6 @@ openapi_operation_overrides: {
     }
   },
   "bindRowFilter": {
-    "parameter_order": [
-      "row_filter_id"
-    ],
     "parameters": {
       "row_filter_id": {
         "schema": {
@@ -2108,11 +1666,6 @@ openapi_operation_overrides: {
     }
   },
   "unbindRowFilter": {
-    "parameter_order": [
-      "row_filter_id",
-      "principal_type",
-      "principal_id"
-    ],
     "parameters": {
       "row_filter_id": {
         "schema": {
@@ -2132,10 +1685,6 @@ openapi_operation_overrides: {
     }
   },
   "listTags": {
-    "parameter_order": [
-      "max_results",
-      "page_token"
-    ],
     "parameters": {
       "max_results": {
         "schema": {
@@ -2153,9 +1702,6 @@ openapi_operation_overrides: {
     }
   },
   "getTag": {
-    "parameter_order": [
-      "tag_id"
-    ],
     "parameters": {
       "tag_id": {
         "schema": {
@@ -2165,9 +1711,6 @@ openapi_operation_overrides: {
     }
   },
   "updateTag": {
-    "parameter_order": [
-      "tag_id"
-    ],
     "parameters": {
       "tag_id": {
         "schema": {
@@ -2177,9 +1720,6 @@ openapi_operation_overrides: {
     }
   },
   "deleteTag": {
-    "parameter_order": [
-      "tag_id"
-    ],
     "parameters": {
       "tag_id": {
         "schema": {
@@ -2189,11 +1729,6 @@ openapi_operation_overrides: {
     }
   },
   "listTagAssignments": {
-    "parameter_order": [
-      "tag_id",
-      "max_results",
-      "page_token"
-    ],
     "parameters": {
       "tag_id": {
         "schema": {
@@ -2216,9 +1751,6 @@ openapi_operation_overrides: {
     }
   },
   "createTagAssignment": {
-    "parameter_order": [
-      "tag_id"
-    ],
     "parameters": {
       "tag_id": {
         "schema": {
@@ -2228,10 +1760,6 @@ openapi_operation_overrides: {
     }
   },
   "deleteTagAssignment": {
-    "parameter_order": [
-      "tag_id",
-      "assignment_id"
-    ],
     "parameters": {
       "tag_id": {
         "schema": {

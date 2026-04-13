@@ -87,7 +87,6 @@ package api
 #OpenAPI: {
 	version?: string
 	tag_order?: [...string]
-	path_method_order?: [string]: [...string]
 	security?: [...#SecurityRequirement]
 	security_schemes?: [string]: #SecurityScheme
 }
@@ -117,7 +116,6 @@ package api
 
 #OpenAPIOperationOverride: {
 	security?: [...#SecurityRequirement]
-	parameter_order?: [...string]
 	parameters?: [string]: #OpenAPIParameterOverride
 	responses?: [string]: #OpenAPIResponseOverride
 }

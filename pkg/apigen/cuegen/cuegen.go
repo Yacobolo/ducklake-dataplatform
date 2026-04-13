@@ -51,10 +51,9 @@ type schemaPropertyOverride struct {
 }
 
 type operationOverride struct {
-	Security       []ir.SecurityRequirement     `json:"security,omitempty"`
-	ParameterOrder []string                     `json:"parameter_order,omitempty"`
-	Parameters     map[string]parameterOverride `json:"parameters,omitempty"`
-	Responses      map[string]responseOverride  `json:"responses,omitempty"`
+	Security   []ir.SecurityRequirement     `json:"security,omitempty"`
+	Parameters map[string]parameterOverride `json:"parameters,omitempty"`
+	Responses  map[string]responseOverride  `json:"responses,omitempty"`
 }
 
 type parameterOverride struct {
@@ -484,29 +483,6 @@ func applyOperationOverrides(doc *ir.Document, overrides map[string]operationOve
 		if len(override.Security) > 0 {
 			doc.Endpoints[i].Security = append([]ir.SecurityRequirement(nil), override.Security...)
 		}
-		if len(override.ParameterOrder) > 0 {
-			parametersByName := make(map[string]ir.Parameter, len(doc.Endpoints[i].Parameters))
-			for _, parameter := range doc.Endpoints[i].Parameters {
-				parametersByName[parameter.Name] = parameter
-			}
-			reordered := make([]ir.Parameter, 0, len(doc.Endpoints[i].Parameters))
-			seen := make(map[string]struct{}, len(override.ParameterOrder))
-			for _, name := range override.ParameterOrder {
-				parameter, ok := parametersByName[name]
-				if !ok {
-					continue
-				}
-				reordered = append(reordered, parameter)
-				seen[name] = struct{}{}
-			}
-			for _, parameter := range doc.Endpoints[i].Parameters {
-				if _, ok := seen[parameter.Name]; ok {
-					continue
-				}
-				reordered = append(reordered, parameter)
-			}
-			doc.Endpoints[i].Parameters = reordered
-		}
 		for j := range doc.Endpoints[i].Parameters {
 			if parameterOverride, ok := override.Parameters[doc.Endpoints[i].Parameters[j].Name]; ok {
 				if parameterOverride.Explode != nil {
@@ -781,7 +757,6 @@ const schemaFile = `package api
 
 #OpenAPIOperationOverride: {
 	security?: [...#SecurityRequirement]
-	parameter_order?: [...string]
 	parameters?: [string]: #OpenAPIParameterOverride
 }
 

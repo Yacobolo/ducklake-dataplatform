@@ -45,7 +45,6 @@ type Tag struct {
 type OpenAPI struct {
 	Version         string                    `json:"version,omitempty"`
 	TagOrder        []string                  `json:"tag_order,omitempty"`
-	PathMethodOrder map[string][]string       `json:"path_method_order,omitempty"`
 	Security        []SecurityRequirement     `json:"security,omitempty"`
 	SecuritySchemes map[string]SecurityScheme `json:"security_schemes,omitempty"`
 }

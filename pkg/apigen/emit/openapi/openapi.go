@@ -124,7 +124,7 @@ func pathsNode(doc ir.Document) (*yaml.Node, error) {
 
 	for _, path := range pathKeys {
 		itemNode := mappingNode()
-		for _, endpoint := range orderPathEndpoints(grouped[path], doc.OpenAPI.PathMethodOrder[path]) {
+		for _, endpoint := range grouped[path] {
 			op, err := operationNode(endpoint)
 			if err != nil {
 				return nil, err
@@ -135,32 +135,6 @@ func pathsNode(doc ir.Document) (*yaml.Node, error) {
 	}
 
 	return paths, nil
-}
-
-func orderPathEndpoints(endpoints []ir.Endpoint, methodOrder []string) []ir.Endpoint {
-	if len(endpoints) <= 1 || len(methodOrder) == 0 {
-		return endpoints
-	}
-	index := make(map[string]int, len(methodOrder))
-	for i, method := range methodOrder {
-		index[strings.ToLower(method)] = i
-	}
-	ordered := append([]ir.Endpoint(nil), endpoints...)
-	sort.SliceStable(ordered, func(i, j int) bool {
-		leftIndex, leftOK := index[strings.ToLower(ordered[i].Method)]
-		rightIndex, rightOK := index[strings.ToLower(ordered[j].Method)]
-		switch {
-		case leftOK && rightOK:
-			return leftIndex < rightIndex
-		case leftOK:
-			return true
-		case rightOK:
-			return false
-		default:
-			return false
-		}
-	})
-	return ordered
 }
 
 func operationNode(endpoint ir.Endpoint) (*yaml.Node, error) {
