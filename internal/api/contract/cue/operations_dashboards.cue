@@ -122,14 +122,9 @@ package api
 		op:           "listDashboardWidgets"
 		path:         "/dashboards/{dashboard_id}/widgets"
 		summary:      "List dashboard widgets"
+		returns:      "DashboardWidgetList"
 		error_family: "resource"
 		params:       #dashboardPathParameters
-		success_schema: {
-			type: "array"
-			items: {
-				ref: "DashboardWidget"
-			}
-		}
 	},
 	#plainDashboardOperation & {
 		kind:           "response"

@@ -397,14 +397,6 @@ type CatalogHistoryResponse struct {
 	Data []CatalogHistoryEntry `json:"data"`
 }
 
-type CatalogInfo struct {
-	Comment       *string `json:"comment,omitempty"`
-	CreatedAt     *string `json:"created_at,omitempty"`
-	Name          string  `json:"name"`
-	SystemManaged *bool   `json:"system_managed,omitempty"`
-	UpdatedAt     *string `json:"updated_at,omitempty"`
-}
-
 type CatalogRegistration struct {
 	Comment       *string        `json:"comment,omitempty"`
 	CreatedAt     *string        `json:"created_at,omitempty"`
@@ -1161,6 +1153,8 @@ type DashboardWidgetLayoutUpdate struct {
 	Y *int32 `json:"y,omitempty"`
 }
 
+type DashboardWidgetList []DashboardWidget
+
 type DashboardWidgetSource struct {
 	Kind          DashboardWidgetSourceKind     `json:"kind"`
 	NotebookCell  *DashboardNotebookCellSource  `json:"notebook_cell,omitempty"`
@@ -1366,6 +1360,8 @@ type FolderShare struct {
 	PrincipalName *string            `json:"principal_name,omitempty"`
 	Role          *NotebookShareRole `json:"role,omitempty"`
 }
+
+type FolderShareList []FolderShare
 
 type FreshnessPolicy struct {
 	CronSchedule  *string `json:"cron_schedule,omitempty"`
@@ -1904,6 +1900,8 @@ type NotebookShare struct {
 	Role          *NotebookShareRole `json:"role,omitempty"`
 }
 
+type NotebookShareList []NotebookShare
+
 type NotebookShareRole string
 
 const (
@@ -2174,11 +2172,6 @@ type PaginatedSearchResults struct {
 type PaginatedSemanticModels struct {
 	Data          []SemanticModel `json:"data"`
 	NextPageToken *string         `json:"next_page_token,omitempty"`
-}
-
-type PaginatedSemanticRelationships struct {
-	Data          []SemanticRelationship `json:"data"`
-	NextPageToken *string                `json:"next_page_token,omitempty"`
 }
 
 type PaginatedStorageCredentials struct {
@@ -3355,6 +3348,8 @@ type WorkspaceMember struct {
 	UpdatedAt     *string           `json:"updated_at,omitempty"`
 	WorkspaceId   string            `json:"workspace_id"`
 }
+
+type WorkspaceMemberList []WorkspaceMember
 
 type GenericRequest struct {
 	Payload *map[string]string `json:"payload,omitempty"`

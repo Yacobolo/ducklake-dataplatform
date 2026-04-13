@@ -4579,11 +4579,11 @@ paths:
                     catalog_name: analytics
                     comment: Business-ready modeled datasets.
                     created_at: "2026-03-01T08:00:00Z"
-                    id: schema_mart
                     name: mart
                     owner: team-analytics
                     properties:
                       purpose: gold layer
+                    schema_id: schema_mart
                     updated_at: "2026-04-13T08:00:00Z"
                 next_page_token: example
         '400':
@@ -4683,11 +4683,11 @@ paths:
                 catalog_name: analytics
                 comment: Business-ready modeled datasets.
                 created_at: "2026-03-01T08:00:00Z"
-                id: schema_mart
                 name: mart
                 owner: team-analytics
                 properties:
                   purpose: gold layer
+                schema_id: schema_mart
                 updated_at: "2026-04-13T08:00:00Z"
         '400':
           description: The server could not understand the request due to invalid syntax.
@@ -4895,11 +4895,11 @@ paths:
                 catalog_name: analytics
                 comment: Business-ready modeled datasets.
                 created_at: "2026-03-01T08:00:00Z"
-                id: schema_mart
                 name: mart
                 owner: team-analytics
                 properties:
                   purpose: gold layer
+                schema_id: schema_mart
                 updated_at: "2026-04-13T08:00:00Z"
         '400':
           description: The server could not understand the request due to invalid syntax.
@@ -5004,11 +5004,11 @@ paths:
                 catalog_name: analytics
                 comment: Business-ready modeled datasets.
                 created_at: "2026-03-01T08:00:00Z"
-                id: schema_mart
                 name: mart
                 owner: team-analytics
                 properties:
                   purpose: gold layer
+                schema_id: schema_mart
                 updated_at: "2026-04-13T08:00:00Z"
         '400':
           description: The server could not understand the request due to invalid syntax.
@@ -5145,7 +5145,6 @@ paths:
                         type: DOUBLE
                     comment: Daily revenue fact table.
                     created_at: "2026-03-01T08:00:00Z"
-                    id: tbl_orders_daily
                     name: orders_daily
                     owner: team-analytics
                     schema_id: schema_mart
@@ -5156,6 +5155,7 @@ paths:
                       profiled_by: system:profiler
                       row_count: 365000
                       size_bytes: 104857600
+                    table_id: tbl_orders_daily
                     updated_at: "2026-04-13T08:00:00Z"
                 next_page_token: example
         '400':
@@ -5271,7 +5271,6 @@ paths:
                     type: DOUBLE
                 comment: Daily revenue fact table.
                 created_at: "2026-03-01T08:00:00Z"
-                id: tbl_orders_daily
                 name: orders_daily
                 owner: team-analytics
                 schema_id: schema_mart
@@ -5282,6 +5281,7 @@ paths:
                   profiled_by: system:profiler
                   row_count: 365000
                   size_bytes: 104857600
+                table_id: tbl_orders_daily
                 updated_at: "2026-04-13T08:00:00Z"
         '400':
           description: The server could not understand the request due to invalid syntax.
@@ -5506,7 +5506,6 @@ paths:
                     type: DOUBLE
                 comment: Daily revenue fact table.
                 created_at: "2026-03-01T08:00:00Z"
-                id: tbl_orders_daily
                 name: orders_daily
                 owner: team-analytics
                 schema_id: schema_mart
@@ -5517,6 +5516,7 @@ paths:
                   profiled_by: system:profiler
                   row_count: 365000
                   size_bytes: 104857600
+                table_id: tbl_orders_daily
                 updated_at: "2026-04-13T08:00:00Z"
         '400':
           description: The server could not understand the request due to invalid syntax.
@@ -5637,7 +5637,6 @@ paths:
                     type: DOUBLE
                 comment: Daily revenue fact table.
                 created_at: "2026-03-01T08:00:00Z"
-                id: tbl_orders_daily
                 name: orders_daily
                 owner: team-analytics
                 schema_id: schema_mart
@@ -5648,6 +5647,7 @@ paths:
                   profiled_by: system:profiler
                   row_count: 365000
                   size_bytes: 104857600
+                table_id: tbl_orders_daily
                 updated_at: "2026-04-13T08:00:00Z"
         '400':
           description: The server could not understand the request due to invalid syntax.
@@ -10167,53 +10167,37 @@ paths:
                   semantic_project_name: example
                   updated_at: "2026-01-02T15:04:05Z"
                 widgets:
-                  - created_at: "2026-01-02T15:04:05Z"
-                    dashboard_id: example
-                    description: example
-                    id: example
-                    key: example
+                  - created_at: "2026-04-13T09:00:00Z"
+                    dashboard_id: dash_01hzyexec
+                    description: Monthly recurring revenue split by plan tier.
+                    id: wid_01hzymrr
+                    key: mrr_by_plan
                     layout:
                       h: 4
                       w: 6
                       x: 0
                       'y': 0
-                    name: example
-                    page_name: example
+                    name: MRR by plan tier
+                    page_name: overview
                     source:
                       kind: semantic_query
                       semantic_query:
                         dimensions:
                           - plan_tier
-                        limit: 10
+                        limit: 12
                         metrics:
                           - monthly_recurring_revenue
-                        order_by:
-                          - monthly_recurring_revenue DESC
                         semantic_model_id: sem_01hzymetrics
-                        time_grain: month
-                    updated_at: "2026-01-02T15:04:05Z"
+                    updated_at: "2026-04-13T09:00:00Z"
                     visual_spec:
                       chart_type: bar
-                      color_palette: example
                       encodings:
-                        label:
-                          field: example
-                        secondary:
-                          field: example
-                        series:
-                          field: example
                         value:
-                          field: example
+                          field: monthly_recurring_revenue
                         x:
-                          field: example
-                        'y':
-                          field: example
-                      kind: table
-                      legend: true
-                      legend_position: top
-                      stacked: true
-                      subtitle: example
-                      title: example
+                          field: plan_tier
+                      kind: chart
+                      title: MRR by plan tier
         '400':
           description: The server could not understand the request due to invalid syntax.
           content:
@@ -10558,57 +10542,16 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/DashboardWidget'
+                $ref: '#/components/schemas/DashboardWidgetList'
               example:
-                - created_at: "2026-01-02T15:04:05Z"
-                  dashboard_id: example
-                  description: example
-                  id: example
-                  key: example
-                  layout:
-                    h: 4
-                    w: 6
-                    x: 0
-                    'y': 0
-                  name: example
-                  page_name: example
-                  source:
-                    kind: semantic_query
-                    semantic_query:
-                      dimensions:
-                        - plan_tier
-                      limit: 10
-                      metrics:
-                        - monthly_recurring_revenue
-                      order_by:
-                        - monthly_recurring_revenue DESC
-                      semantic_model_id: sem_01hzymetrics
-                      time_grain: month
-                  updated_at: "2026-01-02T15:04:05Z"
-                  visual_spec:
-                    chart_type: bar
-                    color_palette: example
-                    encodings:
-                      label:
-                        field: example
-                      secondary:
-                        field: example
-                      series:
-                        field: example
-                      value:
-                        field: example
-                      x:
-                        field: example
-                      'y':
-                        field: example
-                    kind: table
-                    legend: true
-                    legend_position: top
-                    stacked: true
-                    subtitle: example
-                    title: example
+                - created_at: "2026-04-13T09:00:00Z"
+                  dashboard_id: dash_01hzyexec
+                  description: Monthly recurring revenue split by plan tier.
+                  id: wid_01hzymrr
+                  key: mrr_by_plan
+                  name: MRR by plan tier
+                  page_name: overview
+                  updated_at: "2026-04-13T09:00:00Z"
         '400':
           description: The server could not understand the request due to invalid syntax.
           content:
@@ -10701,53 +10644,37 @@ paths:
               schema:
                 $ref: '#/components/schemas/DashboardWidget'
               example:
-                created_at: "2026-01-02T15:04:05Z"
-                dashboard_id: example
-                description: example
-                id: example
-                key: example
+                created_at: "2026-04-13T09:00:00Z"
+                dashboard_id: dash_01hzyexec
+                description: Monthly recurring revenue split by plan tier.
+                id: wid_01hzymrr
+                key: mrr_by_plan
                 layout:
                   h: 4
                   w: 6
                   x: 0
                   'y': 0
-                name: example
-                page_name: example
+                name: MRR by plan tier
+                page_name: overview
                 source:
                   kind: semantic_query
                   semantic_query:
                     dimensions:
                       - plan_tier
-                    limit: 10
+                    limit: 12
                     metrics:
                       - monthly_recurring_revenue
-                    order_by:
-                      - monthly_recurring_revenue DESC
                     semantic_model_id: sem_01hzymetrics
-                    time_grain: month
-                updated_at: "2026-01-02T15:04:05Z"
+                updated_at: "2026-04-13T09:00:00Z"
                 visual_spec:
                   chart_type: bar
-                  color_palette: example
                   encodings:
-                    label:
-                      field: example
-                    secondary:
-                      field: example
-                    series:
-                      field: example
                     value:
-                      field: example
+                      field: monthly_recurring_revenue
                     x:
-                      field: example
-                    'y':
-                      field: example
-                  kind: table
-                  legend: true
-                  legend_position: top
-                  stacked: true
-                  subtitle: example
-                  title: example
+                      field: plan_tier
+                  kind: chart
+                  title: MRR by plan tier
         '400':
           description: The server could not understand the request due to invalid syntax.
           content:
@@ -10955,53 +10882,37 @@ paths:
               schema:
                 $ref: '#/components/schemas/DashboardWidget'
               example:
-                created_at: "2026-01-02T15:04:05Z"
-                dashboard_id: example
-                description: example
-                id: example
-                key: example
+                created_at: "2026-04-13T09:00:00Z"
+                dashboard_id: dash_01hzyexec
+                description: Monthly recurring revenue split by plan tier.
+                id: wid_01hzymrr
+                key: mrr_by_plan
                 layout:
                   h: 4
                   w: 6
                   x: 0
                   'y': 0
-                name: example
-                page_name: example
+                name: MRR by plan tier
+                page_name: overview
                 source:
                   kind: semantic_query
                   semantic_query:
                     dimensions:
                       - plan_tier
-                    limit: 10
+                    limit: 12
                     metrics:
                       - monthly_recurring_revenue
-                    order_by:
-                      - monthly_recurring_revenue DESC
                     semantic_model_id: sem_01hzymetrics
-                    time_grain: month
-                updated_at: "2026-01-02T15:04:05Z"
+                updated_at: "2026-04-13T09:00:00Z"
                 visual_spec:
                   chart_type: bar
-                  color_palette: example
                   encodings:
-                    label:
-                      field: example
-                    secondary:
-                      field: example
-                    series:
-                      field: example
                     value:
-                      field: example
+                      field: monthly_recurring_revenue
                     x:
-                      field: example
-                    'y':
-                      field: example
-                  kind: table
-                  legend: true
-                  legend_position: top
-                  stacked: true
-                  subtitle: example
-                  title: example
+                      field: plan_tier
+                  kind: chart
+                  title: MRR by plan tier
         '400':
           description: The server could not understand the request due to invalid syntax.
           content:
@@ -11100,53 +11011,37 @@ paths:
               schema:
                 $ref: '#/components/schemas/DashboardWidget'
               example:
-                created_at: "2026-01-02T15:04:05Z"
-                dashboard_id: example
-                description: example
-                id: example
-                key: example
+                created_at: "2026-04-13T09:00:00Z"
+                dashboard_id: dash_01hzyexec
+                description: Monthly recurring revenue split by plan tier.
+                id: wid_01hzymrr
+                key: mrr_by_plan
                 layout:
                   h: 4
                   w: 6
                   x: 0
                   'y': 0
-                name: example
-                page_name: example
+                name: MRR by plan tier
+                page_name: overview
                 source:
                   kind: semantic_query
                   semantic_query:
                     dimensions:
                       - plan_tier
-                    limit: 10
+                    limit: 12
                     metrics:
                       - monthly_recurring_revenue
-                    order_by:
-                      - monthly_recurring_revenue DESC
                     semantic_model_id: sem_01hzymetrics
-                    time_grain: month
-                updated_at: "2026-01-02T15:04:05Z"
+                updated_at: "2026-04-13T09:00:00Z"
                 visual_spec:
                   chart_type: bar
-                  color_palette: example
                   encodings:
-                    label:
-                      field: example
-                    secondary:
-                      field: example
-                    series:
-                      field: example
                     value:
-                      field: example
+                      field: monthly_recurring_revenue
                     x:
-                      field: example
-                    'y':
-                      field: example
-                  kind: table
-                  legend: true
-                  legend_position: top
-                  stacked: true
-                  subtitle: example
-                  title: example
+                      field: plan_tier
+                  kind: chart
+                  title: MRR by plan tier
         '400':
           description: The server could not understand the request due to invalid syntax.
           content:
@@ -17274,12 +17169,10 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/FolderShare'
+                $ref: '#/components/schemas/FolderShareList'
               example:
-                - principal_name: example
-                  role: viewer
+                - principal_name: finance-editors
+                  role: editor
         '400':
           description: The server could not understand the request due to invalid syntax.
           content:
@@ -17372,8 +17265,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/FolderShare'
               example:
-                principal_name: example
-                role: viewer
+                principal_name: finance-editors
+                role: editor
         '400':
           description: The server could not understand the request due to invalid syntax.
           content:
@@ -23404,7 +23297,7 @@ paths:
                   output_cell_id: example
                   project_name: example
                 shares:
-                  - principal_name: example
+                  - principal_name: analytics-reviewers
                     role: viewer
         '400':
           description: The server could not understand the request due to invalid syntax.
@@ -25376,11 +25269,9 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/NotebookShare'
+                $ref: '#/components/schemas/NotebookShareList'
               example:
-                - principal_name: example
+                - principal_name: analytics-reviewers
                   role: viewer
         '400':
           description: The server could not understand the request due to invalid syntax.
@@ -25474,7 +25365,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/NotebookShare'
               example:
-                principal_name: example
+                principal_name: analytics-reviewers
                 role: viewer
         '400':
           description: The server could not understand the request due to invalid syntax.
@@ -35982,9 +35873,7 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/WorkspaceMember'
+                $ref: '#/components/schemas/WorkspaceMemberList'
               example:
                 - created_at: "2026-04-13T09:30:00Z"
                   principal_name: analytics-reviewers
@@ -37910,34 +37799,6 @@ components:
             object_name: example
             schema_name: example
             table_name: example
-    CatalogInfo:
-      type: object
-      required:
-        - name
-      properties:
-        name:
-          type: string
-          example: example
-        comment:
-          type: string
-          example: example
-        created_at:
-          type: string
-          format: date-time
-          example: "2026-01-02T15:04:05Z"
-        updated_at:
-          type: string
-          format: date-time
-          example: "2026-01-02T15:04:05Z"
-        system_managed:
-          type: boolean
-          example: true
-      example:
-        comment: Primary analytics catalog.
-        created_at: "2026-03-01T08:00:00Z"
-        name: analytics
-        system_managed: false
-        updated_at: "2026-04-13T08:00:00Z"
     CatalogRegistration:
       type: object
       required:
@@ -40392,53 +40253,37 @@ components:
           items:
             $ref: '#/components/schemas/DashboardWidget'
           example:
-            - created_at: "2026-01-02T15:04:05Z"
-              dashboard_id: example
-              description: example
-              id: example
-              key: example
+            - created_at: "2026-04-13T09:00:00Z"
+              dashboard_id: dash_01hzyexec
+              description: Monthly recurring revenue split by plan tier.
+              id: wid_01hzymrr
+              key: mrr_by_plan
               layout:
                 h: 4
                 w: 6
                 x: 0
                 'y': 0
-              name: example
-              page_name: example
+              name: MRR by plan tier
+              page_name: overview
               source:
                 kind: semantic_query
                 semantic_query:
                   dimensions:
                     - plan_tier
-                  limit: 10
+                  limit: 12
                   metrics:
                     - monthly_recurring_revenue
-                  order_by:
-                    - monthly_recurring_revenue DESC
                   semantic_model_id: sem_01hzymetrics
-                  time_grain: month
-              updated_at: "2026-01-02T15:04:05Z"
+              updated_at: "2026-04-13T09:00:00Z"
               visual_spec:
                 chart_type: bar
-                color_palette: example
                 encodings:
-                  label:
-                    field: example
-                  secondary:
-                    field: example
-                  series:
-                    field: example
                   value:
-                    field: example
+                    field: monthly_recurring_revenue
                   x:
-                    field: example
-                  'y':
-                    field: example
-                kind: table
-                legend: true
-                legend_position: top
-                stacked: true
-                subtitle: example
-                title: example
+                    field: plan_tier
+                kind: chart
+                title: MRR by plan tier
       example:
         dashboard:
           compute:
@@ -40455,53 +40300,37 @@ components:
           semantic_project_name: example
           updated_at: "2026-01-02T15:04:05Z"
         widgets:
-          - created_at: "2026-01-02T15:04:05Z"
-            dashboard_id: example
-            description: example
-            id: example
-            key: example
+          - created_at: "2026-04-13T09:00:00Z"
+            dashboard_id: dash_01hzyexec
+            description: Monthly recurring revenue split by plan tier.
+            id: wid_01hzymrr
+            key: mrr_by_plan
             layout:
               h: 4
               w: 6
               x: 0
               'y': 0
-            name: example
-            page_name: example
+            name: MRR by plan tier
+            page_name: overview
             source:
               kind: semantic_query
               semantic_query:
                 dimensions:
                   - plan_tier
-                limit: 10
+                limit: 12
                 metrics:
                   - monthly_recurring_revenue
-                order_by:
-                  - monthly_recurring_revenue DESC
                 semantic_model_id: sem_01hzymetrics
-                time_grain: month
-            updated_at: "2026-01-02T15:04:05Z"
+            updated_at: "2026-04-13T09:00:00Z"
             visual_spec:
               chart_type: bar
-              color_palette: example
               encodings:
-                label:
-                  field: example
-                secondary:
-                  field: example
-                series:
-                  field: example
                 value:
-                  field: example
+                  field: monthly_recurring_revenue
                 x:
-                  field: example
-                'y':
-                  field: example
-              kind: table
-              legend: true
-              legend_position: top
-              stacked: true
-              subtitle: example
-              title: example
+                  field: plan_tier
+              kind: chart
+              title: MRR by plan tier
     DashboardNotebookCellSource:
       type: object
       required:
@@ -40716,53 +40545,37 @@ components:
           format: date-time
           example: "2026-01-02T15:04:05Z"
       example:
-        created_at: "2026-01-02T15:04:05Z"
-        dashboard_id: example
-        description: example
-        id: example
-        key: example
+        created_at: "2026-04-13T09:00:00Z"
+        dashboard_id: dash_01hzyexec
+        description: Monthly recurring revenue split by plan tier.
+        id: wid_01hzymrr
+        key: mrr_by_plan
         layout:
           h: 4
           w: 6
           x: 0
           'y': 0
-        name: example
-        page_name: example
+        name: MRR by plan tier
+        page_name: overview
         source:
           kind: semantic_query
           semantic_query:
             dimensions:
               - plan_tier
-            limit: 10
+            limit: 12
             metrics:
               - monthly_recurring_revenue
-            order_by:
-              - monthly_recurring_revenue DESC
             semantic_model_id: sem_01hzymetrics
-            time_grain: month
-        updated_at: "2026-01-02T15:04:05Z"
+        updated_at: "2026-04-13T09:00:00Z"
         visual_spec:
           chart_type: bar
-          color_palette: example
           encodings:
-            label:
-              field: example
-            secondary:
-              field: example
-            series:
-              field: example
             value:
-              field: example
+              field: monthly_recurring_revenue
             x:
-              field: example
-            'y':
-              field: example
-          kind: table
-          legend: true
-          legend_position: top
-          stacked: true
-          subtitle: example
-          title: example
+              field: plan_tier
+          kind: chart
+          title: MRR by plan tier
     DashboardWidgetLayout:
       type: object
       required:
@@ -40816,6 +40629,19 @@ components:
         w: 8
         x: 0
         'y': 0
+    DashboardWidgetList:
+      type: array
+      items:
+        $ref: '#/components/schemas/DashboardWidget'
+      example:
+        - created_at: "2026-04-13T09:00:00Z"
+          dashboard_id: dash_01hzyexec
+          description: Monthly recurring revenue split by plan tier.
+          id: wid_01hzymrr
+          key: mrr_by_plan
+          name: MRR by plan tier
+          page_name: overview
+          updated_at: "2026-04-13T09:00:00Z"
     DashboardWidgetSource:
       type: object
       required:
@@ -42543,8 +42369,15 @@ components:
         role:
           $ref: '#/components/schemas/NotebookShareRole'
       example:
-        principal_name: example
-        role: viewer
+        principal_name: finance-editors
+        role: editor
+    FolderShareList:
+      type: array
+      items:
+        $ref: '#/components/schemas/FolderShare'
+      example:
+        - principal_name: finance-editors
+          role: editor
     FreshnessPolicy:
       type: object
       properties:
@@ -44383,7 +44216,7 @@ components:
           items:
             $ref: '#/components/schemas/NotebookShare'
           example:
-            - principal_name: example
+            - principal_name: analytics-reviewers
               role: viewer
         publish_model:
           $ref: '#/components/schemas/NotebookPublishModel'
@@ -44453,7 +44286,7 @@ components:
           output_cell_id: example
           project_name: example
         shares:
-          - principal_name: example
+          - principal_name: analytics-reviewers
             role: viewer
     NotebookJob:
       type: object
@@ -44563,8 +44396,15 @@ components:
         role:
           $ref: '#/components/schemas/NotebookShareRole'
       example:
-        principal_name: example
+        principal_name: analytics-reviewers
         role: viewer
+    NotebookShareList:
+      type: array
+      items:
+        $ref: '#/components/schemas/NotebookShare'
+      example:
+        - principal_name: analytics-reviewers
+          role: viewer
     NotebookShareRole:
       type: string
       enum:
@@ -46462,11 +46302,11 @@ components:
               catalog_name: analytics
               comment: Business-ready modeled datasets.
               created_at: "2026-03-01T08:00:00Z"
-              id: schema_mart
               name: mart
               owner: team-analytics
               properties:
                 purpose: gold layer
+              schema_id: schema_mart
               updated_at: "2026-04-13T08:00:00Z"
         next_page_token:
           type: string
@@ -46477,11 +46317,11 @@ components:
             catalog_name: analytics
             comment: Business-ready modeled datasets.
             created_at: "2026-03-01T08:00:00Z"
-            id: schema_mart
             name: mart
             owner: team-analytics
             properties:
               purpose: gold layer
+            schema_id: schema_mart
             updated_at: "2026-04-13T08:00:00Z"
         next_page_token: example
     PaginatedSearchResults:
@@ -46552,44 +46392,6 @@ components:
               - finance
             updated_at: "2026-04-13T08:00:00Z"
         next_page_token: example
-    PaginatedSemanticRelationships:
-      type: object
-      required:
-        - data
-      properties:
-        data:
-          type: array
-          items:
-            $ref: '#/components/schemas/SemanticRelationship'
-          example:
-            - cost: 1
-              created_at: "2026-01-02T15:04:05Z"
-              created_by: example
-              from_semantic_id: example
-              id: example
-              join_sql: example
-              max_hops: 1
-              name: example
-              relationship_type: ONE_TO_ONE
-              to_semantic_id: example
-              updated_at: "2026-01-02T15:04:05Z"
-        next_page_token:
-          type: string
-          example: example
-      example:
-        data:
-          - cost: 1
-            created_at: "2026-01-02T15:04:05Z"
-            created_by: example
-            from_semantic_id: example
-            id: example
-            join_sql: example
-            max_hops: 1
-            name: example
-            relationship_type: ONE_TO_ONE
-            to_semantic_id: example
-            updated_at: "2026-01-02T15:04:05Z"
-        next_page_token: example
     PaginatedStorageCredentials:
       type: object
       required:
@@ -46650,7 +46452,6 @@ components:
                   type: DOUBLE
               comment: Daily revenue fact table.
               created_at: "2026-03-01T08:00:00Z"
-              id: tbl_orders_daily
               name: orders_daily
               owner: team-analytics
               schema_id: schema_mart
@@ -46661,6 +46462,7 @@ components:
                 profiled_by: system:profiler
                 row_count: 365000
                 size_bytes: 104857600
+              table_id: tbl_orders_daily
               updated_at: "2026-04-13T08:00:00Z"
         next_page_token:
           type: string
@@ -46681,7 +46483,6 @@ components:
                 type: DOUBLE
             comment: Daily revenue fact table.
             created_at: "2026-03-01T08:00:00Z"
-            id: tbl_orders_daily
             name: orders_daily
             owner: team-analytics
             schema_id: schema_mart
@@ -46692,6 +46493,7 @@ components:
               profiled_by: system:profiler
               row_count: 365000
               size_bytes: 104857600
+            table_id: tbl_orders_daily
             updated_at: "2026-04-13T08:00:00Z"
         next_page_token: example
     PaginatedTagAssignments:
@@ -48915,11 +48717,11 @@ components:
         catalog_name: analytics
         comment: Business-ready modeled datasets.
         created_at: "2026-03-01T08:00:00Z"
-        id: schema_mart
         name: mart
         owner: team-analytics
         properties:
           purpose: gold layer
+        schema_id: schema_mart
         updated_at: "2026-04-13T08:00:00Z"
     SearchResult:
       type: object
@@ -49562,7 +49364,6 @@ components:
             type: DOUBLE
         comment: Daily revenue fact table.
         created_at: "2026-03-01T08:00:00Z"
-        id: tbl_orders_daily
         name: orders_daily
         owner: team-analytics
         schema_id: schema_mart
@@ -49573,6 +49374,7 @@ components:
           profiled_by: system:profiler
           row_count: 365000
           size_bytes: 104857600
+        table_id: tbl_orders_daily
         updated_at: "2026-04-13T08:00:00Z"
     TableStatistics:
       type: object
@@ -51165,6 +50967,16 @@ components:
         role: viewer
         updated_at: "2026-04-13T09:30:00Z"
         workspace_id: ws_01hzyrevenue
+    WorkspaceMemberList:
+      type: array
+      items:
+        $ref: '#/components/schemas/WorkspaceMember'
+      example:
+        - created_at: "2026-04-13T09:30:00Z"
+          principal_name: analytics-reviewers
+          role: viewer
+          updated_at: "2026-04-13T09:30:00Z"
+          workspace_id: ws_01hzyrevenue
   securitySchemes:
     BearerAuth:
       type: http

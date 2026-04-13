@@ -714,7 +714,7 @@ func writeExampleBlocks(b *strings.Builder, title string, examples []mediaTypeEx
 		if example.Example == "" {
 			continue
 		}
-		b.WriteString(fmt.Sprintf("- Content type: `%s`\n\n", example.ContentType))
+		_, _ = fmt.Fprintf(b, "- Content type: `%s`\n\n", example.ContentType)
 		b.WriteString("```json\n")
 		b.WriteString(example.Example)
 		b.WriteString("\n```\n\n")

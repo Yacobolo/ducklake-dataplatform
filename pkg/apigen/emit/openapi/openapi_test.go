@@ -1,7 +1,6 @@
 package openapi
 
 import (
-	"strings"
 	"testing"
 
 	"github.com/getkin/kin-openapi/openapi3"
@@ -79,7 +78,7 @@ func TestEmitYAML(t *testing.T) {
 	itemProperty := lookupYAMLMappingNode(&root, "components", "schemas", "Envelope", "properties", "item")
 	require.NotNil(t, itemProperty)
 	require.False(t, mappingNodeHasKey(itemProperty, "example"))
-	require.True(t, strings.Contains(string(b), "example:"))
+	require.Contains(t, string(b), "example:")
 }
 
 func lookupYAMLMappingNode(root *yaml.Node, path ...string) *yaml.Node {

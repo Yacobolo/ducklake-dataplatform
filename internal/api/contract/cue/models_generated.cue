@@ -3,25 +3,6 @@ package api
 // Shared authored helper schemas that support generated request/update models.
 
 schemas_generated: {
-  CatalogInfo: #objectSchema & {
-    example: {
-      name:           "analytics"
-      comment:        "Primary analytics catalog."
-      created_at:     "2026-03-01T08:00:00Z"
-      updated_at:     "2026-04-13T08:00:00Z"
-      system_managed: false
-    }
-    #fields: {
-      name: #nameProperty
-      comment: #commentProperty
-      created_at: #createdAtProperty
-      updated_at: #updatedAtProperty
-      system_managed: #boolProperty
-    }
-    #required: [
-      "name",
-    ]
-  }
   DashboardNotebookCellSourceUpdate: #objectSchema & {
     #fields: {
       notebook_id: #stringProperty
@@ -77,9 +58,6 @@ schemas_generated: {
       notebook_cell: #refProperty & {#ref: "DashboardNotebookCellSourceUpdate"}
       semantic_query: #refProperty & {#ref: "DashboardSemanticQuerySourceUpdate"}
     }
-  }
-  PaginatedSemanticRelationships: #paginatedItemsSchema & {
-    #item_ref: "SemanticRelationship"
   }
   VisualEncodingsUpdate: #objectSchema & {
     #fields: {

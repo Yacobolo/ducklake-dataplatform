@@ -158,14 +158,9 @@ package api
 		op:           "listNotebookShares"
 		path:         "/notebooks/{notebook_id}/shares"
 		summary:      "List notebook shares"
+		returns:      "NotebookShareList"
 		error_family: "resource"
 		params:       #notebookPathParameters
-		success_schema: {
-			type: "array"
-			items: {
-				ref: "NotebookShare"
-			}
-		}
 	},
 	#wrappedNotebookOperation & {
 		kind:         "response"

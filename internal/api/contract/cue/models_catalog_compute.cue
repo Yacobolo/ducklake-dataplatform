@@ -399,7 +399,7 @@ schemas_catalog_compute: {
   },
   SchemaDetail: #objectSchema & {
     example: {
-      id:              "schema_mart"
+      schema_id:       "schema_mart"
       catalog_id:      "cat_analytics"
       catalog_name:    "analytics"
       name:            "mart"
@@ -455,7 +455,7 @@ schemas_catalog_compute: {
   },
   TableDetail: #objectSchema & {
     example: {
-      id:             "tbl_orders_daily"
+      table_id:       "tbl_orders_daily"
       schema_id:      "schema_mart"
       schema_name:    "mart"
       catalog_name:   "analytics"

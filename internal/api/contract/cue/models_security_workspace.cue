@@ -186,10 +186,24 @@ schemas_security_workspace: {
     ]
   },
   FolderShare: #objectSchema & {
+    example: {
+      principal_name: "finance-editors"
+      role:           "editor"
+    }
     #fields: {
       principal_name: #principalNameProperty,
       role: #refProperty & {#ref: "NotebookShareRole"}
     }
+  },
+  FolderShareList: {
+    type: "array"
+    items: {
+      ref: "FolderShare"
+    }
+    example: [{
+      principal_name: "finance-editors"
+      role:           "editor"
+    }]
   },
   FreshnessPolicy: #objectSchema & {
     #fields: {
@@ -504,5 +518,18 @@ schemas_security_workspace: {
       "principal_name",
       "role"
     ]
+  },
+  WorkspaceMemberList: {
+    type: "array"
+    items: {
+      ref: "WorkspaceMember"
+    }
+    example: [{
+      workspace_id:   "ws_01hzyrevenue"
+      principal_name: "analytics-reviewers"
+      role:           "viewer"
+      created_at:     "2026-04-13T09:30:00Z"
+      updated_at:     "2026-04-13T09:30:00Z"
+    }]
   }
 }

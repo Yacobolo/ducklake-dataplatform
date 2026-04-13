@@ -85,14 +85,9 @@ package api
 		op:           "listWorkspaceMembers"
 		path:         "/workspaces/{workspace_id}/members"
 		summary:      "List workspace members"
+		returns:      "WorkspaceMemberList"
 		error_family: "resource"
 		params:       #workspacePathParameters
-		success_schema: {
-			type: "array"
-			items: {
-				ref: "WorkspaceMember"
-			}
-		}
 	},
 	#plainWorkspaceOperation & {
 		kind:         "response"

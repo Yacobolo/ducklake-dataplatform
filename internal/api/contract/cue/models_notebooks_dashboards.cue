@@ -299,6 +299,44 @@ schemas_notebooks_dashboards: {
     ]
   },
   DashboardWidget: #objectSchema & {
+    example: {
+      id:           "wid_01hzymrr"
+      dashboard_id: "dash_01hzyexec"
+      key:          "mrr_by_plan"
+      page_name:    "overview"
+      name:         "MRR by plan tier"
+      description:  "Monthly recurring revenue split by plan tier."
+      source: {
+        kind: "semantic_query"
+        semantic_query: {
+          semantic_model_id: "sem_01hzymetrics"
+          metrics:           ["monthly_recurring_revenue"]
+          dimensions:        ["plan_tier"]
+          limit:             12
+        }
+      }
+      visual_spec: {
+        kind:       "chart"
+        chart_type: "bar"
+        title:      "MRR by plan tier"
+        encodings: {
+          x: {
+            field: "plan_tier"
+          }
+          value: {
+            field: "monthly_recurring_revenue"
+          }
+        }
+      }
+      layout: {
+        x: 0
+        y: 0
+        w: 6
+        h: 4
+      }
+      created_at: "2026-04-13T09:00:00Z"
+      updated_at: "2026-04-13T09:00:00Z"
+    }
     #fields: {
       id: #idProperty,
       dashboard_id: #stringProperty,
@@ -312,6 +350,22 @@ schemas_notebooks_dashboards: {
       created_at: #createdAtProperty,
       updated_at: #updatedAtProperty
     }
+  },
+  DashboardWidgetList: {
+    type: "array"
+    items: {
+      ref: "DashboardWidget"
+    }
+    example: [{
+      id:           "wid_01hzymrr"
+      dashboard_id: "dash_01hzyexec"
+      key:          "mrr_by_plan"
+      page_name:    "overview"
+      name:         "MRR by plan tier"
+      description:  "Monthly recurring revenue split by plan tier."
+      created_at:   "2026-04-13T09:00:00Z"
+      updated_at:   "2026-04-13T09:00:00Z"
+    }]
   },
   DashboardWidgetLayout: #objectSchema & {
     example: {
@@ -471,10 +525,24 @@ schemas_notebooks_dashboards: {
     ]
   },
   NotebookShare: #objectSchema & {
+    example: {
+      principal_name: "analytics-reviewers"
+      role:           "viewer"
+    }
     #fields: {
       principal_name: #principalNameProperty,
       role: #refProperty & {#ref: "NotebookShareRole"}
     }
+  },
+  NotebookShareList: {
+    type: "array"
+    items: {
+      ref: "NotebookShare"
+    }
+    example: [{
+      principal_name: "analytics-reviewers"
+      role:           "viewer"
+    }]
   },
   NotebookShareRole: #enumSchema & {
     #values: [

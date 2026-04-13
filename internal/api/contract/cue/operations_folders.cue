@@ -164,14 +164,9 @@ package api
 		op:           "listFolderShares"
 		path:         "/folders/{folder_id}/shares"
 		summary:      "List folder shares"
+		returns:      "FolderShareList"
 		error_family: "resource"
 		params:       #folderPathParameters
-		success_schema: {
-			type: "array"
-			items: {
-				ref: "FolderShare"
-			}
-		}
 	},
 	#plainFolderOperation & {
 		kind:         "response"
