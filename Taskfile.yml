@@ -338,7 +338,7 @@ tasks:
       - test -f site/content/reference/generated/api/features.md
       - test -f site/content/reference/generated/declarative/index.md
       - test -f pkg/cli/gen/discovery_index.gen.go
-      - git diff --exit-code -- site/content/reference/generated pkg/cli/gen/discovery_index.gen.go
+      - git diff --exit-code -- site/content/reference/generated/declarative pkg/cli/gen/discovery_index.gen.go
 
   generate:
     desc: Run all code generation
