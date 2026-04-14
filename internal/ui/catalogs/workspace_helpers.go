@@ -35,7 +35,7 @@ func stringsJoin(values []string) string {
 }
 
 func catalogSectionClass(extra ...string) string {
-	return core.ClassNames("flex flex-col gap-3 rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-muted)] p-4", core.ClassNames(extra...))
+	return core.ClassNames("flex flex-col gap-3", core.ClassNames(extra...))
 }
 
 func catalogMetaListClass(extra ...string) string {
@@ -43,7 +43,7 @@ func catalogMetaListClass(extra ...string) string {
 }
 
 func catalogMetaRowClass() string {
-	return core.MetaRowClass()
+	return "grid gap-1 border-b border-[var(--borderColor-default)] pb-3 last:border-b-0 last:pb-0"
 }
 
 func catalogMetaLabelClass() string {

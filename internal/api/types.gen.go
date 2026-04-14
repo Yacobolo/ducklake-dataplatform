@@ -3203,17 +3203,18 @@ type VersionedObjectSummary struct {
 }
 
 type ViewDetail struct {
-	CatalogName    string    `json:"catalog_name"`
-	Comment        *string   `json:"comment,omitempty"`
-	CreatedAt      *string   `json:"created_at,omitempty"`
-	Id             string    `json:"id"`
-	Name           string    `json:"name"`
-	Owner          *string   `json:"owner,omitempty"`
-	SchemaId       *string   `json:"schema_id,omitempty"`
-	SchemaName     string    `json:"schema_name"`
-	SourceTables   *[]string `json:"source_tables,omitempty"`
-	UpdatedAt      *string   `json:"updated_at,omitempty"`
-	ViewDefinition *string   `json:"view_definition,omitempty"`
+	CatalogName    string          `json:"catalog_name"`
+	Columns        *[]ColumnDetail `json:"columns,omitempty"`
+	Comment        *string         `json:"comment,omitempty"`
+	CreatedAt      *string         `json:"created_at,omitempty"`
+	Id             string          `json:"id"`
+	Name           string          `json:"name"`
+	Owner          *string         `json:"owner,omitempty"`
+	SchemaId       *string         `json:"schema_id,omitempty"`
+	SchemaName     string          `json:"schema_name"`
+	SourceTables   *[]string       `json:"source_tables,omitempty"`
+	UpdatedAt      *string         `json:"updated_at,omitempty"`
+	ViewDefinition *string         `json:"view_definition,omitempty"`
 }
 
 type VisualChartType string

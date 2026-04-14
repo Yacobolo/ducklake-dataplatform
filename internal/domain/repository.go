@@ -306,6 +306,7 @@ type CatalogRepository interface {
 	ListTables(ctx context.Context, schemaName string, page PageRequest) ([]TableDetail, int64, error)
 	DeleteTable(ctx context.Context, schemaName, tableName string) error
 	UpdateTable(ctx context.Context, schemaName, tableName string, comment *string, props map[string]string, owner *string) (*TableDetail, error)
+	DescribeViewColumns(ctx context.Context, schemaName, viewName string) ([]ColumnDetail, error)
 	UpdateCatalog(ctx context.Context, comment *string) (*CatalogInfo, error)
 	UpdateColumn(ctx context.Context, schemaName, tableName, columnName string, comment *string, props map[string]string) (*ColumnDetail, error)
 	ListColumns(ctx context.Context, schemaName, tableName string, page PageRequest) ([]ColumnDetail, int64, error)

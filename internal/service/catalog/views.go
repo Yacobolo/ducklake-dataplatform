@@ -3,6 +3,7 @@ package catalog
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"strings"
 
 	"github.com/Yacobolo/quackstack/internal/domain"
@@ -120,6 +121,12 @@ func (s *ViewService) GetView(ctx context.Context, catalogName string, schemaNam
 	result.SchemaName = schemaName
 	result.CatalogName = schema.CatalogName
 	result.SchemaID = canonicalSchemaID(catalogName, result.SchemaID)
+	columns, err := repo.DescribeViewColumns(ctx, schemaName, viewName)
+	if err != nil {
+		slog.Default().Warn("view column introspection failed", "catalog", catalogName, "schema", schemaName, "view", viewName, "error", err)
+		return result, nil
+	}
+	result.Columns = columns
 	return result, nil
 }
 

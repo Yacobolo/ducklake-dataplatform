@@ -603,6 +603,7 @@ type MockCatalogRepo struct {
 	ListTablesFn               func(ctx context.Context, schemaName string, page domain.PageRequest) ([]domain.TableDetail, int64, error)
 	DeleteTableFn              func(ctx context.Context, schemaName, tableName string) error
 	UpdateTableFn              func(ctx context.Context, schemaName, tableName string, comment *string, props map[string]string, owner *string) (*domain.TableDetail, error)
+	DescribeViewColumnsFn      func(ctx context.Context, schemaName, viewName string) ([]domain.ColumnDetail, error)
 	UpdateCatalogFn            func(ctx context.Context, comment *string) (*domain.CatalogInfo, error)
 	UpdateColumnFn             func(ctx context.Context, schemaName, tableName, columnName string, comment *string, props map[string]string) (*domain.ColumnDetail, error)
 	ListColumnsFn              func(ctx context.Context, schemaName, tableName string, page domain.PageRequest) ([]domain.ColumnDetail, int64, error)
@@ -730,6 +731,14 @@ func (m *MockCatalogRepo) UpdateTable(ctx context.Context, schemaName, tableName
 		return m.UpdateTableFn(ctx, schemaName, tableName, comment, props, owner)
 	}
 	panic("unexpected call to MockCatalogRepo.UpdateTable")
+}
+
+// DescribeViewColumns implements the interface method for testing.
+func (m *MockCatalogRepo) DescribeViewColumns(ctx context.Context, schemaName, viewName string) ([]domain.ColumnDetail, error) {
+	if m.DescribeViewColumnsFn != nil {
+		return m.DescribeViewColumnsFn(ctx, schemaName, viewName)
+	}
+	panic("unexpected call to MockCatalogRepo.DescribeViewColumns")
 }
 
 // UpdateCatalog implements the interface method for testing.

@@ -576,6 +576,7 @@ schemas_catalog_compute: {
       schema_name: #stringProperty,
       catalog_name: #stringProperty,
       name: #nameProperty,
+      columns: #arrayRefProperty & {#ref: "ColumnDetail"},
       source_tables: #stringArrayProperty,
       view_definition: #stringProperty,
       comment: #commentProperty,

@@ -181,28 +181,20 @@ func (r *CatalogRepo) discoverColumns(ctx context.Context, sourcePath, fileForma
 	}
 	defer rows.Close() //nolint:errcheck
 
-	var columns []domain.CreateColumnDef
-	colNames, _ := rows.Columns()
-	for rows.Next() {
-		// DESCRIBE returns: column_name, column_type, null, key, default, extra
-		vals := make([]interface{}, len(colNames))
-		ptrs := make([]interface{}, len(colNames))
-		for i := range vals {
-			ptrs[i] = &vals[i]
-		}
-		if err := rows.Scan(ptrs...); err != nil {
-			return nil, fmt.Errorf("scan describe row: %w", err)
-		}
-		// First two columns are column_name and column_type
-		name := fmt.Sprintf("%v", vals[0])
-		colType := fmt.Sprintf("%v", vals[1])
-		columns = append(columns, domain.CreateColumnDef{Name: name, Type: colType})
-	}
-	if err := rows.Err(); err != nil {
+	discovered, err := scanDescribeColumnDetails(rows)
+	if err != nil {
 		return nil, err
 	}
-	if len(columns) == 0 {
+	if len(discovered) == 0 {
 		return nil, fmt.Errorf("no columns discovered from source")
+	}
+
+	columns := make([]domain.CreateColumnDef, len(discovered))
+	for i := range discovered {
+		columns[i] = domain.CreateColumnDef{
+			Name: discovered[i].Name,
+			Type: discovered[i].Type,
+		}
 	}
 	return columns, nil
 }

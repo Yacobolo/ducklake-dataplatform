@@ -109,6 +109,7 @@ func TestHandler_ListViews(t *testing.T) {
 				require.NotNil(t, ok200.Body.Data)
 				require.Len(t, ok200.Body.Data, 1)
 				assert.Equal(t, "my-view", ok200.Body.Data[0].Name)
+				assert.Nil(t, ok200.Body.Data[0].Columns)
 			},
 		},
 		{
@@ -266,6 +267,10 @@ func TestHandler_GetView(t *testing.T) {
 			viewName: "my-view",
 			svcFn: func(_ context.Context, _ string, _, _ string) (*domain.ViewDetail, error) {
 				v := sampleViewDetail()
+				v.Columns = []domain.ColumnDetail{
+					{Name: "id", Type: "INTEGER", Position: 0, Nullable: false},
+					{Name: "email", Type: "VARCHAR", Position: 1, Nullable: true},
+				}
 				return &v, nil
 			},
 			assertFn: func(t *testing.T, resp GenGetViewResponse, err error) {
@@ -274,6 +279,9 @@ func TestHandler_GetView(t *testing.T) {
 				ok200, ok := resp.(GenGetView200JSONResponse)
 				require.True(t, ok, "expected 200 response, got %T", resp)
 				assert.Equal(t, "my-view", ok200.Body.Name)
+				require.NotNil(t, ok200.Body.Columns)
+				require.Len(t, *ok200.Body.Columns, 2)
+				assert.Equal(t, "id", (*ok200.Body.Columns)[0].Name)
 			},
 		},
 		{

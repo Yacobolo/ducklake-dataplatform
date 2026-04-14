@@ -46,7 +46,7 @@ func listPage(principal domain.ContextPrincipal, rows []listRow, breadcrumbs []b
 }
 
 func mainContent(rows []listRow, breadcrumbs []breadcrumbItem, asideItems []core.ExploreNavigatorItem, selectedFolderID string, selectedKinds []string, selectedOwners []string, searchQuery string, ownerOptions []string, streamID, csrfToken string, page domain.PageRequest, total int64) Node {
-	return core.MainContentSection("Explore", pageBody(rows, breadcrumbs, asideItems, selectedFolderID, selectedKinds, selectedOwners, searchQuery, ownerOptions, streamID, csrfToken, page, total)...)
+	return core.MainContentSection("Explore", "", pageBody(rows, breadcrumbs, asideItems, selectedFolderID, selectedKinds, selectedOwners, searchQuery, ownerOptions, streamID, csrfToken, page, total)...)
 }
 
 func pageBody(rows []listRow, breadcrumbs []breadcrumbItem, asideItems []core.ExploreNavigatorItem, selectedFolderID string, selectedKinds []string, selectedOwners []string, searchQuery string, ownerOptions []string, streamID, csrfToken string, page domain.PageRequest, total int64) []Node {
@@ -313,7 +313,7 @@ func nameMetaBadge(label string, show bool) Node {
 func projectCell(row listRow) Node {
 	project := strings.TrimSpace(row.Project)
 	if project == "" {
-		return core.TableMetaText("-")
+		return core.TableMetaText(project)
 	}
 	return Span(Class("font-mono text-xs text-[var(--fgColor-muted)]"), Text(project))
 }

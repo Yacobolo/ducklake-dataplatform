@@ -72,6 +72,9 @@ func (m *mockEngineCatalog) ListColumns(ctx context.Context, schemaName, tableNa
 	}
 	panic("unexpected call to ListColumns")
 }
+func (m *mockEngineCatalog) DescribeViewColumns(_ context.Context, _, _ string) ([]domain.ColumnDetail, error) {
+	panic("unexpected call")
+}
 func (m *mockEngineCatalog) UpdateTable(_ context.Context, _, _ string, _ *string, _ map[string]string, _ *string) (*domain.TableDetail, error) {
 	panic("unexpected call")
 }

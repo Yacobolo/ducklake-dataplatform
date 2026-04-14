@@ -68,6 +68,14 @@ var navGroups = []navGroup{
 }
 
 func AppPage(title, active string, principal domain.ContextPrincipal, body ...Node) Node {
+	return appPage(title, active, principal, "mx-auto flex min-h-0 w-full max-w-7xl flex-1 flex-col gap-6 max-md:gap-5", body...)
+}
+
+func AppPageFullWidth(title, active string, principal domain.ContextPrincipal, body ...Node) Node {
+	return appPage(title, active, principal, "flex min-h-0 w-full flex-1 flex-col gap-6 max-md:gap-5", body...)
+}
+
+func appPage(title, active string, principal domain.ContextPrincipal, mainContentClass string, body ...Node) Node {
 	devInspector := shouldShowDatastarInspector()
 	nav := make([]Node, 0, len(navGroups))
 	for _, group := range navGroups {
@@ -184,7 +192,7 @@ func AppPage(title, active string, principal domain.ContextPrincipal, body ...No
 				Div(
 					Class("app-body grid min-h-0 flex-1 overflow-hidden [grid-template-columns:18rem_minmax(0,1fr)] max-md:grid-cols-1"),
 					Aside(Class("app-sidebar relative h-full overflow-y-auto border-r border-[var(--borderColor-default)] bg-[var(--bgColor-muted)] px-2 py-4 shadow-xs transition-transform duration-100 ease-out [.app-shell.sidebar-compact_&]:px-1 max-md:fixed max-md:inset-y-0 max-md:left-0 max-md:z-20 max-md:h-screen max-md:w-72 max-md:-translate-x-full max-md:[.app-shell.nav-open_&]:translate-x-0"), ID("app-sidebar"), Nav(Class("app-nav grid gap-4"), Group(nav))),
-					MainContentSection(title, Group(body)),
+					MainContentSection(title, mainContentClass, Group(body)),
 				),
 				Div(Class("app-overlay pointer-events-none fixed inset-0 z-10 hidden bg-black/40 opacity-0 transition-opacity duration-100 ease-out [.app-shell.nav-open_&]:opacity-100 [.app-shell.nav-open_&]:pointer-events-auto max-md:block"), ID("app-overlay"), Attr("aria-hidden", "true")),
 			),
@@ -201,13 +209,16 @@ func AppPage(title, active string, principal domain.ContextPrincipal, body ...No
 	)
 }
 
-func MainContentSection(title string, body ...Node) Node {
+func MainContentSection(title string, contentClass string, body ...Node) Node {
+	if strings.TrimSpace(contentClass) == "" {
+		contentClass = "mx-auto flex min-h-0 w-full max-w-7xl flex-1 flex-col gap-6 max-md:gap-5"
+	}
 	return Section(
 		Class(ClassNames("app-main", "flex min-h-0 flex-col overflow-auto bg-[var(--bgColor-default)] px-[clamp(0.75rem,3vw,1.5rem)] py-5 max-md:px-3 max-md:py-4")),
 		ID("main-content"),
 		Attr("tabindex", "-1"),
 		H1(Class("sr-only"), Text(title)),
-		Div(Class(ClassNames("app-main-content", "content", "mx-auto flex min-h-0 w-full max-w-7xl flex-1 flex-col gap-6 max-md:gap-5")), Group(body)),
+		Div(Class(ClassNames("app-main-content", "content", contentClass)), Group(body)),
 	)
 }
 

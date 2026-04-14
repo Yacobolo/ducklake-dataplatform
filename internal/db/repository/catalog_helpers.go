@@ -5,7 +5,9 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log/slog"
+	"strings"
 	"time"
 
 	dbstore "github.com/Yacobolo/quackstack/internal/db/dbstore"
@@ -202,4 +204,38 @@ func ptrToStr(s *string) string {
 		return ""
 	}
 	return *s
+}
+
+func scanDescribeColumnDetails(rows *sql.Rows) ([]domain.ColumnDetail, error) {
+	colNames, _ := rows.Columns()
+
+	var cols []domain.ColumnDetail
+	for rows.Next() {
+		vals := make([]interface{}, len(colNames))
+		ptrs := make([]interface{}, len(colNames))
+		for i := range vals {
+			ptrs[i] = &vals[i]
+		}
+		if err := rows.Scan(ptrs...); err != nil {
+			return nil, fmt.Errorf("scan describe row: %w", err)
+		}
+
+		col := domain.ColumnDetail{
+			Name:     fmt.Sprintf("%v", vals[0]),
+			Type:     fmt.Sprintf("%v", vals[1]),
+			Position: len(cols),
+			Nullable: true,
+		}
+		if len(vals) > 2 {
+			nullability := strings.TrimSpace(strings.ToUpper(fmt.Sprintf("%v", vals[2])))
+			if nullability != "" {
+				col.Nullable = nullability != "NO" && nullability != "FALSE" && nullability != "0"
+			}
+		}
+		cols = append(cols, col)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return cols, nil
 }
