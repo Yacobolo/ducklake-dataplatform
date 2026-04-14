@@ -302,31 +302,29 @@ func projectBuildSection(items []projectBuildRowData, total int64, full bool) No
 func projectHero(d projectHubPageData) Node {
 	descriptionNode := Node(nil)
 	if d.Project.Description != "" {
-		descriptionNode = core.DetailDescription(d.Project.Description)
+		descriptionNode = P(
+			Class("m-0 max-w-2xl text-sm leading-relaxed text-[var(--fgColor-muted)]"),
+			Text(d.Project.Description),
+		)
 	}
 
 	return Div(
-		Class("grid gap-4 rounded-2xl border border-[var(--borderColor-default)] bg-[linear-gradient(135deg,var(--bgColor-muted)_0%,var(--bgColor-default)_65%)] p-5 shadow-sm"),
+		Class("grid w-full max-w-4xl gap-6 py-2"),
 		Div(
-			Class("grid gap-4"),
-			core.Kicker("Build"),
+			Class("grid gap-1.5"),
 			core.DetailTitleRow(
 				core.DetailTitle(d.Project.Name),
 				core.Badge(projectKindLabel(d.Project.Kind), "accent"),
 			),
 			descriptionNode,
-			Div(
-				Class("flex flex-wrap gap-x-5 gap-y-2 text-sm"),
-				projectMetaInline("Workspace", d.WorkspaceName),
-				projectMetaInline("Branch", valueOrDash(d.Project.DefaultBranch)),
-				projectMetaInline("Owner", d.OwnerSummary),
-				projectMetaInline("Product", d.ProductSummary),
-			),
 		),
-		P(
-			Class("m-0 text-xs leading-5 text-[var(--fgColor-muted)]"),
-			Text("Project ID "),
-			Span(Class("font-medium text-[var(--fgColor-default)]"), Text(d.Project.ID)),
+		Dl(
+			Class("grid grid-cols-1 gap-x-8 gap-y-0 border-t border-[var(--borderColor-muted)] pt-6 sm:grid-cols-2 sm:gap-y-5 lg:grid-cols-3 xl:grid-cols-5"),
+			core.ViewField("Workspace", core.ViewFieldText(valueOrDash(d.WorkspaceName))),
+			core.ViewField("Branch", core.ViewFieldCode(valueOrDash(d.Project.DefaultBranch))),
+			core.ViewField("Owner", core.ViewFieldText(valueOrDash(d.OwnerSummary))),
+			core.ViewField("Product", projectHeaderProductValue(d.ProductSummary)),
+			core.ViewField("Identifier", projectHeaderIDValue(d.Project.ID)),
 		),
 	)
 }
@@ -337,6 +335,17 @@ func projectMetaInline(label, value string) Node {
 		Span(Class("text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--fgColor-muted)]"), Text(label)),
 		Span(Class("min-w-0 truncate text-sm text-[var(--fgColor-default)]"), Text(value)),
 	)
+}
+
+func projectHeaderProductValue(value string) Node {
+	if value == "Unlinked" {
+		return core.ViewFieldMutedText(value)
+	}
+	return core.ViewFieldText(valueOrDash(value))
+}
+
+func projectHeaderIDValue(value string) Node {
+	return core.ViewFieldIdentifier(value)
 }
 
 func projectPageSection(title, description string, actions Node, nodes ...Node) Node {

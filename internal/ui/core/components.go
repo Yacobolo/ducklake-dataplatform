@@ -99,6 +99,49 @@ func FieldLabel(text string) Node {
 	return Label(Class("mb-1 block text-xs font-semibold text-[var(--fgColor-muted)]"), Text(text))
 }
 
+func ViewField(label string, value Node) Node {
+	return Div(
+		Class("flex min-w-0 flex-col gap-1.5 py-3 sm:py-0"),
+		Dt(Class(ViewFieldLabelClass()), Text(label)),
+		Dd(Class("m-0 min-w-0"), value),
+	)
+}
+
+func ViewFieldText(text string) Node {
+	return P(
+		Class(ViewFieldValueClass()),
+		Text(text),
+	)
+}
+
+func ViewFieldMutedText(text string) Node {
+	return P(
+		Class(ViewFieldMutedValueClass()),
+		Text(text),
+	)
+}
+
+func ViewFieldCode(text string) Node {
+	return Code(
+		Class(ViewFieldCodeClass()),
+		Text(text),
+	)
+}
+
+func ViewFieldMono(text string) Node {
+	return Code(
+		Class(ViewFieldMonoValueClass()),
+		Text(text),
+	)
+}
+
+func ViewFieldIdentifier(text string) Node {
+	return Span(
+		Class(ViewFieldIdentifierClass()),
+		Text(text),
+	)
+}
+
 func InputControl(extraClass string, nodes ...Node) Node {
 	base := []Node{Class(formControlClass(extraClass))}
 	return Input(append(base, nodes...)...)

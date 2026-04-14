@@ -193,3 +193,27 @@ func MetaLabelClass() string {
 func MetaValueClass() string {
 	return "m-0 text-sm text-[var(--fgColor-default)]"
 }
+
+func ViewFieldLabelClass() string {
+	return "text-xs font-bold uppercase tracking-[0.1em] text-[var(--fgColor-muted)]"
+}
+
+func ViewFieldValueClass() string {
+	return "m-0 min-w-0 text-sm font-semibold text-[var(--fgColor-default)]"
+}
+
+func ViewFieldMutedValueClass() string {
+	return "m-0 min-w-0 text-sm font-medium italic text-[var(--fgColor-muted)] opacity-70"
+}
+
+func ViewFieldCodeClass() string {
+	return "inline-flex w-fit items-center rounded-md border border-[var(--borderColor-default)] bg-[var(--bgColor-muted)] px-1.5 py-0.5 font-mono text-[11px] font-medium text-[var(--fgColor-default)]"
+}
+
+func ViewFieldMonoValueClass() string {
+	return "m-0 min-w-0 font-mono text-[11px] leading-none text-[var(--fgColor-muted)]"
+}
+
+func ViewFieldIdentifierClass() string {
+	return "inline-block rounded-sm bg-[var(--bgColor-neutral-muted)] px-1 py-0.5 font-mono text-[11px] leading-none text-[var(--fgColor-muted)] break-all"
+}
