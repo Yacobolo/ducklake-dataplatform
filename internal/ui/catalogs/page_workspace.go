@@ -549,12 +549,35 @@ func catalogOverviewContent(d catalogWorkspacePageData) Node {
 		countLabelPlural = "columns"
 		for i := range d.Panel.Columns {
 			col := d.Panel.Columns[i]
+			typeInfo := catalogColumnTypeInfo(col.Type)
+			nullable := strings.EqualFold(strings.TrimSpace(col.Nullable), "true")
 			childRows = append(childRows,
 				Tr(
 					data.Show(containsExprSignal(col.Name+" "+col.Type+" "+col.Comment+" "+col.Properties, "childq")),
-					Td(Text(col.Name)),
-					Td(Text(col.Type)),
-					Td(Text(col.Nullable)),
+					Td(
+						Div(Class("flex items-center gap-3"),
+							core.Icon(
+								typeInfo.Icon,
+								Attr("data-column-type-group", typeInfo.Group),
+								Class(core.ClassNames("h-4 w-4 shrink-0", catalogColumnNameIconClass(typeInfo.Tone))),
+							),
+							Span(Class("font-medium text-[var(--fgColor-default)]"), Text(col.Name)),
+						),
+					),
+					Td(
+						Span(
+							Class(catalogColumnTypeBadgeClass(typeInfo.Tone)),
+							Attr("data-column-type-group", typeInfo.Group),
+							Span(Class("font-mono text-[11px] font-semibold"), Text(catalogColumnTypeDisplayLabel(col.Type))),
+						),
+					),
+					Td(
+						Span(
+							Class(catalogColumnNullableClass(nullable)),
+							Attr("data-column-nullable", strconv.FormatBool(nullable)),
+							Text(catalogColumnNullableLabel(col.Nullable)),
+						),
+					),
 					Td(Text(core.TableValue(col.Comment))),
 					Td(Text(core.TableValue(col.Properties))),
 				),

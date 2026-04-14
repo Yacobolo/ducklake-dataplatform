@@ -2,6 +2,7 @@ package catalogs
 
 import (
 	"encoding/json"
+	"strings"
 
 	"github.com/Yacobolo/quackstack/internal/ui/core"
 )
@@ -112,4 +113,114 @@ func catalogTableWrapClass(extra ...string) string {
 
 func catalogButtonRowClass(extra ...string) string {
 	return core.ClassNames("mt-0 flex flex-wrap items-center gap-2 [&_form]:m-0 [&_form]:inline-flex", core.ClassNames(extra...))
+}
+
+type catalogColumnTypeVisual struct {
+	Group string
+	Icon  string
+	Tone  string
+}
+
+func catalogColumnTypeInfo(typeName string) catalogColumnTypeVisual {
+	normalized := strings.ToLower(strings.TrimSpace(typeName))
+	switch {
+	case containsAny(normalized, "timestamp", "datetime", "date", "time", "interval"):
+		return catalogColumnTypeVisual{Group: "temporal", Icon: "clock-3", Tone: "blue"}
+	case containsAny(normalized, "bool"):
+		return catalogColumnTypeVisual{Group: "boolean", Icon: "toggle-left", Tone: "green"}
+	case containsAny(normalized, "json", "struct", "map", "list", "array", "union"):
+		return catalogColumnTypeVisual{Group: "nested", Icon: "braces", Tone: "plum"}
+	case containsAny(normalized, "decimal", "numeric", "number"):
+		return catalogColumnTypeVisual{Group: "decimal", Icon: "circle-dollar-sign", Tone: "orange"}
+	case containsAny(normalized, "double", "float", "real"):
+		return catalogColumnTypeVisual{Group: "floating", Icon: "binary", Tone: "indigo"}
+	case containsAny(normalized, "tinyint", "smallint", "integer", "bigint", "hugeint", "utinyint", "usmallint", "uinteger", "ubigint", "int", "serial"):
+		return catalogColumnTypeVisual{Group: "integer", Icon: "hash", Tone: "gray"}
+	case containsAny(normalized, "blob", "binary", "byte", "bytes", "bit", "varbinary"):
+		return catalogColumnTypeVisual{Group: "binary", Icon: "binary", Tone: "red"}
+	case containsAny(normalized, "varchar", "char", "text", "string", "uuid", "enum"):
+		return catalogColumnTypeVisual{Group: "text", Icon: "file-text", Tone: "teal"}
+	default:
+		return catalogColumnTypeVisual{Group: "other", Icon: "database", Tone: "gray"}
+	}
+}
+
+func catalogColumnTypeBadgeClass(tone string) string {
+	base := "inline-flex items-center rounded-md px-2 py-0.5 text-xs font-semibold"
+	return core.ClassNames(base, catalogColumnBadgeColorClass(tone))
+}
+
+func catalogColumnNameIconClass(tone string) string {
+	base := "shrink-0"
+	return core.ClassNames(base, catalogColumnIconColorClass(tone))
+}
+
+func catalogColumnNullableClass(nullable bool) string {
+	base := "text-[10px] font-bold uppercase tracking-[0.08em]"
+	if nullable {
+		return core.ClassNames(base, "text-[var(--fgColor-muted)]")
+	}
+	return core.ClassNames(base, "text-[var(--fgColor-default)]")
+}
+
+func catalogColumnNullableLabel(nullable string) string {
+	if strings.EqualFold(strings.TrimSpace(nullable), "true") {
+		return "NULLABLE"
+	}
+	return "REQUIRED"
+}
+
+func catalogColumnTypeDisplayLabel(typeName string) string {
+	return strings.ToLower(strings.TrimSpace(typeName))
+}
+
+func containsAny(haystack string, needles ...string) bool {
+	for i := range needles {
+		if strings.Contains(haystack, needles[i]) {
+			return true
+		}
+	}
+	return false
+}
+
+func catalogColumnBadgeColorClass(tone string) string {
+	switch strings.TrimSpace(tone) {
+	case "blue":
+		return "bg-[var(--display-blue-scale-0)] text-[var(--display-blue-scale-6)]"
+	case "green":
+		return "bg-[var(--display-green-scale-0)] text-[var(--display-green-scale-6)]"
+	case "plum":
+		return "bg-[var(--display-plum-scale-0)] text-[var(--display-plum-scale-6)]"
+	case "orange":
+		return "bg-[var(--display-orange-scale-0)] text-[var(--display-orange-scale-6)]"
+	case "indigo":
+		return "bg-[var(--display-indigo-scale-0)] text-[var(--display-indigo-scale-6)]"
+	case "red":
+		return "bg-[var(--display-red-scale-0)] text-[var(--display-red-scale-6)]"
+	case "teal":
+		return "bg-[var(--display-teal-scale-0)] text-[var(--display-teal-scale-6)]"
+	default:
+		return "bg-[var(--display-gray-scale-0)] text-[var(--display-gray-scale-7)]"
+	}
+}
+
+func catalogColumnIconColorClass(tone string) string {
+	switch strings.TrimSpace(tone) {
+	case "blue":
+		return "text-[var(--display-blue-scale-6)]"
+	case "green":
+		return "text-[var(--display-green-scale-6)]"
+	case "plum":
+		return "text-[var(--display-plum-scale-6)]"
+	case "orange":
+		return "text-[var(--display-orange-scale-6)]"
+	case "indigo":
+		return "text-[var(--display-indigo-scale-6)]"
+	case "red":
+		return "text-[var(--display-red-scale-6)]"
+	case "teal":
+		return "text-[var(--display-teal-scale-6)]"
+	default:
+		return "text-[var(--display-gray-scale-7)]"
+	}
 }
