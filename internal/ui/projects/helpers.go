@@ -1,8 +1,10 @@
 package projects
 
 import (
+	"fmt"
 	"net/http"
 	"net/url"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -46,6 +48,14 @@ func renderServiceError(w http.ResponseWriter, err error) {
 	core.RenderHTML(w, status, core.ErrorPage(title, message))
 }
 
+func parseFormOrRenderBadRequest(w http.ResponseWriter, r *http.Request) bool {
+	if err := r.ParseForm(); err != nil {
+		core.RenderHTML(w, http.StatusBadRequest, core.ErrorPage("Invalid Request", "Unable to parse form."))
+		return false
+	}
+	return true
+}
+
 func principalName(r *http.Request) string {
 	p := core.PrincipalFromContext(r.Context())
 	if strings.TrimSpace(p.Name) == "" {
@@ -70,6 +80,28 @@ func valueOrDash(v string) string {
 
 func ptrString(v string) *string {
 	return &v
+}
+
+func formString(values map[string][]string, key string) string {
+	if values == nil {
+		return ""
+	}
+	return strings.TrimSpace(first(values[key]))
+}
+
+func formOptionalString(values map[string][]string, key string) *string {
+	value := formString(values, key)
+	if value == "" {
+		return nil
+	}
+	return &value
+}
+
+func first(values []string) string {
+	if len(values) == 0 {
+		return ""
+	}
+	return values[0]
 }
 
 func projectKindLabel(kind string) string {
@@ -155,25 +187,99 @@ func newSemanticURL(projectName string) string {
 	return "/ui/semantic/models/new?project=" + url.QueryEscape(projectName)
 }
 
+func projectDetailURL(projectID string) string {
+	return "/ui/projects/" + url.PathEscape(projectID)
+}
+
+func projectEnvironmentURL(projectID, environmentID string) string {
+	return projectDetailURL(projectID) + "/environments/" + url.PathEscape(environmentID)
+}
+
+func projectEnvironmentNewURL(projectID string) string {
+	return projectDetailURL(projectID) + "/environments/new"
+}
+
+func projectEnvironmentEditURL(projectID, environmentID string) string {
+	return projectEnvironmentURL(projectID, environmentID) + "/edit"
+}
+
+func projectEnvironmentUpdateURL(projectID, environmentID string) string {
+	return projectEnvironmentURL(projectID, environmentID) + "/update"
+}
+
+func projectEnvironmentDeleteURL(projectID, environmentID string) string {
+	return projectEnvironmentURL(projectID, environmentID) + "/delete"
+}
+
+func projectBuildURL(projectID, buildID string) string {
+	return projectDetailURL(projectID) + "/builds/" + url.PathEscape(buildID)
+}
+
+func stringMapEditorValue(values map[string]string) string {
+	if len(values) == 0 {
+		return ""
+	}
+	keys := make([]string, 0, len(values))
+	for key := range values {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+	lines := make([]string, 0, len(keys))
+	for _, key := range keys {
+		lines = append(lines, fmt.Sprintf("%s=%s", key, values[key]))
+	}
+	return strings.Join(lines, "\n")
+}
+
+func parseStringMapEditor(raw string) map[string]string {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return nil
+	}
+	lines := strings.Split(raw, "\n")
+	out := make(map[string]string, len(lines))
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		if line == "" {
+			continue
+		}
+		key, value, found := strings.Cut(line, "=")
+		if !found {
+			key = line
+			value = ""
+		}
+		key = strings.TrimSpace(key)
+		if key == "" {
+			continue
+		}
+		out[key] = strings.TrimSpace(value)
+	}
+	if len(out) == 0 {
+		return nil
+	}
+	return out
+}
+
 func projectTab(baseURL, tab string) string {
-	if tab == "" || tab == projectTabOverview {
+	if tab == "" || tab == projectTabModels {
 		return baseURL
 	}
 	return baseURL + "?tab=" + url.QueryEscape(tab)
 }
 
 const (
-	projectTabOverview     = "overview"
-	projectTabAssets       = "assets"
+	projectTabModels       = "models"
+	projectTabMacros       = "macros"
+	projectTabSemantic     = "semantic"
 	projectTabEnvironments = "environments"
 	projectTabBuilds       = "builds"
 )
 
 func normalizedProjectTab(v string) string {
 	switch strings.TrimSpace(v) {
-	case projectTabAssets, projectTabEnvironments, projectTabBuilds:
+	case projectTabMacros, projectTabSemantic, projectTabEnvironments, projectTabBuilds:
 		return strings.TrimSpace(v)
 	default:
-		return projectTabOverview
+		return projectTabModels
 	}
 }

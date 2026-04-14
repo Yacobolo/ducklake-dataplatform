@@ -32,7 +32,10 @@ type projectAssetRowData struct {
 }
 
 type projectEnvironmentRowData struct {
+	ID             string
 	Name           string
+	URL            string
+	Description    string
 	Kind           string
 	TargetLocation string
 	Compute        string
@@ -40,38 +43,40 @@ type projectEnvironmentRowData struct {
 }
 
 type projectBuildRowData struct {
-	ID          string
-	State       string
-	Environment string
-	GitRef      string
-	Target      string
-	CreatedAt   string
+	ID             string
+	URL            string
+	State          string
+	Environment    string
+	EnvironmentURL string
+	GitRef         string
+	Target         string
+	CreatedAt      string
 }
 
 type projectHubPageData struct {
-	Principal        domain.ContextPrincipal
-	Project          domain.Project
-	WorkspaceName    string
-	OwnerSummary     string
-	ProductSummary   string
-	ActiveTab        string
-	Tabs             []core.SectionTab
-	ModelsURL        string
-	MacrosURL        string
-	SemanticURL      string
-	NewModelURL      string
-	NewMacroURL      string
-	NewSemanticURL   string
-	ModelCount       int64
-	MacroCount       int64
-	SemanticCount    int64
-	EnvironmentCount int64
-	BuildCount       int64
-	Models           []projectAssetRowData
-	Macros           []projectAssetRowData
-	SemanticModels   []projectAssetRowData
-	Environments     []projectEnvironmentRowData
-	Builds           []projectBuildRowData
+	Principal         domain.ContextPrincipal
+	Project           domain.Project
+	WorkspaceName     string
+	OwnerSummary      string
+	ProductSummary    string
+	ActiveTab         string
+	ModelsURL         string
+	MacrosURL         string
+	SemanticURL       string
+	NewModelURL       string
+	NewMacroURL       string
+	NewSemanticURL    string
+	NewEnvironmentURL string
+	ModelCount        int64
+	MacroCount        int64
+	SemanticCount     int64
+	EnvironmentCount  int64
+	BuildCount        int64
+	Models            []projectAssetRowData
+	Macros            []projectAssetRowData
+	SemanticModels    []projectAssetRowData
+	Environments      []projectEnvironmentRowData
+	Builds            []projectBuildRowData
 }
 
 func projectsListPage(principal domain.ContextPrincipal, rows []projectListRowData, page domain.PageRequest, total int64) Node {
@@ -132,10 +137,12 @@ func projectsListPage(principal domain.ContextPrincipal, rows []projectListRowDa
 }
 
 func projectHubPage(d projectHubPageData) Node {
-	content := projectOverviewContent(d)
+	content := projectModelsContent(d)
 	switch d.ActiveTab {
-	case projectTabAssets:
-		content = projectAssetsContent(d)
+	case projectTabMacros:
+		content = projectMacrosContent(d)
+	case projectTabSemantic:
+		content = projectSemanticContent(d)
 	case projectTabEnvironments:
 		content = projectEnvironmentsContent(d)
 	case projectTabBuilds:
@@ -143,89 +150,36 @@ func projectHubPage(d projectHubPageData) Node {
 	}
 
 	return core.AppPage("Project: "+d.Project.Name, "projects", d.Principal,
-		core.DetailShell(
-			core.DetailHero(
-				core.DetailHeroCopy(
-					core.Kicker("Build"),
-					core.DetailTitleRow(
-						core.DetailTitle(d.Project.Name),
-						core.Badge(projectKindLabel(d.Project.Kind), "accent"),
-					),
-					core.DetailDescription(valueOrDash(d.Project.Description)),
-					core.BadgeRow(
-						core.Badge("Workspace "+d.WorkspaceName, ""),
-						core.Badge("Branch "+valueOrDash(d.Project.DefaultBranch), ""),
-					),
-				),
-				core.DetailHeroMeta(
-					core.MetaItem("Workspace", d.WorkspaceName),
-					core.MetaItem("Owner", d.OwnerSummary),
-					core.MetaItem("Product", d.ProductSummary),
-					core.MetaItem("Project ID", d.Project.ID),
-				),
-			),
-			core.MetricsGrid(
-				core.ResourceMetricCard("model", "Models", strconv.FormatInt(d.ModelCount, 10)),
-				core.ResourceMetricCard("macro", "Macros", strconv.FormatInt(d.MacroCount, 10)),
-				core.ResourceMetricCard("semantic-model", "Semantic", strconv.FormatInt(d.SemanticCount, 10)),
-				core.ResourceMetricCard("environment", "Environments", strconv.FormatInt(d.EnvironmentCount, 10)),
-				core.ResourceMetricCard("build", "Builds", strconv.FormatInt(d.BuildCount, 10)),
-			),
-			core.DetailLayout(
-				core.DetailMain(
-					core.SectionTabs(d.Tabs),
-					content,
-				),
-				core.DetailRail(
-					core.DetailRailCard("Open project surfaces", "Use the existing feature pages when you want to go deeper than the hub previews.",
-						core.ButtonGroup("",
-							core.PrimaryLink(d.ModelsURL, "", Text("Models")),
-							core.SecondaryLink(d.MacrosURL, "", Text("Macros")),
-							core.SecondaryLink(d.SemanticURL, "", Text("Semantic")),
-						),
-					),
-					core.DetailRailCard("Create inside project", "Project-prefilled create flows keep new authoring work in the same package boundary.",
-						core.ButtonGroup("",
-							core.SecondaryLink(d.NewModelURL, "", Text("New model")),
-							core.SecondaryLink(d.NewMacroURL, "", Text("New macro")),
-							core.SecondaryLink(d.NewSemanticURL, "", Text("New semantic model")),
-						),
-					),
-					core.DetailRailCard("Summary", "Project metadata and linkage stay visible while you browse assets and delivery state.",
-						core.MetadataSummary([][2]string{
-							{"Kind", projectKindLabel(d.Project.Kind)},
-							{"Workspace", d.WorkspaceName},
-							{"Owner", d.OwnerSummary},
-							{"Product", d.ProductSummary},
-							{"Default branch", valueOrDash(d.Project.DefaultBranch)},
-						}),
-					),
-				),
+		Div(Class("grid gap-6"),
+			projectHero(d),
+			Div(Class("grid gap-5"),
+				projectTabs(d),
+				content,
 			),
 		),
 	)
 }
 
-func projectOverviewContent(d projectHubPageData) Node {
-	return Group([]Node{
+func projectModelsContent(d projectHubPageData) Node {
+	return Div(Class("grid gap-8"),
 		projectAssetSection("model", "Models", "Project-scoped transformation models.", d.Models, d.ModelsURL, d.NewModelURL, d.ModelCount, "No models in this project yet.", "New model"),
-		projectAssetSection("macro", "Macros", "Reusable helpers owned by this project.", d.Macros, d.MacrosURL, d.NewMacroURL, d.MacroCount, "No macros in this project yet.", "New macro"),
-		projectAssetSection("semantic-model", "Semantic models", "Consumer-facing definitions linked to the project’s model layer.", d.SemanticModels, d.SemanticURL, d.NewSemanticURL, d.SemanticCount, "No semantic models in this project yet.", "New semantic model"),
-		projectEnvironmentSection(d.Environments, d.EnvironmentCount, false),
-		projectBuildSection(d.Builds, d.BuildCount, false),
-	})
+	)
 }
 
-func projectAssetsContent(d projectHubPageData) Node {
-	return Group([]Node{
-		projectAssetSection("model", "Models", "All models scoped to this project.", d.Models, d.ModelsURL, d.NewModelURL, d.ModelCount, "No models in this project yet.", "New model"),
+func projectMacrosContent(d projectHubPageData) Node {
+	return Div(Class("grid gap-8"),
 		projectAssetSection("macro", "Macros", "All macros scoped to this project.", d.Macros, d.MacrosURL, d.NewMacroURL, d.MacroCount, "No macros in this project yet.", "New macro"),
+	)
+}
+
+func projectSemanticContent(d projectHubPageData) Node {
+	return Div(Class("grid gap-8"),
 		projectAssetSection("semantic-model", "Semantic models", "All semantic models associated with this project.", d.SemanticModels, d.SemanticURL, d.NewSemanticURL, d.SemanticCount, "No semantic models in this project yet.", "New semantic model"),
-	})
+	)
 }
 
 func projectEnvironmentsContent(d projectHubPageData) Node {
-	return projectEnvironmentSection(d.Environments, d.EnvironmentCount, true)
+	return projectEnvironmentSection(d.Environments, d.EnvironmentCount, true, d.NewEnvironmentURL)
 }
 
 func projectBuildsContent(d projectHubPageData) Node {
@@ -234,16 +188,13 @@ func projectBuildsContent(d projectHubPageData) Node {
 
 func projectAssetSection(kind, title, description string, items []projectAssetRowData, listURL, createURL string, total int64, emptyMessage, emptyActionLabel string) Node {
 	rows := items
-	if total > int64(len(rows)) {
-		total = int64(len(rows))
-	}
 	if len(rows) > 5 {
 		rows = rows[:5]
 	}
 
 	if len(items) == 0 {
-		return core.SectionSurface(
-			core.SectionHeader(title, description, core.PrimaryLink(createURL, "", Text(emptyActionLabel))),
+		return projectPageSection(title, description,
+			core.PrimaryLink(createURL, "", Text(emptyActionLabel)),
 			core.EmptyState(core.ResourceKindIcon(kind), title+" empty", emptyMessage, core.SecondaryLink(createURL, "", Text(emptyActionLabel))),
 		)
 	}
@@ -259,12 +210,12 @@ func projectAssetSection(kind, title, description string, items []projectAssetRo
 		))
 	}
 
-	actions := []Node{core.SecondaryLink(listURL, "", Text("View all"))}
+	actions := []Node{core.SecondaryLink(listURL, "", Text("Open page"))}
 	if createURL != "" {
 		actions = append(actions, core.PrimaryLink(createURL, "", Text(emptyActionLabel)))
 	}
-	return core.SectionSurface(
-		core.SectionHeader(title, description, actions...),
+	return projectPageSection(title, description,
+		Group(actions),
 		core.TableContainer("",
 			core.DataTable("",
 				THead(Tr(Th(Text("Name")), Th(Text("Primary")), Th(Text("Secondary")), Th(Text("Detail")))),
@@ -274,22 +225,22 @@ func projectAssetSection(kind, title, description string, items []projectAssetRo
 	)
 }
 
-func projectEnvironmentSection(items []projectEnvironmentRowData, total int64, full bool) Node {
+func projectEnvironmentSection(items []projectEnvironmentRowData, total int64, full bool, createURL string) Node {
 	rows := items
 	if !full && len(rows) > 5 {
 		rows = rows[:5]
 	}
 	if len(items) == 0 {
-		return core.SectionSurface(
-			core.SectionHeader("Environments", "Execution contexts for development and release."),
-			core.EmptyState("server", "No environments", "Create an environment through the project control plane to bind catalogs, schemas, and compute targets.", nil),
+		return projectPageSection("Environments", "Execution contexts for development and release.",
+			core.PrimaryLink(createURL, "", Text("New environment")),
+			core.EmptyState("server", "No environments", "Create an environment through the project control plane to bind catalogs, schemas, and compute targets.", core.SecondaryLink(createURL, "", Text("New environment"))),
 		)
 	}
 	tableRows := make([]Node, 0, len(rows))
 	for i := range rows {
 		item := rows[i]
 		tableRows = append(tableRows, Tr(
-			Td(Text(item.Name)),
+			core.TablePrimaryCell(core.ResourceIcon("environment"), core.TextLink(item.URL, Text(item.Name))),
 			Td(core.TableMetaText(item.Kind)),
 			Td(core.TableMetaText(item.TargetLocation)),
 			Td(core.TableMetaText(item.Compute)),
@@ -301,8 +252,7 @@ func projectEnvironmentSection(items []projectEnvironmentRowData, total int64, f
 	if full {
 		title = "Environments"
 	}
-	return core.SectionSurface(
-		core.SectionHeader(title, desc),
+	return projectPageSection(title, desc, core.PrimaryLink(createURL, "", Text("New environment")),
 		core.TableContainer("",
 			core.DataTable("",
 				THead(Tr(Th(Text("Name")), Th(Text("Kind")), Th(Text("Target")), Th(Text("Compute")), Th(Text("Updated")))),
@@ -318,8 +268,7 @@ func projectBuildSection(items []projectBuildRowData, total int64, full bool) No
 		rows = rows[:5]
 	}
 	if len(items) == 0 {
-		return core.SectionSurface(
-			core.SectionHeader("Builds", "Immutable project snapshots used for validation and delivery."),
+		return projectPageSection("Builds", "Immutable project snapshots used for validation and delivery.", nil,
 			core.EmptyState("package-open", "No builds", "Builds will appear here once the project has compilation snapshots to review.", nil),
 		)
 	}
@@ -327,7 +276,7 @@ func projectBuildSection(items []projectBuildRowData, total int64, full bool) No
 	for i := range rows {
 		item := rows[i]
 		tableRows = append(tableRows, Tr(
-			Td(core.TableMetaText(item.ID)),
+			core.TablePrimaryCell(core.ResourceIcon("build"), core.TextLink(item.URL, Text(item.ID))),
 			Td(core.TableMetaText(item.State)),
 			Td(core.TableMetaText(item.Environment)),
 			Td(core.TableMetaText(item.GitRef)),
@@ -340,13 +289,96 @@ func projectBuildSection(items []projectBuildRowData, total int64, full bool) No
 	if full {
 		title = "Builds"
 	}
-	return core.SectionSurface(
-		core.SectionHeader(title, desc),
+	return projectPageSection(title, desc, nil,
 		core.TableContainer("",
 			core.DataTable("",
 				THead(Tr(Th(Text("Build ID")), Th(Text("State")), Th(Text("Environment")), Th(Text("Git ref")), Th(Text("Target")), Th(Text("Created")))),
 				TBody(Group(tableRows)),
 			),
 		),
+	)
+}
+
+func projectHero(d projectHubPageData) Node {
+	descriptionNode := Node(nil)
+	if d.Project.Description != "" {
+		descriptionNode = core.DetailDescription(d.Project.Description)
+	}
+
+	return Div(
+		Class("grid gap-4 rounded-2xl border border-[var(--borderColor-default)] bg-[linear-gradient(135deg,var(--bgColor-muted)_0%,var(--bgColor-default)_65%)] p-5 shadow-sm"),
+		Div(
+			Class("grid gap-4"),
+			core.Kicker("Build"),
+			core.DetailTitleRow(
+				core.DetailTitle(d.Project.Name),
+				core.Badge(projectKindLabel(d.Project.Kind), "accent"),
+			),
+			descriptionNode,
+			Div(
+				Class("flex flex-wrap gap-x-5 gap-y-2 text-sm"),
+				projectMetaInline("Workspace", d.WorkspaceName),
+				projectMetaInline("Branch", valueOrDash(d.Project.DefaultBranch)),
+				projectMetaInline("Owner", d.OwnerSummary),
+				projectMetaInline("Product", d.ProductSummary),
+			),
+		),
+		P(
+			Class("m-0 text-xs leading-5 text-[var(--fgColor-muted)]"),
+			Text("Project ID "),
+			Span(Class("font-medium text-[var(--fgColor-default)]"), Text(d.Project.ID)),
+		),
+	)
+}
+
+func projectMetaInline(label, value string) Node {
+	return Div(
+		Class("inline-flex min-w-0 items-baseline gap-2"),
+		Span(Class("text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--fgColor-muted)]"), Text(label)),
+		Span(Class("min-w-0 truncate text-sm text-[var(--fgColor-default)]"), Text(value)),
+	)
+}
+
+func projectPageSection(title, description string, actions Node, nodes ...Node) Node {
+	parts := []Node{
+		Class("grid gap-3"),
+		core.SectionHeader(title, description, actions),
+	}
+	parts = append(parts, nodes...)
+	return Div(parts...)
+}
+
+func projectTabs(d projectHubPageData) Node {
+	baseURL := projectDetailURL(d.Project.ID)
+	tabs := []Node{
+		projectTabLink(projectTab(baseURL, projectTabModels), d.ActiveTab == projectTabModels, "model", "Models", d.ModelCount),
+		projectTabLink(projectTab(baseURL, projectTabMacros), d.ActiveTab == projectTabMacros, "macro", "Macros", d.MacroCount),
+		projectTabLink(projectTab(baseURL, projectTabSemantic), d.ActiveTab == projectTabSemantic, "semantic-model", "Semantic", d.SemanticCount),
+		projectTabLink(projectTab(baseURL, projectTabEnvironments), d.ActiveTab == projectTabEnvironments, "environment", "Environments", d.EnvironmentCount),
+		projectTabLink(projectTab(baseURL, projectTabBuilds), d.ActiveTab == projectTabBuilds, "build", "Builds", d.BuildCount),
+	}
+	return Nav(
+		Class("flex flex-wrap items-center gap-2 border-b border-[var(--borderColor-default)] pb-3"),
+		Attr("aria-label", "Project sections"),
+		Group(tabs),
+	)
+}
+
+func projectTabLink(href string, active bool, kind, label string, count int64) Node {
+	className := "inline-flex min-h-10 items-center gap-2 rounded-full border border-[var(--borderColor-default)] px-3 py-1.5 text-sm font-medium text-[var(--fgColor-muted)] no-underline transition-colors hover:bg-[var(--bgColor-muted)] hover:text-[var(--fgColor-default)]"
+	countClass := "inline-flex min-w-5 items-center justify-center rounded-full bg-[var(--bgColor-muted)] px-1.5 py-0.5 text-[11px] font-semibold text-[var(--fgColor-muted)]"
+	current := Node(nil)
+	if active {
+		className = "inline-flex min-h-10 items-center gap-2 rounded-full border border-[var(--borderColor-accent-emphasis)] bg-[var(--bgColor-accent-muted)] px-3 py-1.5 text-sm font-semibold text-[var(--fgColor-accent)] no-underline"
+		countClass = "inline-flex min-w-5 items-center justify-center rounded-full bg-[var(--bgColor-default)] px-1.5 py-0.5 text-[11px] font-semibold text-[var(--fgColor-accent)]"
+		current = Attr("aria-current", "page")
+	}
+	return A(
+		Href(href),
+		Class(className),
+		current,
+		core.Icon(core.ResourceKindIcon(kind), Class("h-4 w-4 shrink-0 "+core.ResourceKindAccentTextClass(kind)), Attr("style", "stroke-width:1.85")),
+		Span(Text(label)),
+		Span(Class(countClass), Text(strconv.FormatInt(count, 10))),
 	)
 }

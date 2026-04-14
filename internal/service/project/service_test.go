@@ -60,16 +60,20 @@ func (f *fakeProjectRepo) Delete(context.Context, string) error {
 }
 
 type fakeEnvironmentRepo struct {
-	createFn func(ctx context.Context, e *domain.Environment) (*domain.Environment, error)
-	getFn    func(ctx context.Context, projectID, name string) (*domain.Environment, error)
-	listFn   func(ctx context.Context, projectID string, page domain.PageRequest) ([]domain.Environment, int64, error)
+	createFn  func(ctx context.Context, e *domain.Environment) (*domain.Environment, error)
+	getByIDFn func(ctx context.Context, id string) (*domain.Environment, error)
+	getFn     func(ctx context.Context, projectID, name string) (*domain.Environment, error)
+	listFn    func(ctx context.Context, projectID string, page domain.PageRequest) ([]domain.Environment, int64, error)
 }
 
 func (f *fakeEnvironmentRepo) Create(ctx context.Context, e *domain.Environment) (*domain.Environment, error) {
 	return f.createFn(ctx, e)
 }
 
-func (f *fakeEnvironmentRepo) GetByID(context.Context, string) (*domain.Environment, error) {
+func (f *fakeEnvironmentRepo) GetByID(ctx context.Context, id string) (*domain.Environment, error) {
+	if f.getByIDFn != nil {
+		return f.getByIDFn(ctx, id)
+	}
 	panic("GetByID not implemented")
 }
 
@@ -90,15 +94,19 @@ func (f *fakeEnvironmentRepo) Delete(context.Context, string) error {
 }
 
 type fakeBuildRepo struct {
-	createFn func(ctx context.Context, b *domain.Build) (*domain.Build, error)
-	listFn   func(ctx context.Context, projectID string, page domain.PageRequest) ([]domain.Build, int64, error)
+	createFn  func(ctx context.Context, b *domain.Build) (*domain.Build, error)
+	getByIDFn func(ctx context.Context, id string) (*domain.Build, error)
+	listFn    func(ctx context.Context, projectID string, page domain.PageRequest) ([]domain.Build, int64, error)
 }
 
 func (f *fakeBuildRepo) Create(ctx context.Context, b *domain.Build) (*domain.Build, error) {
 	return f.createFn(ctx, b)
 }
 
-func (f *fakeBuildRepo) GetByID(context.Context, string) (*domain.Build, error) {
+func (f *fakeBuildRepo) GetByID(ctx context.Context, id string) (*domain.Build, error) {
+	if f.getByIDFn != nil {
+		return f.getByIDFn(ctx, id)
+	}
 	panic("GetByID not implemented")
 }
 
@@ -546,4 +554,54 @@ func TestService_ListBuilds_ByProject(t *testing.T) {
 	assert.EqualValues(t, 1, total)
 	require.Len(t, items, 1)
 	assert.Equal(t, "build-1", items[0].ID)
+}
+
+func TestService_GetEnvironmentForProject_RejectsCrossProjectEnvironment(t *testing.T) {
+	t.Parallel()
+
+	ctx := domain.WithPrincipal(context.Background(), domain.ContextPrincipal{Name: "admin", IsAdmin: true})
+	project := &domain.Project{ID: "project-1", WorkspaceID: "workspace-1", Name: "analytics-authoring"}
+	projects := &fakeProjectRepo{
+		getByIDFn: func(_ context.Context, id string) (*domain.Project, error) {
+			assert.Equal(t, project.ID, id)
+			return project, nil
+		},
+	}
+	environments := &fakeEnvironmentRepo{
+		getByIDFn: func(_ context.Context, id string) (*domain.Environment, error) {
+			assert.Equal(t, "env-1", id)
+			return &domain.Environment{ID: id, ProjectID: "project-2", Name: "prod"}, nil
+		},
+	}
+
+	svc := NewService(&fakeWorkspaceRepo{}, projects, environments, &fakeBuildRepo{}, &fakeTeamRepo{}, &fakeDataProductRepo{})
+
+	_, err := svc.GetEnvironmentForProject(ctx, "admin", true, project.ID, "env-1")
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "environment does not belong to project")
+}
+
+func TestService_GetBuildForProject_RejectsCrossProjectBuild(t *testing.T) {
+	t.Parallel()
+
+	ctx := domain.WithPrincipal(context.Background(), domain.ContextPrincipal{Name: "admin", IsAdmin: true})
+	project := &domain.Project{ID: "project-1", WorkspaceID: "workspace-1", Name: "analytics-authoring"}
+	projects := &fakeProjectRepo{
+		getByIDFn: func(_ context.Context, id string) (*domain.Project, error) {
+			assert.Equal(t, project.ID, id)
+			return project, nil
+		},
+	}
+	builds := &fakeBuildRepo{
+		getByIDFn: func(_ context.Context, id string) (*domain.Build, error) {
+			assert.Equal(t, "build-1", id)
+			return &domain.Build{ID: id, ProjectID: "project-2", GitRef: "refs/heads/main"}, nil
+		},
+	}
+
+	svc := NewService(&fakeWorkspaceRepo{}, projects, &fakeEnvironmentRepo{}, builds, &fakeTeamRepo{}, &fakeDataProductRepo{})
+
+	_, err := svc.GetBuildForProject(ctx, "admin", true, project.ID, "build-1")
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "build does not belong to project")
 }

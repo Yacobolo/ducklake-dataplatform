@@ -204,6 +204,22 @@ func (s *Service) ListEnvironmentsForProject(ctx context.Context, principal stri
 	return s.environments.ListByProject(ctx, project.ID, page)
 }
 
+// GetEnvironmentForProject loads a single environment after verifying project access.
+func (s *Service) GetEnvironmentForProject(ctx context.Context, principal string, isAdmin bool, projectID string, environmentID string) (*domain.Environment, error) {
+	project, err := s.GetProjectForPrincipal(ctx, principal, isAdmin, projectID)
+	if err != nil {
+		return nil, err
+	}
+	environment, err := s.environments.GetByID(ctx, environmentID)
+	if err != nil {
+		return nil, err
+	}
+	if environment.ProjectID != project.ID {
+		return nil, domain.ErrValidation("environment does not belong to project")
+	}
+	return environment, nil
+}
+
 // UpdateEnvironmentForProject updates mutable environment fields after project ownership checks.
 func (s *Service) UpdateEnvironmentForProject(ctx context.Context, principal string, isAdmin bool, projectID string, environmentID string, req domain.UpdateEnvironmentRequest) (*domain.Environment, error) {
 	if err := domain.ValidateUpdateEnvironmentRequest(req); err != nil {
@@ -287,6 +303,25 @@ func (s *Service) ListBuildsForProject(ctx context.Context, principal string, is
 		return nil, 0, domain.ErrNotImplemented("build listing is not configured")
 	}
 	return s.builds.ListByProject(ctx, project.ID, page)
+}
+
+// GetBuildForProject loads a single build after verifying project access.
+func (s *Service) GetBuildForProject(ctx context.Context, principal string, isAdmin bool, projectID string, buildID string) (*domain.Build, error) {
+	project, err := s.GetProjectForPrincipal(ctx, principal, isAdmin, projectID)
+	if err != nil {
+		return nil, err
+	}
+	if s.builds == nil {
+		return nil, domain.ErrNotImplemented("build reads are not configured")
+	}
+	build, err := s.builds.GetByID(ctx, buildID)
+	if err != nil {
+		return nil, err
+	}
+	if build.ProjectID != project.ID {
+		return nil, domain.ErrValidation("build does not belong to project")
+	}
+	return build, nil
 }
 
 // GetProject loads an internal project by name.

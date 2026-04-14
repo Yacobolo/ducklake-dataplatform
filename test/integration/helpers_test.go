@@ -1818,6 +1818,8 @@ func setupHTTPServer(t *testing.T, opts httpTestOpts) *httpTestEnv {
 		backfillSvc,
 		notebookSvc,
 		notebookFolderSvc,
+		workspaceSvc,
+		projectCtlSvc,
 		exploreSvc,
 		sessionManager,
 		macroSvc,
