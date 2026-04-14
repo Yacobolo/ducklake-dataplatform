@@ -11,7 +11,7 @@ import (
 func TestAPIContractRegression_ComputeEndpointURLDocumentsGRPCRequirement(t *testing.T) {
 	t.Helper()
 
-	doc := loadOpenAPISpec(t, filepath.Join(repoRootDir(), "api", "gen", "openapi.yaml"))
+	doc := loadOpenAPISpec(t, filepath.Join(repoRootDir(), "internal", "api", "gen", "openapi.yaml"))
 
 	schemaRef := doc.Components.Schemas["CreateComputeEndpointRequest"]
 	require.NotNil(t, schemaRef)
@@ -26,7 +26,7 @@ func TestAPIContractRegression_ComputeEndpointURLDocumentsGRPCRequirement(t *tes
 func TestAPIContractRegression_ExternalLocationCreateDocumentsNoCatalogAttachment(t *testing.T) {
 	t.Helper()
 
-	doc := loadOpenAPISpec(t, filepath.Join(repoRootDir(), "api", "gen", "openapi.yaml"))
+	doc := loadOpenAPISpec(t, filepath.Join(repoRootDir(), "internal", "api", "gen", "openapi.yaml"))
 
 	pathItem := doc.Paths.Find("/external-locations")
 	require.NotNil(t, pathItem)

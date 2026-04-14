@@ -4,9 +4,11 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"sort"
 	"strings"
 	"testing"
 
+	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -326,6 +328,7 @@ func TestDocsPages_InternalLinksResolveToKnownRoutes(t *testing.T) {
 	for _, p := range pages {
 		validRoutes[canonicalTestRoute(p.URLPath)] = struct{}{}
 	}
+	addGeneratedAPIRoutes(t, validRoutes)
 
 	hrefRE := regexp.MustCompile(`href="([^"#?][^"]*|/[^"]*)"` + `|href='([^'#?][^']*|/[^']*)'`)
 	var broken []string
@@ -351,6 +354,46 @@ func TestDocsPages_InternalLinksResolveToKnownRoutes(t *testing.T) {
 	}
 
 	require.Empty(t, broken, "found broken internal docs links:\n%s", strings.Join(broken, "\n"))
+}
+
+func addGeneratedAPIRoutes(t *testing.T, validRoutes map[string]struct{}) {
+	t.Helper()
+
+	validRoutes[canonicalTestRoute("/api-reference/")] = struct{}{}
+	validRoutes[canonicalTestRoute("/api-reference/features/")] = struct{}{}
+
+	specPath := filepath.Join("..", "..", "internal", "api", "gen", "openapi.yaml")
+	loader := &openapi3.Loader{IsExternalRefsAllowed: true}
+	doc, err := loader.LoadFromFile(specPath)
+	require.NoError(t, err)
+
+	for schemaName := range doc.Components.Schemas {
+		validRoutes[canonicalTestRoute("/api-reference/schemas/"+generatedAPISlug(schemaName)+"/")] = struct{}{}
+	}
+
+	tags := make([]string, 0, len(doc.Tags))
+	for _, tag := range doc.Tags {
+		if strings.TrimSpace(tag.Name) == "" {
+			continue
+		}
+		tags = append(tags, tag.Name)
+	}
+	sort.Strings(tags)
+	for _, tag := range tags {
+		validRoutes[canonicalTestRoute("/api-reference/endpoints/"+generatedAPISlug(tag)+"/")] = struct{}{}
+	}
+}
+
+func generatedAPISlug(value string) string {
+	lower := strings.ToLower(strings.TrimSpace(value))
+	lower = strings.ReplaceAll(lower, " ", "-")
+	lower = strings.ReplaceAll(lower, "/", "-")
+	lower = strings.ReplaceAll(lower, "_", "-")
+	lower = strings.ReplaceAll(lower, ".", "-")
+	for strings.Contains(lower, "--") {
+		lower = strings.ReplaceAll(lower, "--", "-")
+	}
+	return strings.Trim(lower, "-")
 }
 
 func canonicalTestRoute(href string) string {

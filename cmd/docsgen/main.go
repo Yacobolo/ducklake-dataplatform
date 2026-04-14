@@ -12,7 +12,7 @@ import (
 )
 
 func main() {
-	openapiPath := flag.String("openapi", "api/gen/openapi.yaml", "path to OpenAPI spec")
+	openapiPath := flag.String("openapi", "internal/api/gen/openapi.yaml", "path to OpenAPI spec")
 	outDir := flag.String("outdir", "site/content/reference/generated", "output directory for derived reference docs")
 	docsDir := flag.String("docs-dir", "site/content", "path to source docs directory")
 	cliIndexOut := flag.String("cli-index-out", "pkg/cli/gen/discovery_index.gen.go", "path to generated CLI discovery metadata")

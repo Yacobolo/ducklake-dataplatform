@@ -194,7 +194,7 @@ func loadOpenAPISpec() (*openapi3.T, error) {
 	if err != nil {
 		return nil, err
 	}
-	content, err := os.ReadFile(filepath.Join(rootDir, "api", "gen", "openapi.yaml"))
+	content, err := os.ReadFile(filepath.Join(rootDir, "internal", "api", "gen", "openapi.yaml"))
 	if err != nil {
 		return nil, fmt.Errorf("read canonical openapi yaml: %w", err)
 	}

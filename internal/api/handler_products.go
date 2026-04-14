@@ -3,7 +3,6 @@ package api
 
 import (
 	"context"
-	"fmt"
 	"sort"
 
 	"duck-demo/internal/domain"
@@ -965,7 +964,7 @@ func dataProductToAPI(item domain.DataProduct) DataProduct {
 		ConsumerAudience:    strPtrIfNonEmpty(item.ConsumerAudience),
 		DocsUrl:             strPtrIfNonEmpty(item.DocsURL),
 		AccessRequestPath:   strPtrIfNonEmpty(item.AccessRequestPath),
-		BusinessDefinitions: recordFromStringMap(item.BusinessDefinitions),
+		BusinessDefinitions: stringMapToAnyMap(item.BusinessDefinitions),
 		Contract:            productContractToAPI(item.Contract),
 		Slo:                 productSLOToAPI(item.SLO),
 		PublicationIntent:   strPtrIfNonEmpty(item.PublicationIntent),
@@ -1002,7 +1001,7 @@ func dataProductStatusToAPI(item domain.DataProductStatus) DataProductStatus {
 		LastSuccessfulUpdateAt: formatTimePtr(item.LastSuccessfulUpdateAt),
 		FailingChecksCount:     safeInt64ToInt32(item.FailingChecksCount),
 		LineageCoverage:        item.LineageCoverage,
-		AdoptionMetrics:        recordFromAnyMap(item.AdoptionMetrics),
+		AdoptionMetrics:        cloneAnyMap(item.AdoptionMetrics),
 		OpenWarnings:           stringSlicePtr(item.OpenWarnings),
 		ReplacementProductId:   item.ReplacementProductID,
 		UpdatedAt:              formatTimePtr(&item.UpdatedAt),
@@ -1049,7 +1048,7 @@ func productEventToAPI(item domain.ProductEvent) ProductEvent {
 		EventType:   item.EventType,
 		Title:       item.Title,
 		Description: item.Description,
-		Metadata:    recordFromAnyMap(item.Metadata),
+		Metadata:    cloneAnyMap(item.Metadata),
 		CreatedAt:   formatTimePtr(&item.CreatedAt),
 	}
 }
@@ -1287,7 +1286,7 @@ func domainCreateDataProductRequest(body *GenCreateDataProductJSONBody) domain.C
 		ConsumerAudience:    derefString(body.ConsumerAudience),
 		DocsURL:             derefString(body.DocsUrl),
 		AccessRequestPath:   derefString(body.AccessRequestPath),
-		BusinessDefinitions: stringMapFromRecord(body.BusinessDefinitions),
+		BusinessDefinitions: anyMapToStringMap(body.BusinessDefinitions),
 		Contract:            domainProductContract(body.Contract),
 		SLO:                 domainProductSLO(body.Slo),
 		ProducingBuildID:    body.ProducingBuildId,
@@ -1302,17 +1301,17 @@ func domainCreateDataProductRequest(body *GenCreateDataProductJSONBody) domain.C
 
 func domainUpdateDataProductRequest(body *GenUpdateDataProductJSONBody) domain.UpdateDataProductRequest {
 	return domain.UpdateDataProductRequest{
-		Name:                body.Name,
+		Name:                derefString(body.Name),
 		Description:         derefString(body.Description),
-		DomainName:          body.DomainName,
-		TeamName:            body.TeamName,
-		StewardPrincipal:    body.StewardPrincipal,
-		ContactChannel:      body.ContactChannel,
+		DomainName:          derefString(body.DomainName),
+		TeamName:            derefString(body.TeamName),
+		StewardPrincipal:    derefString(body.StewardPrincipal),
+		ContactChannel:      derefString(body.ContactChannel),
 		Visibility:          derefString(body.Visibility),
 		ConsumerAudience:    derefString(body.ConsumerAudience),
 		DocsURL:             derefString(body.DocsUrl),
 		AccessRequestPath:   derefString(body.AccessRequestPath),
-		BusinessDefinitions: stringMapFromRecord(body.BusinessDefinitions),
+		BusinessDefinitions: anyMapToStringMap(body.BusinessDefinitions),
 		Contract:            domainProductContract(body.Contract),
 		SLO:                 domainProductSLO(body.Slo),
 		PublicationIntent:   derefString(body.PublicationIntent),
@@ -1361,11 +1360,11 @@ func domainProductSLO(item *ProductSLO) domain.ProductSLO {
 	}
 }
 
-func recordFromStringMap(values map[string]string) *Record {
+func cloneAnyMap(values map[string]any) *map[string]any {
 	if len(values) == 0 {
 		return nil
 	}
-	record := Record{}
+	record := make(map[string]any, len(values))
 	keys := make([]string, 0, len(values))
 	for key := range values {
 		keys = append(keys, key)
@@ -1375,37 +1374,6 @@ func recordFromStringMap(values map[string]string) *Record {
 		record[key] = values[key]
 	}
 	return &record
-}
-
-func recordFromAnyMap(values map[string]any) *Record {
-	if len(values) == 0 {
-		return nil
-	}
-	record := Record{}
-	keys := make([]string, 0, len(values))
-	for key := range values {
-		keys = append(keys, key)
-	}
-	sort.Strings(keys)
-	for _, key := range keys {
-		record[key] = values[key]
-	}
-	return &record
-}
-
-func stringMapFromRecord(values *Record) map[string]string {
-	if values == nil || len(*values) == 0 {
-		return nil
-	}
-	result := make(map[string]string, len(*values))
-	for key, value := range *values {
-		if text, ok := value.(string); ok {
-			result[key] = text
-			continue
-		}
-		result[key] = fmt.Sprint(value)
-	}
-	return result
 }
 
 func stringSlicePtr(values []string) *[]string {

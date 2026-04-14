@@ -144,7 +144,7 @@ func (h *APIHandler) CreateSchema(ctx context.Context, request GenCreateSchemaRe
 		domReq.Comment = *request.Body.Comment
 	}
 	if request.Body.Properties != nil {
-		domReq.Properties = recordToStringMap(request.Body.Properties)
+		domReq.Properties = anyMapToStringMap(request.Body.Properties)
 	}
 	if request.Body.LocationName != nil {
 		domReq.LocationName = *request.Body.LocationName
@@ -193,7 +193,7 @@ func (h *APIHandler) UpdateSchema(ctx context.Context, request GenUpdateSchemaRe
 		Comment: request.Body.Comment,
 	}
 	if request.Body.Properties != nil {
-		domReq.Properties = recordToStringMap(request.Body.Properties)
+		domReq.Properties = anyMapToStringMap(request.Body.Properties)
 	}
 
 	principal := principalFromCtx(ctx)
@@ -329,7 +329,7 @@ func (h *APIHandler) UpdateTable(ctx context.Context, request GenUpdateTableRequ
 		domReq.Owner = request.Body.Owner
 	}
 	if request.Body.Properties != nil {
-		domReq.Properties = recordToStringMap(request.Body.Properties)
+		domReq.Properties = anyMapToStringMap(request.Body.Properties)
 	}
 
 	principal := principalFromCtx(ctx)

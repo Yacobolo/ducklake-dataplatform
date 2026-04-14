@@ -24,15 +24,15 @@ type openAPICoreOperation struct {
 func TestOpenAPIContractParity_CoreOperationShape(t *testing.T) {
 	t.Helper()
 
-	typespecDoc := loadOpenAPISpec(t, filepath.Join(repoRootDir(), "api", "gen", "openapi.yaml"))
+	canonicalDoc := loadOpenAPISpec(t, filepath.Join(repoRootDir(), "internal", "api", "gen", "openapi.yaml"))
 	generatedDoc := loadEmbeddedOpenAPISpec(t)
 
-	typespecOps := collectOpenAPICoreOperations(t, typespecDoc)
+	canonicalOps := collectOpenAPICoreOperations(t, canonicalDoc)
 	generatedOps := collectOpenAPICoreOperations(t, generatedDoc)
 
-	require.Equal(t, sortedOperationKeys(typespecOps), sortedOperationKeys(generatedOps), "openapi parity: method/path pairs must match between TypeSpec and generated specs")
+	require.Equal(t, sortedOperationKeys(canonicalOps), sortedOperationKeys(generatedOps), "openapi parity: method/path pairs must match between canonical and generated specs")
 
-	for key, expected := range typespecOps {
+	for key, expected := range canonicalOps {
 		actual := generatedOps[key]
 		require.Equalf(t, expected.OperationID, actual.OperationID, "openapi parity: operationId drift for %s %s", expected.Method, expected.Path)
 		require.Equalf(t, expected.HasRequestBody, actual.HasRequestBody, "openapi parity: requestBody presence drift for %s %s", expected.Method, expected.Path)
@@ -43,7 +43,7 @@ func TestOpenAPIContractParity_CoreOperationShape(t *testing.T) {
 func TestCanonicalOpenAPI_HardeningEndpointsExposeExpectedDomainErrors(t *testing.T) {
 	t.Helper()
 
-	doc := loadOpenAPISpec(t, filepath.Join(repoRootDir(), "api", "gen", "openapi.yaml"))
+	doc := loadOpenAPISpec(t, filepath.Join(repoRootDir(), "internal", "api", "gen", "openapi.yaml"))
 	operations := collectOpenAPICoreOperations(t, doc)
 
 	expects := map[string][]string{
@@ -74,7 +74,7 @@ func TestCanonicalOpenAPI_HardeningEndpointsExposeExpectedDomainErrors(t *testin
 		"updateComputeEndpoint":     {"403", "404"},
 		"deleteComputeEndpoint":     {"403", "404"},
 		"deleteComputeAssignment":   {"403", "404"},
-		"getCatalog":               {"403", "404"},
+		"getCatalog":                {"403", "404"},
 		"updateCatalogRegistration": {"403", "404"},
 		"deleteCatalogRegistration": {"403", "404"},
 		"createManifest":            {"403"},

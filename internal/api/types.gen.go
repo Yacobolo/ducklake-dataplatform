@@ -60,7 +60,7 @@ type AssetCheck struct {
 
 type AssetCheckInput struct {
 	CheckType  string              `json:"check_type"`
-	ConfigJson *Record             `json:"config_json,omitempty"`
+	ConfigJson *map[string]any     `json:"config_json,omitempty"`
 	Enabled    *bool               `json:"enabled,omitempty"`
 	Name       string              `json:"name"`
 	Severity   *AssetCheckSeverity `json:"severity,omitempty"`
@@ -71,14 +71,14 @@ type AssetCheckList struct {
 }
 
 type AssetCheckResult struct {
-	CheckId      *string `json:"check_id,omitempty"`
-	CreatedAt    *string `json:"created_at,omitempty"`
-	Id           *string `json:"id,omitempty"`
-	Message      *string `json:"message,omitempty"`
-	MetricsJson  *Record `json:"metrics_json,omitempty"`
-	PartitionKey *string `json:"partition_key,omitempty"`
-	RunId        *string `json:"run_id,omitempty"`
-	Status       *string `json:"status,omitempty"`
+	CheckId      *string         `json:"check_id,omitempty"`
+	CreatedAt    *string         `json:"created_at,omitempty"`
+	Id           *string         `json:"id,omitempty"`
+	Message      *string         `json:"message,omitempty"`
+	MetricsJson  *map[string]any `json:"metrics_json,omitempty"`
+	PartitionKey *string         `json:"partition_key,omitempty"`
+	RunId        *string         `json:"run_id,omitempty"`
+	Status       *string         `json:"status,omitempty"`
 }
 
 type AssetCheckSeverity string
@@ -314,18 +314,20 @@ type BackfillRequest struct {
 }
 
 type BackfillSlice struct {
-	AssetId      *string `json:"asset_id,omitempty"`
-	AttemptCount *int32  `json:"attempt_count,omitempty"`
-	CreatedAt    *string `json:"created_at,omitempty"`
-	ErrorMessage *string `json:"error_message,omitempty"`
-	FinishedAt   *string `json:"finished_at,omitempty"`
-	Id           *string `json:"id,omitempty"`
-	MaxAttempts  *int32  `json:"max_attempts,omitempty"`
-	PartitionKey *string `json:"partition_key,omitempty"`
-	RequestId    *string `json:"request_id,omitempty"`
-	RunId        *string `json:"run_id,omitempty"`
-	StartedAt    *string `json:"started_at,omitempty"`
-	Status       *string `json:"status,omitempty"`
+	AssetId       *string `json:"asset_id,omitempty"`
+	AttemptCount  *int32  `json:"attempt_count,omitempty"`
+	CreatedAt     *string `json:"created_at,omitempty"`
+	ErrorMessage  *string `json:"error_message,omitempty"`
+	FinishedAt    *string `json:"finished_at,omitempty"`
+	Id            *string `json:"id,omitempty"`
+	MaxAttempts   *int32  `json:"max_attempts,omitempty"`
+	PartitionFrom *string `json:"partition_from,omitempty"`
+	PartitionKey  *string `json:"partition_key,omitempty"`
+	PartitionTo   *string `json:"partition_to,omitempty"`
+	RequestId     *string `json:"request_id,omitempty"`
+	RunId         *string `json:"run_id,omitempty"`
+	StartedAt     *string `json:"started_at,omitempty"`
+	Status        *string `json:"status,omitempty"`
 }
 
 type BootstrapCompleteRequest struct {
@@ -460,12 +462,12 @@ const (
 )
 
 type CellExecutionResult struct {
-	CellId     *string          `json:"cell_id,omitempty"`
-	Columns    *[]TabularColumn `json:"columns,omitempty"`
-	DurationMs *int32           `json:"duration_ms,omitempty"`
-	Error      *string          `json:"error,omitempty"`
-	RowCount   *int32           `json:"row_count,omitempty"`
-	Rows       *[]Record        `json:"rows,omitempty"`
+	CellId     *string           `json:"cell_id,omitempty"`
+	Columns    *[]TabularColumn  `json:"columns,omitempty"`
+	DurationMs *int32            `json:"duration_ms,omitempty"`
+	Error      *string           `json:"error,omitempty"`
+	RowCount   *int32            `json:"row_count,omitempty"`
+	Rows       *[]map[string]any `json:"rows,omitempty"`
 }
 
 type CellList struct {
@@ -748,7 +750,7 @@ type CreateDashboardWidgetRequest struct {
 
 type CreateDataProductRequest struct {
 	AccessRequestPath   *string          `json:"access_request_path,omitempty"`
-	BusinessDefinitions *Record          `json:"business_definitions,omitempty"`
+	BusinessDefinitions *map[string]any  `json:"business_definitions,omitempty"`
 	ConsumerAudience    *string          `json:"consumer_audience,omitempty"`
 	ContactChannel      string           `json:"contact_channel"`
 	Contract            *ProductContract `json:"contract,omitempty"`
@@ -785,10 +787,10 @@ type CreateEnvironmentRequest struct {
 	Description        *string          `json:"description,omitempty"`
 	Kind               *EnvironmentKind `json:"kind,omitempty"`
 	Name               string           `json:"name"`
-	SourceOverrides    *Record          `json:"source_overrides,omitempty"`
+	SourceOverrides    *map[string]any  `json:"source_overrides,omitempty"`
 	TargetCatalog      string           `json:"target_catalog"`
 	TargetSchema       string           `json:"target_schema"`
-	Variables          *Record          `json:"variables,omitempty"`
+	Variables          *map[string]any  `json:"variables,omitempty"`
 }
 
 type CreateExternalLocationRequest struct {
@@ -843,7 +845,7 @@ type CreateMacroRequest struct {
 	Owner       *string          `json:"owner,omitempty"`
 	Parameters  *[]string        `json:"parameters,omitempty"`
 	ProjectName *string          `json:"project_name,omitempty"`
-	Properties  *Record          `json:"properties,omitempty"`
+	Properties  *map[string]any  `json:"properties,omitempty"`
 	Status      *MacroStatus     `json:"status,omitempty"`
 	Tags        *[]string        `json:"tags,omitempty"`
 	Visibility  *MacroVisibility `json:"visibility,omitempty"`
@@ -946,10 +948,10 @@ type CreateSavedResourceRequest struct {
 }
 
 type CreateSchemaRequest struct {
-	Comment      *string `json:"comment,omitempty"`
-	LocationName *string `json:"location_name,omitempty"`
-	Name         string  `json:"name"`
-	Properties   *Record `json:"properties,omitempty"`
+	Comment      *string         `json:"comment,omitempty"`
+	LocationName *string         `json:"location_name,omitempty"`
+	Name         string          `json:"name"`
+	Properties   *map[string]any `json:"properties,omitempty"`
 }
 
 type CreateSemanticMetricRequest struct {
@@ -1084,10 +1086,21 @@ type DashboardNotebookCellSource struct {
 	NotebookId string `json:"notebook_id"`
 }
 
+type DashboardNotebookCellSourceUpdate struct {
+	CellId     *string `json:"cell_id,omitempty"`
+	NotebookId *string `json:"notebook_id,omitempty"`
+}
+
 type DashboardSQLQuerySource struct {
 	Catalog *string `json:"catalog,omitempty"`
 	Schema  *string `json:"schema,omitempty"`
 	Sql     string  `json:"sql"`
+}
+
+type DashboardSQLQuerySourceUpdate struct {
+	Catalog *string `json:"catalog,omitempty"`
+	Schema  *string `json:"schema,omitempty"`
+	Sql     *string `json:"sql,omitempty"`
 }
 
 type DashboardSemanticQuerySource struct {
@@ -1098,6 +1111,17 @@ type DashboardSemanticQuerySource struct {
 	OrderBy           *[]string `json:"order_by,omitempty"`
 	RelationshipNames *[]string `json:"relationship_names,omitempty"`
 	SemanticModelId   string    `json:"semantic_model_id"`
+	TimeGrain         *string   `json:"time_grain,omitempty"`
+}
+
+type DashboardSemanticQuerySourceUpdate struct {
+	Dimensions        *[]string `json:"dimensions,omitempty"`
+	Filters           *[]string `json:"filters,omitempty"`
+	Limit             *int32    `json:"limit,omitempty"`
+	Metrics           *[]string `json:"metrics,omitempty"`
+	OrderBy           *[]string `json:"order_by,omitempty"`
+	RelationshipNames *[]string `json:"relationship_names,omitempty"`
+	SemanticModelId   *string   `json:"semantic_model_id,omitempty"`
 	TimeGrain         *string   `json:"time_grain,omitempty"`
 }
 
@@ -1122,6 +1146,15 @@ type DashboardWidgetLayout struct {
 	Y int32 `json:"y"`
 }
 
+type DashboardWidgetLayoutUpdate struct {
+	H *int32 `json:"h,omitempty"`
+	W *int32 `json:"w,omitempty"`
+	X *int32 `json:"x,omitempty"`
+	Y *int32 `json:"y,omitempty"`
+}
+
+type DashboardWidgetList []DashboardWidget
+
 type DashboardWidgetSource struct {
 	Kind          DashboardWidgetSourceKind     `json:"kind"`
 	NotebookCell  *DashboardNotebookCellSource  `json:"notebook_cell,omitempty"`
@@ -1137,9 +1170,16 @@ const (
 	DashboardWidgetSourceKindSemanticQuery DashboardWidgetSourceKind = "semantic_query"
 )
 
+type DashboardWidgetSourceUpdate struct {
+	Kind          *DashboardWidgetSourceKind          `json:"kind,omitempty"`
+	NotebookCell  *DashboardNotebookCellSourceUpdate  `json:"notebook_cell,omitempty"`
+	SemanticQuery *DashboardSemanticQuerySourceUpdate `json:"semantic_query,omitempty"`
+	SqlQuery      *DashboardSQLQuerySourceUpdate      `json:"sql_query,omitempty"`
+}
+
 type DataProduct struct {
 	AccessRequestPath   *string          `json:"access_request_path,omitempty"`
-	BusinessDefinitions *Record          `json:"business_definitions,omitempty"`
+	BusinessDefinitions *map[string]any  `json:"business_definitions,omitempty"`
 	ConsumerAudience    *string          `json:"consumer_audience,omitempty"`
 	ContactChannel      string           `json:"contact_channel"`
 	Contract            *ProductContract `json:"contract,omitempty"`
@@ -1182,18 +1222,18 @@ type DataProductListItem struct {
 }
 
 type DataProductStatus struct {
-	AdoptionMetrics        *Record   `json:"adoption_metrics,omitempty"`
-	CertificationState     string    `json:"certification_state"`
-	FailingChecksCount     int32     `json:"failing_checks_count"`
-	FreshnessStatus        string    `json:"freshness_status"`
-	LastSuccessfulUpdateAt *string   `json:"last_successful_update_at,omitempty"`
-	LineageCoverage        *float64  `json:"lineage_coverage,omitempty"`
-	OpenWarnings           *[]string `json:"open_warnings,omitempty"`
-	ProductId              string    `json:"product_id"`
-	PublicationState       string    `json:"publication_state"`
-	QualityStatus          string    `json:"quality_status"`
-	ReplacementProductId   *string   `json:"replacement_product_id,omitempty"`
-	UpdatedAt              *string   `json:"updated_at,omitempty"`
+	AdoptionMetrics        *map[string]any `json:"adoption_metrics,omitempty"`
+	CertificationState     string          `json:"certification_state"`
+	FailingChecksCount     int32           `json:"failing_checks_count"`
+	FreshnessStatus        string          `json:"freshness_status"`
+	LastSuccessfulUpdateAt *string         `json:"last_successful_update_at,omitempty"`
+	LineageCoverage        *float64        `json:"lineage_coverage,omitempty"`
+	OpenWarnings           *[]string       `json:"open_warnings,omitempty"`
+	ProductId              string          `json:"product_id"`
+	PublicationState       string          `json:"publication_state"`
+	QualityStatus          string          `json:"quality_status"`
+	ReplacementProductId   *string         `json:"replacement_product_id,omitempty"`
+	UpdatedAt              *string         `json:"updated_at,omitempty"`
 }
 
 type DataProductVersion struct {
@@ -1247,11 +1287,11 @@ type Environment struct {
 	Name               string          `json:"name"`
 	ProjectId          *string         `json:"project_id,omitempty"`
 	ProjectName        *string         `json:"project_name,omitempty"`
-	SourceOverrides    *Record         `json:"source_overrides,omitempty"`
+	SourceOverrides    *map[string]any `json:"source_overrides,omitempty"`
 	TargetCatalog      string          `json:"target_catalog"`
 	TargetSchema       string          `json:"target_schema"`
 	UpdatedAt          *string         `json:"updated_at,omitempty"`
-	Variables          *Record         `json:"variables,omitempty"`
+	Variables          *map[string]any `json:"variables,omitempty"`
 }
 
 type EnvironmentKind string
@@ -1263,8 +1303,9 @@ const (
 )
 
 type Error struct {
-	Code    int32  `json:"code"`
-	Message string `json:"message"`
+	Code    int32           `json:"code"`
+	Details *map[string]any `json:"details,omitempty"`
+	Message string          `json:"message"`
 }
 
 type ExternalLocation struct {
@@ -1319,6 +1360,8 @@ type FolderShare struct {
 	PrincipalName *string            `json:"principal_name,omitempty"`
 	Role          *NotebookShareRole `json:"role,omitempty"`
 }
+
+type FolderShareList []FolderShare
 
 type FreshnessPolicy struct {
 	CronSchedule  *string `json:"cron_schedule,omitempty"`
@@ -1419,7 +1462,7 @@ type Macro struct {
 	Owner       *string          `json:"owner,omitempty"`
 	Parameters  *[]string        `json:"parameters,omitempty"`
 	ProjectName *string          `json:"project_name,omitempty"`
-	Properties  *Record          `json:"properties,omitempty"`
+	Properties  *map[string]any  `json:"properties,omitempty"`
 	Status      *MacroStatus     `json:"status,omitempty"`
 	Tags        *[]string        `json:"tags,omitempty"`
 	UpdatedAt   *string          `json:"updated_at,omitempty"`
@@ -1509,7 +1552,7 @@ type ManifestColumn struct {
 }
 
 type ManifestResponse struct {
-	ColumnMasks *Record           `json:"column_masks,omitempty"`
+	ColumnMasks *map[string]any   `json:"column_masks,omitempty"`
 	Columns     *[]ManifestColumn `json:"columns,omitempty"`
 	ExpiresAt   *string           `json:"expires_at,omitempty"`
 	Files       *[]string         `json:"files,omitempty"`
@@ -1856,6 +1899,8 @@ type NotebookShare struct {
 	PrincipalName *string            `json:"principal_name,omitempty"`
 	Role          *NotebookShareRole `json:"role,omitempty"`
 }
+
+type NotebookShareList []NotebookShare
 
 type NotebookShareRole string
 
@@ -2238,7 +2283,7 @@ type PipelineRun struct {
 	FinishedAt    *string                 `json:"finished_at,omitempty"`
 	GitCommitHash *string                 `json:"git_commit_hash,omitempty"`
 	Id            *string                 `json:"id,omitempty"`
-	Parameters    *Record                 `json:"parameters,omitempty"`
+	Parameters    *map[string]any         `json:"parameters,omitempty"`
 	PipelineId    *string                 `json:"pipeline_id,omitempty"`
 	StartedAt     *string                 `json:"started_at,omitempty"`
 	Status        *PipelineRunStatus      `json:"status,omitempty"`
@@ -2328,13 +2373,13 @@ type ProductDomain struct {
 }
 
 type ProductEvent struct {
-	CreatedAt   *string `json:"created_at,omitempty"`
-	Description string  `json:"description"`
-	EventType   string  `json:"event_type"`
-	Id          string  `json:"id"`
-	Metadata    *Record `json:"metadata,omitempty"`
-	ProductId   string  `json:"product_id"`
-	Title       string  `json:"title"`
+	CreatedAt   *string         `json:"created_at,omitempty"`
+	Description string          `json:"description"`
+	EventType   string          `json:"event_type"`
+	Id          string          `json:"id"`
+	Metadata    *map[string]any `json:"metadata,omitempty"`
+	ProductId   string          `json:"product_id"`
+	Title       string          `json:"title"`
 }
 
 type ProductEventList struct {
@@ -2514,10 +2559,10 @@ type QueryRequest struct {
 }
 
 type QueryResult struct {
-	Columns       []TabularColumn `json:"columns"`
-	NextPageToken *string         `json:"next_page_token,omitempty"`
-	RowCount      *int32          `json:"row_count,omitempty"`
-	Rows          []Record        `json:"rows"`
+	Columns       []TabularColumn  `json:"columns"`
+	NextPageToken *string          `json:"next_page_token,omitempty"`
+	RowCount      *int32           `json:"row_count,omitempty"`
+	Rows          []map[string]any `json:"rows"`
 }
 
 type RecentResource struct {
@@ -2545,7 +2590,7 @@ type ResolvedDashboardWidget struct {
 	Columns      []string         `json:"columns"`
 	GeneratedSql *string          `json:"generated_sql,omitempty"`
 	RowCount     *int32           `json:"row_count,omitempty"`
-	Rows         *[][]string      `json:"rows,omitempty"`
+	Rows         *[][]any         `json:"rows,omitempty"`
 	Widget       *DashboardWidget `json:"widget,omitempty"`
 }
 
@@ -2592,15 +2637,15 @@ type SavedResource struct {
 }
 
 type SchemaDetail struct {
-	CatalogName string  `json:"catalog_name"`
-	Comment     *string `json:"comment,omitempty"`
-	CreatedAt   *string `json:"created_at,omitempty"`
-	Name        string  `json:"name"`
-	Owner       *string `json:"owner,omitempty"`
-	Properties  *Record `json:"properties,omitempty"`
-	SchemaId    string  `json:"schema_id"`
-	Tags        *[]Tag  `json:"tags,omitempty"`
-	UpdatedAt   *string `json:"updated_at,omitempty"`
+	CatalogName string          `json:"catalog_name"`
+	Comment     *string         `json:"comment,omitempty"`
+	CreatedAt   *string         `json:"created_at,omitempty"`
+	Name        string          `json:"name"`
+	Owner       *string         `json:"owner,omitempty"`
+	Properties  *map[string]any `json:"properties,omitempty"`
+	SchemaId    string          `json:"schema_id"`
+	Tags        *[]Tag          `json:"tags,omitempty"`
+	UpdatedAt   *string         `json:"updated_at,omitempty"`
 }
 
 type SearchResult struct {
@@ -2795,7 +2840,7 @@ type TableDetail struct {
 	CreatedAt   *string          `json:"created_at,omitempty"`
 	Name        string           `json:"name"`
 	Owner       *string          `json:"owner,omitempty"`
-	Properties  *Record          `json:"properties,omitempty"`
+	Properties  *map[string]any  `json:"properties,omitempty"`
 	SchemaName  string           `json:"schema_name"`
 	Statistics  *TableStatistics `json:"statistics,omitempty"`
 	TableId     string           `json:"table_id"`
@@ -2844,9 +2889,9 @@ const (
 )
 
 type TriggerAssetMaterializationRequest struct {
-	IdempotencyKey *string `json:"idempotency_key,omitempty"`
-	PartitionKey   *string `json:"partition_key,omitempty"`
-	Payload        *Record `json:"payload,omitempty"`
+	IdempotencyKey *string         `json:"idempotency_key,omitempty"`
+	PartitionKey   *string         `json:"partition_key,omitempty"`
+	Payload        *map[string]any `json:"payload,omitempty"`
 }
 
 type TriggerModelRunRequest struct {
@@ -2857,7 +2902,7 @@ type TriggerModelRunRequest struct {
 }
 
 type TriggerPipelineRunRequest struct {
-	Parameters *Record `json:"parameters,omitempty"`
+	Parameters *map[string]any `json:"parameters,omitempty"`
 }
 
 type URLStyle string
@@ -2868,7 +2913,7 @@ const (
 )
 
 type UpdateAssetRequest struct {
-	AssetType             AssetType                   `json:"asset_type"`
+	AssetType             *AssetType                  `json:"asset_type,omitempty"`
 	AutoMaterializePolicy *AssetAutoMaterializePolicy `json:"auto_materialize_policy,omitempty"`
 	Checks                *[]AssetCheckInput          `json:"checks,omitempty"`
 	Description           *string                     `json:"description,omitempty"`
@@ -2876,8 +2921,8 @@ type UpdateAssetRequest struct {
 	IoProfile             *string                     `json:"io_profile,omitempty"`
 	IsActive              *bool                       `json:"is_active,omitempty"`
 	MaterializationPolicy *AssetMaterializationPolicy `json:"materialization_policy,omitempty"`
-	Owner                 string                      `json:"owner"`
-	ProductSlug           string                      `json:"product_slug"`
+	Owner                 *string                     `json:"owner,omitempty"`
+	ProductSlug           *string                     `json:"product_slug,omitempty"`
 	Tags                  *[]string                   `json:"tags,omitempty"`
 	UpstreamAssetKeys     *[]string                   `json:"upstream_asset_keys,omitempty"`
 }
@@ -2894,7 +2939,7 @@ type UpdateCellRequest struct {
 	Position   *int32                  `json:"position,omitempty"`
 	Role       *CellRole               `json:"role,omitempty"`
 	Test       *NotebookCellTestConfig `json:"test,omitempty"`
-	VisualSpec *VisualSpec             `json:"visual_spec,omitempty"`
+	VisualSpec *VisualSpecUpdate       `json:"visual_spec,omitempty"`
 }
 
 type UpdateColumnMaskRequest struct {
@@ -2928,40 +2973,40 @@ type UpdateDashboardRequest struct {
 }
 
 type UpdateDashboardWidgetRequest struct {
-	Description *string                `json:"description,omitempty"`
-	Key         *string                `json:"key,omitempty"`
-	Layout      *DashboardWidgetLayout `json:"layout,omitempty"`
-	Name        *string                `json:"name,omitempty"`
-	PageName    *string                `json:"page_name,omitempty"`
-	Source      *DashboardWidgetSource `json:"source,omitempty"`
-	VisualSpec  *VisualSpec            `json:"visual_spec,omitempty"`
+	Description *string                      `json:"description,omitempty"`
+	Key         *string                      `json:"key,omitempty"`
+	Layout      *DashboardWidgetLayoutUpdate `json:"layout,omitempty"`
+	Name        *string                      `json:"name,omitempty"`
+	PageName    *string                      `json:"page_name,omitempty"`
+	Source      *DashboardWidgetSourceUpdate `json:"source,omitempty"`
+	VisualSpec  *VisualSpecUpdate            `json:"visual_spec,omitempty"`
 }
 
 type UpdateDataProductRequest struct {
 	AccessRequestPath   *string          `json:"access_request_path,omitempty"`
-	BusinessDefinitions *Record          `json:"business_definitions,omitempty"`
+	BusinessDefinitions *map[string]any  `json:"business_definitions,omitempty"`
 	ConsumerAudience    *string          `json:"consumer_audience,omitempty"`
-	ContactChannel      string           `json:"contact_channel"`
+	ContactChannel      *string          `json:"contact_channel,omitempty"`
 	Contract            *ProductContract `json:"contract,omitempty"`
 	Description         *string          `json:"description,omitempty"`
 	DocsUrl             *string          `json:"docs_url,omitempty"`
-	DomainName          string           `json:"domain_name"`
-	Name                string           `json:"name"`
+	DomainName          *string          `json:"domain_name,omitempty"`
+	Name                *string          `json:"name,omitempty"`
 	PublicationIntent   *string          `json:"publication_intent,omitempty"`
 	Slo                 *ProductSLO      `json:"slo,omitempty"`
-	StewardPrincipal    string           `json:"steward_principal"`
-	TeamName            string           `json:"team_name"`
+	StewardPrincipal    *string          `json:"steward_principal,omitempty"`
+	TeamName            *string          `json:"team_name,omitempty"`
 	Visibility          *string          `json:"visibility,omitempty"`
 }
 
 type UpdateEnvironmentRequest struct {
-	ComputeEndpoint    *string `json:"compute_endpoint,omitempty"`
-	DeferToEnvironment *string `json:"defer_to_environment,omitempty"`
-	Description        *string `json:"description,omitempty"`
-	SourceOverrides    *Record `json:"source_overrides,omitempty"`
-	TargetCatalog      *string `json:"target_catalog,omitempty"`
-	TargetSchema       *string `json:"target_schema,omitempty"`
-	Variables          *Record `json:"variables,omitempty"`
+	ComputeEndpoint    *string         `json:"compute_endpoint,omitempty"`
+	DeferToEnvironment *string         `json:"defer_to_environment,omitempty"`
+	Description        *string         `json:"description,omitempty"`
+	SourceOverrides    *map[string]any `json:"source_overrides,omitempty"`
+	TargetCatalog      *string         `json:"target_catalog,omitempty"`
+	TargetSchema       *string         `json:"target_schema,omitempty"`
+	Variables          *map[string]any `json:"variables,omitempty"`
 }
 
 type UpdateExternalLocationRequest struct {
@@ -2990,7 +3035,7 @@ type UpdateMacroRequest struct {
 	Owner       *string          `json:"owner,omitempty"`
 	Parameters  *[]string        `json:"parameters,omitempty"`
 	ProjectName *string          `json:"project_name,omitempty"`
-	Properties  *Record          `json:"properties,omitempty"`
+	Properties  *map[string]any  `json:"properties,omitempty"`
 	Status      *MacroStatus     `json:"status,omitempty"`
 	Tags        *[]string        `json:"tags,omitempty"`
 	Visibility  *MacroVisibility `json:"visibility,omitempty"`
@@ -3058,8 +3103,8 @@ type UpdateRowFilterRequest struct {
 }
 
 type UpdateSchemaRequest struct {
-	Comment    *string `json:"comment,omitempty"`
-	Properties *Record `json:"properties,omitempty"`
+	Comment    *string         `json:"comment,omitempty"`
+	Properties *map[string]any `json:"properties,omitempty"`
 }
 
 type UpdateSemanticMetricRequest struct {
@@ -3109,9 +3154,9 @@ type UpdateStorageCredentialRequest struct {
 }
 
 type UpdateTableRequest struct {
-	Comment    *string `json:"comment,omitempty"`
-	Owner      *string `json:"owner,omitempty"`
-	Properties *Record `json:"properties,omitempty"`
+	Comment    *string         `json:"comment,omitempty"`
+	Owner      *string         `json:"owner,omitempty"`
+	Properties *map[string]any `json:"properties,omitempty"`
 }
 
 type UpdateTagRequest struct {
@@ -3191,9 +3236,31 @@ type VisualEncodings struct {
 	Y         *VisualFieldBinding `json:"y,omitempty"`
 }
 
+type VisualEncodingsUpdate struct {
+	Label     *VisualFieldBindingUpdate `json:"label,omitempty"`
+	Secondary *VisualFieldBindingUpdate `json:"secondary,omitempty"`
+	Series    *VisualFieldBindingUpdate `json:"series,omitempty"`
+	Value     *VisualFieldBindingUpdate `json:"value,omitempty"`
+	X         *VisualFieldBindingUpdate `json:"x,omitempty"`
+	Y         *VisualFieldBindingUpdate `json:"y,omitempty"`
+}
+
 type VisualFieldBinding struct {
 	Field string `json:"field"`
 }
+
+type VisualFieldBindingUpdate struct {
+	Field *string `json:"field,omitempty"`
+}
+
+type VisualLegendPosition string
+
+const (
+	VisualLegendPositionTop    VisualLegendPosition = "top"
+	VisualLegendPositionRight  VisualLegendPosition = "right"
+	VisualLegendPositionBottom VisualLegendPosition = "bottom"
+	VisualLegendPositionLeft   VisualLegendPosition = "left"
+)
 
 type VisualOutputKind string
 
@@ -3204,15 +3271,27 @@ const (
 )
 
 type VisualSpec struct {
-	ChartType      *VisualChartType `json:"chart_type,omitempty"`
-	ColorPalette   *string          `json:"color_palette,omitempty"`
-	Encodings      *VisualEncodings `json:"encodings,omitempty"`
-	Kind           VisualOutputKind `json:"kind"`
-	Legend         *bool            `json:"legend,omitempty"`
-	LegendPosition *string          `json:"legend_position,omitempty"`
-	Stacked        *bool            `json:"stacked,omitempty"`
-	Subtitle       *string          `json:"subtitle,omitempty"`
-	Title          *string          `json:"title,omitempty"`
+	ChartType      *VisualChartType      `json:"chart_type,omitempty"`
+	ColorPalette   *string               `json:"color_palette,omitempty"`
+	Encodings      *VisualEncodings      `json:"encodings,omitempty"`
+	Kind           VisualOutputKind      `json:"kind"`
+	Legend         *bool                 `json:"legend,omitempty"`
+	LegendPosition *VisualLegendPosition `json:"legend_position,omitempty"`
+	Stacked        *bool                 `json:"stacked,omitempty"`
+	Subtitle       *string               `json:"subtitle,omitempty"`
+	Title          *string               `json:"title,omitempty"`
+}
+
+type VisualSpecUpdate struct {
+	ChartType      *VisualChartType       `json:"chart_type,omitempty"`
+	ColorPalette   *string                `json:"color_palette,omitempty"`
+	Encodings      *VisualEncodingsUpdate `json:"encodings,omitempty"`
+	Kind           *VisualOutputKind      `json:"kind,omitempty"`
+	Legend         *bool                  `json:"legend,omitempty"`
+	LegendPosition *VisualLegendPosition  `json:"legend_position,omitempty"`
+	Stacked        *bool                  `json:"stacked,omitempty"`
+	Subtitle       *string                `json:"subtitle,omitempty"`
+	Title          *string                `json:"title,omitempty"`
 }
 
 type VolumeDetail struct {
@@ -3269,6 +3348,8 @@ type WorkspaceMember struct {
 	UpdatedAt     *string           `json:"updated_at,omitempty"`
 	WorkspaceId   string            `json:"workspace_id"`
 }
+
+type WorkspaceMemberList []WorkspaceMember
 
 type GenericRequest struct {
 	Payload *map[string]string `json:"payload,omitempty"`

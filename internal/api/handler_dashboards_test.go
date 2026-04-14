@@ -482,7 +482,7 @@ func TestHandler_GetRenderedDashboard_MapsResolvedWidgets(t *testing.T) {
 	assert.Equal(t, "widget-1", *(*okResp.Body.Widgets)[0].Widget.Id)
 	assert.Equal(t, []string{"region", "revenue"}, (*okResp.Body.Widgets)[0].Columns)
 	require.NotNil(t, (*okResp.Body.Widgets)[0].Rows)
-	assert.Equal(t, [][]string{{"APAC", "123"}}, *(*okResp.Body.Widgets)[0].Rows)
+	assert.Equal(t, [][]any{{"APAC", 123}}, *(*okResp.Body.Widgets)[0].Rows)
 	require.NotNil(t, (*okResp.Body.Widgets)[0].GeneratedSql)
 	assert.Contains(t, *(*okResp.Body.Widgets)[0].GeneratedSql, "SELECT")
 }
@@ -643,21 +643,21 @@ func TestHandler_UpdateDashboardWidget_MapsOptionalFields(t *testing.T) {
 			Key:      strPtr("chart-revenue-region"),
 			PageName: strPtr("Geography"),
 			Name:     strPtr("Updated widget"),
-			Source: &DashboardWidgetSource{
-				Kind: DashboardWidgetSourceKindSqlQuery,
-				SqlQuery: &DashboardSQLQuerySource{
-					Sql: "select region, revenue from summary",
+			Source: &DashboardWidgetSourceUpdate{
+				Kind: ptrDashboardWidgetSourceKindUpdate(DashboardWidgetSourceKindSqlQuery),
+				SqlQuery: &DashboardSQLQuerySourceUpdate{
+					Sql: strPtr("select region, revenue from summary"),
 				},
 			},
-			VisualSpec: &VisualSpec{
-				Kind:      VisualOutputKindChart,
+			VisualSpec: &VisualSpecUpdate{
+				Kind:      ptrVisualOutputKind(VisualOutputKindChart),
 				ChartType: &chartType,
-				Encodings: &VisualEncodings{
-					X: &VisualFieldBinding{Field: "region"},
-					Y: &VisualFieldBinding{Field: "revenue"},
+				Encodings: &VisualEncodingsUpdate{
+					X: &VisualFieldBindingUpdate{Field: strPtr("region")},
+					Y: &VisualFieldBindingUpdate{Field: strPtr("revenue")},
 				},
 			},
-			Layout: &DashboardWidgetLayout{X: 1, Y: 2, W: 5, H: 3},
+			Layout: &DashboardWidgetLayoutUpdate{X: int32Ptr(1), Y: int32Ptr(2), W: int32Ptr(5), H: int32Ptr(3)},
 		},
 	})
 	require.NoError(t, err)
@@ -692,4 +692,12 @@ func TestHandler_DeleteDashboardWidget_MapsRequest(t *testing.T) {
 	require.NoError(t, err)
 	_, ok := resp.(GenDeleteDashboardWidget204Response)
 	require.True(t, ok)
+}
+
+func ptrVisualOutputKind(value VisualOutputKind) *VisualOutputKind {
+	return &value
+}
+
+func ptrDashboardWidgetSourceKindUpdate(value DashboardWidgetSourceKind) *DashboardWidgetSourceKind {
+	return &value
 }

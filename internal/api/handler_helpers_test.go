@@ -232,7 +232,7 @@ func TestHelpers_schemaDetailToAPI(t *testing.T) {
 	require.NotNil(t, result.Owner)
 	assert.Equal(t, "admin", *result.Owner)
 	require.NotNil(t, result.Properties)
-	assert.Equal(t, Record{"key": "val"}, *result.Properties)
+	assert.Equal(t, map[string]any{"key": "val"}, *result.Properties)
 	require.NotNil(t, result.CreatedAt)
 	assert.Equal(t, helpersFixedTime.UTC().Format(time.RFC3339), *result.CreatedAt)
 	require.NotNil(t, result.UpdatedAt)

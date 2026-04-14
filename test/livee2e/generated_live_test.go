@@ -675,7 +675,7 @@ func TestGeneratedLive_OpenAPISpecMatchesEmbeddedDiscoveryDocument(t *testing.T)
 
 	rootDir, err := repoRoot()
 	require.NoError(t, err)
-	content, err := os.ReadFile(filepath.Join(rootDir, "api", "gen", "openapi.yaml"))
+	content, err := os.ReadFile(filepath.Join(rootDir, "internal", "api", "gen", "openapi.yaml"))
 	require.NoError(t, err)
 	jsonBytes := yamlToJSONBytes(t, content)
 	var liveSpec map[string]any

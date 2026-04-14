@@ -3,7 +3,6 @@ package api
 import (
 	"context"
 	"errors"
-	"fmt"
 	"strings"
 
 	"duck-demo/internal/domain"
@@ -270,14 +269,14 @@ func (h *APIHandler) UpdateDashboardWidget(ctx context.Context, req GenUpdateDas
 		PageName:        req.Body.PageName,
 		Name:            req.Body.Name,
 		Description:     req.Body.Description,
-		VisualSpec:      visualSpecFromAPI(req.Body.VisualSpec),
+		VisualSpec:      visualSpecUpdateFromAPI(req.Body.VisualSpec),
 	}
 	if req.Body.Source != nil {
-		source := dashboardWidgetSourceFromAPI(req.Body.Source)
+		source := dashboardWidgetSourceUpdateFromAPI(req.Body.Source)
 		domReq.Source = &source
 	}
 	if req.Body.Layout != nil {
-		layout := dashboardWidgetLayoutFromAPI(req.Body.Layout)
+		layout := dashboardWidgetLayoutUpdateFromAPI(req.Body.Layout)
 		domReq.Layout = &layout
 	}
 	item, err := h.dashboards.UpdateWidget(ctx, cp.Name, cp.IsAdmin, req.WidgetId, domReq)
@@ -433,6 +432,45 @@ func dashboardWidgetSourceFromAPI(source *DashboardWidgetSource) domain.Dashboar
 	return out
 }
 
+func dashboardWidgetSourceUpdateFromAPI(source *DashboardWidgetSourceUpdate) domain.DashboardWidgetSource {
+	if source == nil {
+		return domain.DashboardWidgetSource{}
+	}
+	out := domain.DashboardWidgetSource{}
+	if source.Kind != nil {
+		out.Kind = domain.DashboardWidgetSourceKind(*source.Kind)
+	}
+	if source.SqlQuery != nil {
+		out.SQLQuery = &domain.DashboardSQLQuerySource{
+			SQL:     derefString(source.SqlQuery.Sql),
+			Catalog: source.SqlQuery.Catalog,
+			Schema:  source.SqlQuery.Schema,
+		}
+	}
+	if source.NotebookCell != nil {
+		out.NotebookCell = &domain.DashboardNotebookCellSource{
+			NotebookID: derefString(source.NotebookCell.NotebookId),
+			CellID:     derefString(source.NotebookCell.CellId),
+		}
+	}
+	if source.SemanticQuery != nil {
+		out.SemanticQuery = &domain.DashboardSemanticQuerySource{
+			SemanticModelID:   derefString(source.SemanticQuery.SemanticModelId),
+			Metrics:           derefStringSlice(source.SemanticQuery.Metrics),
+			RelationshipNames: derefStringSlice(source.SemanticQuery.RelationshipNames),
+			Dimensions:        derefStringSlice(source.SemanticQuery.Dimensions),
+			Filters:           derefStringSlice(source.SemanticQuery.Filters),
+			OrderBy:           derefStringSlice(source.SemanticQuery.OrderBy),
+			TimeGrain:         source.SemanticQuery.TimeGrain,
+		}
+		if source.SemanticQuery.Limit != nil {
+			limit := int(*source.SemanticQuery.Limit)
+			out.SemanticQuery.Limit = &limit
+		}
+	}
+	return out
+}
+
 func dashboardWidgetSourceToAPI(source domain.DashboardWidgetSource) DashboardWidgetSource {
 	out := DashboardWidgetSource{Kind: DashboardWidgetSourceKind(source.Kind)}
 	if source.SQLQuery != nil {
@@ -478,6 +516,26 @@ func dashboardWidgetLayoutFromAPI(layout *DashboardWidgetLayout) domain.Dashboar
 	}
 }
 
+func dashboardWidgetLayoutUpdateFromAPI(layout *DashboardWidgetLayoutUpdate) domain.DashboardWidgetLayout {
+	if layout == nil {
+		return domain.DashboardWidgetLayout{}
+	}
+	out := domain.DashboardWidgetLayout{}
+	if layout.X != nil {
+		out.X = int(*layout.X)
+	}
+	if layout.Y != nil {
+		out.Y = int(*layout.Y)
+	}
+	if layout.W != nil {
+		out.W = int(*layout.W)
+	}
+	if layout.H != nil {
+		out.H = int(*layout.H)
+	}
+	return out
+}
+
 func dashboardWidgetLayoutToAPI(layout domain.DashboardWidgetLayout) DashboardWidgetLayout {
 	return DashboardWidgetLayout{
 		X: safeIntToInt32(layout.X),
@@ -495,7 +553,7 @@ func resolvedDashboardWidgetToAPI(item dashboardsvc.ResolvedWidget) ResolvedDash
 	return ResolvedDashboardWidget{
 		Widget:       ptrDashboardWidget(dashboardWidgetToAPI(item.Widget)),
 		Columns:      append([]string(nil), item.Columns...),
-		Rows:         rowsToStringGrid(item.Rows),
+		Rows:         rowsToAnyGrid(item.Rows),
 		RowCount:     safeInt64ToInt32Ptr(&rowCount),
 		GeneratedSql: optStr(item.GeneratedSQL),
 	}
@@ -515,16 +573,13 @@ func slicePtr(items []string) *[]string {
 	return &copyItems
 }
 
-func rowsToStringGrid(rows [][]interface{}) *[][]string {
+func rowsToAnyGrid(rows [][]interface{}) *[][]any {
 	if len(rows) == 0 {
 		return nil
 	}
-	out := make([][]string, len(rows))
+	out := make([][]any, len(rows))
 	for i, row := range rows {
-		out[i] = make([]string, len(row))
-		for j, cell := range row {
-			out[i][j] = fmt.Sprint(cell)
-		}
+		out[i] = append([]any(nil), row...)
 	}
 	return &out
 }

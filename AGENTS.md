@@ -17,6 +17,8 @@ task generate       # regenerate all code
 task build-cli      # build CLI binary → bin/duck
 ```
 
+Lint policy reference: `LINTING.md`
+
 Single package/test: `go test -race -run TestName ./internal/pkg/...`
 
 `task dev` does not require a checked-out `.env`; it injects a local-only dev profile, builds a local server binary, and derives stable HTTP/Flight SQL/PG wire ports from the current worktree path so multiple AI worktrees can run concurrently.
@@ -34,6 +36,8 @@ Single package/test: `go test -race -run TestName ./internal/pkg/...`
 ```
 cmd/server/          → HTTP server entry point
 cmd/cli/             → CLI binary (duck)
+cmd/apigen/          → APIGen CLI wrapper over reusable `pkg/apigen/...` packages
+pkg/apigen/          → importable APIGen IR, CUE compiler, emitters, and runtimes
 internal/api/        → HTTP handlers and APIGen-generated transport code
 internal/service/    → business logic
 internal/domain/     → types, interfaces, errors (zero deps)
@@ -66,9 +70,11 @@ Dependency direction: `api` → `service` → `domain` ← `repository`. Never i
 
 ## Generated Code — Do Not Edit
 
-- `api/gen/openapi.yaml` — tracked TypeSpec output from `api/spec/main.tsp` via `task typespec:compile`
-- `api/gen/json-ir.json` — local APIGen intermediate from `api/spec/main.tsp` via `task typespec:compile` (generated, not committed)
-- `internal/api/gen_request_models.gen.go`, `internal/api/server.apigen.gen.go`, `internal/api/types.gen.go`, `pkg/cli/gen/apigen_registry.gen.go` — APIGen outputs from JSON IR (`api/gen/json-ir.json`) via `cmd/apigen`
+- `internal/api/contract/cue/*.cue` — checked-in CUE authoring source for APIGen; this is the application-owned declarative source of truth
+- `internal/api/gen/openapi.yaml` — tracked canonical OpenAPI artifact emitted from `internal/api/contract/cue` via `task cue:compile`; includes repo-owned extensions such as `x-authz` and `x-cli-command`
+- `internal/api/gen/json-ir.json` — local APIGen intermediate emitted from `internal/api/contract/cue` via `task cue:compile` (generated, not committed)
+- `internal/api/gen_request_models.gen.go`, `internal/api/server.apigen.gen.go`, `internal/api/types.gen.go`, `pkg/cli/gen/apigen_registry.gen.go` — APIGen outputs from JSON IR (`internal/api/gen/json-ir.json`) via `cmd/apigen`
+- Pipeline: CUE authors the contract, `task cue:compile` emits both canonical OpenAPI and JSON IR, then `cmd/apigen` generates Go transport/CLI artifacts from JSON IR while embedding the canonical OpenAPI into the server
 - `pkg/cli/gen/` is primarily generated CLI metadata; do not assume it is the active handwritten CLI runtime boundary
 - `internal/db/dbstore/*.sql.go` — from `internal/db/queries/*.sql` via sqlc
 - `internal/duckdbsql/catalog/*_gen.go` — from DuckDB introspection via `scripts/genduckdb`

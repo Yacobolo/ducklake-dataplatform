@@ -264,10 +264,30 @@ func findInlineSchema(obj *yaml.Node) *yaml.Node {
 	if schema == nil {
 		return nil
 	}
+	if isErrorAnyOfSchema(schema) {
+		return nil
+	}
 	if yGet(schema, "$ref") == nil {
 		return schema
 	}
 	return nil
+}
+
+func isErrorAnyOfSchema(schema *yaml.Node) bool {
+	if schema == nil || schema.Kind != yaml.MappingNode {
+		return false
+	}
+	anyOf := yGet(schema, "anyOf")
+	if anyOf == nil || anyOf.Kind != yaml.SequenceNode || len(anyOf.Content) == 0 {
+		return false
+	}
+	for _, entry := range anyOf.Content {
+		ref := yGet(entry, "$ref")
+		if ref == nil || !strings.HasSuffix(ref.Value, "/Error") {
+			return false
+		}
+	}
+	return true
 }
 
 // ================================================================
@@ -477,7 +497,9 @@ var actionVerbSet = map[string]bool{
 	"setDefaultCatalog": true, "reorderCells": true, "executeCell": true,
 	"runAllCells": true, "syncGitRepo": true, "cancelPipelineRun": true, "cancelModelRun": true,
 	"triggerPipelineRun": true, "explainMetricQuery": true, "runMetricQuery": true,
-	"cancelQuery": true,
+	"cancelQuery": true, "deprecateDataProductVersion": true, "publishDataProductVersion": true,
+	"retireDataProductVersion": true, "moveFolder": true, "shareFolder": true,
+	"moveNotebook": true, "shareNotebook": true, "addWorkspaceMember": true,
 }
 
 func (f *fnCheckPostCreateStatus) RunRule(nodes []*yaml.Node, ctx model.RuleFunctionContext) []model.RuleFunctionResult {
@@ -771,6 +793,9 @@ func (f *fnCheckGetResource404) RunRule(nodes []*yaml.Node, ctx model.RuleFuncti
 		if opID == "" {
 			opID = method + " " + path
 		}
+		if strings.HasPrefix(opID, "list") || strings.HasPrefix(opID, "search") {
+			return
+		}
 		results = append(results, makeResult(
 			fmt.Sprintf("GET operation %q on resource path should include 404 response", opID),
 			fmt.Sprintf("$.paths.%s.get.responses", path),
@@ -824,7 +849,7 @@ func (f *fnCheckErrorSchemaRef) RunRule(nodes []*yaml.Node, ctx model.RuleFuncti
 				continue
 			}
 			ref := yGet(schema, "$ref")
-			if ref == nil || !strings.HasSuffix(ref.Value, "/Error") {
+			if (ref == nil || !strings.HasSuffix(ref.Value, "/Error")) && !isErrorAnyOfSchema(schema) {
 				results = append(results, makeResult(
 					fmt.Sprintf("operation %q response %s should reference Error schema", opID, statusCode),
 					fmt.Sprintf("$.paths.%s.%s.responses.%s", path, method, statusCode),

@@ -6,7 +6,7 @@ on:
     paths:
       - site/**
       - api/spec/**
-      - api/gen/openapi.yaml
+      - internal/api/gen/openapi.yaml
       - tools/typespec-ir-emitter/**
       - internal/apigen/**
       - cmd/apigen/**
@@ -23,7 +23,7 @@ on:
     paths:
       - site/**
       - api/spec/**
-      - api/gen/openapi.yaml
+      - internal/api/gen/openapi.yaml
       - tools/typespec-ir-emitter/**
       - internal/apigen/**
       - cmd/apigen/**

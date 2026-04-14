@@ -2,7 +2,7 @@
 
 Standalone showcase examples have been retired.
 
-The canonical end-to-end declarative example now lives in [`/duck-config`](/Users/yacobolo/.codex/worktrees/44d8/main/duck-config), which also powers `task dev:seeded`.
+The canonical end-to-end declarative example now lives in [`/duck-config`](../duck-config), which also powers `task dev:seeded`.
 
 Recommended local flow:
 

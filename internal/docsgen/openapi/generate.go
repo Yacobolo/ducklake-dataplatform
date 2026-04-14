@@ -2,6 +2,7 @@
 package openapi
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -33,6 +34,7 @@ type paramDoc struct {
 	Required    bool
 	Type        string
 	Description string
+	Example     string
 }
 
 type endpointPageDoc struct {
@@ -68,11 +70,18 @@ type apiPageGrouping struct {
 type requestBodyDoc struct {
 	Required     bool
 	ContentTypes []string
+	Examples     []mediaTypeExampleDoc
 }
 
 type responseDoc struct {
 	Code        string
 	Description string
+	Examples    []mediaTypeExampleDoc
+}
+
+type mediaTypeExampleDoc struct {
+	ContentType string
+	Example     string
 }
 
 // Generate renders OpenAPI docs to markdown files.
@@ -168,6 +177,7 @@ func buildEndpointDoc(path, method string, pathItem *openapi3.PathItem, op *open
 			Required:    p.Value.Required,
 			Type:        schemaTypeFromRef(p.Value.Schema),
 			Description: cleanInline(p.Value.Description),
+			Example:     formatExample(p.Value.Example),
 		}
 		switch p.Value.In {
 		case "path":
@@ -185,9 +195,19 @@ func buildEndpointDoc(path, method string, pathItem *openapi3.PathItem, op *open
 
 	if op.RequestBody != nil && op.RequestBody.Value != nil {
 		contentTypes := sortedKeys(op.RequestBody.Value.Content)
+		examples := make([]mediaTypeExampleDoc, 0, len(contentTypes))
+		for _, contentType := range contentTypes {
+			if mediaType := op.RequestBody.Value.Content.Get(contentType); mediaType != nil {
+				example := mediaTypeExample(mediaType)
+				if example != "" {
+					examples = append(examples, mediaTypeExampleDoc{ContentType: contentType, Example: example})
+				}
+			}
+		}
 		endpoint.RequestBody = &requestBodyDoc{
 			Required:     op.RequestBody.Value.Required,
 			ContentTypes: contentTypes,
+			Examples:     examples,
 		}
 	}
 
@@ -198,7 +218,20 @@ func buildEndpointDoc(path, method string, pathItem *openapi3.PathItem, op *open
 				desc = cleanInline(*response.Value.Description)
 			}
 		}
-		endpoint.Responses = append(endpoint.Responses, responseDoc{Code: code, Description: desc})
+		contentTypes := make([]string, 0)
+		if response != nil && response.Value != nil {
+			contentTypes = sortedKeys(response.Value.Content)
+		}
+		examples := make([]mediaTypeExampleDoc, 0, len(contentTypes))
+		for _, contentType := range contentTypes {
+			if mediaType := response.Value.Content.Get(contentType); mediaType != nil {
+				example := mediaTypeExample(mediaType)
+				if example != "" {
+					examples = append(examples, mediaTypeExampleDoc{ContentType: contentType, Example: example})
+				}
+			}
+		}
+		endpoint.Responses = append(endpoint.Responses, responseDoc{Code: code, Description: desc, Examples: examples})
 	}
 	sortResponses(endpoint.Responses)
 
@@ -209,7 +242,7 @@ func writeAPIIndex(path string, outputs []tagOutput, schemaNames []string) error
 	var b strings.Builder
 	b.WriteString(generatedHeader())
 	b.WriteString("# API Reference\n\n")
-	b.WriteString("This section is generated from the OpenAPI artifact (`api/gen/openapi.yaml` by default).\n\n")
+	b.WriteString("This section is generated from the OpenAPI artifact (`internal/api/gen/openapi.yaml` by default).\n\n")
 	b.WriteString("- [Feature Overview](./features)\n\n")
 	b.WriteString("## Endpoint Groups\n\n")
 	for _, output := range outputs {
@@ -349,6 +382,7 @@ func writeEndpointPage(path, title, description string, endpoints []endpointDoc)
 				b.WriteString("\n")
 			}
 			b.WriteString("\n")
+			writeExampleBlocks(&b, "Request Examples", endpoint.RequestBody.Examples)
 		}
 
 		if len(endpoint.Responses) > 0 {
@@ -359,6 +393,13 @@ func writeEndpointPage(path, title, description string, endpoints []endpointDoc)
 				b.WriteString(fmt.Sprintf("| `%s` | %s |\n", response.Code, tableSafe(response.Description)))
 			}
 			b.WriteString("\n")
+			for _, response := range endpoint.Responses {
+				if len(response.Examples) == 0 {
+					continue
+				}
+				b.WriteString(fmt.Sprintf("#### `%s` Example\n\n", response.Code))
+				writeExampleBlocks(&b, "", response.Examples)
+			}
 		}
 	}
 
@@ -600,6 +641,13 @@ func writeSchemaPage(path, name string, ref *openapi3.SchemaRef) error {
 		b.WriteString("\n\n")
 	}
 
+	if example := formatExample(schema.Example); example != "" {
+		b.WriteString("## Example\n\n")
+		b.WriteString("```json\n")
+		b.WriteString(example)
+		b.WriteString("\n```\n\n")
+	}
+
 	b.WriteString(fmt.Sprintf("- Type: `%s`\n", schemaType(schema)))
 	if len(schema.Required) > 0 {
 		required := slices.Clone(schema.Required)
@@ -620,8 +668,8 @@ func writeSchemaPage(path, name string, ref *openapi3.SchemaRef) error {
 	if len(schema.Properties) > 0 {
 		propNames := sortedKeys(schema.Properties)
 		b.WriteString("## Properties\n\n")
-		b.WriteString("| Name | Type | Required | Description |\n")
-		b.WriteString("| --- | --- | --- | --- |\n")
+		b.WriteString("| Name | Type | Required | Description | Example |\n")
+		b.WriteString("| --- | --- | --- | --- | --- |\n")
 		reqSet := make(map[string]struct{}, len(schema.Required))
 		for _, field := range schema.Required {
 			reqSet[field] = struct{}{}
@@ -633,7 +681,7 @@ func writeSchemaPage(path, name string, ref *openapi3.SchemaRef) error {
 			if propRef != nil && propRef.Value != nil {
 				desc = cleanInline(propRef.Value.Description)
 			}
-			b.WriteString(fmt.Sprintf("| `%s` | `%s` | `%t` | %s |\n", propName, schemaTypeFromRef(propRef), required, tableSafe(desc)))
+			b.WriteString(fmt.Sprintf("| `%s` | `%s` | `%t` | %s | %s |\n", propName, schemaTypeFromRef(propRef), required, tableSafe(desc), tableSafe(formatExample(schemaExampleFromRef(propRef)))))
 		}
 		b.WriteString("\n")
 	}
@@ -645,12 +693,32 @@ func writeParamTable(b *strings.Builder, title string, params []paramDoc) {
 	b.WriteString("### ")
 	b.WriteString(title)
 	b.WriteString("\n\n")
-	b.WriteString("| Name | Type | Required | Description |\n")
-	b.WriteString("| --- | --- | --- | --- |\n")
+	b.WriteString("| Name | Type | Required | Description | Example |\n")
+	b.WriteString("| --- | --- | --- | --- | --- |\n")
 	for _, param := range params {
-		_, _ = fmt.Fprintf(b, "| `%s` | `%s` | `%t` | %s |\n", param.Name, param.Type, param.Required, tableSafe(param.Description))
+		_, _ = fmt.Fprintf(b, "| `%s` | `%s` | `%t` | %s | %s |\n", param.Name, param.Type, param.Required, tableSafe(param.Description), tableSafe(param.Example))
 	}
 	b.WriteString("\n")
+}
+
+func writeExampleBlocks(b *strings.Builder, title string, examples []mediaTypeExampleDoc) {
+	if len(examples) == 0 {
+		return
+	}
+	if title != "" {
+		b.WriteString("### ")
+		b.WriteString(title)
+		b.WriteString("\n\n")
+	}
+	for _, example := range examples {
+		if example.Example == "" {
+			continue
+		}
+		_, _ = fmt.Fprintf(b, "- Content type: `%s`\n\n", example.ContentType)
+		b.WriteString("```json\n")
+		b.WriteString(example.Example)
+		b.WriteString("\n```\n\n")
+	}
 }
 
 func sortParams(params []paramDoc) {
@@ -722,6 +790,34 @@ func schemaType(schema *openapi3.Schema) string {
 		return "array"
 	}
 	return (*schema.Type)[0]
+}
+
+func mediaTypeExample(mediaType *openapi3.MediaType) string {
+	if mediaType == nil {
+		return ""
+	}
+	if example := formatExample(mediaType.Example); example != "" {
+		return example
+	}
+	return formatExample(schemaExampleFromRef(mediaType.Schema))
+}
+
+func schemaExampleFromRef(ref *openapi3.SchemaRef) any {
+	if ref == nil || ref.Value == nil {
+		return nil
+	}
+	return ref.Value.Example
+}
+
+func formatExample(value any) string {
+	if value == nil {
+		return ""
+	}
+	content, err := json.MarshalIndent(value, "", "  ")
+	if err != nil {
+		return fmt.Sprint(value)
+	}
+	return string(content)
 }
 
 func sortedKeys[T any](m map[string]T) []string {

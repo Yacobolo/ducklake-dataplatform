@@ -10,7 +10,7 @@ group_overrides:
     short: "Manage the data catalog"
   Notebooks:
     short: "Notebooks, cells, sessions, and Git repositories"
-  Semantic:
+  Semantic Layer:
     name: semantic
     short: "Semantic models, metrics, and query planning"
 
@@ -64,11 +64,6 @@ command_overrides:
     verb: list-registrations
     command_path: []
 
-  getCatalogRegistration:
-    verb: get-registration
-    command_path: []
-    positional_args: [catalogName]
-
   updateCatalogRegistration:
     verb: update-registration
     command_path: []
@@ -119,7 +114,7 @@ command_overrides:
     table_columns: [id, name, volume_type, storage_location, owner, created_at]
 
   # === Security: non-CRUD verbs ===
-  updatePrincipalAdmin:
+  updatePrincipal:
     verb: set-admin
     command_path: [principals]
 

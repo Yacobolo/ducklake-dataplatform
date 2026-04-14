@@ -378,7 +378,7 @@ func loadAuthzByOperation(t *testing.T) map[string]apiAuthz {
 
 	specPath := os.Getenv("AUTHZ_SPEC_PATH")
 	if strings.TrimSpace(specPath) == "" {
-		specPath = filepath.Join(repoRootDir(), "api", "gen", "openapi.yaml")
+		specPath = filepath.Join(repoRootDir(), "internal", "api", "gen", "openapi.yaml")
 	}
 	loader := openapi3.NewLoader()
 	doc, err := loader.LoadFromFile(specPath)

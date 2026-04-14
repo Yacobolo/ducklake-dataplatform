@@ -55,7 +55,7 @@ jobs:
         with:
           name: generated-code
           path: |
-            api/gen/openapi.yaml
+            internal/api/gen/openapi.yaml
             internal/api/gen_request_models.gen.go
             internal/api/server.apigen.gen.go
             internal/api/types.gen.go

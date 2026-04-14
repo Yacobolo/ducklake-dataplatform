@@ -35,6 +35,10 @@ task lint
 task build-cli
 ```
 
+Lint policy:
+
+- [`LINTING.md`](./LINTING.md)
+
 ## Docs Workflow
 
 ```bash
@@ -44,8 +48,28 @@ task docs:generate
 task site:check
 ```
 
-The canonical public API contract is `api/gen/openapi.yaml`.
+The canonical generated API contract is `internal/api/gen/openapi.yaml`.
 Generated reference under `site/content/reference/generated` is derived from that contract plus the declarative CUE reference output.
+
+## APIGen Pipeline
+
+The API authoring and generation flow is now:
+
+```bash
+internal/api/contract/cue/*.cue
+  -> go run ./cmd/apigen cue-compile
+  -> internal/api/gen/json-ir.json
+  -> internal/api/gen/openapi.yaml
+  -> go run ./cmd/apigen all
+  -> internal/api/*.gen.go + pkg/cli/gen/apigen_registry.gen.go
+```
+
+Notes:
+
+- `internal/api/contract/cue` is the authored source of truth for this application.
+- `internal/api/gen/openapi.yaml` is the canonical generated contract artifact for this application.
+- `internal/api/gen/json-ir.json` is the APIGen compiler boundary consumed by the Go emitters.
+- Generated server code embeds the canonical OpenAPI contract for `/openapi.json` and `/docs`.
 
 ## Declarative Seed Example
 
@@ -53,6 +77,10 @@ Start with the checked-in seeded platform config:
 
 - [`duck-config/README.md`](./duck-config/README.md)
 - Run `task dev:seeded` to boot a clean local server and apply the rendered seed config automatically.
+
+## Examples
+
+- [`examples/README.md`](./examples/README.md)
 
 ## API Surface
 
@@ -79,4 +107,4 @@ extension/duck_access/  -- C++ DuckDB client extension
 
 Dependency direction: `api` -> `service` -> `domain` <- `repository`. Never import upward.
 
-APIGen owns the server transport, compatibility API types, and generated CLI metadata from `api/gen/json-ir.json`.
+APIGen owns the server transport, compatibility API types, and generated CLI metadata from `internal/api/gen/json-ir.json`.

@@ -61,7 +61,7 @@ func (h *APIHandler) ExecuteQuery(ctx context.Context, req GenExecuteQueryReques
 	return ExecuteQuery200JSONResponse{
 		Body: QueryResult{
 			Columns:  tabularColumns(result.Columns, result.Rows),
-			Rows:     rowsToRecords(result.Columns, result.Rows),
+			Rows:     rowsToAnyMaps(result.Columns, result.Rows),
 			RowCount: &rowCount,
 		},
 		Headers: ExecuteQuery200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
@@ -233,7 +233,7 @@ func (h *APIHandler) GetQueryResults(ctx context.Context, req GenGetQueryResults
 
 	result := QueryResult{
 		Columns: tabularColumns(job.Columns, rows),
-		Rows:    rowsToRecords(job.Columns, rows),
+		Rows:    rowsToAnyMaps(job.Columns, rows),
 	}
 	rowCount := safeIntToInt32(job.RowCount)
 	result.RowCount = &rowCount
@@ -415,7 +415,7 @@ func (h *APIHandler) CreateManifest(ctx context.Context, req GenCreateManifestRe
 			Columns:     &cols,
 			Files:       &result.Files,
 			RowFilters:  &result.RowFilters,
-			ColumnMasks: stringMapToRecord(result.ColumnMasks),
+			ColumnMasks: stringMapToAnyMap(result.ColumnMasks),
 			ExpiresAt:   formatTimePtr(&result.ExpiresAt),
 		},
 		Headers: CreateManifest200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},

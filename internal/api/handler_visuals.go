@@ -41,6 +41,52 @@ func visualSpecFromAPI(spec *VisualSpec) *domain.VisualSpec {
 	return out
 }
 
+func visualSpecUpdateFromAPI(spec *VisualSpecUpdate) *domain.VisualSpec {
+	if spec == nil {
+		return nil
+	}
+	out := &domain.VisualSpec{}
+	if spec.Kind != nil {
+		out.Kind = domain.VisualOutputKind(*spec.Kind)
+	}
+	if spec.Title != nil {
+		out.Title = *spec.Title
+	}
+	if spec.Subtitle != nil {
+		out.Subtitle = *spec.Subtitle
+	}
+	if spec.ColorPalette != nil {
+		out.ColorPalette = *spec.ColorPalette
+	}
+	if spec.ChartType != nil {
+		chartType := domain.VisualChartType(*spec.ChartType)
+		out.ChartType = &chartType
+	}
+	if spec.Legend != nil {
+		legend := *spec.Legend
+		out.Legend = &legend
+	}
+	if spec.LegendPosition != nil {
+		legendPosition := domain.VisualLegendPosition(*spec.LegendPosition)
+		out.LegendPosition = &legendPosition
+	}
+	if spec.Stacked != nil {
+		stacked := *spec.Stacked
+		out.Stacked = &stacked
+	}
+	if spec.Encodings != nil {
+		out.Encodings = domain.VisualEncodings{
+			X:         visualFieldBindingUpdateFromAPI(spec.Encodings.X),
+			Y:         visualFieldBindingUpdateFromAPI(spec.Encodings.Y),
+			Series:    visualFieldBindingUpdateFromAPI(spec.Encodings.Series),
+			Label:     visualFieldBindingUpdateFromAPI(spec.Encodings.Label),
+			Value:     visualFieldBindingUpdateFromAPI(spec.Encodings.Value),
+			Secondary: visualFieldBindingUpdateFromAPI(spec.Encodings.Secondary),
+		}
+	}
+	return out
+}
+
 func visualSpecToAPI(spec *domain.VisualSpec) *VisualSpec {
 	if spec == nil {
 		return nil
@@ -68,7 +114,7 @@ func visualSpecToAPI(spec *domain.VisualSpec) *VisualSpec {
 		out.Legend = &legend
 	}
 	if spec.LegendPosition != nil {
-		legendPosition := string(*spec.LegendPosition)
+		legendPosition := VisualLegendPosition(*spec.LegendPosition)
 		out.LegendPosition = &legendPosition
 	}
 	if spec.Stacked != nil {
@@ -83,6 +129,13 @@ func visualFieldBindingFromAPI(binding *VisualFieldBinding) *domain.VisualFieldB
 		return nil
 	}
 	return &domain.VisualFieldBinding{Field: binding.Field}
+}
+
+func visualFieldBindingUpdateFromAPI(binding *VisualFieldBindingUpdate) *domain.VisualFieldBinding {
+	if binding == nil {
+		return nil
+	}
+	return &domain.VisualFieldBinding{Field: derefString(binding.Field)}
 }
 
 func visualFieldBindingToAPI(binding *domain.VisualFieldBinding) *VisualFieldBinding {
