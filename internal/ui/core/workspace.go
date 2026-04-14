@@ -69,18 +69,23 @@ type ExploreNavigatorPanelData struct {
 
 func WorkspaceLayout(className string, aside Node, main ...Node) Node {
 	isRightAside := strings.Contains(className, "workspace-layout-right-aside")
-	baseClasses := "workspace-layout relative grid min-h-0 gap-4 md:[grid-template-columns:18rem_minmax(0,1fr)] [.is-aside-collapsed&]:md:[grid-template-columns:3.5rem_minmax(0,1fr)]"
+	isNoDivider := strings.Contains(className, "workspace-layout-no-divider")
+	baseClasses := "workspace-layout relative grid min-h-0 gap-4 [grid-template-columns:18rem_minmax(0,1fr)] max-md:grid-cols-1"
 	mainClass := "workspace-main min-w-0"
 	asideNode := aside
 	if isRightAside {
-		baseClasses = "workspace-layout relative grid min-h-0 gap-4 md:[grid-template-columns:minmax(0,1fr)_18rem] [.is-aside-collapsed&]:md:[grid-template-columns:minmax(0,1fr)_3.5rem]"
+		baseClasses = "workspace-layout relative grid min-h-0 gap-4 [grid-template-columns:minmax(0,1fr)_18rem] max-md:grid-cols-1"
 		mainClass = "workspace-main min-w-0 md:order-1 max-md:order-2"
 		asideNode = Group([]Node{
 			Div(Class("workspace-layout-divider hidden self-stretch md:block md:border-l md:border-[var(--borderColor-muted)]")),
 			aside,
 		})
 	} else {
-		mainClass += " border-l border-[var(--borderColor-muted)] pl-4 max-md:border-l-0 max-md:pl-0"
+		if isNoDivider {
+			mainClass += " pt-1"
+		} else {
+			mainClass += " border-l border-[var(--borderColor-muted)] pl-4 max-md:border-l-0 max-md:pl-0"
+		}
 	}
 	classes := ClassNames(baseClasses, className)
 	mainSection := Section(Class(mainClass), Group(main))

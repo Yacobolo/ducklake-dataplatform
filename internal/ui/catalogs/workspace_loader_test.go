@@ -142,7 +142,7 @@ func TestRenderCatalogWorkspace_TableOverviewMetadata(t *testing.T) {
 	})
 }
 
-func TestRenderCatalogWorkspace_UsesLeftExplorerLayout(t *testing.T) {
+func TestRenderCatalogWorkspace_UsesApplicationLayout(t *testing.T) {
 	handler := newCatalogWorkspaceTestHandler(t, false)
 	req := httptest.NewRequest(http.MethodGet, "/ui/catalogs?schema=analytics&type=table&name=fact_trips", nil)
 	rec := httptest.NewRecorder()
@@ -156,9 +156,18 @@ func TestRenderCatalogWorkspace_UsesLeftExplorerLayout(t *testing.T) {
 
 	require.Equal(t, http.StatusOK, rec.Code)
 	body := rec.Body.String()
-	assert.Contains(t, body, "md:[grid-template-columns:18rem_minmax(0,1fr)]")
+	assert.Contains(t, body, "app-layout-shell")
+	assert.Contains(t, body, "data-shell-compact-locked=\"true\"")
+	assert.Contains(t, body, "app-layout-center")
+	assert.Contains(t, body, "app-primary-rail")
+	assert.Contains(t, body, "app-secondary-aside")
+	assert.Contains(t, body, "app-layout-main-region")
+	assert.Contains(t, body, "app-layout-footer")
+	assert.Contains(t, body, "catalog-aside")
+	assert.Contains(t, body, "workspace-aside-plain")
+	assert.NotContains(t, body, "workspace-layout-no-divider")
 	assert.NotContains(t, body, "workspace-layout-right-aside")
-	assert.NotContains(t, body, "workspace-aside-right")
+	assert.NotContains(t, body, "id=\"sidebar-toggle\"")
 }
 
 func newCatalogWorkspaceTestHandler(t *testing.T, introspectionFails bool) *Handler {

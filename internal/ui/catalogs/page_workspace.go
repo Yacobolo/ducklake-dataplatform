@@ -222,16 +222,17 @@ func catalogWorkspacePage(d catalogWorkspacePageData) Node {
 		detailContent = qualityContent
 	}
 
-	return core.AppPageFullWidth(
+	return core.ApplicationPage(
 		"Catalog: "+d.ActiveCatalogName,
 		"catalogs",
 		d.Principal,
-		data.Signals(map[string]any{"q": "", "childq": ""}),
-		core.WorkspaceLayout(
-			"min-h-0",
-			core.WorkspaceAside(
+		core.ApplicationLayoutSlots{
+			CenterAttributes: []Node{
+				data.Signals(map[string]any{"q": "", "childq": ""}),
+			},
+			SecondaryAside: core.WorkspaceAside(
 				"catalog-workspace",
-				"catalog-aside workspace-aside-plain",
+				"catalog-aside workspace-aside-plain h-full",
 				[]workspaceAsideTab{
 					{
 						ID:      "explorer",
@@ -242,22 +243,27 @@ func catalogWorkspacePage(d catalogWorkspacePageData) Node {
 				},
 				"explorer",
 			),
-			Section(
-				Class("flex min-w-0 flex-col gap-5 py-1"),
-				Div(Class("flex flex-wrap items-start justify-between gap-3"),
-					Div(Class("min-w-0 flex-1"),
-						catalogBreadcrumb(d),
-						Div(Class("inline-flex flex-wrap items-center gap-3"),
-							H2(Class("m-0 text-2xl font-semibold"), Text(d.Panel.Title)),
-							core.StatusLabel(panelStatus, "accent"),
+			Main: core.ApplicationMainContentSection(
+				"Catalog: "+d.ActiveCatalogName,
+				"flex min-h-0 w-full flex-1 flex-col gap-5",
+				Section(
+					Class("flex min-w-0 flex-col gap-5 py-1"),
+					Div(Class("flex flex-wrap items-start justify-between gap-3"),
+						Div(Class("min-w-0 flex-1"),
+							catalogBreadcrumb(d),
+							Div(Class("inline-flex flex-wrap items-center gap-3"),
+								H2(Class("m-0 text-2xl font-semibold"), Text(d.Panel.Title)),
+								core.StatusLabel(panelStatus, "accent"),
+							),
 						),
+						Div(Class(catalogButtonRowClass()), Group(panelActions)),
 					),
-					Div(Class(catalogButtonRowClass()), Group(panelActions)),
+					Div(Class(catalogTabsClass()), Group(tabItems)),
+					detailContent,
 				),
-				Div(Class(catalogTabsClass()), Group(tabItems)),
-				detailContent,
 			),
-		),
+			Footer: catalogWorkspaceFooter(d),
+		},
 	)
 }
 
@@ -742,4 +748,32 @@ func historyEntityLabel(entityType string) string {
 		return "-"
 	}
 	return strings.ToUpper(entityType[:1]) + entityType[1:]
+}
+
+func catalogWorkspaceFooter(d catalogWorkspacePageData) Node {
+	pathParts := []string{d.ActiveCatalogName}
+	if strings.TrimSpace(d.SelectedSchemaName) != "" {
+		pathParts = append(pathParts, d.SelectedSchemaName)
+	}
+	if strings.TrimSpace(d.SelectedName) != "" {
+		pathParts = append(pathParts, d.SelectedName)
+	}
+
+	leftLabel := strings.ToUpper(d.Panel.Mode)
+	if leftLabel == "" {
+		leftLabel = "CATALOG"
+	}
+
+	rightLabel := "Tab " + strings.ToUpper(catalogTabLabel(d.ActiveTab))
+	if strings.TrimSpace(d.ActiveTab) == "" {
+		rightLabel = "Tab OVERVIEW"
+	}
+
+	return Group([]Node{
+		Div(Class("flex min-w-0 items-center gap-3"),
+			Span(Class("font-semibold tracking-[0.12em] text-[var(--fgColor-default)]"), Text(leftLabel)),
+			Span(Class("truncate"), Text(strings.Join(pathParts, " / "))),
+		),
+		Span(Class("shrink-0 font-medium"), Text(rightLabel)),
+	})
 }
