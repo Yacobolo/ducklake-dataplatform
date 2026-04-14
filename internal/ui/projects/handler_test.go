@@ -499,7 +499,7 @@ func TestProjectsRoutes_RenderListAndDetail(t *testing.T) {
 	router.ServeHTTP(environmentsRec, environmentsReq)
 	require.Equal(t, http.StatusOK, environmentsRec.Code)
 	assert.Contains(t, environmentsRec.Body.String(), `href="/ui/projects/`+fixture.ProjectID+`/environments/`+fixture.EnvironmentID+`"`)
-	assert.Contains(t, environmentsRec.Body.String(), "display-red-scale-0")
+	assert.Contains(t, environmentsRec.Body.String(), "display-teal-scale-0")
 	assert.Contains(t, environmentsRec.Body.String(), "New environment")
 }
 

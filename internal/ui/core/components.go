@@ -212,7 +212,7 @@ func ResourceKindIconWrapClass(kind string) string {
 	case "semantic-model":
 		return base + " bg-[var(--display-indigo-scale-0)] text-[var(--display-indigo-scale-6)]"
 	case "environment":
-		return base + " bg-[var(--display-red-scale-0)] text-[var(--display-red-scale-6)]"
+		return base + " bg-[var(--display-teal-scale-0)] text-[var(--display-teal-scale-6)]"
 	case "build":
 		return base + " bg-[var(--display-plum-scale-0)] text-[var(--display-plum-scale-6)]"
 	case "pipeline":
@@ -238,7 +238,9 @@ func ResourceKindAccentTextClass(kind string) string {
 		return "text-[var(--display-indigo-scale-6)]"
 	case "model":
 		return "text-[var(--display-green-scale-6)]"
-	case "environment", "compute-endpoint":
+	case "environment":
+		return "text-[var(--display-teal-scale-6)]"
+	case "compute-endpoint":
 		return "text-[var(--display-red-scale-6)]"
 	case "pipeline":
 		return "text-[var(--display-teal-scale-6)]"
