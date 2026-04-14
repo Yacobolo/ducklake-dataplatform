@@ -20,12 +20,14 @@ import (
 	"github.com/Yacobolo/quackstack/internal/service/orchestration"
 	"github.com/Yacobolo/quackstack/internal/service/pipeline"
 	productsvc "github.com/Yacobolo/quackstack/internal/service/product"
+	projectsvc "github.com/Yacobolo/quackstack/internal/service/project"
 	"github.com/Yacobolo/quackstack/internal/service/query"
 	"github.com/Yacobolo/quackstack/internal/service/resourceaccess"
 	"github.com/Yacobolo/quackstack/internal/service/savedresource"
 	"github.com/Yacobolo/quackstack/internal/service/security"
 	"github.com/Yacobolo/quackstack/internal/service/semantic"
 	"github.com/Yacobolo/quackstack/internal/service/storage"
+	workspacesvc "github.com/Yacobolo/quackstack/internal/service/workspace"
 
 	gomponents "maragu.dev/gomponents"
 	html "maragu.dev/gomponents/html"
@@ -47,6 +49,8 @@ type Dependencies struct {
 	Backfill            *orchestration.BackfillService
 	Notebook            *notebook.Service
 	NotebookFolders     *notebook.FolderService
+	Workspace           *workspacesvc.Service
+	Project             *projectsvc.Service
 	Explore             *exploresvc.Service
 	SessionManager      *notebook.SessionManager
 	GitService          *notebook.GitService

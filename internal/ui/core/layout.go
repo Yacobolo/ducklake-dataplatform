@@ -55,6 +55,7 @@ var navGroups = []navGroup{
 	{
 		Label: "Build",
 		Items: []navItem{
+			{Label: "Projects", Href: "/ui/projects", Key: "projects", Icon: "folder-git-2"},
 			{
 				Label: "Models",
 				Href:  "/ui/models",

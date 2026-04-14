@@ -3,6 +3,7 @@ package macros
 import (
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/go-chi/chi/v5"
 
@@ -16,7 +17,12 @@ func New(deps *core.Dependencies) *Handler { return &Handler{deps: deps} }
 
 func (h *Handler) MacrosList(w http.ResponseWriter, r *http.Request) {
 	pageReq := pageFromRequest(r, 30)
-	items, total, err := h.deps.Macro.List(r.Context(), pageReq)
+	projectName := strings.TrimSpace(r.URL.Query().Get("project"))
+	var projectFilter *string
+	if projectName != "" {
+		projectFilter = &projectName
+	}
+	items, total, err := h.deps.Macro.ListFiltered(r.Context(), projectFilter, pageReq)
 	if err != nil {
 		renderServiceError(w, err)
 		return
@@ -28,12 +34,13 @@ func (h *Handler) MacrosList(w http.ResponseWriter, r *http.Request) {
 		rows = append(rows, macrosListRowData{
 			Name:       m.Name,
 			URL:        "/ui/macros/" + m.Name,
+			Project:    m.ProjectName,
 			Type:       m.MacroType,
 			Visibility: m.Visibility,
 			Status:     m.Status,
 		})
 	}
-	core.RenderHTML(w, http.StatusOK, macrosListPage(core.PrincipalFromContext(r.Context()), rows, pageReq, total))
+	core.RenderHTML(w, http.StatusOK, macrosListPage(core.PrincipalFromContext(r.Context()), rows, pageReq, total, projectName))
 }
 
 func (h *Handler) MacrosDiff(w http.ResponseWriter, r *http.Request) {
@@ -148,6 +155,7 @@ func (h *Handler) MacrosDetail(w http.ResponseWriter, r *http.Request) {
 	core.RenderHTML(w, http.StatusOK, macroDetailPage(macroDetailPageData{
 		Principal:     core.PrincipalFromContext(r.Context()),
 		Name:          m.Name,
+		Project:       m.ProjectName,
 		Type:          m.MacroType,
 		Visibility:    m.Visibility,
 		Status:        m.Status,
@@ -163,7 +171,7 @@ func (h *Handler) MacrosDetail(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) MacrosNew(w http.ResponseWriter, r *http.Request) {
-	core.RenderHTML(w, http.StatusOK, macrosNewPage(core.PrincipalFromContext(r.Context()), h.deps.CSRFFieldProvider(r)))
+	core.RenderHTML(w, http.StatusOK, macrosNewPage(core.PrincipalFromContext(r.Context()), strings.TrimSpace(r.URL.Query().Get("project")), h.deps.CSRFFieldProvider(r)))
 }
 
 func (h *Handler) MacrosCreate(w http.ResponseWriter, r *http.Request) {
@@ -173,6 +181,7 @@ func (h *Handler) MacrosCreate(w http.ResponseWriter, r *http.Request) {
 	_, err := h.deps.Macro.Create(r.Context(), principalName(r), domain.CreateMacroRequest{
 		Name:        formString(r.Form, "name"),
 		MacroType:   formString(r.Form, "macro_type"),
+		ProjectName: formString(r.Form, "project_name"),
 		Visibility:  formString(r.Form, "visibility"),
 		Description: formString(r.Form, "description"),
 		Parameters:  formCSV(r.Form, "parameters"),
@@ -207,6 +216,7 @@ func (h *Handler) MacrosUpdate(w http.ResponseWriter, r *http.Request) {
 	_, err := h.deps.Macro.Update(r.Context(), principalName(r), name, domain.UpdateMacroRequest{
 		Body:        &body,
 		Description: &description,
+		ProjectName: ptrString(formString(r.Form, "project_name")),
 		Visibility:  &visibility,
 		Status:      &status,
 		Parameters:  formCSV(r.Form, "parameters"),

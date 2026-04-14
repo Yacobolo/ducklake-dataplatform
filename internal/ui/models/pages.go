@@ -1,7 +1,9 @@
 package models
 
 import (
+	"net/url"
 	"strconv"
+	"strings"
 
 	"github.com/Yacobolo/quackstack/internal/domain"
 	"github.com/Yacobolo/quackstack/internal/ui/core"
@@ -137,7 +139,7 @@ type modelsDetailPageData struct {
 	CSRFFieldProvider  func() Node
 }
 
-func modelsListPage(principal domain.ContextPrincipal, rows []modelsListRowData, page domain.PageRequest, total int64) Node {
+func modelsListPage(principal domain.ContextPrincipal, rows []modelsListRowData, page domain.PageRequest, total int64, projectName *string) Node {
 	table := Node(P(Class("text-xs text-[var(--fgColor-muted)]"), Text("No models available.")))
 	if len(rows) > 0 {
 		tableRows := make([]Node, 0, len(rows))
@@ -160,12 +162,22 @@ func modelsListPage(principal domain.ContextPrincipal, rows []modelsListRowData,
 			),
 		)
 	}
+	title := "Models"
+	description := "Manage dbt-style models and tests."
+	basePath := "/ui/models"
+	newHref := "/ui/models/new"
+	if projectName != nil && strings.TrimSpace(*projectName) != "" {
+		title = "Models: " + *projectName
+		description = "Project-scoped models for " + *projectName + "."
+		basePath = "/ui/models?project=" + url.QueryEscape(*projectName)
+		newHref = "/ui/models/new?project=" + url.QueryEscape(*projectName)
+	}
 	return core.AppPage("Models", "models", principal,
 		core.ListPageLayout(
-			core.ListPageHeader("Models", "Manage dbt-style models and tests.", core.SecondaryLink("/ui/macros", "", Text("Open macros")), core.PrimaryLink("/ui/models/new", "", Text("New model"))),
+			core.ListPageHeader(title, description, core.SecondaryLink("/ui/macros", "", Text("Open macros")), core.PrimaryLink(newHref, "", Text("New model"))),
 			core.ListPageBody(
 				table,
-				core.ListPagination("/ui/models", page, total),
+				core.ListPagination(basePath, page, total),
 			),
 		),
 	)
@@ -274,10 +286,10 @@ func modelsDetailPage(d modelsDetailPageData) Node {
 	)
 }
 
-func modelsNewPage(principal domain.ContextPrincipal, csrfFieldProvider func() Node) Node {
+func modelsNewPage(principal domain.ContextPrincipal, initialProject string, csrfFieldProvider func() Node) Node {
 	return modelFormPage(principal, "New Model", "/ui/models", csrfFieldProvider,
 		Label(Text("Project")),
-		core.InputControl("", Name("project_name"), Required()),
+		core.InputControl("", Name("project_name"), Value(initialProject), Required()),
 		Label(Text("Name")),
 		core.InputControl("", Name("name"), Required()),
 		Label(Text("Materialization")),

@@ -11,9 +11,11 @@ import (
 	"github.com/Yacobolo/quackstack/internal/service/notebook"
 	"github.com/Yacobolo/quackstack/internal/service/orchestration"
 	"github.com/Yacobolo/quackstack/internal/service/pipeline"
+	projectsvc "github.com/Yacobolo/quackstack/internal/service/project"
 	"github.com/Yacobolo/quackstack/internal/service/query"
 	"github.com/Yacobolo/quackstack/internal/service/resourceaccess"
 	"github.com/Yacobolo/quackstack/internal/service/savedresource"
+	workspacesvc "github.com/Yacobolo/quackstack/internal/service/workspace"
 	uiauth "github.com/Yacobolo/quackstack/internal/ui/auth"
 	"github.com/Yacobolo/quackstack/internal/ui/catalogs"
 	"github.com/Yacobolo/quackstack/internal/ui/components"
@@ -28,10 +30,12 @@ import (
 	"github.com/Yacobolo/quackstack/internal/ui/overview"
 	"github.com/Yacobolo/quackstack/internal/ui/pipelines"
 	"github.com/Yacobolo/quackstack/internal/ui/products"
+	uiprojects "github.com/Yacobolo/quackstack/internal/ui/projects"
 	"github.com/Yacobolo/quackstack/internal/ui/runtimeassets"
 	"github.com/Yacobolo/quackstack/internal/ui/security"
 	"github.com/Yacobolo/quackstack/internal/ui/semantic"
 	"github.com/Yacobolo/quackstack/internal/ui/storage"
+	"github.com/Yacobolo/quackstack/internal/ui/core"
 )
 
 type PrincipalResolver = core.PrincipalResolver
@@ -52,6 +56,7 @@ type Handler struct {
 	Models        *models.Handler
 	Notebooks     *notebooks.Handler
 	Pipelines     *pipelines.Handler
+	Projects      *uiprojects.Handler
 	Products      *products.Handler
 	RuntimeAssets *runtimeassets.Handler
 	Security      *security.Handler
@@ -69,6 +74,8 @@ func NewHandler(
 	backfillSvc *orchestration.BackfillService,
 	notebookSvc *notebook.Service,
 	notebookFolderSvc *notebook.FolderService,
+	workspaceSvc *workspacesvc.Service,
+	projectSvc *projectsvc.Service,
 	exploreSvc *exploresvc.Service,
 	sessionManager *notebook.SessionManager,
 	macroSvc *macro.Service,
@@ -91,6 +98,8 @@ func NewHandler(
 		Backfill:            backfillSvc,
 		Notebook:            notebookSvc,
 		NotebookFolders:     notebookFolderSvc,
+		Workspace:           workspaceSvc,
+		Project:             projectSvc,
 		Explore:             exploreSvc,
 		SessionManager:      sessionManager,
 		Macro:               macroSvc,
@@ -119,6 +128,7 @@ func NewHandler(
 	handler.Models = models.New(handler.Dependencies)
 	handler.Notebooks = notebookHandler
 	handler.Pipelines = pipelines.New(handler.Dependencies)
+	handler.Projects = uiprojects.New(handler.Dependencies)
 	handler.Products = products.New(handler.Dependencies)
 	handler.RuntimeAssets = runtimeassets.New(handler.Dependencies)
 	handler.Security = security.New(handler.Dependencies)

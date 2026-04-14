@@ -440,6 +440,8 @@ func run() error {
 		svc.Backfill,
 		svc.Notebook,
 		svc.NotebookFolders,
+		svc.Workspace,
+		svc.Project,
 		svc.Explore,
 		svc.SessionManager,
 		svc.Macro,
