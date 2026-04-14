@@ -16,18 +16,18 @@ Use this guide when your team wants repeatable review, promotion, and drift mana
 ## Flow
 
 1. model the desired state in declarative files
-2. run `duck validate --config-dir <path>`
-3. run `duck plan --config-dir <path>`
+2. run `quack validate --config-dir <path>`
+3. run `quack plan --config-dir <path>`
 4. review drift and expected changes
-5. run `duck apply --config-dir <path>`
+5. run `quack apply --config-dir <path>`
 6. rerun `plan` until the environment is clean
 
 ## Strict Guarantees
 
-- `duck plan` returns `0` only when the environment already matches the config
-- `duck plan` returns `2` when drift is actionable and can be applied
-- `duck plan` returns `1` when blocking declarative errors exist
-- `duck apply` fails before making changes when blocking plan errors exist
+- `quack plan` returns `0` only when the environment already matches the config
+- `quack plan` returns `2` when drift is actionable and can be applied
+- `quack plan` returns `1` when blocking declarative errors exist
+- `quack apply` fails before making changes when blocking plan errors exist
 - declarative reads fail closed by default; missing supported endpoints do not silently disappear from state
 - the acceptance bar is `validate -> plan -> apply -> plan clean`
 

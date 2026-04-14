@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"strings"
 
-	"duck-demo/internal/domain"
-	servicepolicy "duck-demo/internal/service/policy"
+	"github.com/Yacobolo/quackstack/internal/domain"
+	servicepolicy "github.com/Yacobolo/quackstack/internal/service/policy"
 )
 
 // CatalogRepoFactory creates CatalogRepository instances scoped to a catalog.

@@ -6,8 +6,8 @@ type DuckWidgetElement = HTMLElement & {
 
 type DashboardPayloadBus = Record<string, DashboardWidgetStreamEvent>;
 
-const widgetSelector = "duck-chart[data-widget-id], duck-table[data-widget-id], duck-metric[data-widget-id]";
-const widgetInstanceSelector = (widgetID: string) => `duck-chart[data-widget-id="${widgetID}"], duck-table[data-widget-id="${widgetID}"], duck-metric[data-widget-id="${widgetID}"]`;
+const widgetSelector = "quack-chart[data-widget-id], quack-table[data-widget-id], quack-metric[data-widget-id]";
+const widgetInstanceSelector = (widgetID: string) => `quack-chart[data-widget-id="${widgetID}"], quack-table[data-widget-id="${widgetID}"], quack-metric[data-widget-id="${widgetID}"]`;
 
 export class DashboardSurfaceRuntime {
   private activeVersion = "";
@@ -157,7 +157,7 @@ export class DashboardSurfaceRuntime {
         this.pendingWidgetIDs.delete(widgetID);
         continue;
       }
-      if (widget.tagName.toLowerCase() === "duck-table") {
+      if (widget.tagName.toLowerCase() === "quack-table") {
         (widget as DuckWidgetElement).setPayload(null);
       }
     }

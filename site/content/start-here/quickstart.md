@@ -5,11 +5,11 @@ description: Reach your first governed query and understand the secure request p
 
 # Quickstart
 
-Use this path when you want to confirm how Duck feels to a data consumer: authenticate, run a query, and see governance enforced on the way out.
+Use this path when you want to confirm how QuackStack feels to a data consumer: authenticate, run a query, and see governance enforced on the way out.
 
 ## Prerequisites
 
-- a Duck deployment URL
+- a QuackStack deployment URL
 - a bearer token, browser-backed sign-in, or approved API key
 - network access to the deployment
 - permission to query the built-in `sample_data` catalog
@@ -38,7 +38,7 @@ Use a bearer token unless your team has explicitly approved API keys for automat
 ## 3. Run your first governed query
 
 ```bash
-curl -X POST "https://your-duck-host/v1/query" \
+curl -X POST "https://your-quack-host/v1/query" \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer <token>" \
   -d '{"sql":"SELECT pickup_date, trip_count, gross_revenue FROM sample_data.nyc_taxi.daily_metrics ORDER BY pickup_date LIMIT 5"}'
@@ -62,7 +62,7 @@ The exact JSON shape may include metadata fields, but you should see rows coming
 ## Request flow at a glance
 
 <figure class="my-8 overflow-x-auto rounded-[1.5rem] border border-[var(--borderColor-default)] bg-[var(--bgColor-inset)] p-5">
-  <img class="mx-auto block h-auto w-max max-w-none rounded-none border-0 bg-transparent" src="/_site/diagrams/secure-query-path.svg" alt="Flow diagram showing a principal moving through identity, the Duck API, policy enforcement, DuckDB execution, and a governed result." loading="lazy" decoding="async">
+  <img class="mx-auto block h-auto w-max max-w-none rounded-none border-0 bg-transparent" src="/_site/diagrams/secure-query-path.svg" alt="Flow diagram showing a principal moving through identity, the QuackStack API, policy enforcement, DuckDB execution, and a governed result." loading="lazy" decoding="async">
 </figure>
 
 ## 5. What to do next
@@ -201,7 +201,7 @@ Authentication worked, but your current principal does not have the required gra
       </svg>
     </span>
     <span class="doc-next-step-copy">
-      <h3 class="doc-next-step-title">Ways to Access Duck</h3>
+      <h3 class="doc-next-step-title">Ways to Access QuackStack</h3>
       <p class="doc-next-step-subtitle">Choose the right query surface.</p>
     </span>
     <svg class="doc-next-step-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7"></path><path d="M7 7h10v10"></path></svg>

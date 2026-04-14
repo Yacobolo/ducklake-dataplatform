@@ -11,11 +11,11 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	internaldb "duck-demo/internal/db"
-	dbstore "duck-demo/internal/db/dbstore"
-	"duck-demo/internal/db/repository"
-	"duck-demo/internal/domain"
-	"duck-demo/internal/service/security"
+	internaldb "github.com/Yacobolo/quackstack/internal/db"
+	dbstore "github.com/Yacobolo/quackstack/internal/db/dbstore"
+	"github.com/Yacobolo/quackstack/internal/db/repository"
+	"github.com/Yacobolo/quackstack/internal/domain"
+	"github.com/Yacobolo/quackstack/internal/service/security"
 )
 
 // setupTestService creates an AuthorizationService with a temporary SQLite DB,

@@ -5,7 +5,7 @@ import (
 	"context"
 	"fmt"
 
-	"duck-demo/internal/domain"
+	"github.com/Yacobolo/quackstack/internal/domain"
 )
 
 type AssetRunPlan struct {

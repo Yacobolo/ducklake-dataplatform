@@ -10,8 +10,8 @@ import (
 	"sync"
 	"time"
 
-	"duck-demo/internal/domain"
-	"duck-demo/internal/service/orchestration"
+	"github.com/Yacobolo/quackstack/internal/domain"
+	"github.com/Yacobolo/quackstack/internal/service/orchestration"
 	"github.com/robfig/cron/v3"
 )
 

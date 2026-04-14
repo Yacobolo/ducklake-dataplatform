@@ -5,9 +5,9 @@ import (
 	"database/sql"
 	"encoding/json"
 
-	dbstore "duck-demo/internal/db/dbstore"
-	"duck-demo/internal/db/mapper"
-	"duck-demo/internal/domain"
+	dbstore "github.com/Yacobolo/quackstack/internal/db/dbstore"
+	"github.com/Yacobolo/quackstack/internal/db/mapper"
+	"github.com/Yacobolo/quackstack/internal/domain"
 )
 
 // ViewRepo implements domain.ViewRepository using SQLite.

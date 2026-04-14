@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"strings"
 
-	"duck-demo/internal/domain"
-	"duck-demo/internal/service/query"
+	"github.com/Yacobolo/quackstack/internal/domain"
+	"github.com/Yacobolo/quackstack/internal/service/query"
 )
 
 // queryService defines the query operations used by the API handler.

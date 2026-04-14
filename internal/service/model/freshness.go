@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"duck-demo/internal/domain"
+	"github.com/Yacobolo/quackstack/internal/domain"
 )
 
 // CheckFreshness evaluates whether a model is fresh based on its freshness policy.

@@ -7,8 +7,8 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"duck-demo/pkg/cli/apiruntime"
-	clipkg "duck-demo/pkg/cli/discovery"
+	"github.com/Yacobolo/quackstack/pkg/cli/apiruntime"
+	clipkg "github.com/Yacobolo/quackstack/pkg/cli/discovery"
 )
 
 func newDocsCmd() *cobra.Command {

@@ -8,7 +8,7 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// UserConfig represents ~/.duck/config.yaml.
+// UserConfig represents ~/.quack/config.yaml.
 type UserConfig struct {
 	CurrentProfile string             `yaml:"current-profile"`
 	Profiles       map[string]Profile `yaml:"profiles"`
@@ -16,11 +16,11 @@ type UserConfig struct {
 
 // Profile represents a single named configuration profile.
 type Profile struct {
-	Host                    string `yaml:"host,omitempty"`
-	APIKey                  string `yaml:"api-key,omitempty"`
-	Token                   string `yaml:"token,omitempty"`
-	Output                  string `yaml:"output,omitempty"`
-	DuckAccessExtensionPath string `yaml:"duck-access-extension-path,omitempty"`
+	Host                     string `yaml:"host,omitempty"`
+	APIKey                   string `yaml:"api-key,omitempty"`
+	Token                    string `yaml:"token,omitempty"`
+	Output                   string `yaml:"output,omitempty"`
+	QuackAccessExtensionPath string `yaml:"quack-access-extension-path,omitempty"`
 }
 
 // ActiveProfile returns the profile to use based on the override or current-profile.
@@ -38,21 +38,21 @@ func (c *UserConfig) ActiveProfile(override string) (Profile, error) {
 	return Profile{}, nil
 }
 
-// ConfigDir returns the path to ~/.duck/.
+// ConfigDir returns the path to ~/.quack/.
 func ConfigDir() string {
 	home, err := os.UserHomeDir()
 	if err != nil {
 		return ""
 	}
-	return filepath.Join(home, ".duck")
+	return filepath.Join(home, ".quack")
 }
 
-// ConfigPath returns the path to ~/.duck/config.yaml.
+// ConfigPath returns the path to ~/.quack/config.yaml.
 func ConfigPath() string {
 	return filepath.Join(ConfigDir(), "config.yaml")
 }
 
-// LoadUserConfig reads ~/.duck/config.yaml.
+// LoadUserConfig reads ~/.quack/config.yaml.
 func LoadUserConfig() (*UserConfig, error) {
 	path := ConfigPath()
 	data, err := os.ReadFile(path) //nolint:gosec // path is derived from home dir, not user input
@@ -69,7 +69,7 @@ func LoadUserConfig() (*UserConfig, error) {
 	return &cfg, nil
 }
 
-// SaveUserConfig writes ~/.duck/config.yaml.
+// SaveUserConfig writes ~/.quack/config.yaml.
 func SaveUserConfig(cfg *UserConfig) error {
 	dir := ConfigDir()
 	if err := os.MkdirAll(dir, 0o700); err != nil {

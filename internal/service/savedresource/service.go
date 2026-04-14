@@ -5,8 +5,8 @@ import (
 	"context"
 	"strings"
 
-	"duck-demo/internal/domain"
-	"duck-demo/internal/service/resourceref"
+	"github.com/Yacobolo/quackstack/internal/domain"
+	"github.com/Yacobolo/quackstack/internal/service/resourceref"
 )
 
 // DefaultSavedLimit is the default number of saved resources returned to callers.

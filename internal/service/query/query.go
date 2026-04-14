@@ -9,9 +9,9 @@ import (
 	"sync"
 	"time"
 
-	"duck-demo/internal/domain"
-	"duck-demo/internal/service/auditutil"
-	"duck-demo/internal/sqlrewrite"
+	"github.com/Yacobolo/quackstack/internal/domain"
+	"github.com/Yacobolo/quackstack/internal/service/auditutil"
+	"github.com/Yacobolo/quackstack/internal/sqlrewrite"
 )
 
 // QueryResult holds the structured output of a SQL query.

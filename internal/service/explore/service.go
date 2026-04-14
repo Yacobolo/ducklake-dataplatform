@@ -8,7 +8,7 @@ import (
 	"sort"
 	"strings"
 
-	"duck-demo/internal/domain"
+	"github.com/Yacobolo/quackstack/internal/domain"
 )
 
 // Service composes folder-backed and project-backed authored assets into

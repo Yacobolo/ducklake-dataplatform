@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"strings"
 
-	"duck-demo/internal/domain"
+	"github.com/Yacobolo/quackstack/internal/domain"
 )
 
 // generateTestSQL builds the SQL query for a model test.

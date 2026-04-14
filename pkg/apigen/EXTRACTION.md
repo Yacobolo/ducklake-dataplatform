@@ -2,10 +2,10 @@
 
 This repo remains the source of truth for APIGen until the following stay green together:
 
-- `duck-demo/pkg/apigen/...` has no imports of `duck-demo/internal/...` or sibling repo-private `duck-demo/pkg/...` packages outside `duck-demo/pkg/apigen/...`
+- `github.com/Yacobolo/quackstack/pkg/apigen/...` has no imports of `github.com/Yacobolo/quackstack/internal/...` or sibling repo-private `github.com/Yacobolo/quackstack/pkg/...` packages outside `github.com/Yacobolo/quackstack/pkg/apigen/...`
 - the bundled test fixture under `pkg/apigen/testdata/example_consumer` compiles its source API spec to OpenAPI + JSON IR
 - the fixture generates Go server and CLI code using APIGen
-- the fixture builds against `duck-demo/pkg/apigen/runtime/chi` and `duck-demo/pkg/apigen/runtime/cobra`
+- the fixture builds against `github.com/Yacobolo/quackstack/pkg/apigen/runtime/chi` and `github.com/Yacobolo/quackstack/pkg/apigen/runtime/cobra`
 - JSON IR `v1` remains documented and fixture-tested
 
 Planned standalone targets after that proof step:

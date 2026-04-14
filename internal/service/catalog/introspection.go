@@ -3,7 +3,7 @@ package catalog
 import (
 	"context"
 
-	"duck-demo/internal/domain"
+	"github.com/Yacobolo/quackstack/internal/domain"
 )
 
 // IntrospectionService provides read-only access to DuckLake metadata.

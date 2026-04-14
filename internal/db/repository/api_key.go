@@ -6,9 +6,9 @@ import (
 	"log/slog"
 	"time"
 
-	dbstore "duck-demo/internal/db/dbstore"
-	"duck-demo/internal/db/mapper"
-	"duck-demo/internal/domain"
+	dbstore "github.com/Yacobolo/quackstack/internal/db/dbstore"
+	"github.com/Yacobolo/quackstack/internal/db/mapper"
+	"github.com/Yacobolo/quackstack/internal/domain"
 )
 
 // APIKeyRepo implements both domain.APIKeyRepository and middleware.APIKeyLookup using sqlc queries.

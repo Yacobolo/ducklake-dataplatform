@@ -12,10 +12,10 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"duck-demo/internal/db/repository"
-	"duck-demo/internal/declarative"
-	"duck-demo/internal/devseed"
-	"duck-demo/internal/domain"
+	"github.com/Yacobolo/quackstack/internal/db/repository"
+	"github.com/Yacobolo/quackstack/internal/declarative"
+	"github.com/Yacobolo/quackstack/internal/devseed"
+	"github.com/Yacobolo/quackstack/internal/domain"
 )
 
 func TestDeclarative_RepoSeedConfigRoundTrip(t *testing.T) {
@@ -32,7 +32,7 @@ func TestDeclarative_RepoSeedConfigRoundTrip(t *testing.T) {
 
 	_, thisFile, _, _ := runtime.Caller(0)
 	repoRoot := filepath.Join(filepath.Dir(thisFile), "..", "..")
-	inputDir := filepath.Join(repoRoot, "duck-config")
+	inputDir := filepath.Join(repoRoot, "quackstack-config")
 	tmpDir := t.TempDir()
 	renderedDir := filepath.Join(tmpDir, "rendered")
 	sampleCatalogDir := filepath.Join(tmpDir, "sample-catalog")
@@ -58,7 +58,7 @@ func TestDeclarative_RepoSeedConfigRoundTrip(t *testing.T) {
 
 	require.NoError(t, devseed.RenderDirectory(inputDir, renderedDir, map[string]string{
 		devseed.PlaceholderBootstrapUser:   "admin_user",
-		devseed.PlaceholderSampleMetastore: filepath.ToSlash(filepath.Join(sampleCatalogDir, "ducklake_sample_data.sqlite")),
+		devseed.PlaceholderSampleMetastore: filepath.ToSlash(filepath.Join(sampleCatalogDir, "quackstack_sample_data.sqlite")),
 		devseed.PlaceholderSampleDataDir:   filepath.ToSlash(filepath.Join(sampleCatalogDir, "data")),
 		devseed.PlaceholderTaxiTripsPath:   filepath.ToSlash(tripsPath),
 		devseed.PlaceholderTaxiZonesPath:   filepath.ToSlash(zonesPath),

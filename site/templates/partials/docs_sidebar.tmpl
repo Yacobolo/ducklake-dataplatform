@@ -29,7 +29,7 @@
       }
       var kind = sidebar.getAttribute("data-sidebar-kind") || "docs";
       var section = sidebar.getAttribute("data-sidebar-section") || kind;
-      var storageKey = "duck-site-sidebar-scroll:" + kind + ":" + section;
+      var storageKey = "quack-site-sidebar-scroll:" + kind + ":" + section;
       try {
         var saved = sessionStorage.getItem(storageKey);
         if (saved === null) {

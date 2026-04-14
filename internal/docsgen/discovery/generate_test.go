@@ -24,12 +24,12 @@ operation_ids: [login]
 
 # Access the Platform
 
-Use Duck securely.
+Use QuackStack securely.
 
 ## Workflow
 
 1. Authenticate.
-` + "```bash\n" + `duck auth login
+` + "```bash\n" + `quack auth login
 ` + "```" + `
 `
 	require.NoError(t, os.WriteFile(filepath.Join(docsDir, "govern", "authentication-and-identities.md"), []byte(docBody), 0o600))
@@ -38,7 +38,7 @@ Use Duck securely.
 	specPath := filepath.Join(root, "openapi.yaml")
 	spec := `openapi: 3.1.0
 info:
-  title: Duck
+  title: QuackStack
   version: test
 paths:
   /auth/login:

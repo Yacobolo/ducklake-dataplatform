@@ -3,7 +3,7 @@ package security
 import (
 	"context"
 
-	"duck-demo/internal/domain"
+	"github.com/Yacobolo/quackstack/internal/domain"
 )
 
 // adminCtx returns a context with an admin principal for testing.

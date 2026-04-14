@@ -13,8 +13,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"duck-demo/internal/domain"
-	authsvc "duck-demo/internal/service/auth"
+	"github.com/Yacobolo/quackstack/internal/domain"
+	authsvc "github.com/Yacobolo/quackstack/internal/service/auth"
 )
 
 func TestAuthHTTPHandler_BootstrapComplete(t *testing.T) {

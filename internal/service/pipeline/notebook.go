@@ -5,8 +5,8 @@ import (
 	"regexp"
 	"strings"
 
-	"duck-demo/internal/domain"
-	svcnotebook "duck-demo/internal/service/notebook"
+	"github.com/Yacobolo/quackstack/internal/domain"
+	svcnotebook "github.com/Yacobolo/quackstack/internal/service/notebook"
 )
 
 var blockCommentPattern = regexp.MustCompile(`(?s)/\*.*?\*/`)

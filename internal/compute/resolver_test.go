@@ -11,8 +11,8 @@ import (
 
 	_ "github.com/duckdb/duckdb-go/v2"
 
-	computeproto "duck-demo/internal/compute/proto"
-	"duck-demo/internal/domain"
+	computeproto "github.com/Yacobolo/quackstack/internal/compute/proto"
+	"github.com/Yacobolo/quackstack/internal/domain"
 )
 
 type pingOnlyGRPCServer struct {

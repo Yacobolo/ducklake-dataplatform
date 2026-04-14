@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"strings"
 
-	"duck-demo/internal/domain"
+	"github.com/Yacobolo/quackstack/internal/domain"
 )
 
 // ListCatalogHistory returns recent snapshot-aware history entries for schemas, tables, and columns.

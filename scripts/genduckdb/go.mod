@@ -1,4 +1,4 @@
-module duck-demo/scripts/genduckdb
+module github.com/Yacobolo/quackstack/scripts/genduckdb
 
 go 1.25.7
 

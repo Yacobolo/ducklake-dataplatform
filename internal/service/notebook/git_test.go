@@ -10,8 +10,8 @@ import (
 	"testing"
 	"time"
 
-	"duck-demo/internal/domain"
-	"duck-demo/internal/testutil"
+	"github.com/Yacobolo/quackstack/internal/domain"
+	"github.com/Yacobolo/quackstack/internal/testutil"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -772,7 +772,7 @@ func (p *capturingNotebookPromoter) PromoteNotebook(ctx context.Context, _ strin
 func initGitRepoWithFiles(t *testing.T, files map[string]string) string {
 	t.Helper()
 	repoDir := t.TempDir()
-	writeGitFile(t, repoDir, "cue.mod/module.cue", `module: "duck.local/git-sync"
+	writeGitFile(t, repoDir, "cue.mod/module.cue", `module: "quackstack.local/git-sync"
 language: {
 	version: "v0.14.0"
 }

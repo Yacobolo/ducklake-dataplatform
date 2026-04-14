@@ -3,7 +3,7 @@
 version: '3'
 
 vars:
-  DB_PATH: ./ducklake_meta.sqlite
+  DB_PATH: ./quackstack_meta.sqlite
   MIGRATIONS_DIR: internal/db/migrations
 
 tasks:
@@ -18,7 +18,7 @@ tasks:
         flight_port=$((32010 + offset))
         pg_port=$((5433 + offset))
         meta_db_dir=".codex/dev"
-        meta_db_path="${meta_db_dir}/ducklake_meta_clean_${offset}.sqlite"
+        meta_db_path="${meta_db_dir}/quackstack_meta_clean_${offset}.sqlite"
         server_bin="${meta_db_dir}/server_${offset}"
         jwt_secret="$(printf 'dev-jwt-%s' "$checksum")"
 
@@ -53,7 +53,7 @@ tasks:
         "${server_bin}"
 
   dev:seeded:
-    desc: Start a clean local dev server and seed it from the checked-in declarative duck-config
+    desc: Start a clean local dev server and seed it from the checked-in declarative quackstack-config
     cmds:
       - |
         set -euo pipefail
@@ -65,14 +65,14 @@ tasks:
         flight_port=$((32010 + offset))
         pg_port=$((5433 + offset))
         dev_dir=".codex/dev"
-        meta_db_path="${dev_dir}/ducklake_meta_seeded_${offset}.sqlite"
+        meta_db_path="${dev_dir}/quackstack_meta_seeded_${offset}.sqlite"
         sample_catalog_dir="${dev_dir}/sample_catalog_${offset}"
-        sample_metastore_path="${sample_catalog_dir}/ducklake_sample_data.sqlite"
+        sample_metastore_path="${sample_catalog_dir}/quackstack_sample_data.sqlite"
         sample_data_dir="${sample_catalog_dir}/data"
         rendered_config_dir="${dev_dir}/rendered_seed_config_${offset}"
         dataset_cache_dir="${dev_dir}/datasets"
         server_bin="${dev_dir}/server_${offset}"
-        duck_bin="${dev_dir}/duck_${offset}"
+        quack_bin="${dev_dir}/quack_${offset}"
         jwt_secret="$(printf 'dev-jwt-%s' "$checksum")"
         host="http://localhost:${http_port}"
         profile="seeded-${offset}"
@@ -90,7 +90,7 @@ tasks:
 
         echo "Building dev server and CLI for ${worktree_path}"
         go build -o "${server_bin}" ./cmd/server
-        go build -o "${duck_bin}" ./cmd/cli
+        go build -o "${quack_bin}" ./cmd/cli
 
         echo "Starting seeded dev server for ${worktree_path}"
         echo "  HTTP:       ${host}"
@@ -131,17 +131,17 @@ tasks:
           done
           curl --silent --show-error "${host}/v1/healthz" >/dev/null
 
-          "${duck_bin}" config set-profile --name "${profile}" --host "${host}" >/dev/null
+          "${quack_bin}" config set-profile --name "${profile}" --host "${host}" >/dev/null
 
           echo "Bootstrapping local admin profile ${profile}"
-          "${duck_bin}" --host "${host}" --profile "${profile}" auth bootstrap complete \
+          "${quack_bin}" --host "${host}" --profile "${profile}" auth bootstrap complete \
             --username "${bootstrap_username}" \
             --password "${bootstrap_password}" \
             --principal "${bootstrap_username}" >/dev/null
 
           echo "Preparing rendered declarative config"
           go run ./cmd/devseed prepare \
-            --input-dir ./duck-config \
+            --input-dir ./quackstack-config \
             --output-dir "${rendered_config_dir}" \
             --cache-dir "${dataset_cache_dir}" \
             --sample-metastore-path "${sample_metastore_path}" \
@@ -149,7 +149,7 @@ tasks:
             --bootstrap-principal "${bootstrap_username}"
 
           echo "Applying declarative seed config"
-          "${duck_bin}" --host "${host}" --profile "${profile}" apply \
+          "${quack_bin}" --host "${host}" --profile "${profile}" apply \
             --config-dir "${rendered_config_dir}" \
             --auto-approve
         }; then
@@ -356,7 +356,7 @@ tasks:
     desc: Build the CLI binary
     deps: [docs:generate]
     cmds:
-      - go build -ldflags "-X main.version={{.GIT_TAG}}" -o bin/duck ./cmd/cli
+      - go build -ldflags "-X main.version={{.GIT_TAG}}" -o bin/quack ./cmd/cli
 
   build-agent:
     desc: Build the compute agent binary

@@ -3,7 +3,7 @@ package api
 import (
 	"context"
 
-	"duck-demo/internal/domain"
+	"github.com/Yacobolo/quackstack/internal/domain"
 )
 
 // auditService defines the audit operations used by the API handler.

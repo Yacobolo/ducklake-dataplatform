@@ -12,7 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"duck-demo/internal/declarative"
+	"github.com/Yacobolo/quackstack/internal/declarative"
 )
 
 func TestEnsureDatasets_CachesDownloads(t *testing.T) {
@@ -75,7 +75,7 @@ func TestPrepare_RendersRepoDuckConfig(t *testing.T) {
 
 	_, thisFile, _, _ := runtime.Caller(0)
 	repoRoot := filepath.Join(filepath.Dir(thisFile), "..", "..")
-	inputDir := filepath.Join(repoRoot, "duck-config")
+	inputDir := filepath.Join(repoRoot, "quackstack-config")
 	outputDir := filepath.Join(t.TempDir(), "rendered")
 	cacheDir := filepath.Join(t.TempDir(), "cache")
 	sampleCatalogDir := filepath.Join(t.TempDir(), "catalog")
@@ -84,7 +84,7 @@ func TestPrepare_RendersRepoDuckConfig(t *testing.T) {
 		InputDir:            inputDir,
 		OutputDir:           outputDir,
 		CacheDir:            cacheDir,
-		SampleMetastorePath: filepath.Join(sampleCatalogDir, "ducklake_sample_data.sqlite"),
+		SampleMetastorePath: filepath.Join(sampleCatalogDir, "quackstack_sample_data.sqlite"),
 		SampleDataDir:       filepath.Join(sampleCatalogDir, "data"),
 		BootstrapPrincipal:  "dev_admin",
 		TaxiTripsURL:        server.URL + "/yellow_tripdata_2024-01.parquet",

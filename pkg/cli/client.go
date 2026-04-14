@@ -1,4 +1,4 @@
-// Package cli implements the duck CLI binary with code-generated commands
+// Package cli implements the quack CLI binary with code-generated commands
 // from the OpenAPI spec and hand-written overrides.
 package cli
 

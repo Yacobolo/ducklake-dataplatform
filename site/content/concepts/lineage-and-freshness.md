@@ -1,6 +1,6 @@
 ---
 title: Lineage And Freshness
-description: Understand how Duck explains provenance, impact, blockers, and data staleness.
+description: Understand how QuackStack explains provenance, impact, blockers, and data staleness.
 ---
 
 # Lineage And Freshness
@@ -19,7 +19,7 @@ Freshness is the timeliness state of an output relative to its expected lag. It 
 
 They are related because a stale downstream output is often caused by something you can only understand by walking the lineage graph upstream.
 
-## What Duck Shows
+## What QuackStack Shows
 
 - table lineage shows upstream and downstream object relationships
 - column lineage shows how specific fields were derived
@@ -32,7 +32,7 @@ They are related because a stale downstream output is often caused by something 
   <img class="mx-auto block h-auto w-max max-w-none rounded-none border-0 bg-transparent" src="/_site/diagrams/lineage-flow.svg" alt="Diagram showing lineage from source tables through models and assets into metrics, with freshness and impact indicators." loading="lazy" decoding="async">
 </figure>
 
-Read this first diagram left to right. The point is not only that data moves from source to model to asset to metric. The point is that once a downstream metric looks wrong or stale, Duck can trace upstream connections and show impact in both directions.
+Read this first diagram left to right. The point is not only that data moves from source to model to asset to metric. The point is that once a downstream metric looks wrong or stale, QuackStack can trace upstream connections and show impact in both directions.
 
 ## Blocker Tree
 
@@ -46,9 +46,9 @@ Read the second diagram as an incident response view. The downstream asset is un
 
 A blocker is the upstream condition preventing a stale output from becoming healthy again. Impact answers the reverse question: if this object changes or fails, what downstream things are affected?
 
-Reconcile is the platform’s attempt to identify useful recovery targets from the current freshness state and dependency graph. In practice, that means Duck can help answer whether you should rerun a downstream asset, wait for an upstream source, or backfill a missing partition instead.
+Reconcile is the platform’s attempt to identify useful recovery targets from the current freshness state and dependency graph. In practice, that means QuackStack can help answer whether you should rerun a downstream asset, wait for an upstream source, or backfill a missing partition instead.
 
-## Example In Duck
+## Example In QuackStack
 
 Suppose a weekly finance metric is stale. Freshness tells you the metric has exceeded its lag target. Lineage then shows that the metric depends on a curated revenue model, which depends on an upstream `zone_metrics` asset. The blocker view shows that `zone_metrics` failed its quality check for yesterday’s partition. Now the incident is no longer mysterious: the downstream metric is stale because a specific upstream asset and partition prevented the graph from recovering.
 

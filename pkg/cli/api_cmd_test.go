@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"duck-demo/pkg/cli/gen"
+	"github.com/Yacobolo/quackstack/pkg/cli/gen"
 )
 
 func TestAPI_ListAll(t *testing.T) {
@@ -443,7 +443,7 @@ func TestAPI_Spec_Live(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		assert.Equal(t, "/openapi.json", r.URL.Path)
 		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write([]byte(`{"openapi":"3.1.0","info":{"title":"Duck","version":"test"}}`))
+		_, _ = w.Write([]byte(`{"openapi":"3.1.0","info":{"title":"QuackStack","version":"test"}}`))
 	}))
 	defer srv.Close()
 

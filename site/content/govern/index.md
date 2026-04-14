@@ -5,7 +5,7 @@ description: Design identities, privileges, verification flows, and ownership co
 
 # Govern
 
-Governance in Duck is not a single admin task. It is a collaboration between platform operators, data stewards, and product owners.
+Governance in QuackStack is not a single admin task. It is a collaboration between platform operators, data stewards, and product owners.
 
 ## Recommended Path
 

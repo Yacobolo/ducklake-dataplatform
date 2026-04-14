@@ -13,12 +13,12 @@ import (
 	"path/filepath"
 	"strings"
 
-	dbstore "duck-demo/internal/db/dbstore"
-	"duck-demo/internal/db/mapper"
-	"duck-demo/internal/db/repository"
-	"duck-demo/internal/domain"
-	dashboardsvc "duck-demo/internal/service/dashboard"
-	semanticsvc "duck-demo/internal/service/semantic"
+	dbstore "github.com/Yacobolo/quackstack/internal/db/dbstore"
+	"github.com/Yacobolo/quackstack/internal/db/mapper"
+	"github.com/Yacobolo/quackstack/internal/db/repository"
+	"github.com/Yacobolo/quackstack/internal/domain"
+	dashboardsvc "github.com/Yacobolo/quackstack/internal/service/dashboard"
+	semanticsvc "github.com/Yacobolo/quackstack/internal/service/semantic"
 )
 
 const (
@@ -168,7 +168,7 @@ func sampleCatalogPaths(controlPlaneMetaPath string) (catalogPaths, error) {
 		return catalogPaths{}, fmt.Errorf("create sample assets dir: %w", err)
 	}
 
-	metastorePath, err := filepath.Abs(filepath.Join(baseDir, "ducklake_sample_data.sqlite"))
+	metastorePath, err := filepath.Abs(filepath.Join(baseDir, "quackstack_sample_data.sqlite"))
 	if err != nil {
 		return catalogPaths{}, fmt.Errorf("resolve sample metastore path: %w", err)
 	}

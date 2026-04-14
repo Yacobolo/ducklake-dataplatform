@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"duck-demo/internal/declarative"
+	"github.com/Yacobolo/quackstack/internal/declarative"
 )
 
 func TestResolveDeclarativeInitOptions(t *testing.T) {
@@ -18,17 +18,17 @@ func TestResolveDeclarativeInitOptions(t *testing.T) {
 		workspace: "main",
 		owner:     "alice",
 		template:  "analytics",
-		outputDir: "./duck-config",
+		outputDir: "./quackstack-config",
 	})
 	require.NoError(t, err)
-	assert.Equal(t, "duck.local/duck-config", opts.module)
+	assert.Equal(t, "quackstack.local/quackstack-config", opts.module)
 
 	_, err = resolveDeclarativeInitOptions(declarativeInitOptions{
 		name:      "Bad Name",
 		workspace: "main",
 		owner:     "alice",
 		template:  "analytics",
-		outputDir: "./duck-config",
+		outputDir: "./quackstack-config",
 	})
 	require.Error(t, err)
 
@@ -37,7 +37,7 @@ func TestResolveDeclarativeInitOptions(t *testing.T) {
 		workspace: "main",
 		owner:     "alice",
 		template:  "wat",
-		outputDir: "./duck-config",
+		outputDir: "./quackstack-config",
 	})
 	require.Error(t, err)
 }

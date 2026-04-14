@@ -3,7 +3,7 @@ package model
 import (
 	"strings"
 
-	"duck-demo/internal/domain"
+	"github.com/Yacobolo/quackstack/internal/domain"
 )
 
 // SelectModels filters models based on a selector string.

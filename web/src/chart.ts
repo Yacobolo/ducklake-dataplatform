@@ -536,6 +536,6 @@ function shouldDimPoint(payload: DashboardWidgetPayload, values: PointSelectionC
   return false;
 }
 
-if (!customElements.get("duck-chart")) {
-  customElements.define("duck-chart", DuckChart);
+if (!customElements.get("quack-chart")) {
+  customElements.define("quack-chart", DuckChart);
 }

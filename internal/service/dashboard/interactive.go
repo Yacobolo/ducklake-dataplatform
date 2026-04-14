@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"strings"
 
-	"duck-demo/internal/domain"
+	"github.com/Yacobolo/quackstack/internal/domain"
 )
 
 const (

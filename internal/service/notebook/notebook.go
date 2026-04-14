@@ -7,7 +7,7 @@ import (
 	"path"
 	"strings"
 
-	"duck-demo/internal/domain"
+	"github.com/Yacobolo/quackstack/internal/domain"
 )
 
 type notebookContextInvalidator interface {

@@ -5,7 +5,7 @@ description: Understand local execution, remote workers, routing, fallback, and 
 
 # Compute Topology
 
-If you only remember one thing, remember this: Duck can move execution between local and remote workers without moving identity and policy out of the control plane.
+If you only remember one thing, remember this: QuackStack can move execution between local and remote workers without moving identity and policy out of the control plane.
 
 ## Why It Matters
 
@@ -29,10 +29,10 @@ Fallback means the platform can route work back to local execution if remote wor
 ## Topology Diagram
 
 <figure class="my-8 overflow-x-auto rounded-[1.5rem] border border-[var(--borderColor-default)] bg-[var(--bgColor-inset)] p-5">
-  <img class="mx-auto block h-auto w-max max-w-none rounded-none border-0 bg-transparent" src="/_site/diagrams/control-plane-remote-compute.svg" alt="Diagram showing the Duck control plane sending authorized work to local execution or remote workers while storage and identity remain centralized." loading="lazy" decoding="async">
+  <img class="mx-auto block h-auto w-max max-w-none rounded-none border-0 bg-transparent" src="/_site/diagrams/control-plane-remote-compute.svg" alt="Diagram showing the QuackStack control plane sending authorized work to local execution or remote workers while storage and identity remain centralized." loading="lazy" decoding="async">
 </figure>
 
-Read the diagram from the principal inward. Every request still enters the Duck control plane first. From there, Duck may choose local execution or a remote worker. Both paths still depend on the same governance and storage context. The important lesson is that runtime shape can branch while governance remains centralized.
+Read the diagram from the principal inward. Every request still enters the QuackStack control plane first. From there, QuackStack may choose local execution or a remote worker. Both paths still depend on the same governance and storage context. The important lesson is that runtime shape can branch while governance remains centralized.
 
 ## Routing, Assignments, And Health
 
@@ -40,7 +40,7 @@ Routing decides which execution target should receive work. Assignments and defa
 
 This is why compute topology is not only a scaling topic. It is also an operability topic.
 
-## Example In Duck
+## Example In QuackStack
 
 A team may start with local execution in development and early shared environments. As asynchronous jobs and heavier workloads grow, the operator introduces remote workers for selected groups or job types. Queries still pass through the same identity and policy layer, but execution now happens on a worker fleet. If a worker goes unhealthy during rollout, fallback can temporarily send requests back to local execution so the platform stays available while the operator investigates.
 

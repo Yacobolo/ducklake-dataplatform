@@ -11,7 +11,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"duck-demo/internal/domain"
+	"github.com/Yacobolo/quackstack/internal/domain"
 )
 
 type SessionService struct {

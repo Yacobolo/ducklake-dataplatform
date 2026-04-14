@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"duck-demo/internal/domain"
+	"github.com/Yacobolo/quackstack/internal/domain"
 )
 
 const defaultFreshnessEventBucketSeconds int64 = 60

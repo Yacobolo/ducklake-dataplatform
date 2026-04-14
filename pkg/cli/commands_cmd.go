@@ -8,7 +8,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 
-	"duck-demo/pkg/cli/apiruntime"
+	"github.com/Yacobolo/quackstack/pkg/cli/apiruntime"
 )
 
 // CommandEntry represents a single CLI command for introspection output.
@@ -47,16 +47,16 @@ descriptions, flags, and examples. Works offline (no API calls needed).
 
 This is designed for AI agents to discover available CLI capabilities in a single call.`,
 		Example: `  # List all commands
-  duck commands
+  quack commands
 
   # Search for commands related to row filters
-  duck commands --filter "row-filter"
+  quack commands --filter "row-filter"
 
   # List only security commands as JSON
-  duck commands --group security --output json
+  quack commands --group security --output json
 
   # Get full command metadata for agent consumption
-  duck commands --output json`,
+  quack commands --output json`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			entries := walkCommands(cmd.Root(), "")
 

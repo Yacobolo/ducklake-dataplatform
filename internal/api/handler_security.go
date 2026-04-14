@@ -3,7 +3,7 @@ package api
 import (
 	"context"
 
-	"duck-demo/internal/domain"
+	"github.com/Yacobolo/quackstack/internal/domain"
 )
 
 // principalService defines the principal operations used by the API handler.

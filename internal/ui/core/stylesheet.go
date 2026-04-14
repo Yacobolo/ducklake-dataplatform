@@ -7,7 +7,7 @@ import (
 	"strings"
 	"sync"
 
-	"duck-demo/internal/ui/assets"
+	"github.com/Yacobolo/quackstack/internal/ui/assets"
 )
 
 const DefaultStylesheetPath = "/ui/static/css/app.css"

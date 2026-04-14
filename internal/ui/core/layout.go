@@ -4,7 +4,7 @@ import (
 	"os"
 	"strings"
 
-	"duck-demo/internal/domain"
+	"github.com/Yacobolo/quackstack/internal/domain"
 
 	. "maragu.dev/gomponents"
 	. "maragu.dev/gomponents/html"

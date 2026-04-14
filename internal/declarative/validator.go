@@ -5,8 +5,8 @@ import (
 	"regexp"
 	"strings"
 
-	"duck-demo/internal/domain"
-	"duck-demo/internal/duckdbsql"
+	"github.com/Yacobolo/quackstack/internal/domain"
+	"github.com/Yacobolo/quackstack/internal/duckdbsql"
 )
 
 // ValidationError represents a single validation problem.

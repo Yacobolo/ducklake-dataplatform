@@ -6,7 +6,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"duck-demo/pkg/cli/apiruntime"
+	"github.com/Yacobolo/quackstack/pkg/cli/apiruntime"
 )
 
 func newVersionCmd() *cobra.Command {
@@ -21,7 +21,7 @@ func newVersionCmd() *cobra.Command {
 					"commit":  commit,
 				})
 			}
-			_, _ = fmt.Fprintf(os.Stdout, "duck version %s (commit: %s)\n", version, commit)
+			_, _ = fmt.Fprintf(os.Stdout, "quack version %s (commit: %s)\n", version, commit)
 			return nil
 		},
 	}

@@ -9,8 +9,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	internaldb "duck-demo/internal/db"
-	"duck-demo/internal/domain"
+	internaldb "github.com/Yacobolo/quackstack/internal/db"
+	"github.com/Yacobolo/quackstack/internal/domain"
 )
 
 func setupCatalogRegistrationRepo(t *testing.T) *CatalogRegistrationRepo {

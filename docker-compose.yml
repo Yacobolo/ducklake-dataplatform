@@ -12,7 +12,7 @@ services:
       - "5433:5433"
     environment:
       LISTEN_ADDR: ":8080"
-      META_DB_PATH: "/data/ducklake_meta.sqlite"
+      META_DB_PATH: "/data/quackstack_meta.sqlite"
       LOG_LEVEL: "info"
 
       # Keep ENV=development for local testing convenience.

@@ -4,9 +4,9 @@ import (
 	"bytes"
 	"testing"
 
-	"duck-demo/internal/domain"
-	dashboardsvc "duck-demo/internal/service/dashboard"
-	"duck-demo/internal/ui/core"
+	"github.com/Yacobolo/quackstack/internal/domain"
+	dashboardsvc "github.com/Yacobolo/quackstack/internal/service/dashboard"
+	"github.com/Yacobolo/quackstack/internal/ui/core"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -156,7 +156,7 @@ func TestDashboardsDetailPage_ViewModeHidesAuthoringChrome(t *testing.T) {
 	assert.Contains(t, html, "data-ignore-morph")
 	assert.Contains(t, html, "data-widget-id=\"widget-chart\"")
 	assert.Contains(t, html, "data-widget-id=\"widget-table\"")
-	assert.Contains(t, html, "<duck-table")
+	assert.Contains(t, html, "<quack-table")
 	assert.Contains(t, html, "Total Revenue")
 	assert.Contains(t, html, "Studio")
 	assert.Contains(t, html, "Cross Filters")

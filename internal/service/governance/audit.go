@@ -4,7 +4,7 @@ package governance
 import (
 	"context"
 
-	"duck-demo/internal/domain"
+	"github.com/Yacobolo/quackstack/internal/domain"
 )
 
 // AuditService provides audit log operations.

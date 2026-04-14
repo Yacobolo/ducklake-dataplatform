@@ -5,7 +5,7 @@ package security
 import (
 	"context"
 
-	"duck-demo/internal/domain"
+	"github.com/Yacobolo/quackstack/internal/domain"
 )
 
 // principalCtx returns a context with a specific principal ID.

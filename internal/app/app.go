@@ -1,5 +1,5 @@
 // Package app provides application-level wiring and dependency injection
-// for the duck-demo application following hexagonal architecture.
+// for the github.com/Yacobolo/quackstack application following hexagonal architecture.
 package app
 
 import (
@@ -9,34 +9,34 @@ import (
 	"fmt"
 	"log/slog"
 
-	"duck-demo/internal/compute"
-	"duck-demo/internal/config"
-	"duck-demo/internal/db/crypto"
-	"duck-demo/internal/db/repository"
-	"duck-demo/internal/domain"
-	"duck-demo/internal/engine"
-	assetsvc "duck-demo/internal/service/asset"
-	authsvc "duck-demo/internal/service/auth"
-	"duck-demo/internal/service/catalog"
-	svccompute "duck-demo/internal/service/compute"
-	"duck-demo/internal/service/dashboard"
-	exploresvc "duck-demo/internal/service/explore"
-	"duck-demo/internal/service/governance"
-	"duck-demo/internal/service/ingestion"
-	"duck-demo/internal/service/macro"
-	svcmodel "duck-demo/internal/service/model"
-	"duck-demo/internal/service/notebook"
-	"duck-demo/internal/service/orchestration"
-	"duck-demo/internal/service/pipeline"
-	productsvc "duck-demo/internal/service/product"
-	projectsvc "duck-demo/internal/service/project"
-	"duck-demo/internal/service/query"
-	"duck-demo/internal/service/resourceaccess"
-	"duck-demo/internal/service/savedresource"
-	"duck-demo/internal/service/security"
-	"duck-demo/internal/service/semantic"
-	"duck-demo/internal/service/storage"
-	workspacesvc "duck-demo/internal/service/workspace"
+	"github.com/Yacobolo/quackstack/internal/compute"
+	"github.com/Yacobolo/quackstack/internal/config"
+	"github.com/Yacobolo/quackstack/internal/db/crypto"
+	"github.com/Yacobolo/quackstack/internal/db/repository"
+	"github.com/Yacobolo/quackstack/internal/domain"
+	"github.com/Yacobolo/quackstack/internal/engine"
+	assetsvc "github.com/Yacobolo/quackstack/internal/service/asset"
+	authsvc "github.com/Yacobolo/quackstack/internal/service/auth"
+	"github.com/Yacobolo/quackstack/internal/service/catalog"
+	svccompute "github.com/Yacobolo/quackstack/internal/service/compute"
+	"github.com/Yacobolo/quackstack/internal/service/dashboard"
+	exploresvc "github.com/Yacobolo/quackstack/internal/service/explore"
+	"github.com/Yacobolo/quackstack/internal/service/governance"
+	"github.com/Yacobolo/quackstack/internal/service/ingestion"
+	"github.com/Yacobolo/quackstack/internal/service/macro"
+	svcmodel "github.com/Yacobolo/quackstack/internal/service/model"
+	"github.com/Yacobolo/quackstack/internal/service/notebook"
+	"github.com/Yacobolo/quackstack/internal/service/orchestration"
+	"github.com/Yacobolo/quackstack/internal/service/pipeline"
+	productsvc "github.com/Yacobolo/quackstack/internal/service/product"
+	projectsvc "github.com/Yacobolo/quackstack/internal/service/project"
+	"github.com/Yacobolo/quackstack/internal/service/query"
+	"github.com/Yacobolo/quackstack/internal/service/resourceaccess"
+	"github.com/Yacobolo/quackstack/internal/service/savedresource"
+	"github.com/Yacobolo/quackstack/internal/service/security"
+	"github.com/Yacobolo/quackstack/internal/service/semantic"
+	"github.com/Yacobolo/quackstack/internal/service/storage"
+	workspacesvc "github.com/Yacobolo/quackstack/internal/service/workspace"
 )
 
 // Deps holds the external dependencies that main() must provide.
@@ -550,11 +550,11 @@ func New(ctx context.Context, deps Deps) (*App, error) {
 			APIKey:              apiKeySvc,
 			Auth:                authService,
 			WebSessionAuth:      webSessionAuth,
-		Notebook:            notebookSvc,
-		NotebookFolders:     folderSvc,
-		Workspace:           workspaceSvc,
-		Project:             projectSvc,
-		Explore:             exploreSvc,
+			Notebook:            notebookSvc,
+			NotebookFolders:     folderSvc,
+			Workspace:           workspaceSvc,
+			Project:             projectSvc,
+			Explore:             exploreSvc,
 			SessionManager:      sessionMgr,
 			GitService:          gitSvc,
 			Pipeline:            pipelineSvc,

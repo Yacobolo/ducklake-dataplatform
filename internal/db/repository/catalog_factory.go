@@ -7,9 +7,9 @@ import (
 	"log/slog"
 	"sync"
 
-	internaldb "duck-demo/internal/db"
-	"duck-demo/internal/db/dbstore"
-	"duck-demo/internal/domain"
+	internaldb "github.com/Yacobolo/quackstack/internal/db"
+	"github.com/Yacobolo/quackstack/internal/db/dbstore"
+	"github.com/Yacobolo/quackstack/internal/domain"
 )
 
 type catalogEntry struct {

@@ -3,7 +3,7 @@ package components
 import (
 	"net/http"
 
-	"duck-demo/internal/ui/core"
+	"github.com/Yacobolo/quackstack/internal/ui/core"
 )
 
 type Handler struct{}

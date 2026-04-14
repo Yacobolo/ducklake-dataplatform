@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"duck-demo/internal/domain"
+	"github.com/Yacobolo/quackstack/internal/domain"
 
 	"go.starlark.net/starlark"
 	"go.starlark.net/syntax"

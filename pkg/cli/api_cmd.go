@@ -13,8 +13,8 @@ import (
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
 
-	"duck-demo/pkg/cli/apiruntime"
-	"duck-demo/pkg/cli/gen"
+	"github.com/Yacobolo/quackstack/pkg/cli/apiruntime"
+	"github.com/Yacobolo/quackstack/pkg/cli/gen"
 )
 
 func jsonLiteralForField(fieldType, raw string) (string, error) {
@@ -87,9 +87,9 @@ func newAPIListCmd() *cobra.Command {
 		Use:   "list",
 		Short: "List all API endpoints",
 		Long:  "Lists all API endpoints with their HTTP method, path, and description.",
-		Example: `  duck api list
-  duck api list --tag Identity
-  duck api list --output json`,
+		Example: `  quack api list
+  quack api list --tag Identity
+  quack api list --output json`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			endpoints := allAPIEndpoints()
 
@@ -130,8 +130,8 @@ func newAPISearchCmd() *cobra.Command {
 	return &cobra.Command{
 		Use:   "search <query>",
 		Short: "Search API endpoints by path, summary, or parameter names",
-		Example: `  duck api search "row-filter"
-  duck api search "schema" --output json`,
+		Example: `  quack api search "row-filter"
+  quack api search "schema" --output json`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			query := strings.ToLower(args[0])
@@ -172,8 +172,8 @@ func newAPIDescribeCmd() *cobra.Command {
 		Use:   "describe <operation-id>",
 		Short: "Show detailed information about an API endpoint",
 		Long:  "Displays full endpoint detail: method, path, parameters, body fields, and the corresponding CLI command.",
-		Example: `  duck api describe createSchema
-  duck api describe executeQuery --output json`,
+		Example: `  quack api describe createSchema
+  quack api describe executeQuery --output json`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			opID := args[0]
@@ -225,7 +225,7 @@ func newAPIDescribeCmd() *cobra.Command {
 				_, _ = fmt.Fprintf(os.Stdout, "tags:          %s\n", strings.Join(found.Tags, ", "))
 			}
 			if found.CLICommand != "" {
-				_, _ = fmt.Fprintf(os.Stdout, "cli_command:   duck %s\n", found.CLICommand)
+				_, _ = fmt.Fprintf(os.Stdout, "cli_command:   quack %s\n", found.CLICommand)
 			}
 			if len(contentTypes) > 0 {
 				_, _ = fmt.Fprintf(os.Stdout, "content_types: %s\n", strings.Join(contentTypes, ", "))
@@ -279,8 +279,8 @@ func newAPICurlCmd() *cobra.Command {
 		Use:   "curl <operation-id>",
 		Short: "Generate a curl command for an API endpoint",
 		Long:  "Generates a ready-to-use curl command using the current authentication configuration.",
-		Example: `  duck api curl createSchema --param catalog_name=main --param name=analytics
-  duck api curl listSchemas --param catalog_name=main`,
+		Example: `  quack api curl createSchema --param catalog_name=main --param name=analytics
+  quack api curl listSchemas --param catalog_name=main`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			opID := args[0]

@@ -1,6 +1,6 @@
 package declarative
 
-import "duck-demo/internal/domain"
+import "github.com/Yacobolo/quackstack/internal/domain"
 
 // Document is the generic envelope parsed first to determine Kind.
 type Document struct {

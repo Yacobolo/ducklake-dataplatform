@@ -8,8 +8,8 @@ import (
 	"sort"
 	"strings"
 
-	"duck-demo/internal/domain"
-	"duck-demo/internal/sqlrewrite"
+	"github.com/Yacobolo/quackstack/internal/domain"
+	"github.com/Yacobolo/quackstack/internal/sqlrewrite"
 )
 
 type AdaptedPipelineAssets struct {
@@ -456,13 +456,13 @@ func BuildDashboardAssetGraph(
 				}
 				query := widget.Source.SemanticQuery
 				if preAggID := matchingPreAggregationAssetID(preAggsByModel[query.SemanticModelID], query); preAggID != "" {
-						deps = append(deps, domain.AssetDependency{
-							ID:              domain.NewID(),
-							AssetID:         dashboard.ID,
-							UpstreamAssetID: preAggID,
-							DependencyType:  domain.DependencyTypeHard,
-						})
-						continue
+					deps = append(deps, domain.AssetDependency{
+						ID:              domain.NewID(),
+						AssetID:         dashboard.ID,
+						UpstreamAssetID: preAggID,
+						DependencyType:  domain.DependencyTypeHard,
+					})
+					continue
 				}
 				depAdded := false
 				for _, metricName := range query.Metrics {

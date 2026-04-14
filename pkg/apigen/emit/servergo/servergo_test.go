@@ -5,7 +5,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"duck-demo/pkg/apigen/ir"
+	"github.com/Yacobolo/quackstack/pkg/apigen/ir"
 )
 
 func TestEmit(t *testing.T) {

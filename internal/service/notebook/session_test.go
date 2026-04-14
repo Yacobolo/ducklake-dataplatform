@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
-	"duck-demo/internal/domain"
-	"duck-demo/internal/testutil"
+	"github.com/Yacobolo/quackstack/internal/domain"
+	"github.com/Yacobolo/quackstack/internal/testutil"
 
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/stretchr/testify/assert"

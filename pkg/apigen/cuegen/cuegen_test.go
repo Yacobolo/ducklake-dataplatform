@@ -5,8 +5,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	openapiemit "duck-demo/pkg/apigen/emit/openapi"
-	"duck-demo/pkg/apigen/ir"
+	openapiemit "github.com/Yacobolo/quackstack/pkg/apigen/emit/openapi"
+	"github.com/Yacobolo/quackstack/pkg/apigen/ir"
 	"github.com/stretchr/testify/require"
 )
 

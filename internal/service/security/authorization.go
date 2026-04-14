@@ -7,7 +7,7 @@ import (
 	"strings"
 	"sync"
 
-	"duck-demo/internal/domain"
+	"github.com/Yacobolo/quackstack/internal/domain"
 )
 
 const syntheticViewIDPrefix = "__view__:"

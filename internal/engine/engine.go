@@ -8,9 +8,9 @@ import (
 	"log/slog"
 	"strings"
 
-	"duck-demo/internal/ddl"
-	"duck-demo/internal/domain"
-	"duck-demo/internal/sqlrewrite"
+	"github.com/Yacobolo/quackstack/internal/ddl"
+	"github.com/Yacobolo/quackstack/internal/domain"
+	"github.com/Yacobolo/quackstack/internal/sqlrewrite"
 )
 
 // SecureEngine wraps a DuckDB connection and enforces RBAC + RLS + column masking

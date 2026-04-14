@@ -9,7 +9,7 @@ import (
 	"strings"
 	"sync"
 
-	"duck-demo/internal/domain"
+	"github.com/Yacobolo/quackstack/internal/domain"
 	"github.com/apache/arrow-go/v18/arrow"
 	"github.com/apache/arrow-go/v18/arrow/array"
 	arrowflight "github.com/apache/arrow-go/v18/arrow/flight"
@@ -45,7 +45,7 @@ type statementTicket struct {
 
 func newQueryServer(_ string, _ *slog.Logger, query QueryExecutor, auth Authenticator) *queryServer {
 	srv := &queryServer{query: query, auth: auth, tickets: make(map[string]*statementTicket)}
-	_ = srv.RegisterSqlInfo(arrowflightsql.SqlInfoFlightSqlServerName, "duck-demo")
+	_ = srv.RegisterSqlInfo(arrowflightsql.SqlInfoFlightSqlServerName, "github.com/Yacobolo/quackstack")
 	_ = srv.RegisterSqlInfo(arrowflightsql.SqlInfoFlightSqlServerVersion, "dev")
 	_ = srv.RegisterSqlInfo(arrowflightsql.SqlInfoFlightSqlServerArrowVersion, "18")
 	_ = srv.RegisterSqlInfo(arrowflightsql.SqlInfoFlightSqlServerSql, true)

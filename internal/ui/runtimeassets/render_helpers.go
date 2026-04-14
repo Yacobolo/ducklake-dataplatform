@@ -1,7 +1,7 @@
 package runtimeassets
 
 import (
-	"duck-demo/internal/ui/core"
+	"github.com/Yacobolo/quackstack/internal/ui/core"
 
 	. "maragu.dev/gomponents"
 )

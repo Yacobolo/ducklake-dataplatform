@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"duck-demo/internal/declarative"
+	"github.com/Yacobolo/quackstack/internal/declarative"
 )
 
 type declarativeSupportMatrixEntry struct {

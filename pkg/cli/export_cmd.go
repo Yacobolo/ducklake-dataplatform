@@ -6,8 +6,8 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"duck-demo/internal/declarative"
-	"duck-demo/pkg/cli/apiruntime"
+	"github.com/Yacobolo/quackstack/internal/declarative"
+	"github.com/Yacobolo/quackstack/pkg/cli/apiruntime"
 )
 
 func newExportCmd(client *apiruntime.Client) *cobra.Command {
@@ -47,7 +47,7 @@ func newExportCmd(client *apiruntime.Client) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&configDir, "config-dir", "./duck-config", "Path to the output CUE configuration module")
+	cmd.Flags().StringVar(&configDir, "config-dir", "./quackstack-config", "Path to the output CUE configuration module")
 	cmd.Flags().BoolVar(&overwrite, "overwrite", false, "Overwrite existing files in the output directory")
 
 	return cmd

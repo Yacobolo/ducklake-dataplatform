@@ -66,94 +66,94 @@ linters:
           files:
             - "internal/domain/**/*.go"
           deny:
-            - pkg: "duck-demo/internal/api"
+            - pkg: "github.com/Yacobolo/quackstack/internal/api"
               desc: "governance: domain imports must stay within domain"
-            - pkg: "duck-demo/internal/service"
+            - pkg: "github.com/Yacobolo/quackstack/internal/service"
               desc: "governance: domain imports must stay within domain"
-            - pkg: "duck-demo/internal/db"
+            - pkg: "github.com/Yacobolo/quackstack/internal/db"
               desc: "governance: domain imports must stay within domain"
-            - pkg: "duck-demo/internal/engine"
+            - pkg: "github.com/Yacobolo/quackstack/internal/engine"
               desc: "governance: domain imports must stay within domain"
-            - pkg: "duck-demo/internal/middleware"
+            - pkg: "github.com/Yacobolo/quackstack/internal/middleware"
               desc: "governance: domain imports must stay within domain"
-            - pkg: "duck-demo/internal/declarative"
+            - pkg: "github.com/Yacobolo/quackstack/internal/declarative"
               desc: "governance: domain imports must stay within domain"
-            - pkg: "duck-demo/cmd"
+            - pkg: "github.com/Yacobolo/quackstack/cmd"
               desc: "governance: domain must not import cmd packages"
-            - pkg: "duck-demo/pkg/cli"
+            - pkg: "github.com/Yacobolo/quackstack/pkg/cli"
               desc: "governance: domain must not import cli delivery packages"
 
         governance_service:
           files:
             - "internal/service/**/*.go"
           deny:
-            - pkg: "duck-demo/internal/api"
+            - pkg: "github.com/Yacobolo/quackstack/internal/api"
               desc: "governance: service imports must flow toward domain"
-            - pkg: "duck-demo/internal/db"
+            - pkg: "github.com/Yacobolo/quackstack/internal/db"
               desc: "governance: service imports must flow toward domain"
-            - pkg: "duck-demo/internal/engine"
+            - pkg: "github.com/Yacobolo/quackstack/internal/engine"
               desc: "governance: service imports must flow toward domain"
-            - pkg: "duck-demo/internal/middleware"
+            - pkg: "github.com/Yacobolo/quackstack/internal/middleware"
               desc: "governance: service imports must flow toward domain"
-            - pkg: "duck-demo/cmd"
+            - pkg: "github.com/Yacobolo/quackstack/cmd"
               desc: "governance: service must not import cmd packages"
-            - pkg: "duck-demo/pkg/cli"
+            - pkg: "github.com/Yacobolo/quackstack/pkg/cli"
               desc: "governance: service must not import cli delivery packages"
 
         governance_api:
           files:
             - "internal/api/**/*.go"
           deny:
-            - pkg: "duck-demo/internal/db"
+            - pkg: "github.com/Yacobolo/quackstack/internal/db"
               desc: "governance: api imports must not depend on infrastructure layers"
-            - pkg: "duck-demo/internal/engine"
+            - pkg: "github.com/Yacobolo/quackstack/internal/engine"
               desc: "governance: api imports must not depend on infrastructure layers"
-            - pkg: "duck-demo/internal/declarative"
+            - pkg: "github.com/Yacobolo/quackstack/internal/declarative"
               desc: "governance: api imports must not depend on infrastructure layers"
-            - pkg: "duck-demo/cmd"
+            - pkg: "github.com/Yacobolo/quackstack/cmd"
               desc: "governance: api must not import cmd packages"
-            - pkg: "duck-demo/pkg/cli"
+            - pkg: "github.com/Yacobolo/quackstack/pkg/cli"
               desc: "governance: api must not import cli delivery packages"
 
         governance_db:
           files:
             - "internal/db/**/*.go"
           deny:
-            - pkg: "duck-demo/internal/api"
+            - pkg: "github.com/Yacobolo/quackstack/internal/api"
               desc: "governance: db imports must stay inward toward domain"
-            - pkg: "duck-demo/internal/service"
+            - pkg: "github.com/Yacobolo/quackstack/internal/service"
               desc: "governance: db imports must stay inward toward domain"
-            - pkg: "duck-demo/internal/engine"
+            - pkg: "github.com/Yacobolo/quackstack/internal/engine"
               desc: "governance: db imports must stay inward toward domain"
-            - pkg: "duck-demo/internal/middleware"
+            - pkg: "github.com/Yacobolo/quackstack/internal/middleware"
               desc: "governance: db imports must stay inward toward domain"
-            - pkg: "duck-demo/cmd"
+            - pkg: "github.com/Yacobolo/quackstack/cmd"
               desc: "governance: db must not import cmd packages"
-            - pkg: "duck-demo/pkg/cli"
+            - pkg: "github.com/Yacobolo/quackstack/pkg/cli"
               desc: "governance: db must not import cli delivery packages"
 
         governance_engine:
           files:
             - "internal/engine/**/*.go"
           deny:
-            - pkg: "duck-demo/internal/api"
+            - pkg: "github.com/Yacobolo/quackstack/internal/api"
               desc: "governance: engine must not import api"
-            - pkg: "duck-demo/internal/service"
+            - pkg: "github.com/Yacobolo/quackstack/internal/service"
               desc: "governance: engine must not import service"
-            - pkg: "duck-demo/cmd"
+            - pkg: "github.com/Yacobolo/quackstack/cmd"
               desc: "governance: engine must not import cmd packages"
-            - pkg: "duck-demo/pkg/cli"
+            - pkg: "github.com/Yacobolo/quackstack/pkg/cli"
               desc: "governance: engine must not import cli delivery packages"
 
         governance_middleware:
           files:
             - "internal/middleware/**/*.go"
           deny:
-            - pkg: "duck-demo/internal/service"
+            - pkg: "github.com/Yacobolo/quackstack/internal/service"
               desc: "governance: middleware must not import service"
-            - pkg: "duck-demo/internal/db"
+            - pkg: "github.com/Yacobolo/quackstack/internal/db"
               desc: "governance: middleware must not import db"
-            - pkg: "duck-demo/internal/engine"
+            - pkg: "github.com/Yacobolo/quackstack/internal/engine"
               desc: "governance: middleware must not import engine"
 
   exclusions:

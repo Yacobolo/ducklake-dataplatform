@@ -14,12 +14,12 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/stretchr/testify/require"
 
-	"duck-demo/internal/config"
-	internaldb "duck-demo/internal/db"
-	dbstore "duck-demo/internal/db/dbstore"
-	"duck-demo/internal/db/repository"
-	"duck-demo/internal/engine"
-	"duck-demo/internal/service/security"
+	"github.com/Yacobolo/quackstack/internal/config"
+	internaldb "github.com/Yacobolo/quackstack/internal/db"
+	dbstore "github.com/Yacobolo/quackstack/internal/db/dbstore"
+	"github.com/Yacobolo/quackstack/internal/db/repository"
+	"github.com/Yacobolo/quackstack/internal/engine"
+	"github.com/Yacobolo/quackstack/internal/service/security"
 )
 
 // TestDuckLakeWithHetznerSetup tests the full DuckLake setup flow with real
@@ -60,7 +60,7 @@ func TestDuckLakeWithHetznerSetup(t *testing.T) {
 		*cfg.S3KeyID, *cfg.S3Secret, *cfg.S3Endpoint, *cfg.S3Region, "path"); err != nil {
 		t.Fatalf("create S3 secret: %v", err)
 	}
-	bucket := "duck-demo"
+	bucket := "github.com/Yacobolo/quackstack"
 	if cfg.S3Bucket != nil {
 		bucket = *cfg.S3Bucket
 	}
@@ -125,7 +125,7 @@ func TestDuckLakeRBACIntegration(t *testing.T) {
 		*cfg.S3KeyID, *cfg.S3Secret, *cfg.S3Endpoint, *cfg.S3Region, "path"); err != nil {
 		t.Fatalf("create S3 secret: %v", err)
 	}
-	bucket := "duck-demo"
+	bucket := "github.com/Yacobolo/quackstack"
 	if cfg.S3Bucket != nil {
 		bucket = *cfg.S3Bucket
 	}

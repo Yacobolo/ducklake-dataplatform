@@ -4,8 +4,8 @@ import (
 	"context"
 	"strings"
 
-	"duck-demo/internal/domain"
-	"duck-demo/internal/service/model"
+	"github.com/Yacobolo/quackstack/internal/domain"
+	"github.com/Yacobolo/quackstack/internal/service/model"
 )
 
 // modelService defines the model operations used by the API handler.

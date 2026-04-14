@@ -5,8 +5,8 @@ import (
 	"sort"
 	"strings"
 
-	"duck-demo/internal/domain"
-	"duck-demo/internal/duckdbsql"
+	"github.com/Yacobolo/quackstack/internal/domain"
+	"github.com/Yacobolo/quackstack/internal/duckdbsql"
 )
 
 // ExtractDependencies parses a model's SQL and resolves references to known models.

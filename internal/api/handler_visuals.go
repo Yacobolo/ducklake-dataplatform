@@ -1,6 +1,6 @@
 package api
 
-import "duck-demo/internal/domain"
+import "github.com/Yacobolo/quackstack/internal/domain"
 
 func visualSpecFromAPI(spec *VisualSpec) *domain.VisualSpec {
 	if spec == nil {

@@ -8,12 +8,12 @@ import (
 	"testing"
 	"time"
 
-	"duck-demo/internal/agent"
+	"github.com/Yacobolo/quackstack/internal/agent"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
 
-	"duck-demo/internal/domain"
+	"github.com/Yacobolo/quackstack/internal/domain"
 
 	_ "github.com/duckdb/duckdb-go/v2"
 )

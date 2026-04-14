@@ -29,8 +29,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"gopkg.in/yaml.v3"
 
-	internalapi "duck-demo/internal/api"
-	"duck-demo/pkg/cli/gen"
+	internalapi "github.com/Yacobolo/quackstack/internal/api"
+	"github.com/Yacobolo/quackstack/pkg/cli/gen"
 )
 
 const (
@@ -101,7 +101,7 @@ func setupLiveSuite() (*liveSuite, error) {
 
 	s := &liveSuite{
 		rootDir: rootDir,
-		cliPath: filepath.Join(rootDir, "bin", "duck"),
+		cliPath: filepath.Join(rootDir, "bin", "quack"),
 		runID:   fmt.Sprintf("%d", time.Now().UTC().UnixNano()),
 		httpClient: &http.Client{
 			Timeout: 20 * time.Second,
@@ -229,7 +229,7 @@ func (s *liveSuite) startManagedServer() error {
 	scan := func(r io.Reader) {
 		scanner := bufio.NewScanner(r)
 		reHTTP := regexp.MustCompile(`HTTP:\s+(http://localhost:\d+)`)
-		reMeta := regexp.MustCompile(`Meta DB:\s+(.+ducklake_meta_\d+\.sqlite)`)
+		reMeta := regexp.MustCompile(`Meta DB:\s+(.+quackstack_meta_\d+\.sqlite)`)
 		for scanner.Scan() {
 			line := scanner.Text()
 			_, _ = fmt.Fprintln(logFile, line)
@@ -378,7 +378,7 @@ func deriveDevJWTSecret(rootDir string) (string, error) {
 }
 
 func deriveDevSettings(rootDir string) (host, metaPath string, err error) {
-	cmd := exec.Command("sh", "-c", `worktree_path="$(pwd -P)"; checksum="$(printf '%s' "$worktree_path" | cksum | awk '{print $1}')"; offset=$((checksum % 1000)); printf 'http://localhost:%d\n.codex/dev/ducklake_meta_%d.sqlite\n' "$((8080 + offset))" "$offset"`)
+	cmd := exec.Command("sh", "-c", `worktree_path="$(pwd -P)"; checksum="$(printf '%s' "$worktree_path" | cksum | awk '{print $1}')"; offset=$((checksum % 1000)); printf 'http://localhost:%d\n.codex/dev/quackstack_meta_%d.sqlite\n' "$((8080 + offset))" "$offset"`)
 	cmd.Dir = rootDir
 	out, err := cmd.Output()
 	if err != nil {

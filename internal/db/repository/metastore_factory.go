@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"sync"
 
-	internaldb "duck-demo/internal/db"
-	"duck-demo/internal/domain"
+	internaldb "github.com/Yacobolo/quackstack/internal/db"
+	"github.com/Yacobolo/quackstack/internal/domain"
 )
 
 // MetastoreRepoFactory creates MetastoreRepo instances per catalog

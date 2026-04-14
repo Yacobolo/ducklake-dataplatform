@@ -7,7 +7,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"duck-demo/pkg/cli/apiruntime"
+	"github.com/Yacobolo/quackstack/pkg/cli/apiruntime"
 )
 
 var (
@@ -40,22 +40,22 @@ func Execute() int {
 
 func newRootCmd() *cobra.Command {
 	var (
-		host                    string
-		apiKey                  string
-		token                   string
-		output                  string
-		profile                 string
-		quiet                   bool
-		duckAccessExtensionPath string
+		host                     string
+		apiKey                   string
+		token                    string
+		output                   string
+		profile                  string
+		quiet                    bool
+		quackAccessExtensionPath string
 
 		apiKeyPriority int
 		tokenPriority  int
 	)
 
 	rootCmd := &cobra.Command{
-		Use:           "duck",
-		Short:         "DuckDB Data Platform CLI",
-		Long:          "Command-line interface for the DuckDB Data Platform API.",
+		Use:           "quack",
+		Short:         "QuackStack CLI",
+		Long:          "Command-line interface for the QuackStack API.",
 		SilenceUsage:  true,
 		SilenceErrors: true,
 		PersistentPreRunE: func(cmd *cobra.Command, _ []string) error {
@@ -79,14 +79,14 @@ func newRootCmd() *cobra.Command {
 
 			// Apply precedence: flag > env > profile > default
 			if !cmd.Flags().Changed("host") {
-				if v := os.Getenv("DUCK_HOST"); v != "" {
+				if v := os.Getenv("QUACK_HOST"); v != "" {
 					host = v
 				} else if p.Host != "" {
 					host = p.Host
 				}
 			}
 			if !cmd.Flags().Changed("api-key") {
-				if v := os.Getenv("DUCK_API_KEY"); v != "" {
+				if v := os.Getenv("QUACK_API_KEY"); v != "" {
 					apiKey = v
 					apiKeyPriority = 30
 				} else if p.APIKey != "" {
@@ -97,7 +97,7 @@ func newRootCmd() *cobra.Command {
 				apiKeyPriority = 50
 			}
 			if !cmd.Flags().Changed("token") {
-				if v := os.Getenv("DUCK_TOKEN"); v != "" {
+				if v := os.Getenv("QUACK_TOKEN"); v != "" {
 					token = v
 					tokenPriority = 40
 				} else if p.Token != "" {
@@ -108,17 +108,17 @@ func newRootCmd() *cobra.Command {
 				tokenPriority = 60
 			}
 			if !cmd.Flags().Changed("output") {
-				if v := os.Getenv("DUCK_OUTPUT"); v != "" {
+				if v := os.Getenv("QUACK_OUTPUT"); v != "" {
 					output = v
 				} else if p.Output != "" {
 					output = p.Output
 				}
 			}
-			if !cmd.Flags().Changed("duck-access-extension-path") {
-				if v := os.Getenv("DUCK_ACCESS_EXTENSION_PATH"); v != "" {
-					duckAccessExtensionPath = v
-				} else if p.DuckAccessExtensionPath != "" {
-					duckAccessExtensionPath = p.DuckAccessExtensionPath
+			if !cmd.Flags().Changed("quack-access-extension-path") {
+				if v := os.Getenv("QUACK_ACCESS_EXTENSION_PATH"); v != "" {
+					quackAccessExtensionPath = v
+				} else if p.QuackAccessExtensionPath != "" {
+					quackAccessExtensionPath = p.QuackAccessExtensionPath
 				}
 			}
 
@@ -140,7 +140,7 @@ func newRootCmd() *cobra.Command {
 	rootCmd.PersistentFlags().StringVarP(&output, "output", "o", "table", "Output format (table, json, csv)")
 	rootCmd.PersistentFlags().StringVarP(&profile, "profile", "p", "", "Config profile to use")
 	rootCmd.PersistentFlags().BoolVarP(&quiet, "quiet", "q", false, "Only output resource identifiers")
-	rootCmd.PersistentFlags().StringVar(&duckAccessExtensionPath, "duck-access-extension-path", "", "Path to duck_access.duckdb_extension for local BYOC execution")
+	rootCmd.PersistentFlags().StringVar(&quackAccessExtensionPath, "quack-access-extension-path", "", "Path to quack_access.duckdb_extension for local BYOC execution")
 
 	// Create client using a lazy initializer
 	client := apiruntime.NewClient(host, apiKey, token)

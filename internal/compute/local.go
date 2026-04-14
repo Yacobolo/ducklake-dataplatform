@@ -4,7 +4,7 @@ import (
 	"context"
 	"database/sql"
 
-	"duck-demo/internal/domain"
+	"github.com/Yacobolo/quackstack/internal/domain"
 )
 
 var _ domain.ComputeExecutor = (*LocalExecutor)(nil)

@@ -5,7 +5,7 @@ import (
 	"log/slog"
 	"testing"
 
-	"duck-demo/internal/domain"
+	"github.com/Yacobolo/quackstack/internal/domain"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -106,8 +106,8 @@ func (s promotionNotebookProviderStub) ListCells(context.Context, string) ([]dom
 }
 
 type promotionLinkRepoStub struct {
-	upsertFn            func(context.Context, *domain.NotebookModelLink) error
-	getByNotebookIDFn   func(context.Context, string) (*domain.NotebookModelLink, error)
+	upsertFn             func(context.Context, *domain.NotebookModelLink) error
+	getByNotebookIDFn    func(context.Context, string) (*domain.NotebookModelLink, error)
 	deleteByNotebookIDFn func(context.Context, string) error
 }
 

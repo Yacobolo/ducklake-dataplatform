@@ -65,7 +65,7 @@ schemas_auth: {
 			id:           "key_01hzyapi7m7p5x4t3"
 			principal_id: "user_01hzyadmin8km6w2n"
 			name:         "CI deploy key"
-			key_prefix:   "duck_prod_"
+			key_prefix:   "quack_prod_"
 			expires_at:   "2026-06-30T00:00:00Z"
 			created_at:   "2026-04-13T09:30:00Z"
 		}
@@ -158,9 +158,9 @@ schemas_auth: {
 	CreateAPIKeyResponse: #objectSchema & {
 		example: {
 			id:         "key_01hzyapi7m7p5x4t3"
-			key:        "duck_prod_live_2mY5...redacted"
+			key:        "quack_prod_live_2mY5...redacted"
 			name:       "dbt-cloud"
-			key_prefix: "duck_prod_"
+			key_prefix: "quack_prod_"
 			expires_at: "2026-12-31T00:00:00Z"
 			created_at: "2026-04-13T09:30:00Z"
 		}
@@ -198,8 +198,8 @@ schemas_auth: {
 			enabled:       true
 			issuer_url:    "https://login.example.com"
 			jwks_url:      "https://login.example.com/.well-known/jwks.json"
-			audience:      "duck-demo"
-			client_id:     "duck-demo-web"
+			audience:      "github.com/Yacobolo/quackstack"
+			client_id:     "github.com/Yacobolo/quackstack-web"
 			client_secret: "client-secret-ref"
 			scopes:        "openid profile email"
 		}
@@ -212,8 +212,8 @@ schemas_auth: {
 			enabled:       true
 			issuer_url:    "https://login.example.com"
 			jwks_url:      "https://login.example.com/.well-known/jwks.json"
-			audience:      "duck-demo"
-			client_id:     "duck-demo-web"
+			audience:      "github.com/Yacobolo/quackstack"
+			client_id:     "github.com/Yacobolo/quackstack-web"
 			scopes:        "openid profile email"
 			updated_at:    "2026-04-13T09:30:00Z"
 			secret_stored: true

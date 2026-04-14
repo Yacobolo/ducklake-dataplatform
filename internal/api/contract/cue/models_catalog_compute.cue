@@ -32,7 +32,7 @@ schemas_catalog_compute: {
       name:           "analytics"
       metastore_type: "sqlite"
       dsn:            "file:metadata/analytics.db"
-      data_path:      "s3://duck-demo/analytics"
+      data_path:      "s3://github.com/Yacobolo/quackstack/analytics"
       status:         "ACTIVE"
       is_default:     true
       comment:        "Primary analytics catalog."

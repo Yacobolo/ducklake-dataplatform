@@ -11,9 +11,9 @@ import (
 	"strings"
 	"unicode"
 
-	"duck-demo/internal/domain"
-	"duck-demo/internal/service/query"
-	"duck-demo/internal/service/semantic"
+	"github.com/Yacobolo/quackstack/internal/domain"
+	"github.com/Yacobolo/quackstack/internal/service/query"
+	"github.com/Yacobolo/quackstack/internal/service/semantic"
 )
 
 type queryExecutor interface {

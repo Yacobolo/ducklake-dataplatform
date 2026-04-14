@@ -19,11 +19,11 @@ The CLI is an advanced access surface for users and admins who need scripted wor
 ## High-Value Commands
 
 ```bash
-./bin/duck version
-./bin/duck commands --filter query
-./bin/duck api search "grant"
-./bin/duck config show
-./bin/duck find tables movie
+./bin/quack version
+./bin/quack commands --filter query
+./bin/quack api search "grant"
+./bin/quack config show
+./bin/quack find tables movie
 ```
 
 ## Output and Auth Defaults

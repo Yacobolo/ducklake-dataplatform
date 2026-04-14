@@ -5,7 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 
-	"duck-demo/internal/domain"
+	"github.com/Yacobolo/quackstack/internal/domain"
 )
 
 // MetastoreRepo implements domain.MetastoreQuerier using a SQLite connection

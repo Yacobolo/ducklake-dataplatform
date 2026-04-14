@@ -11,7 +11,7 @@ import (
 
 	"go.yaml.in/yaml/v4"
 
-	"duck-demo/pkg/apigen/ir"
+	"github.com/Yacobolo/quackstack/pkg/apigen/ir"
 )
 
 // Options configures OpenAPI emission.

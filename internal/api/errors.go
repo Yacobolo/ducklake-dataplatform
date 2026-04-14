@@ -4,7 +4,7 @@ import (
 	"errors"
 	"net/http"
 
-	"duck-demo/internal/domain"
+	"github.com/Yacobolo/quackstack/internal/domain"
 )
 
 // httpStatusFromDomainError maps domain errors to HTTP status codes.

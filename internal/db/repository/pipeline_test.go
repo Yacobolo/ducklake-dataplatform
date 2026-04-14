@@ -9,8 +9,8 @@ import (
 
 	_ "github.com/mattn/go-sqlite3"
 
-	internaldb "duck-demo/internal/db"
-	"duck-demo/internal/domain"
+	internaldb "github.com/Yacobolo/quackstack/internal/db"
+	"github.com/Yacobolo/quackstack/internal/domain"
 )
 
 func setupPipelineRepo(t *testing.T) *PipelineRepo {

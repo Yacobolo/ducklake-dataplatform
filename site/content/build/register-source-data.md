@@ -19,7 +19,7 @@ Use this guide when you are establishing the foundation for downstream models, a
 2. create or register the source table or view
 3. document owner, comment, and intended usage
 4. apply baseline grants before wider discovery
-5. confirm the object is queryable through Duck
+5. confirm the object is queryable through QuackStack
 
 ## What Good Looks Like
 

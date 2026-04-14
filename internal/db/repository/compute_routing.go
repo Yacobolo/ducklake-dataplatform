@@ -5,7 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 
-	"duck-demo/internal/domain"
+	"github.com/Yacobolo/quackstack/internal/domain"
 )
 
 var _ domain.ComputeRoutingRepository = (*ComputeRoutingRepo)(nil)

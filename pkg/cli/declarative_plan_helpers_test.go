@@ -5,7 +5,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"duck-demo/internal/declarative"
+	"github.com/Yacobolo/quackstack/internal/declarative"
 )
 
 func TestPlanExitCode(t *testing.T) {

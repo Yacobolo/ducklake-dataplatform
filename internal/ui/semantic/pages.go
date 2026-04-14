@@ -3,9 +3,9 @@ package semantic
 import (
 	"strconv"
 
-	"duck-demo/internal/domain"
-	semsvc "duck-demo/internal/service/semantic"
-	"duck-demo/internal/ui/core"
+	"github.com/Yacobolo/quackstack/internal/domain"
+	semsvc "github.com/Yacobolo/quackstack/internal/service/semantic"
+	"github.com/Yacobolo/quackstack/internal/ui/core"
 
 	. "maragu.dev/gomponents"
 	. "maragu.dev/gomponents/html"
@@ -173,11 +173,11 @@ func semanticModelDetailPage(d semanticModelDetailPageData) Node {
 						H1(Class("m-0 text-3xl font-semibold tracking-tight"), Text(d.ModelName)),
 						descriptionNode,
 						core.BadgeRow(
-				core.Badge("Base relation "+d.BaseModelRef, "accent"),
-				core.Badge("Time "+valueOrDash(d.DefaultTimeDim), ""),
-				core.Badge(strconv.Itoa(d.RelationshipCount)+" join paths", ""),
-				core.Badge(strconv.Itoa(len(d.Metrics))+" metrics", ""),
-				core.Badge(strconv.Itoa(d.ConnectedModelCount)+" connected relations", ""),
+							core.Badge("Base relation "+d.BaseModelRef, "accent"),
+							core.Badge("Time "+valueOrDash(d.DefaultTimeDim), ""),
+							core.Badge(strconv.Itoa(d.RelationshipCount)+" join paths", ""),
+							core.Badge(strconv.Itoa(len(d.Metrics))+" metrics", ""),
+							core.Badge(strconv.Itoa(d.ConnectedModelCount)+" connected relations", ""),
 						),
 					),
 					Div(Class("flex flex-wrap items-center gap-3 [&_form]:m-0 [&_form]:inline-flex"),
@@ -694,14 +694,14 @@ func semanticMetricEditPage(principal domain.ContextPrincipal, semanticModelID s
 		core.TextareaControl("min-h-24", Name("description"), Text(metric.Description)),
 		Label(Text("Metric type")),
 		core.SelectControl("", Name("metric_type"), optionSelected("SUM", metric.MetricType), optionSelected("COUNT", metric.MetricType), optionSelected("COUNT_DISTINCT", metric.MetricType), optionSelected("AVG", metric.MetricType), optionSelected("MIN", metric.MetricType), optionSelected("MAX", metric.MetricType), optionSelected("RATIO", metric.MetricType)),
-	Label(Text("Expression mode")),
-	core.SelectControl("", Name("expression_mode"), optionSelected("DSL", metric.ExpressionMode), optionSelected("SQL", metric.ExpressionMode)),
-	Label(Text("Expression")),
-	core.TextareaControl("min-h-24", Name("expression"), Required(), Text(metric.Expression)),
-	Label(Text("Join paths (comma separated)")),
-	core.InputControl("", Name("relationship_names"), Value(csvValues(metric.RelationshipNames))),
-	Label(Text("Metric filter SQL")),
-	core.InputControl("", Name("filter_sql"), Value(metric.FilterSQL)),
+		Label(Text("Expression mode")),
+		core.SelectControl("", Name("expression_mode"), optionSelected("DSL", metric.ExpressionMode), optionSelected("SQL", metric.ExpressionMode)),
+		Label(Text("Expression")),
+		core.TextareaControl("min-h-24", Name("expression"), Required(), Text(metric.Expression)),
+		Label(Text("Join paths (comma separated)")),
+		core.InputControl("", Name("relationship_names"), Value(csvValues(metric.RelationshipNames))),
+		Label(Text("Metric filter SQL")),
+		core.InputControl("", Name("filter_sql"), Value(metric.FilterSQL)),
 		Label(Text("Default time grain")),
 		core.InputControl("", Name("default_time_grain"), Value(metric.DefaultTimeGrain)),
 		Label(Text("Format")),

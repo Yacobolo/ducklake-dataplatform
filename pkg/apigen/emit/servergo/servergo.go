@@ -7,8 +7,8 @@ import (
 	"sort"
 	"strings"
 
-	openapiemit "duck-demo/pkg/apigen/emit/openapi"
-	"duck-demo/pkg/apigen/ir"
+	openapiemit "github.com/Yacobolo/quackstack/pkg/apigen/emit/openapi"
+	"github.com/Yacobolo/quackstack/pkg/apigen/ir"
 	"go.yaml.in/yaml/v4"
 )
 
@@ -77,7 +77,7 @@ func emit(doc ir.Document, opts Options) ([]byte, error) {
 	if usesTime {
 		b.WriteString("\t\"time\"\n\n")
 	}
-	b.WriteString("\tapigenchi \"duck-demo/pkg/apigen/runtime/chi\"\n")
+	b.WriteString("\tapigenchi \"github.com/Yacobolo/quackstack/pkg/apigen/runtime/chi\"\n")
 	b.WriteString(")\n\n")
 	b.WriteString("const embeddedOpenAPISpecJSON = `")
 	b.WriteString(specJSON)

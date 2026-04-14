@@ -3,7 +3,7 @@ package api
 import (
 	"context"
 
-	"duck-demo/internal/domain"
+	"github.com/Yacobolo/quackstack/internal/domain"
 )
 
 // viewService defines the view operations used by the API handler.

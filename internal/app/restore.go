@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"log/slog"
 
-	"duck-demo/internal/db/repository"
-	"duck-demo/internal/ddl"
+	"github.com/Yacobolo/quackstack/internal/db/repository"
+	"github.com/Yacobolo/quackstack/internal/ddl"
 )
 
 // restoreExternalTableViews recreates DuckDB VIEWs for all non-deleted external

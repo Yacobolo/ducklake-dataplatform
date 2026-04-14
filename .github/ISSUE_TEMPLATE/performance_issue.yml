@@ -22,7 +22,7 @@ body:
         - "repository (internal/db/repository — SQLite metadata queries)"
         - "api (internal/api — HTTP handler latency)"
         - "middleware (internal/middleware — auth overhead)"
-        - "extension (extension/duck_access — C++ extension)"
+        - "extension (extension/quack_access — C++ extension)"
         - "ingestion (data loading pipeline)"
         - "other / unknown"
     validations:

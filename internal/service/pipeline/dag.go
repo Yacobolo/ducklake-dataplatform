@@ -1,7 +1,7 @@
 // Package pipeline implements the pipeline orchestration service.
 package pipeline
 
-import "duck-demo/internal/domain"
+import "github.com/Yacobolo/quackstack/internal/domain"
 
 // ResolveExecutionOrder computes a topological ordering of pipeline jobs
 // using Kahn's algorithm. Returns levels of job IDs where each level

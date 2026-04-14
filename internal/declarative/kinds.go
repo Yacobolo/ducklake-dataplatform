@@ -217,4 +217,4 @@ const (
 )
 
 // SupportedAPIVersion is retained only for internal migration/test helpers.
-const SupportedAPIVersion = "duck/v1"
+const SupportedAPIVersion = "quackstack/v1"

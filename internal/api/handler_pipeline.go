@@ -3,7 +3,7 @@ package api
 import (
 	"context"
 
-	"duck-demo/internal/domain"
+	"github.com/Yacobolo/quackstack/internal/domain"
 )
 
 // pipelineService defines the pipeline operations used by the API handler.

@@ -8,8 +8,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"duck-demo/internal/db"
-	"duck-demo/internal/domain"
+	"github.com/Yacobolo/quackstack/internal/db"
+	"github.com/Yacobolo/quackstack/internal/domain"
 )
 
 func TestQueryJobRepo_CRUDLifecycle(t *testing.T) {

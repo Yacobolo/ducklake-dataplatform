@@ -13,8 +13,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
 
-	"duck-demo/internal/agent"
-	"duck-demo/internal/compute"
+	"github.com/Yacobolo/quackstack/internal/agent"
+	"github.com/Yacobolo/quackstack/internal/compute"
 )
 
 func TestRemoteExecutor_QueryContext(t *testing.T) {

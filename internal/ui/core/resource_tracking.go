@@ -4,8 +4,8 @@ import (
 	"net/http"
 	"strings"
 
-	"duck-demo/internal/domain"
-	"duck-demo/internal/service/resourceref"
+	"github.com/Yacobolo/quackstack/internal/domain"
+	"github.com/Yacobolo/quackstack/internal/service/resourceref"
 )
 
 func TrackResourceVisit(r *http.Request, deps *Dependencies, resource domain.ResourceRef) error {

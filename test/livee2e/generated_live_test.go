@@ -17,7 +17,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	internalapi "duck-demo/internal/api"
+	internalapi "github.com/Yacobolo/quackstack/internal/api"
 )
 
 func TestLive_Smoke(t *testing.T) {

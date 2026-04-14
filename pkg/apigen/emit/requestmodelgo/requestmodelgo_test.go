@@ -3,7 +3,7 @@ package requestmodelgo
 import (
 	"testing"
 
-	"duck-demo/pkg/apigen/ir"
+	"github.com/Yacobolo/quackstack/pkg/apigen/ir"
 
 	"github.com/stretchr/testify/require"
 )

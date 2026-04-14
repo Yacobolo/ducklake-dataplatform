@@ -3,8 +3,8 @@ package cli
 import (
 	"github.com/spf13/cobra"
 
-	clipkg "duck-demo/pkg/cli/discovery"
-	"duck-demo/pkg/cli/gen"
+	clipkg "github.com/Yacobolo/quackstack/pkg/cli/discovery"
+	"github.com/Yacobolo/quackstack/pkg/cli/gen"
 )
 
 func loadDiscoveryCorpus(root *cobra.Command) clipkg.Corpus {

@@ -15,7 +15,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"duck-demo/internal/compute"
+	"github.com/Yacobolo/quackstack/internal/compute"
 )
 
 const (

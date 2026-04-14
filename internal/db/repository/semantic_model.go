@@ -6,8 +6,8 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"duck-demo/internal/db/dbstore"
-	"duck-demo/internal/domain"
+	"github.com/Yacobolo/quackstack/internal/db/dbstore"
+	"github.com/Yacobolo/quackstack/internal/domain"
 )
 
 // Compile-time check.
@@ -72,8 +72,8 @@ func (r *SemanticModelRepo) List(ctx context.Context, page domain.PageRequest) (
 	}
 
 	rows, err := r.q.ListSemanticModels(ctx, dbstore.ListSemanticModelsParams{
-		Limit:       int64(page.Limit()),
-		Offset:      int64(page.Offset()),
+		Limit:  int64(page.Limit()),
+		Offset: int64(page.Offset()),
 	})
 	if err != nil {
 		return nil, 0, err

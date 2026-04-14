@@ -15,7 +15,7 @@ const ThemeInitScript = `(function(){
   }
   var stored='auto';
   try {
-    stored=normalize(localStorage.getItem('duck-ui-theme')||'auto');
+    stored=normalize(localStorage.getItem('quack-ui-theme')||'auto');
   } catch (_) {}
   apply(stored);
   window.__duckUIThemeApply=apply;
@@ -43,7 +43,7 @@ const ThemeBehaviorScript = `(function(){
 
   function setMode(mode){
     apply(mode);
-    try { localStorage.setItem('duck-ui-theme', mode); } catch (_) {}
+    try { localStorage.setItem('quack-ui-theme', mode); } catch (_) {}
     syncThemeToggle();
   }
 

@@ -1,7 +1,7 @@
 (function () {
   const root = document.documentElement;
   const siteRoot = root.getAttribute("data-site-root") || "";
-  const key = "duck-site-theme";
+  const key = "quack-site-theme";
   const themeModes = ["system", "light", "dark"];
   const navButton = document.querySelector("[data-site-nav-toggle]");
   const nav = document.querySelector("[data-site-mobile-nav]");
@@ -252,7 +252,7 @@
       sidebarScroll.getAttribute("data-sidebar-kind") ||
       (document.querySelector("[data-api-page]") ? "api" : "docs");
     const sectionRoot = sidebarScroll.getAttribute("data-sidebar-section") || sidebarKind;
-    return "duck-site-sidebar-scroll:" + sidebarKind + ":" + sectionRoot;
+    return "quack-site-sidebar-scroll:" + sidebarKind + ":" + sectionRoot;
   }
 
   function revealActiveSidebarItem(sidebarScroll) {

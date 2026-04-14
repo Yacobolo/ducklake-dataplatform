@@ -63,7 +63,7 @@ func TestApplyCmd_AssetActionsExecute(t *testing.T) {
 
 	configDir := t.TempDir()
 	require.NoError(t, os.MkdirAll(filepath.Join(configDir, "cue.mod"), 0o755))
-	require.NoError(t, os.WriteFile(filepath.Join(configDir, "cue.mod", "module.cue"), []byte(`module: "duck.local/test"
+	require.NoError(t, os.WriteFile(filepath.Join(configDir, "cue.mod", "module.cue"), []byte(`module: "quackstack.local/test"
 language: {
 	version: "v0.14.0"
 }

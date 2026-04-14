@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"time"
 
-	"duck-demo/internal/domain"
+	"github.com/Yacobolo/quackstack/internal/domain"
 )
 
 const assetExecutionSkipMaterializationKey = "_skip_materialization"

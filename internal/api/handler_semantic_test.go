@@ -8,9 +8,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"duck-demo/internal/domain"
-	querysvc "duck-demo/internal/service/query"
-	semantic "duck-demo/internal/service/semantic"
+	"github.com/Yacobolo/quackstack/internal/domain"
+	querysvc "github.com/Yacobolo/quackstack/internal/service/query"
+	semantic "github.com/Yacobolo/quackstack/internal/service/semantic"
 )
 
 type mockSemanticService struct {
@@ -297,7 +297,7 @@ func TestHandler_ListSemanticMetrics_MapsDashboardFields(t *testing.T) {
 	}
 
 	resp, err := h.ListSemanticMetrics(context.Background(), GenListSemanticMetricsRequest{
-		SemanticModelId:   "sm-sales",
+		SemanticModelId: "sm-sales",
 	})
 	require.NoError(t, err)
 
@@ -366,7 +366,7 @@ func TestHandler_CreateSemanticMetric_MapsDashboardFields(t *testing.T) {
 	}
 
 	resp, err := h.CreateSemanticMetric(ctx, GenCreateSemanticMetricRequest{
-		SemanticModelId:   "sm-sales",
+		SemanticModelId: "sm-sales",
 		Body: &GenCreateSemanticMetricJSONBody{
 			Name:               "net_revenue",
 			Description:        &description,
@@ -450,8 +450,8 @@ func TestHandler_UpdateSemanticMetric_MapsDashboardFields(t *testing.T) {
 
 	expression := "SUM(profit) / SUM(revenue)"
 	resp, err := h.UpdateSemanticMetric(context.Background(), GenUpdateSemanticMetricRequest{
-		SemanticModelId:   "sm-sales",
-		MetricName:        "margin_rate",
+		SemanticModelId: "sm-sales",
+		MetricName:      "margin_rate",
 		Body: &GenUpdateSemanticMetricJSONBody{
 			Description:        &description,
 			Label:              &label,
@@ -489,8 +489,8 @@ func TestHandler_DeleteSemanticMetric_MapsRequest(t *testing.T) {
 	}
 
 	resp, err := h.DeleteSemanticMetric(context.Background(), GenDeleteSemanticMetricRequest{
-		SemanticModelId:   "sm-sales",
-		MetricName:        "margin_rate",
+		SemanticModelId: "sm-sales",
+		MetricName:      "margin_rate",
 	})
 	require.NoError(t, err)
 	_, ok := resp.(GenDeleteSemanticMetric204Response)
@@ -519,7 +519,7 @@ func TestHandler_ListSemanticModelRelationships_MapsNestedRequest(t *testing.T) 
 	}
 
 	resp, err := h.ListSemanticModelRelationships(context.Background(), GenListSemanticModelRelationshipsRequest{
-		SemanticModelId:   "sm-sales",
+		SemanticModelId: "sm-sales",
 	})
 	require.NoError(t, err)
 
@@ -566,7 +566,7 @@ func TestHandler_CreateSemanticModelRelationship_UsesPrincipalAndModelContext(t 
 	}
 
 	resp, err := h.CreateSemanticModelRelationship(ctx, GenCreateSemanticModelRelationshipRequest{
-		SemanticModelId:   "sm-sales",
+		SemanticModelId: "sm-sales",
 		Body: &GenCreateSemanticModelRelationshipJSONBody{
 			Name:             "sales_to_customers",
 			FromSemanticId:   "sm-sales",
@@ -621,8 +621,8 @@ func TestHandler_UpdateSemanticModelRelationship_MapsNestedRequest(t *testing.T)
 	}
 
 	resp, err := h.UpdateSemanticModelRelationship(context.Background(), GenUpdateSemanticModelRelationshipRequest{
-		SemanticModelId:   "sm-sales",
-		RelationshipName:  "sales_to_customers",
+		SemanticModelId:  "sm-sales",
+		RelationshipName: "sales_to_customers",
 		Body: &GenUpdateSemanticModelRelationshipJSONBody{
 			RelationshipType: &relationshipType,
 			JoinSql:          &joinSQL,
@@ -652,8 +652,8 @@ func TestHandler_DeleteSemanticModelRelationship_MapsNestedRequest(t *testing.T)
 	}
 
 	resp, err := h.DeleteSemanticModelRelationship(context.Background(), GenDeleteSemanticModelRelationshipRequest{
-		SemanticModelId:   "sm-sales",
-		RelationshipName:  "sales_to_customers",
+		SemanticModelId:  "sm-sales",
+		RelationshipName: "sales_to_customers",
 	})
 	require.NoError(t, err)
 	_, ok := resp.(GenDeleteSemanticModelRelationship204Response)
@@ -699,12 +699,12 @@ func TestHandler_ExplainMetricQuery_MapsRequestAndResponse(t *testing.T) {
 	}
 
 	resp, err := h.ExplainMetricQuery(context.Background(), GenExplainMetricQueryRequest{SemanticModelId: "sm-sales", Body: &GenExplainMetricQueryJSONBody{
-		Metrics:           []string{"total_revenue"},
-		Dimensions:        &dimensions,
-		Filters:           &filters,
-		OrderBy:           &orderBy,
-		Limit:             &limit,
-		TimeGrain:         &timeGrain,
+		Metrics:    []string{"total_revenue"},
+		Dimensions: &dimensions,
+		Filters:    &filters,
+		OrderBy:    &orderBy,
+		Limit:      &limit,
+		TimeGrain:  &timeGrain,
 	}})
 	require.NoError(t, err)
 
@@ -756,8 +756,8 @@ func TestHandler_RunMetricQuery_UsesPrincipalAndMapsResult(t *testing.T) {
 	}
 
 	resp, err := h.RunMetricQuery(ctx, GenRunMetricQueryRequest{SemanticModelId: "sm-sales", Body: &GenRunMetricQueryJSONBody{
-		Metrics:           []string{"total_revenue"},
-		Limit:             &limit,
+		Metrics: []string{"total_revenue"},
+		Limit:   &limit,
 	}})
 	require.NoError(t, err)
 

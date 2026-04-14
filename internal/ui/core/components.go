@@ -6,7 +6,7 @@ import (
 	"sort"
 	"strings"
 
-	"duck-demo/internal/domain"
+	"github.com/Yacobolo/quackstack/internal/domain"
 
 	. "maragu.dev/gomponents"
 	data "maragu.dev/gomponents-datastar"

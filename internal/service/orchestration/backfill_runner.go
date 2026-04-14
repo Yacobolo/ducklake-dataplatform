@@ -8,7 +8,7 @@ import (
 	"sort"
 	"sync"
 
-	"duck-demo/internal/domain"
+	"github.com/Yacobolo/quackstack/internal/domain"
 	"golang.org/x/sync/errgroup"
 )
 

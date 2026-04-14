@@ -1,6 +1,6 @@
 # JSON IR Contract (`v1`)
 
-`duck-demo/pkg/apigen/ir` defines the versioned JSON intermediate representation consumed by APIGen.
+`github.com/Yacobolo/quackstack/pkg/apigen/ir` defines the versioned JSON intermediate representation consumed by APIGen.
 
 ## Versioning
 

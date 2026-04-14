@@ -1,6 +1,6 @@
 ---
 title: Authentication And Identities
-description: Choose how people and services authenticate and how principals and groups are represented in Duck.
+description: Choose how people and services authenticate and how principals and groups are represented in QuackStack.
 ---
 
 # Authentication And Identities

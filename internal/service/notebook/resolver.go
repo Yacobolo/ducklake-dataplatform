@@ -3,7 +3,7 @@ package notebook
 import (
 	"context"
 
-	"duck-demo/internal/domain"
+	"github.com/Yacobolo/quackstack/internal/domain"
 )
 
 // ContextResolver computes effective notebook context from overrides and folder inheritance.

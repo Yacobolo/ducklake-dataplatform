@@ -4,18 +4,18 @@ import (
 	"strings"
 	"testing"
 
-	cobraruntime "duck-demo/pkg/apigen/runtime/cobra"
+	cobraruntime "github.com/Yacobolo/quackstack/pkg/apigen/runtime/cobra"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"duck-demo/pkg/cli/gen"
+	"github.com/Yacobolo/quackstack/pkg/cli/gen"
 )
 
 func TestBuildGeneratedCommandSpecsFromEndpoints_DetectsDuplicateCommands(t *testing.T) {
 	t.Helper()
 
-	root := &cobra.Command{Use: "duck"}
+	root := &cobra.Command{Use: "quack"}
 	err := cobraruntime.AddGeneratedCommands(root, nil, generatedRuntimeEndpoints([]gen.APIGenEndpoint{
 		{OperationID: "listSchemas", CLICommand: "catalog schemas list", Path: "/catalogs/{catalog_name}/schemas"},
 		{OperationID: "listTables", CLICommand: "catalog schemas list", Path: "/catalogs/{catalog_name}/schemas/{schema_name}/tables"},
@@ -30,7 +30,7 @@ func TestBuildGeneratedCommandSpecsFromEndpoints_DetectsDuplicateCommands(t *tes
 func TestBuildGeneratedCommandSpecsFromEndpoints_PromotesSingleSegmentRoots(t *testing.T) {
 	t.Helper()
 
-	root := &cobra.Command{Use: "duck"}
+	root := &cobra.Command{Use: "quack"}
 	err := cobraruntime.AddGeneratedCommands(root, nil, generatedRuntimeEndpoints([]gen.APIGenEndpoint{
 		{OperationID: "executeQuery", CLICommand: "query", Path: "/query-executions"},
 		{OperationID: "submitQuery", CLICommand: "query submit", Path: "/queries"},

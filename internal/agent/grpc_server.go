@@ -6,8 +6,8 @@ import (
 	"sync/atomic"
 	"time"
 
-	"duck-demo/internal/compute"
-	computeproto "duck-demo/internal/compute/proto"
+	"github.com/Yacobolo/quackstack/internal/compute"
+	computeproto "github.com/Yacobolo/quackstack/internal/compute/proto"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"

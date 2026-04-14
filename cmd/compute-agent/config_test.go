@@ -35,7 +35,7 @@ func TestLoadAgentConfig(t *testing.T) {
 		assert.Equal(t, "test-token", cfg.AgentToken)
 		assert.Equal(t, ":9443", cfg.ListenAddr) // default
 		assert.Equal(t, ":9444", cfg.GRPCListenAddr)
-		assert.Equal(t, "duck-demo", cfg.S3Bucket) // default
+		assert.Equal(t, "github.com/Yacobolo/quackstack", cfg.S3Bucket) // default
 		assert.Equal(t, 0, cfg.MaxMemoryGB)
 		assert.Equal(t, 10*time.Minute, cfg.QueryResultTTL)
 		assert.Equal(t, 1*time.Minute, cfg.CleanupInterval)

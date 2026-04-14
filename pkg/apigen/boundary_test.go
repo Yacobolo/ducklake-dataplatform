@@ -32,10 +32,10 @@ func TestPublicPackagesAvoidRepoPrivateImports(t *testing.T) {
 
 		for _, imp := range file.Imports {
 			importPath := strings.Trim(imp.Path.Value, `"`)
-			if strings.HasPrefix(importPath, "duck-demo/pkg/apigen/") {
+			if strings.HasPrefix(importPath, "github.com/Yacobolo/quackstack/pkg/apigen/") {
 				continue
 			}
-			if strings.HasPrefix(importPath, "duck-demo/internal/") || strings.HasPrefix(importPath, "duck-demo/pkg/") {
+			if strings.HasPrefix(importPath, "github.com/Yacobolo/quackstack/internal/") || strings.HasPrefix(importPath, "github.com/Yacobolo/quackstack/pkg/") {
 				t.Fatalf("%s imports repo-private package %q", path, importPath)
 			}
 			if importPath == "github.com/go-chi/chi/v5" && !strings.HasPrefix(filepath.ToSlash(path), "runtime/chi/") {

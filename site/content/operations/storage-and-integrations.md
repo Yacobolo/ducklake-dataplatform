@@ -5,7 +5,7 @@ description: Operate storage credentials, external locations, and integration li
 
 # Storage And Integrations
 
-Use this guide when Duck needs to reach external storage or participate in a wider platform workflow such as Git-backed sync.
+Use this guide when QuackStack needs to reach external storage or participate in a wider platform workflow such as Git-backed sync.
 
 ## Inputs
 

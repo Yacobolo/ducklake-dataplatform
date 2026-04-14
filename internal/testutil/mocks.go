@@ -8,7 +8,7 @@ import (
 	"database/sql"
 	"time"
 
-	"duck-demo/internal/domain"
+	"github.com/Yacobolo/quackstack/internal/domain"
 )
 
 //revive:disable:exported

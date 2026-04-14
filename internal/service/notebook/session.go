@@ -11,7 +11,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"duck-demo/internal/domain"
+	"github.com/Yacobolo/quackstack/internal/domain"
 )
 
 // session holds the runtime state for a single notebook session.

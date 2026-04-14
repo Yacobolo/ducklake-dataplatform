@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"duck-demo/internal/domain"
+	"github.com/Yacobolo/quackstack/internal/domain"
 )
 
 // IngestionService defines the ingestion operations used by the API handler.

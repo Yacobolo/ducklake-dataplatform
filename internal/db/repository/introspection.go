@@ -5,7 +5,7 @@ import (
 	"database/sql"
 	"errors"
 
-	"duck-demo/internal/domain"
+	"github.com/Yacobolo/quackstack/internal/domain"
 )
 
 // IntrospectionRepo queries DuckLake metadata tables directly.

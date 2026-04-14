@@ -3,7 +3,7 @@ package auth
 import (
 	"fmt"
 
-	"duck-demo/internal/ui/core"
+	"github.com/Yacobolo/quackstack/internal/ui/core"
 
 	. "maragu.dev/gomponents"
 	. "maragu.dev/gomponents/html"

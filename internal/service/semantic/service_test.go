@@ -12,10 +12,10 @@ import (
 
 	_ "github.com/mattn/go-sqlite3"
 
-	internaldb "duck-demo/internal/db"
-	"duck-demo/internal/db/repository"
-	"duck-demo/internal/domain"
-	"duck-demo/internal/service/query"
+	internaldb "github.com/Yacobolo/quackstack/internal/db"
+	"github.com/Yacobolo/quackstack/internal/db/repository"
+	"github.com/Yacobolo/quackstack/internal/domain"
+	"github.com/Yacobolo/quackstack/internal/service/query"
 )
 
 type fakeQueryExecutor struct {

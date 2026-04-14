@@ -7,7 +7,7 @@ import (
 	"log/slog"
 	"os"
 
-	"duck-demo/internal/sitegen"
+	"github.com/Yacobolo/quackstack/internal/sitegen"
 )
 
 func main() {

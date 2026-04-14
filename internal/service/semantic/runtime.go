@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"strings"
 
-	"duck-demo/internal/domain"
-	"duck-demo/internal/service/query"
+	"github.com/Yacobolo/quackstack/internal/domain"
+	"github.com/Yacobolo/quackstack/internal/service/query"
 )
 
 type queryExecutor interface {

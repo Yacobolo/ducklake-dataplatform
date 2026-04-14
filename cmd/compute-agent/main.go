@@ -17,8 +17,8 @@ import (
 
 	_ "github.com/duckdb/duckdb-go/v2"
 
-	"duck-demo/internal/agent"
-	"duck-demo/internal/compute"
+	"github.com/Yacobolo/quackstack/internal/agent"
+	"github.com/Yacobolo/quackstack/internal/compute"
 
 	"google.golang.org/grpc"
 )

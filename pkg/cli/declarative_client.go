@@ -11,9 +11,9 @@ import (
 	"sort"
 	"strings"
 
-	"duck-demo/internal/declarative"
-	"duck-demo/internal/domain"
-	"duck-demo/pkg/cli/apiruntime"
+	"github.com/Yacobolo/quackstack/internal/declarative"
+	"github.com/Yacobolo/quackstack/internal/domain"
+	"github.com/Yacobolo/quackstack/pkg/cli/apiruntime"
 )
 
 // StateReader fetches current state from the server API.

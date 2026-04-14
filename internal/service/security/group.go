@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"duck-demo/internal/domain"
+	"github.com/Yacobolo/quackstack/internal/domain"
 )
 
 // GroupService provides group management operations.

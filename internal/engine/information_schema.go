@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"strings"
 
-	"duck-demo/internal/domain"
-	"duck-demo/internal/sqlrewrite"
+	"github.com/Yacobolo/quackstack/internal/domain"
+	"github.com/Yacobolo/quackstack/internal/sqlrewrite"
 )
 
 // CatalogRepoFactory creates per-catalog CatalogRepository instances.

@@ -2,14 +2,14 @@
 
 # Declarative Reference
 
-Duck declarative config is now CUE-native. The supported contract is a unified top-level `platform` value compiled from all `.cue` fragments in a config module.
+QuackStack declarative config is now CUE-native. The supported contract is a unified top-level `platform` value compiled from all `.cue` fragments in a config module.
 
 ## Module Contract
 
 - Config root must contain `cue.mod/module.cue`
 - All config files are `.cue`
 - The compiler recursively loads packages and unifies exported `platform` fragments
-- `duck validate`, `duck plan`, `duck apply`, and `duck export` all operate on the compiled CUE graph
+- `quack validate`, `quack plan`, `quack apply`, and `quack export` all operate on the compiled CUE graph
 
 ## Top-Level Sections
 
@@ -28,7 +28,7 @@ Duck declarative config is now CUE-native. The supported contract is a unified t
 ## Recommended Layout
 
 ```text
-duck-config/
+quackstack-config/
   cue.mod/module.cue
   workspaces/<workspace>/workspace.cue
   projects/<project>/project.cue

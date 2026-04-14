@@ -3,9 +3,9 @@ package api
 schema_version: "v1"
 
 info: {
-  "title": "Duck Data Platform API",
+  "title": "QuackStack API",
   "version": "0.1.0",
-  "description": "Duck Data Platform exposes a secure SQL query layer over DuckDB together with metadata management, RBAC, row-level security, column masking, lineage, orchestration, and semantic modeling APIs backed by SQLite metadata."
+  "description": "QuackStack exposes a secure SQL query layer over DuckDB together with metadata management, RBAC, row-level security, column masking, lineage, orchestration, and semantic modeling APIs backed by SQLite metadata."
 }
 
 servers: [

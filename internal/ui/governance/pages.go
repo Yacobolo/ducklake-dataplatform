@@ -4,9 +4,9 @@ import (
 	"sort"
 	"strconv"
 
-	"duck-demo/internal/domain"
-	"duck-demo/internal/service/query"
-	"duck-demo/internal/ui/core"
+	"github.com/Yacobolo/quackstack/internal/domain"
+	"github.com/Yacobolo/quackstack/internal/service/query"
+	"github.com/Yacobolo/quackstack/internal/ui/core"
 
 	. "maragu.dev/gomponents"
 	. "maragu.dev/gomponents/html"

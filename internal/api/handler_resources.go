@@ -4,8 +4,8 @@ import (
 	"context"
 	"time"
 
-	"duck-demo/internal/domain"
-	"duck-demo/internal/service/resourceref"
+	"github.com/Yacobolo/quackstack/internal/domain"
+	"github.com/Yacobolo/quackstack/internal/service/resourceref"
 )
 
 type resourceAccessService interface {

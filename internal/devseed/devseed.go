@@ -19,15 +19,15 @@ const (
 	DefaultTaxiZonesURL = "https://d37ci6vzurychx.cloudfront.net/misc/taxi_zone_lookup.csv"
 
 	// PlaceholderSampleMetastore is replaced with the rendered local metastore path.
-	PlaceholderSampleMetastore = "__DUCK_DEV_SAMPLE_METASTORE__"
+	PlaceholderSampleMetastore = "__QUACK_DEV_SAMPLE_METASTORE__"
 	// PlaceholderSampleDataDir is replaced with the rendered local data directory path.
-	PlaceholderSampleDataDir = "__DUCK_DEV_SAMPLE_DATA_DIR__"
+	PlaceholderSampleDataDir = "__QUACK_DEV_SAMPLE_DATA_DIR__"
 	// PlaceholderTaxiTripsPath is replaced with the cached taxi trips parquet path.
-	PlaceholderTaxiTripsPath = "__DUCK_DEV_TAXI_TRIPS__"
+	PlaceholderTaxiTripsPath = "__QUACK_DEV_TAXI_TRIPS__"
 	// PlaceholderTaxiZonesPath is replaced with the cached taxi zone CSV path.
-	PlaceholderTaxiZonesPath = "__DUCK_DEV_TAXI_ZONES__"
+	PlaceholderTaxiZonesPath = "__QUACK_DEV_TAXI_ZONES__"
 	// PlaceholderBootstrapUser is replaced with the bootstrap admin principal.
-	PlaceholderBootstrapUser = "__DUCK_DEV_BOOTSTRAP_PRINCIPAL__"
+	PlaceholderBootstrapUser = "__QUACK_DEV_BOOTSTRAP_PRINCIPAL__"
 )
 
 // DatasetSpec defines one downloaded seed input.

@@ -7,8 +7,8 @@ import (
 	"strings"
 	"time"
 
-	"duck-demo/internal/domain"
-	servicepolicy "duck-demo/internal/service/policy"
+	"github.com/Yacobolo/quackstack/internal/domain"
+	servicepolicy "github.com/Yacobolo/quackstack/internal/service/policy"
 )
 
 // ManifestVersion is the current manifest response contract version.
@@ -21,7 +21,7 @@ const (
 	// BrowserRuntimeEngineDuckDBWASM identifies the in-browser DuckDB runtime.
 	BrowserRuntimeEngineDuckDBWASM = "duckdb-wasm"
 	// BrowserRuntimeAdapterDuckAccess identifies the local manifest adapter contract.
-	BrowserRuntimeAdapterDuckAccess = "duck_access"
+	BrowserRuntimeAdapterDuckAccess = "quack_access"
 )
 
 // ManifestColumn describes a column in the manifest response.
@@ -132,7 +132,7 @@ func NewManifestService(
 
 // GetManifest resolves a table name for a principal, returning presigned URLs,
 // RLS filters, column masks, and column metadata. This is the primary endpoint
-// consumed by the duck_access DuckDB extension.
+// consumed by the quack_access DuckDB extension.
 func (s *ManifestService) GetManifest(
 	ctx context.Context,
 	principalName string,

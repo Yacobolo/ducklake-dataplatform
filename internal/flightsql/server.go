@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	"duck-demo/internal/domain"
+	"github.com/Yacobolo/quackstack/internal/domain"
 	arrowflight "github.com/apache/arrow-go/v18/arrow/flight"
 	arrowflightsql "github.com/apache/arrow-go/v18/arrow/flight/flightsql"
 	"google.golang.org/grpc"

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"duck-demo/internal/duckdbsql/catalog"
+	"github.com/Yacobolo/quackstack/internal/duckdbsql/catalog"
 )
 
 // Primary expression parsing: literals, column refs, function calls, CASE, CAST,

@@ -82,7 +82,7 @@ func TestLoadSaveUserConfig(t *testing.T) {
 	require.NoError(t, err)
 
 	// Verify file exists
-	configPath := filepath.Join(dir, ".duck", "config.yaml")
+	configPath := filepath.Join(dir, ".quack", "config.yaml")
 	_, err = os.Stat(configPath)
 	require.NoError(t, err)
 

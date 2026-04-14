@@ -4,9 +4,9 @@ import (
 	"context"
 	"database/sql"
 
-	"duck-demo/internal/db/dbstore"
-	"duck-demo/internal/db/mapper"
-	"duck-demo/internal/domain"
+	"github.com/Yacobolo/quackstack/internal/db/dbstore"
+	"github.com/Yacobolo/quackstack/internal/db/mapper"
+	"github.com/Yacobolo/quackstack/internal/domain"
 )
 
 var _ domain.NotebookModelLinkRepository = (*NotebookModelLinkRepo)(nil)

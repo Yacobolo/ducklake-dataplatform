@@ -5,7 +5,7 @@ import (
 	"database/sql"
 	"sync"
 
-	"duck-demo/internal/domain"
+	"github.com/Yacobolo/quackstack/internal/domain"
 )
 
 // RemoteCache manages cached RemoteExecutor instances keyed by endpoint ID.

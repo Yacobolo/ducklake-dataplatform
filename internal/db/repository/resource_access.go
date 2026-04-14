@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"time"
 
-	"duck-demo/internal/domain"
+	"github.com/Yacobolo/quackstack/internal/domain"
 )
 
 // ResourceAccessRepo stores resource access events in SQLite.

@@ -9,7 +9,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	internalapi "duck-demo/internal/api"
+	internalapi "github.com/Yacobolo/quackstack/internal/api"
 )
 
 func TestAPIGenContractBoundary_ComputeHandlersAvoidAdHocFallbacks(t *testing.T) {

@@ -2,14 +2,14 @@
 
 Standalone showcase examples have been retired.
 
-The canonical end-to-end declarative example now lives in [`/duck-config`](../duck-config), which also powers `task dev:seeded`.
+The canonical end-to-end declarative example now lives in [`/quackstack-config`](../quackstack-config), which also powers `task dev:seeded`.
 
 Recommended local flow:
 
 ```bash
 task dev:seeded
-./bin/duck validate --config-dir duck-config
-./bin/duck plan --config-dir duck-config
+./bin/quack validate --config-dir quackstack-config
+./bin/quack plan --config-dir quackstack-config
 ```
 
 Automated verification:

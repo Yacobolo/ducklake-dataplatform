@@ -30,7 +30,7 @@ func TestOIDC_UIFlow_CreatesSessionBackedAccess(t *testing.T) {
 	upsertResp := doRequest(t, http.MethodPut, env.Server.URL+"/v1/auth/provider/oidc", env.Keys.Admin, map[string]interface{}{
 		"enabled":       true,
 		"issuer_url":    providerURL,
-		"client_id":     "duck-ui-client",
+		"client_id":     "quack-ui-client",
 		"client_secret": "super-secret",
 	})
 	require.Equal(t, http.StatusNoContent, upsertResp.StatusCode)
@@ -125,7 +125,7 @@ func startFakeOIDCProvider(t *testing.T) (string, func()) {
 		claims := jwt.MapClaims{
 			"iss": server.URL,
 			"sub": "oidc-ui-user",
-			"aud": "duck-ui-client",
+			"aud": "quack-ui-client",
 			"exp": time.Now().Add(time.Hour).Unix(),
 			"iat": time.Now().Unix(),
 		}

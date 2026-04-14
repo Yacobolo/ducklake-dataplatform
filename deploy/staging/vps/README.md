@@ -24,7 +24,7 @@ The `Deploy Staging VPS` GitHub Actions workflow writes runtime values from GitH
 
 ### Image references
 
-- images are fixed to `ghcr.io/yacobolo/ducklake-dataplatform-...` and use `IMAGE_TAG`
+- images are fixed to `ghcr.io/yacobolo/quackstack-...` and use `IMAGE_TAG`
 
 ### Runtime config
 

@@ -5,7 +5,7 @@ description: Understand models, macros, tests, notebooks, runs, DAGs, and promot
 
 # Transformation Framework
 
-If you only remember one thing, remember this: Duck’s transformation framework is the builder workflow that turns raw inputs into trusted outputs through reusable logic, tests, exploration, and repeatable runs.
+If you only remember one thing, remember this: QuackStack’s transformation framework is the builder workflow that turns raw inputs into trusted outputs through reusable logic, tests, exploration, and repeatable runs.
 
 ## Why It Matters
 
@@ -34,9 +34,9 @@ Read the diagram left to right. Source tables feed the builder workflow. Macros 
 
 The table above is the shortest way to keep these objects straight. The most common confusion is between the transformation DAG and the asset DAG. The transformation DAG explains builder logic and model dependencies, while the asset DAG explains operational outputs, freshness, and remediation. The two graphs are related, but they are not the same concept.
 
-## Example In Duck
+## Example In QuackStack
 
-Imagine a raw trip events table. A builder first creates staging models to normalize source columns, then curated models to compute zone revenue and trip quality metrics. A shared macro encapsulates date bucketing logic so it is not copied into every model. Tests confirm the curated model has the expected keys and no impossible nulls. A notebook is used to experiment with a new calculation, and once the logic stabilizes, that notebook output is promoted into a managed model. When a model run executes, Duck records which steps ran and which tests passed or failed.
+Imagine a raw trip events table. A builder first creates staging models to normalize source columns, then curated models to compute zone revenue and trip quality metrics. A shared macro encapsulates date bucketing logic so it is not copied into every model. Tests confirm the curated model has the expected keys and no impossible nulls. A notebook is used to experiment with a new calculation, and once the logic stabilizes, that notebook output is promoted into a managed model. When a model run executes, QuackStack records which steps ran and which tests passed or failed.
 
 ## Common Misunderstandings
 

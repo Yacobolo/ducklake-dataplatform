@@ -5,7 +5,7 @@ description: Build your first reusable product from source data to semantic entr
 
 # First Data Product
 
-Use this quickstart when you want to understand how Duck’s builder workflow fits together from source data to a published, discoverable product.
+Use this quickstart when you want to understand how QuackStack’s builder workflow fits together from source data to a published, discoverable product.
 
 ## What You Will Create
 
@@ -51,7 +51,7 @@ Create semantic models, metrics, and relationships so consumers can query busine
 
 ## 5. Package the result as a product
 
-A strong data product in Duck includes:
+A strong data product in QuackStack includes:
 
 - domain and owner team
 - contract and intended audience

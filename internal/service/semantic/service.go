@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"duck-demo/internal/domain"
+	"github.com/Yacobolo/quackstack/internal/domain"
 )
 
 // Service provides business logic for semantic layer resource management.
@@ -524,9 +524,9 @@ func (s *Service) MaterializePreAggregation(ctx context.Context, principal, preA
 	}
 
 	req := MetricQueryRequest{
-		SemanticModelID:   model.ID,
-		Metrics:           append([]string(nil), preAgg.MetricSet...),
-		Dimensions:        append([]string(nil), preAgg.DimensionSet...),
+		SemanticModelID: model.ID,
+		Metrics:         append([]string(nil), preAgg.MetricSet...),
+		Dimensions:      append([]string(nil), preAgg.DimensionSet...),
 	}
 	if grain := strings.TrimSpace(preAgg.Grain); grain != "" {
 		req.TimeGrain = &grain

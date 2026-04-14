@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"duck-demo/internal/duckdbsql/catalog"
+	"github.com/Yacobolo/quackstack/internal/duckdbsql/catalog"
 )
 
 // Parser parses DuckDB SQL into an AST.

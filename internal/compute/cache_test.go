@@ -9,7 +9,7 @@ import (
 
 	_ "github.com/duckdb/duckdb-go/v2"
 
-	"duck-demo/internal/domain"
+	"github.com/Yacobolo/quackstack/internal/domain"
 )
 
 func TestRemoteCache_GetOrCreate(t *testing.T) {

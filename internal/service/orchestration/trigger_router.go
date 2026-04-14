@@ -4,7 +4,7 @@ package orchestration
 import (
 	"context"
 
-	"duck-demo/internal/domain"
+	"github.com/Yacobolo/quackstack/internal/domain"
 )
 
 type TriggerRouter struct {

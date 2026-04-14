@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"sync"
 
-	"duck-demo/internal/domain"
+	"github.com/Yacobolo/quackstack/internal/domain"
 )
 
 // DuckDBSecretManager wraps a DuckDB connection to manage secrets and catalog attachment.

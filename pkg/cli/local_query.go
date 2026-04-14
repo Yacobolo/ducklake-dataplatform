@@ -13,7 +13,7 @@ import (
 	// Register the embedded DuckDB driver used by CLI local BYOC execution.
 	_ "github.com/duckdb/duckdb-go/v2"
 
-	"duck-demo/pkg/cli/apiruntime"
+	"github.com/Yacobolo/quackstack/pkg/cli/apiruntime"
 )
 
 const (
@@ -22,7 +22,7 @@ const (
 	computeModeSharedEndpoint = "SHARED_ENDPOINT"
 )
 
-// The browser runtime will use the same DuckDB + duck_access manifest contract.
+// The browser runtime will use the same DuckDB + quack_access manifest contract.
 type localQueryExecutor interface {
 	Execute(ctx context.Context, cfg localQueryConfig, sqlQuery string) (*localQueryResult, error)
 }
@@ -84,10 +84,10 @@ func executeLocalQuery(cmd *cobra.Command, client *apiruntime.Client, sqlQuery s
 
 func resolveLocalQueryConfig(cmd *cobra.Command, client *apiruntime.Client) (localQueryConfig, error) {
 	if strings.TrimSpace(client.APIKey) == "" {
-		return localQueryConfig{}, fmt.Errorf("local BYOC execution requires an API key because duck_access secrets do not support bearer tokens")
+		return localQueryConfig{}, fmt.Errorf("local BYOC execution requires an API key because quack_access secrets do not support bearer tokens")
 	}
 
-	extensionPath, err := resolveDuckAccessExtensionPath(cmd)
+	extensionPath, err := resolveQuackAccessExtensionPath(cmd)
 	if err != nil {
 		return localQueryConfig{}, err
 	}
@@ -99,37 +99,37 @@ func resolveLocalQueryConfig(cmd *cobra.Command, client *apiruntime.Client) (loc
 	}, nil
 }
 
-func resolveDuckAccessExtensionPath(cmd *cobra.Command) (string, error) {
-	if value, _ := cmd.Root().PersistentFlags().GetString("duck-access-extension-path"); strings.TrimSpace(value) != "" {
-		return validateDuckAccessExtensionPath(strings.TrimSpace(value))
+func resolveQuackAccessExtensionPath(cmd *cobra.Command) (string, error) {
+	if value, _ := cmd.Root().PersistentFlags().GetString("quack-access-extension-path"); strings.TrimSpace(value) != "" {
+		return validateQuackAccessExtensionPath(strings.TrimSpace(value))
 	}
-	if value := strings.TrimSpace(os.Getenv("DUCK_ACCESS_EXTENSION_PATH")); value != "" {
-		return validateDuckAccessExtensionPath(value)
+	if value := strings.TrimSpace(os.Getenv("QUACK_ACCESS_EXTENSION_PATH")); value != "" {
+		return validateQuackAccessExtensionPath(value)
 	}
 
 	exePath, err := os.Executable()
 	if err == nil {
 		exeDir := filepath.Dir(exePath)
 		candidates := []string{
-			filepath.Join(exeDir, "duck_access.duckdb_extension"),
-			filepath.Join(exeDir, "lib", "duck_access.duckdb_extension"),
+			filepath.Join(exeDir, "quack_access.duckdb_extension"),
+			filepath.Join(exeDir, "lib", "quack_access.duckdb_extension"),
 		}
 		for _, candidate := range candidates {
-			if path, ok := existingDuckAccessExtensionPath(candidate); ok {
+			if path, ok := existingQuackAccessExtensionPath(candidate); ok {
 				return path, nil
 			}
 		}
 	}
 
-	devPath := filepath.Join("extension", "duck_access", "build", "release", "duck_access.duckdb_extension")
-	if path, ok := existingDuckAccessExtensionPath(devPath); ok {
+	devPath := filepath.Join("extension", "quack_access", "build", "release", "quack_access.duckdb_extension")
+	if path, ok := existingQuackAccessExtensionPath(devPath); ok {
 		return path, nil
 	}
 
-	return "", fmt.Errorf("duck_access extension not found; set --duck-access-extension-path or DUCK_ACCESS_EXTENSION_PATH")
+	return "", fmt.Errorf("quack_access extension not found; set --quack-access-extension-path or QUACK_ACCESS_EXTENSION_PATH")
 }
 
-func existingDuckAccessExtensionPath(path string) (string, bool) {
+func existingQuackAccessExtensionPath(path string) (string, bool) {
 	if _, err := os.Stat(path); err != nil {
 		return "", false
 	}
@@ -140,11 +140,11 @@ func existingDuckAccessExtensionPath(path string) (string, bool) {
 	return absPath, true
 }
 
-func validateDuckAccessExtensionPath(path string) (string, error) {
-	if resolvedPath, ok := existingDuckAccessExtensionPath(path); ok {
+func validateQuackAccessExtensionPath(path string) (string, error) {
+	if resolvedPath, ok := existingQuackAccessExtensionPath(path); ok {
 		return resolvedPath, nil
 	}
-	return "", fmt.Errorf("duck_access extension not found at %q", path)
+	return "", fmt.Errorf("quack_access extension not found at %q", path)
 }
 
 func (embeddedDuckDBLocalExecutor) Execute(ctx context.Context, cfg localQueryConfig, sqlQuery string) (*localQueryResult, error) {
@@ -159,7 +159,7 @@ func (embeddedDuckDBLocalExecutor) Execute(ctx context.Context, cfg localQueryCo
 		"SET autoload_known_extensions=true",
 		fmt.Sprintf("LOAD '%s'", escapeDuckDBString(cfg.ExtensionPath)),
 		fmt.Sprintf(
-			"CREATE SECRET my_platform (TYPE duck_access, API_URL '%s', API_KEY '%s')",
+			"CREATE SECRET my_platform (TYPE quack_access, API_URL '%s', API_KEY '%s')",
 			escapeDuckDBString(cfg.APIBaseURL),
 			escapeDuckDBString(cfg.APIKey),
 		),

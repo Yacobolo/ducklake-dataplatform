@@ -3,7 +3,7 @@ package compute
 import (
 	"fmt"
 
-	"duck-demo/internal/testutil"
+	"github.com/Yacobolo/quackstack/internal/testutil"
 )
 
 // errTest is a sentinel error for test scenarios.

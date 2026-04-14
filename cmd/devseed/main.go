@@ -8,7 +8,7 @@ import (
 	"os"
 	"time"
 
-	"duck-demo/internal/devseed"
+	"github.com/Yacobolo/quackstack/internal/devseed"
 )
 
 func main() {
@@ -33,7 +33,7 @@ func run() error {
 
 func runPrepare(args []string) error {
 	fs := flag.NewFlagSet("prepare", flag.ContinueOnError)
-	inputDir := fs.String("input-dir", "./duck-config", "Path to the checked-in seed config")
+	inputDir := fs.String("input-dir", "./quackstack-config", "Path to the checked-in seed config")
 	outputDir := fs.String("output-dir", "", "Path to the rendered config directory")
 	cacheDir := fs.String("cache-dir", "", "Path to the dataset cache directory")
 	sampleMetastorePath := fs.String("sample-metastore-path", "", "Path to the seed catalog metastore sqlite file")

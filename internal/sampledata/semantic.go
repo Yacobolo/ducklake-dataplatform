@@ -4,8 +4,8 @@ import (
 	"context"
 	"errors"
 
-	"duck-demo/internal/domain"
-	semanticsvc "duck-demo/internal/service/semantic"
+	"github.com/Yacobolo/quackstack/internal/domain"
+	semanticsvc "github.com/Yacobolo/quackstack/internal/service/semantic"
 )
 
 const sampleDashboardSemanticDescription = "Semantic layer entrypoint for the built-in NYC taxi dashboard review surface."

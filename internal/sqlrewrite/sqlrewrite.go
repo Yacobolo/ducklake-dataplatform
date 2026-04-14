@@ -9,7 +9,7 @@ import (
 	"fmt"
 	"strings"
 
-	"duck-demo/internal/duckdbsql"
+	"github.com/Yacobolo/quackstack/internal/duckdbsql"
 )
 
 // Operator constants for RLS rule conditions (migrated from policy package).

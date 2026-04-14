@@ -5,8 +5,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"duck-demo/pkg/astdb"
-	"duck-demo/pkg/astdb/governance"
+	"github.com/Yacobolo/quackstack/pkg/astdb"
+	"github.com/Yacobolo/quackstack/pkg/astdb/governance"
 
 	"github.com/stretchr/testify/require"
 )

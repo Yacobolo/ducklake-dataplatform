@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1
-# Multi-stage build for the duck-demo data platform server.
+# Multi-stage build for the github.com/Yacobolo/quackstack data platform server.
 
 # === Build stage ===
 FROM golang:1.25-bookworm AS builder
@@ -30,7 +30,7 @@ EXPOSE 8080
 
 # Default environment
 ENV LISTEN_ADDR=:8080 \
-    META_DB_PATH=/data/ducklake_meta.sqlite \
+    META_DB_PATH=/data/quackstack_meta.sqlite \
     LOG_LEVEL=info
 
 HEALTHCHECK --interval=10s --timeout=3s --start-period=5s --retries=3 \

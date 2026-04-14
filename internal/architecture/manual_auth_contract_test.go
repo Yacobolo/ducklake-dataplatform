@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"duck-demo/pkg/cli/gen"
+	"github.com/Yacobolo/quackstack/pkg/cli/gen"
 )
 
 func TestManualAuthEndpoints_AreCanonicalButNotAPIGenerated(t *testing.T) {

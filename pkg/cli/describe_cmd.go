@@ -9,7 +9,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"duck-demo/pkg/cli/apiruntime"
+	"github.com/Yacobolo/quackstack/pkg/cli/apiruntime"
 )
 
 func newDescribeCmd(client *apiruntime.Client) *cobra.Command {
@@ -18,23 +18,23 @@ func newDescribeCmd(client *apiruntime.Client) *cobra.Command {
 		Short: "Describe a catalog object with progressive detail",
 		Long: `Progressive disclosure: the level of detail depends on the object path depth.
 
-  duck describe                          → platform overview (all catalogs)
-  duck describe <catalog>                → catalog detail with schemas
-  duck describe <catalog.schema>         → schema detail with tables, views, volumes
-  duck describe <catalog.schema.table>   → table detail with columns, stats, security policies
+  quack describe                          → platform overview (all catalogs)
+  quack describe <catalog>                → catalog detail with schemas
+  quack describe <catalog.schema>         → schema detail with tables, views, volumes
+  quack describe <catalog.schema.table>   → table detail with columns, stats, security policies
 
 This is designed as the agent's "cat" for reading detailed metadata about any object.`,
 		Example: `  # Platform overview
-  duck describe
+  quack describe
 
   # Catalog detail
-  duck describe main
+  quack describe main
 
   # Schema with all its tables
-  duck describe main.analytics
+  quack describe main.analytics
 
   # Full table detail with columns and security
-  duck describe main.analytics.orders --output json`,
+  quack describe main.analytics.orders --output json`,
 		Args: cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			isJSON := getOutputFormat(cmd) == "json"

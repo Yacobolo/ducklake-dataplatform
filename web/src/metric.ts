@@ -123,4 +123,4 @@ function looksCurrency(label: string): boolean {
   return normalized.includes("revenue") || normalized.includes("amount") || normalized.includes("gross") || normalized.includes("cost") || normalized.includes("price");
 }
 
-customElements.define("duck-metric", DuckMetric);
+customElements.define("quack-metric", DuckMetric);
