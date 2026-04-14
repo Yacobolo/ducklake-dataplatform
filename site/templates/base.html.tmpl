@@ -10,7 +10,7 @@
     (function () {
       var stored = "system";
       try {
-        stored = localStorage.getItem("duck-site-theme") || "system";
+        stored = localStorage.getItem("quack-site-theme") || "system";
       } catch (_) {}
       var resolved = stored === "system"
         ? (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light")

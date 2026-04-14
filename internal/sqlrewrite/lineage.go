@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"strings"
 
-	"duck-demo/internal/domain"
-	"duck-demo/internal/duckdbsql"
+	"github.com/Yacobolo/quackstack/internal/domain"
+	"github.com/Yacobolo/quackstack/internal/duckdbsql"
 )
 
 // CatalogResolver provides column metadata for tables referenced in a query.

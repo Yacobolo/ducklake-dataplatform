@@ -69,16 +69,16 @@ func TestRenderHTMLPage_HomeUsesRealTemplates(t *testing.T) {
 	p := page{
 		RelPath:     "index.md",
 		URLPath:     "/",
-		Title:       "Duck Data Platform",
+		Title:       "QuackStack",
 		Description: home.Hero.Tagline,
 		Kind:        pageKindHome,
 		IsHome:      true,
 		Home:        home,
 	}
 	data := pageTemplateData{
-		Site:      siteConfig{Title: "Duck Data Platform"},
+		Site:      siteConfig{Title: "QuackStack"},
 		Page:      p,
-		MetaTitle: "Duck Data Platform",
+		MetaTitle: "QuackStack",
 		Home:      home,
 		HomeView:  buildHomeView(home),
 	}
@@ -104,9 +104,9 @@ func TestRenderHTMLPage_DocsUsesRealTemplates(t *testing.T) {
 		Kind:        pageKindDocs,
 	}
 	data := pageTemplateData{
-		Site:        siteConfig{Title: "Duck Data Platform"},
+		Site:        siteConfig{Title: "QuackStack"},
 		Page:        p,
-		MetaTitle:   "Quickstart | Duck Data Platform",
+		MetaTitle:   "Quickstart | QuackStack",
 		BodyHTML:    `<p>Run your first secure query.</p>`,
 		Breadcrumbs: buildBreadcrumbs(p),
 	}
@@ -217,25 +217,25 @@ func TestCopySiteAssets_CopiesDiagrams(t *testing.T) {
 }
 
 func TestNormalizeSiteRoot_UsesBaseURLPath(t *testing.T) {
-	assert.Equal(t, "/ducklake-dataplatform", normalizeSiteRoot("https://yacobolo.github.io/ducklake-dataplatform/"))
+	assert.Equal(t, "/quackstack", normalizeSiteRoot("https://yacobolo.github.io/quackstack/"))
 	assert.Empty(t, normalizeSiteRoot("https://yacobolo.github.io/"))
 	assert.Equal(t, "/preview", normalizeSiteRoot("/preview/"))
 }
 
 func TestJoinSiteURL_PrefixesInternalPaths(t *testing.T) {
-	assert.Equal(t, "/ducklake-dataplatform/docs/", joinSiteURL("/ducklake-dataplatform", "/docs/"))
+	assert.Equal(t, "/quackstack/docs/", joinSiteURL("/quackstack", "/docs/"))
 	assert.Equal(t, "/docs/", joinSiteURL("", "/docs/"))
-	assert.Equal(t, "https://example.com/docs/", joinSiteURL("/ducklake-dataplatform", "https://example.com/docs/"))
-	assert.Equal(t, "#overview", joinSiteURL("/ducklake-dataplatform", "#overview"))
+	assert.Equal(t, "https://example.com/docs/", joinSiteURL("/quackstack", "https://example.com/docs/"))
+	assert.Equal(t, "#overview", joinSiteURL("/quackstack", "#overview"))
 }
 
 func TestPrefixSiteRootInHTML_RewritesInternalHrefAndSrc(t *testing.T) {
 	source := `<p><a href="/docs/start-here/">Docs</a><img src="/_site/diagrams/a.svg" alt=""></p>`
 
-	rendered := prefixSiteRootInHTML(source, "/ducklake-dataplatform")
+	rendered := prefixSiteRootInHTML(source, "/quackstack")
 
-	assert.Contains(t, rendered, `href="/ducklake-dataplatform/docs/start-here/"`)
-	assert.Contains(t, rendered, `src="/ducklake-dataplatform/_site/diagrams/a.svg"`)
+	assert.Contains(t, rendered, `href="/quackstack/docs/start-here/"`)
+	assert.Contains(t, rendered, `src="/quackstack/_site/diagrams/a.svg"`)
 }
 
 func TestAPIEndpointNavNode_UsesSinglePageEntry(t *testing.T) {

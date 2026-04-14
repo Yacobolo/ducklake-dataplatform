@@ -10,9 +10,9 @@ import (
 	"sync"
 	"testing"
 
-	"duck-demo/internal/db/dbstore"
-	"duck-demo/internal/db/repository"
-	"duck-demo/internal/domain"
+	"github.com/Yacobolo/quackstack/internal/db/dbstore"
+	"github.com/Yacobolo/quackstack/internal/db/repository"
+	"github.com/Yacobolo/quackstack/internal/domain"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

@@ -8,8 +8,8 @@ import (
 	"strings"
 	"time"
 
-	"duck-demo/internal/domain"
-	authsvc "duck-demo/internal/service/auth"
+	"github.com/Yacobolo/quackstack/internal/domain"
+	authsvc "github.com/Yacobolo/quackstack/internal/service/auth"
 )
 
 type AuthHTTPHandler struct {

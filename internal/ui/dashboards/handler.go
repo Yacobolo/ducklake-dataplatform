@@ -10,9 +10,9 @@ import (
 	"time"
 	"unicode"
 
-	"duck-demo/internal/domain"
-	dashboardsvc "duck-demo/internal/service/dashboard"
-	"duck-demo/internal/ui/core"
+	"github.com/Yacobolo/quackstack/internal/domain"
+	dashboardsvc "github.com/Yacobolo/quackstack/internal/service/dashboard"
+	"github.com/Yacobolo/quackstack/internal/ui/core"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/starfederation/datastar-go/datastar"

@@ -14,9 +14,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"duck-demo/internal/declarative"
-	"duck-demo/internal/domain"
-	"duck-demo/pkg/cli/apiruntime"
+	"github.com/Yacobolo/quackstack/internal/declarative"
+	"github.com/Yacobolo/quackstack/internal/domain"
+	"github.com/Yacobolo/quackstack/pkg/cli/apiruntime"
 )
 
 // execCapture stores method, path, body, and query for assertion in execute tests.
@@ -2552,7 +2552,7 @@ func TestExecuteExternalLocation_UpdateOmitsStorageType(t *testing.T) {
 		ResourceName: "e2e-lake",
 		Desired: declarative.ExternalLocationSpec{
 			Name:           "e2e-lake",
-			URL:            "s3://duck-e2e-bucket/",
+			URL:            "s3://quack-e2e-bucket/",
 			CredentialName: "e2e-s3",
 			StorageType:    "S3",
 			Comment:        "End to end external location",
@@ -2565,7 +2565,7 @@ func TestExecuteExternalLocation_UpdateOmitsStorageType(t *testing.T) {
 	assert.Equal(t, "/v1/external-locations/e2e-lake", captured[0].Path)
 	_, hasStorageType := captured[0].Body["storage_type"]
 	assert.False(t, hasStorageType)
-	assert.Equal(t, "s3://duck-e2e-bucket/", captured[0].Body["url"])
+	assert.Equal(t, "s3://quack-e2e-bucket/", captured[0].Body["url"])
 	assert.Equal(t, "e2e-s3", captured[0].Body["credential_name"])
 }
 

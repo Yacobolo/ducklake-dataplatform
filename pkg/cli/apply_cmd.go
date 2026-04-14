@@ -8,8 +8,8 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"duck-demo/internal/declarative"
-	"duck-demo/pkg/cli/apiruntime"
+	"github.com/Yacobolo/quackstack/internal/declarative"
+	"github.com/Yacobolo/quackstack/pkg/cli/apiruntime"
 )
 
 func newApplyCmd(client *apiruntime.Client) *cobra.Command {
@@ -210,7 +210,7 @@ func newApplyCmd(client *apiruntime.Client) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&configDir, "config-dir", "./duck-config", "Path to the CUE configuration module")
+	cmd.Flags().StringVar(&configDir, "config-dir", "./quackstack-config", "Path to the CUE configuration module")
 	cmd.Flags().BoolVar(&autoApprove, "auto-approve", false, "Skip interactive confirmation prompt")
 	cmd.Flags().BoolVar(&noColor, "no-color", false, "Disable colored output")
 	cmd.Flags().BoolVar(&allowUnknownFields, "allow-unknown-fields", false, "Deprecated no-op retained for compatibility with existing CLI wiring")

@@ -5,7 +5,7 @@ import (
 	"log/slog"
 	"sync"
 
-	"duck-demo/internal/domain"
+	"github.com/Yacobolo/quackstack/internal/domain"
 	"github.com/robfig/cron/v3"
 )
 

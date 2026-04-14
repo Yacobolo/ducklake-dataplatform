@@ -11,8 +11,8 @@ import (
 	_ "github.com/duckdb/duckdb-go/v2"
 	"github.com/stretchr/testify/require"
 
-	"duck-demo/internal/engine"
-	"duck-demo/internal/testutil"
+	"github.com/Yacobolo/quackstack/internal/engine"
+	"github.com/Yacobolo/quackstack/internal/testutil"
 )
 
 type mockExternalLocationRepo = testutil.MockExternalLocationRepo

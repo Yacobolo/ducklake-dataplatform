@@ -55,7 +55,7 @@ schemas_ingestion: {
   LoadExternalRequest: #objectSchema & {
     example: {
       paths: [
-        "s3://duck-demo/raw/orders/2026/04/13/*.parquet"
+        "s3://github.com/Yacobolo/quackstack/raw/orders/2026/04/13/*.parquet"
       ]
       options: {
         allow_missing_columns: false

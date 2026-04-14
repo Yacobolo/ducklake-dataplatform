@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"duck-demo/internal/domain"
+	"github.com/Yacobolo/quackstack/internal/domain"
 )
 
 // Managed runtime product kinds group system-synced runtime assets under draft products.

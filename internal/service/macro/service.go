@@ -5,7 +5,7 @@ import (
 	"context"
 	"sort"
 
-	"duck-demo/internal/domain"
+	"github.com/Yacobolo/quackstack/internal/domain"
 )
 
 // Service provides business logic for macro management.

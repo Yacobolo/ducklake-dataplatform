@@ -8,7 +8,7 @@ import (
 	"sort"
 	"strings"
 
-	"duck-demo/internal/domain"
+	"github.com/Yacobolo/quackstack/internal/domain"
 )
 
 // notebookService defines the notebook operations used by the API handler.

@@ -13,7 +13,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"duck-demo/pkg/cli/apiruntime"
+	"github.com/Yacobolo/quackstack/pkg/cli/apiruntime"
 )
 
 func init() {
@@ -60,7 +60,7 @@ func init() {
 			}
 			addComputeSelectionToBody(cmd, body)
 			if mode, _ := cmd.Flags().GetString("compute-mode"); strings.EqualFold(strings.TrimSpace(mode), computeModeBYOCLocal) {
-				return fmt.Errorf("BYOC_LOCAL is only supported for interactive execution; use `duck query execute` for local queries")
+				return fmt.Errorf("BYOC_LOCAL is only supported for interactive execution; use `quack query execute` for local queries")
 			}
 
 			resp, err := client.Do("POST", "/queries", nil, body)

@@ -13,10 +13,10 @@ import (
 	"github.com/coreos/go-oidc/v3/oidc"
 	"golang.org/x/oauth2"
 
-	"duck-demo/internal/config"
-	"duck-demo/internal/domain"
-	authsvc "duck-demo/internal/service/auth"
-	"duck-demo/internal/ui/core"
+	"github.com/Yacobolo/quackstack/internal/config"
+	"github.com/Yacobolo/quackstack/internal/domain"
+	authsvc "github.com/Yacobolo/quackstack/internal/service/auth"
+	"github.com/Yacobolo/quackstack/internal/ui/core"
 )
 
 const (

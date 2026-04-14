@@ -5,8 +5,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"duck-demo/internal/config"
-	"duck-demo/internal/service/orchestration"
+	"github.com/Yacobolo/quackstack/internal/config"
+	"github.com/Yacobolo/quackstack/internal/service/orchestration"
 )
 
 func newOrchestrationIOManager(cfg *config.Config) (orchestration.IOManager, error) {

@@ -3,7 +3,7 @@ package notebooks
 import (
 	"net/url"
 
-	"duck-demo/internal/domain"
+	"github.com/Yacobolo/quackstack/internal/domain"
 )
 
 func visualSpecFromForm(values url.Values) (*domain.VisualSpec, error) {

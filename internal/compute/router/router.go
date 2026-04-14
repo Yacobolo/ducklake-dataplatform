@@ -4,7 +4,7 @@ package router
 import (
 	"context"
 
-	"duck-demo/internal/domain"
+	"github.com/Yacobolo/quackstack/internal/domain"
 )
 
 // EndpointSelector chooses an endpoint from assignment candidates.

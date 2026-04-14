@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"duck-demo/pkg/astdb"
+	"github.com/Yacobolo/quackstack/pkg/astdb"
 
 	_ "github.com/duckdb/duckdb-go/v2"
 	"github.com/stretchr/testify/require"
@@ -378,14 +378,14 @@ func syntheticRulesForScaling() []syntheticRule {
 	}
 
 	importPrefixes := []string{
-		"duck-demo/internal/domain",
-		"duck-demo/internal/service",
-		"duck-demo/internal/api",
-		"duck-demo/internal/db",
-		"duck-demo/internal/engine",
-		"duck-demo/internal/middleware",
-		"duck-demo/internal/declarative",
-		"duck-demo/pkg/",
+		"github.com/Yacobolo/quackstack/internal/domain",
+		"github.com/Yacobolo/quackstack/internal/service",
+		"github.com/Yacobolo/quackstack/internal/api",
+		"github.com/Yacobolo/quackstack/internal/db",
+		"github.com/Yacobolo/quackstack/internal/engine",
+		"github.com/Yacobolo/quackstack/internal/middleware",
+		"github.com/Yacobolo/quackstack/internal/declarative",
+		"github.com/Yacobolo/quackstack/pkg/",
 		"context",
 		"database/sql",
 		"fmt",

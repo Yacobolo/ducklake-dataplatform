@@ -5,8 +5,8 @@ import (
 	"math"
 	"time"
 
-	"duck-demo/internal/domain"
-	"duck-demo/internal/service/semantic"
+	"github.com/Yacobolo/quackstack/internal/domain"
+	"github.com/Yacobolo/quackstack/internal/service/semantic"
 )
 
 // semanticService defines semantic layer operations used by the API handler.

@@ -8,8 +8,8 @@ import (
 	"sort"
 	"strings"
 
-	"duck-demo/internal/domain"
-	"duck-demo/internal/sqlrewrite"
+	"github.com/Yacobolo/quackstack/internal/domain"
+	"github.com/Yacobolo/quackstack/internal/sqlrewrite"
 )
 
 type edge struct {

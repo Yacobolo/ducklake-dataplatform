@@ -11,7 +11,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/stretchr/testify/assert"
 
-	"duck-demo/internal/api"
+	"github.com/Yacobolo/quackstack/internal/api"
 	"github.com/stretchr/testify/require"
 )
 

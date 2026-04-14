@@ -10,9 +10,9 @@ import (
 	"sync"
 	"time"
 
-	dbstore "duck-demo/internal/db/dbstore"
-	"duck-demo/internal/ddl"
-	"duck-demo/internal/domain"
+	dbstore "github.com/Yacobolo/quackstack/internal/db/dbstore"
+	"github.com/Yacobolo/quackstack/internal/ddl"
+	"github.com/Yacobolo/quackstack/internal/domain"
 )
 
 // CatalogRepo implements domain.CatalogRepository using the DuckLake SQLite

@@ -6,7 +6,7 @@ import (
 	"path"
 	"strings"
 
-	"duck-demo/internal/domain"
+	"github.com/Yacobolo/quackstack/internal/domain"
 
 	"github.com/google/uuid"
 )

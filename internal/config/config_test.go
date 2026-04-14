@@ -42,7 +42,7 @@ func TestLoadFromEnv_Defaults(t *testing.T) {
 
 	assert.Nil(t, cfg.S3KeyID)
 	assert.Nil(t, cfg.S3Bucket)
-	assert.Equal(t, "ducklake_meta.sqlite", cfg.MetaDBPath)
+	assert.Equal(t, "quackstack_meta.sqlite", cfg.MetaDBPath)
 	assert.Equal(t, ":8080", cfg.ListenAddr)
 	assert.Equal(t, ":32010", cfg.FlightSQLAddr)
 	assert.Equal(t, ":5433", cfg.PGWireAddr)
@@ -261,7 +261,7 @@ func TestLoadFromEnv_ModeConflictWarning_LocalOnlyWithOIDC(t *testing.T) {
 func TestLoadFromEnv_ModeConflictWarning_OIDCOnlyWithAPIKey(t *testing.T) {
 	t.Setenv("AUTH_MODE", "oidc_only")
 	t.Setenv("AUTH_ISSUER_URL", "https://issuer.example.com")
-	t.Setenv("AUTH_AUDIENCE", "duck-demo")
+	t.Setenv("AUTH_AUDIENCE", "github.com/Yacobolo/quackstack")
 	t.Setenv("AUTH_API_KEY_ENABLED", "true")
 
 	cfg, err := LoadFromEnv()

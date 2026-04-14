@@ -10,8 +10,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"duck-demo/internal/db/repository"
-	"duck-demo/internal/domain"
+	"github.com/Yacobolo/quackstack/internal/db/repository"
+	"github.com/Yacobolo/quackstack/internal/domain"
 )
 
 // seedLineageEdges inserts test lineage edges directly via the repository.

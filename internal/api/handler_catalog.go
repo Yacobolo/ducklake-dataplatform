@@ -4,7 +4,7 @@ import (
 	"context"
 	"net/http"
 
-	"duck-demo/internal/domain"
+	"github.com/Yacobolo/quackstack/internal/domain"
 )
 
 // principalFromCtx extracts the principal name from the context.

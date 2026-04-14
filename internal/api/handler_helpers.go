@@ -6,7 +6,7 @@ import (
 	"reflect"
 	"time"
 
-	"duck-demo/internal/domain"
+	"github.com/Yacobolo/quackstack/internal/domain"
 )
 
 // --- helpers ---

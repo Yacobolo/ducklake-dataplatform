@@ -1,11 +1,11 @@
 ---
 title: Getting Started
-description: Pick the right path for querying data, building a product, or operating Duck.
+description: Pick the right path for querying data, building a product, or operating QuackStack.
 ---
 
 # Getting Started
 
-Duck is a governed data platform built around three outcomes:
+QuackStack is a governed data platform built around three outcomes:
 
 - users can query trusted data through a secure control plane
 - builders can package reusable data products instead of shipping scattered SQL
@@ -17,7 +17,7 @@ Duck is a governed data platform built around three outcomes:
 - [First data product](/start-here/first-data-product) if you are building sources, transformations, assets, and semantic entrypoints.
 - [First operator setup](/start-here/first-operator-setup) if you own auth, storage, compute, or platform posture.
 
-## What Duck Covers
+## What QuackStack Covers
 
 | Platform Area | What It Covers | Primary Audience |
 | --- | --- | --- |

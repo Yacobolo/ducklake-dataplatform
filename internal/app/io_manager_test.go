@@ -6,8 +6,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"duck-demo/internal/config"
-	"duck-demo/internal/service/orchestration"
+	"github.com/Yacobolo/quackstack/internal/config"
+	"github.com/Yacobolo/quackstack/internal/service/orchestration"
 )
 
 func TestNewOrchestrationIOManager_DefaultMemory(t *testing.T) {

@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"duck-demo/internal/domain"
+	"github.com/Yacobolo/quackstack/internal/domain"
 )
 
 // OrchestrationEventHandler processes notebook-related orchestration events.

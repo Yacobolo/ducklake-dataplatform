@@ -7,8 +7,8 @@ import (
 	"strconv"
 	"strings"
 
-	"duck-demo/internal/domain"
-	dashboardsvc "duck-demo/internal/service/dashboard"
+	"github.com/Yacobolo/quackstack/internal/domain"
+	dashboardsvc "github.com/Yacobolo/quackstack/internal/service/dashboard"
 )
 
 type dashboardStateResponse struct {

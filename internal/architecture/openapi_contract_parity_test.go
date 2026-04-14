@@ -10,7 +10,7 @@ import (
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/stretchr/testify/require"
 
-	"duck-demo/internal/api"
+	"github.com/Yacobolo/quackstack/internal/api"
 )
 
 type openAPICoreOperation struct {

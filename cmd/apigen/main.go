@@ -10,12 +10,12 @@ import (
 	"os"
 	"path/filepath"
 
-	"duck-demo/pkg/apigen/cuegen"
-	cligoemit "duck-demo/pkg/apigen/emit/cligo"
-	openapiemit "duck-demo/pkg/apigen/emit/openapi"
-	requestmodelgoemit "duck-demo/pkg/apigen/emit/requestmodelgo"
-	servergoemit "duck-demo/pkg/apigen/emit/servergo"
-	"duck-demo/pkg/apigen/ir"
+	"github.com/Yacobolo/quackstack/pkg/apigen/cuegen"
+	cligoemit "github.com/Yacobolo/quackstack/pkg/apigen/emit/cligo"
+	openapiemit "github.com/Yacobolo/quackstack/pkg/apigen/emit/openapi"
+	requestmodelgoemit "github.com/Yacobolo/quackstack/pkg/apigen/emit/requestmodelgo"
+	servergoemit "github.com/Yacobolo/quackstack/pkg/apigen/emit/servergo"
+	"github.com/Yacobolo/quackstack/pkg/apigen/ir"
 	"go.yaml.in/yaml/v4"
 )
 

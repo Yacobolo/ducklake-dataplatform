@@ -113,10 +113,10 @@ func assertGeneratedImportsUsePublicSurfaces(t *testing.T, path string) {
 
 	content := mustReadFile(t, path)
 	for _, line := range strings.Split(content, "\n") {
-		if !strings.Contains(line, `"duck-demo/`) {
+		if !strings.Contains(line, `"github.com/Yacobolo/quackstack/`) {
 			continue
 		}
-		if strings.Contains(line, `"duck-demo/pkg/apigen/`) {
+		if strings.Contains(line, `"github.com/Yacobolo/quackstack/pkg/apigen/`) {
 			continue
 		}
 		t.Fatalf("%s imports non-public repo package: %s", path, strings.TrimSpace(line))
@@ -152,8 +152,8 @@ func prepareExampleWorkspace(t *testing.T, repoRoot string) string {
 
 	updatedGoMod := strings.ReplaceAll(
 		string(goModContent),
-		"replace duck-demo => ../..",
-		"replace duck-demo => "+repoRoot,
+		"replace github.com/Yacobolo/quackstack => ../..",
+		"replace github.com/Yacobolo/quackstack => "+repoRoot,
 	)
 	require.NoError(t, os.WriteFile(goModPath, []byte(updatedGoMod), 0o644))
 

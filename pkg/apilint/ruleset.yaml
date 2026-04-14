@@ -1,4 +1,4 @@
-# Vacuum ruleset for duck-demo OpenAPI spec.
+# Vacuum ruleset for github.com/Yacobolo/quackstack OpenAPI spec.
 #
 # Extends vacuum's recommended OAS rules (42 built-in) plus all OWASP rules
 # (23 security checks). Custom Go functions are registered programmatically;

@@ -14,7 +14,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"gopkg.in/yaml.v3"
 
-	"duck-demo/internal/declarative"
+	"github.com/Yacobolo/quackstack/internal/declarative"
 )
 
 type exampleExpectation struct {

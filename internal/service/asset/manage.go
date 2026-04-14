@@ -7,8 +7,8 @@ import (
 	"strings"
 	"time"
 
-	"duck-demo/internal/domain"
-	servicepolicy "duck-demo/internal/service/policy"
+	"github.com/Yacobolo/quackstack/internal/domain"
+	servicepolicy "github.com/Yacobolo/quackstack/internal/service/policy"
 )
 
 // CreateAsset creates an asset definition and reconciles dependencies and checks.

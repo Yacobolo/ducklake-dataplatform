@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"duck-demo/internal/domain"
+	"github.com/Yacobolo/quackstack/internal/domain"
 )
 
 type mockProductService struct {
@@ -55,7 +55,9 @@ func (m *mockProductService) CreateTeam(ctx context.Context, req domain.CreateTe
 func (m *mockProductService) UpdateTeam(context.Context, string, string, domain.UpdateTeamRequest) (*domain.Team, error) {
 	panic("not implemented")
 }
-func (m *mockProductService) DeleteTeam(context.Context, string, string) error { panic("not implemented") }
+func (m *mockProductService) DeleteTeam(context.Context, string, string) error {
+	panic("not implemented")
+}
 func (m *mockProductService) ListProducts(context.Context, domain.DataProductFilter) ([]domain.DataProductListItem, int64, error) {
 	panic("not implemented")
 }
@@ -139,8 +141,8 @@ func TestHandler_CreateProductTeam_MapsDomainErrors(t *testing.T) {
 		assertFn func(t *testing.T, resp GenCreateProductTeamResponse, err error)
 	}{
 		{
-			name: "missing body returns 400",
-			body: nil,
+			name:    "missing body returns 400",
+			body:    nil,
 			service: &mockProductService{},
 			assertFn: func(t *testing.T, resp GenCreateProductTeamResponse, err error) {
 				t.Helper()
@@ -151,8 +153,8 @@ func TestHandler_CreateProductTeam_MapsDomainErrors(t *testing.T) {
 			},
 		},
 		{
-			name: "missing domain name returns 400",
-			body: &GenCreateProductTeamJSONBody{Name: "analytics"},
+			name:    "missing domain name returns 400",
+			body:    &GenCreateProductTeamJSONBody{Name: "analytics"},
 			service: &mockProductService{},
 			assertFn: func(t *testing.T, resp GenCreateProductTeamResponse, err error) {
 				t.Helper()
@@ -163,8 +165,8 @@ func TestHandler_CreateProductTeam_MapsDomainErrors(t *testing.T) {
 			},
 		},
 		{
-			name: "missing name returns 400",
-			body: &GenCreateProductTeamJSONBody{},
+			name:    "missing name returns 400",
+			body:    &GenCreateProductTeamJSONBody{},
 			service: &mockProductService{},
 			assertFn: func(t *testing.T, resp GenCreateProductTeamResponse, err error) {
 				t.Helper()

@@ -9,8 +9,8 @@ import (
 	"strings"
 	"time"
 
-	"duck-demo/internal/domain"
-	"duck-demo/internal/ui/core"
+	"github.com/Yacobolo/quackstack/internal/domain"
+	"github.com/Yacobolo/quackstack/internal/ui/core"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/starfederation/datastar-go/datastar"

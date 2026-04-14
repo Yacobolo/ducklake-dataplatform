@@ -6,9 +6,9 @@ import (
 	"log/slog"
 	"strings"
 
-	"duck-demo/internal/domain"
-	"duck-demo/internal/service/auditutil"
-	servicepolicy "duck-demo/internal/service/policy"
+	"github.com/Yacobolo/quackstack/internal/domain"
+	"github.com/Yacobolo/quackstack/internal/service/auditutil"
+	servicepolicy "github.com/Yacobolo/quackstack/internal/service/policy"
 )
 
 // ExternalLocationService provides CRUD operations for external locations

@@ -7,7 +7,7 @@ import (
 	"strings"
 	"sync"
 
-	"duck-demo/internal/ui/assets"
+	"github.com/Yacobolo/quackstack/internal/ui/assets"
 )
 
 const DefaultScriptPrefix = "/ui/static/js/"
@@ -19,7 +19,7 @@ const ShellBehaviorScript = `(function(){
   var sidebarToggle=document.getElementById('sidebar-toggle');
   var overlay=document.getElementById('app-overlay');
   var sidebar=document.getElementById('app-sidebar');
-  var compactKey='duck-ui-sidebar-compact';
+  var compactKey='quack-ui-sidebar-compact';
   var sidebarCompactMedia=window.matchMedia('(max-width: 48rem)');
 
   function bindMediaListener(query, listener){
@@ -92,8 +92,8 @@ const ShellBehaviorScript = `(function(){
     });
   }
 
-  var asideStoragePrefix='duck-ui-workspace-aside-tab:';
-  var asideCollapsedPrefix='duck-ui-workspace-aside-collapsed:';
+  var asideStoragePrefix='quack-ui-workspace-aside-tab:';
+  var asideCollapsedPrefix='quack-ui-workspace-aside-collapsed:';
   var asides=document.querySelectorAll('[data-workspace-aside="true"]');
   asides.forEach(function(aside){
     if(!(aside instanceof HTMLElement)){ return; }

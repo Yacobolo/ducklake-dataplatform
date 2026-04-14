@@ -9,9 +9,9 @@ import (
 
 	"github.com/google/uuid"
 
-	"duck-demo/internal/domain"
-	servicepolicy "duck-demo/internal/service/policy"
-	"duck-demo/internal/service/query"
+	"github.com/Yacobolo/quackstack/internal/domain"
+	servicepolicy "github.com/Yacobolo/quackstack/internal/service/policy"
+	"github.com/Yacobolo/quackstack/internal/service/query"
 )
 
 // IngestionService handles Parquet file ingestion into DuckLake tables

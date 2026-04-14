@@ -19,7 +19,7 @@ import (
 	"os"
 	"text/tabwriter"
 
-	"duck-demo/pkg/apilint"
+	"github.com/Yacobolo/quackstack/pkg/apilint"
 )
 
 func main() {

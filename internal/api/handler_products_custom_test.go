@@ -15,10 +15,10 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	internaldb "duck-demo/internal/db"
-	"duck-demo/internal/db/repository"
-	"duck-demo/internal/domain"
-	productsvc "duck-demo/internal/service/product"
+	internaldb "github.com/Yacobolo/quackstack/internal/db"
+	"github.com/Yacobolo/quackstack/internal/db/repository"
+	"github.com/Yacobolo/quackstack/internal/domain"
+	productsvc "github.com/Yacobolo/quackstack/internal/service/product"
 )
 
 func TestProductRoutes_CreatePublishAndSubscribe(t *testing.T) {

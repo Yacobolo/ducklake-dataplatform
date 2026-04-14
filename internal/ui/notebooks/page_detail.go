@@ -9,9 +9,9 @@ import (
 	"strings"
 	"time"
 
-	"duck-demo/internal/domain"
-	"duck-demo/internal/service/query"
-	"duck-demo/internal/ui/core"
+	"github.com/Yacobolo/quackstack/internal/domain"
+	"github.com/Yacobolo/quackstack/internal/service/query"
+	"github.com/Yacobolo/quackstack/internal/ui/core"
 
 	"github.com/yuin/goldmark"
 	"github.com/yuin/goldmark/extension"
@@ -613,7 +613,7 @@ func chartHost(columns []string, rows [][]interface{}, visual *domain.VisualSpec
 	if err != nil {
 		payload = []byte("{}")
 	}
-	return El("duck-chart", Class("block min-h-[20rem]"), Attr("data-chart-payload", string(payload)))
+	return El("quack-chart", Class("block min-h-[20rem]"), Attr("data-chart-payload", string(payload)))
 }
 
 func visualMetricCard(title string, value interface{}, secondary string) Node {

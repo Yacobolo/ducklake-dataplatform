@@ -15,8 +15,8 @@ import (
 	"cuelang.org/go/cue/cuecontext"
 	"cuelang.org/go/cue/load"
 
-	openapiemit "duck-demo/pkg/apigen/emit/openapi"
-	"duck-demo/pkg/apigen/ir"
+	openapiemit "github.com/Yacobolo/quackstack/pkg/apigen/emit/openapi"
+	"github.com/Yacobolo/quackstack/pkg/apigen/ir"
 )
 
 // Source is the parity-first CUE representation for the APIGen contract.

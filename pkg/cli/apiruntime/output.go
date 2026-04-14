@@ -3,7 +3,7 @@ package apiruntime
 import (
 	"io"
 
-	cobraruntime "duck-demo/pkg/apigen/runtime/cobra"
+	cobraruntime "github.com/Yacobolo/quackstack/pkg/apigen/runtime/cobra"
 )
 
 // OutputFormat represents the output format shared by generated and hand-written CLI commands.

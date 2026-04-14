@@ -7,8 +7,8 @@ import (
 	"sort"
 	"strings"
 
-	"duck-demo/internal/domain"
-	servicepolicy "duck-demo/internal/service/policy"
+	"github.com/Yacobolo/quackstack/internal/domain"
+	servicepolicy "github.com/Yacobolo/quackstack/internal/service/policy"
 )
 
 type Service struct {

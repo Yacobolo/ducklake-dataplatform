@@ -13,7 +13,7 @@ import (
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/stretchr/testify/require"
 
-	"duck-demo/pkg/cli/gen"
+	"github.com/Yacobolo/quackstack/pkg/cli/gen"
 )
 
 type apiAuthz struct {

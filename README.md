@@ -1,6 +1,6 @@
-# Duck Data Platform
+# QuackStack Data Platform
 
-Duck is a secure SQL platform built on DuckDB with RBAC, row-level security, column masking, declarative configuration, and optional remote compute.
+QuackStack is a secure SQL platform built on DuckDB with RBAC, row-level security, column masking, declarative configuration, and optional remote compute.
 
 ## Start With the Docs
 
@@ -75,7 +75,7 @@ Notes:
 
 Start with the checked-in seeded platform config:
 
-- [`duck-config/README.md`](./duck-config/README.md)
+- [`quackstack-config/README.md`](./quackstack-config/README.md)
 - Run `task dev:seeded` to boot a clean local server and apply the rendered seed config automatically.
 
 ## Examples
@@ -102,7 +102,7 @@ internal/engine/        -- SecureEngine (DuckDB + RBAC + RLS + column masking)
 internal/sqlrewrite/    -- SQL parsing/rewriting via pg_query_go
 internal/middleware/    -- JWT, API key, rate limiting, request-ID, CORS
 internal/config/        -- Environment-based configuration
-extension/duck_access/  -- C++ DuckDB client extension
+extension/quack_access/  -- C++ DuckDB client extension
 ```
 
 Dependency direction: `api` -> `service` -> `domain` <- `repository`. Never import upward.

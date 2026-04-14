@@ -781,6 +781,6 @@ class DuckTable extends LitElement {
   }
 }
 
-if (!customElements.get("duck-table")) {
-  customElements.define("duck-table", DuckTable);
+if (!customElements.get("quack-table")) {
+  customElements.define("quack-table", DuckTable);
 }

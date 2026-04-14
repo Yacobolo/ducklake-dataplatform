@@ -11,8 +11,8 @@ import (
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 
-	"duck-demo/internal/config"
-	"duck-demo/internal/domain"
+	"github.com/Yacobolo/quackstack/internal/config"
+	"github.com/Yacobolo/quackstack/internal/domain"
 )
 
 // Compile-time checks: S3Presigner implements both presigner interfaces.
@@ -54,7 +54,7 @@ func NewS3Presigner(cfg *config.Config) (*S3Presigner, error) {
 		UsePathStyle: true, // Hetzner requires path-style URLs
 	})
 
-	bucket := "duck-demo"
+	bucket := "github.com/Yacobolo/quackstack"
 	if cfg.S3Bucket != nil {
 		bucket = *cfg.S3Bucket
 	}

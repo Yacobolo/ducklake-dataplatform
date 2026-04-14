@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"duck-demo/internal/domain"
-	"duck-demo/internal/sqlrewrite"
+	"github.com/Yacobolo/quackstack/internal/domain"
+	"github.com/Yacobolo/quackstack/internal/sqlrewrite"
 )
 
 // Compile-time check that CatalogAdapter implements CatalogResolver.

@@ -6,7 +6,7 @@ import (
 	"sort"
 	"strings"
 
-	"duck-demo/pkg/apigen/ir"
+	"github.com/Yacobolo/quackstack/pkg/apigen/ir"
 )
 
 // Options configures CLI metadata emission.
@@ -20,7 +20,7 @@ func Emit(doc ir.Document, opts Options) ([]byte, error) {
 	b.WriteString("package ")
 	b.WriteString(packageName(opts))
 	b.WriteString("\n\n")
-	b.WriteString("import apigencobra \"duck-demo/pkg/apigen/runtime/cobra\"\n\n")
+	b.WriteString("import apigencobra \"github.com/Yacobolo/quackstack/pkg/apigen/runtime/cobra\"\n\n")
 	b.WriteString("// APIGenEndpoint is generated from JSON IR.\n")
 	b.WriteString("type APIGenEndpoint = apigencobra.Endpoint\n\n")
 	b.WriteString("// APIGenParam is generated parameter metadata from JSON IR.\n")

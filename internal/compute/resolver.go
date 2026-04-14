@@ -7,8 +7,8 @@ import (
 	"log/slog"
 	"strings"
 
-	computerouter "duck-demo/internal/compute/router"
-	"duck-demo/internal/domain"
+	computerouter "github.com/Yacobolo/quackstack/internal/compute/router"
+	"github.com/Yacobolo/quackstack/internal/domain"
 )
 
 const assignmentLookupPageSize = 200

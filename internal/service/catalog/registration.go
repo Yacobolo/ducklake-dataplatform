@@ -10,9 +10,9 @@ import (
 
 	"golang.org/x/sync/errgroup"
 
-	"duck-demo/internal/ddl"
-	"duck-demo/internal/domain"
-	servicepolicy "duck-demo/internal/service/policy"
+	"github.com/Yacobolo/quackstack/internal/ddl"
+	"github.com/Yacobolo/quackstack/internal/domain"
+	servicepolicy "github.com/Yacobolo/quackstack/internal/service/policy"
 )
 
 // CatalogRegistrationService manages the lifecycle of DuckLake catalog registrations:

@@ -7,8 +7,8 @@ import (
 	"net/url"
 	"strings"
 
-	"duck-demo/internal/declarative"
-	"duck-demo/pkg/cli/apiruntime"
+	"github.com/Yacobolo/quackstack/internal/declarative"
+	"github.com/Yacobolo/quackstack/pkg/cli/apiruntime"
 )
 
 func httpStatusFromError(err error) (int, bool) {

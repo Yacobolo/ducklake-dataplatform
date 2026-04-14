@@ -7,8 +7,8 @@ import (
 	"strings"
 	"sync"
 
-	"duck-demo/internal/domain"
-	dashboardsvc "duck-demo/internal/service/dashboard"
+	"github.com/Yacobolo/quackstack/internal/domain"
+	dashboardsvc "github.com/Yacobolo/quackstack/internal/service/dashboard"
 )
 
 type dashboardUpdateHub struct {
@@ -23,11 +23,11 @@ func newDashboardUpdateHub() *dashboardUpdateHub {
 }
 
 type dashboardUpdateMessage struct {
-	FilterKey string
-	Version   string
+	FilterKey        string
+	Version          string
 	RawOriginFilters []string
-	Filters   []dashboardsvc.InteractiveFilter
-	TablePage *dashboardTablePageRequest
+	Filters          []dashboardsvc.InteractiveFilter
+	TablePage        *dashboardTablePageRequest
 }
 
 type dashboardTablePageRequest struct {

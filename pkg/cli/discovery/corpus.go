@@ -9,7 +9,7 @@ import (
 
 	"github.com/sahilm/fuzzy"
 
-	"duck-demo/pkg/cli/gen"
+	"github.com/Yacobolo/quackstack/pkg/cli/gen"
 )
 
 // CommandInfo is the subset of CLI command metadata used by the discovery

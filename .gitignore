@@ -34,7 +34,7 @@ go.work.sum
 .opencode/reference-docs
 .opencode/plans
 .codex/
-ducklake_meta.sqlite*
+quackstack_meta.sqlite*
 
 *PLAN.md
 

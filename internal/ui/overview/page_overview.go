@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"time"
 
-	"duck-demo/internal/domain"
-	"duck-demo/internal/ui/core"
+	"github.com/Yacobolo/quackstack/internal/domain"
+	"github.com/Yacobolo/quackstack/internal/ui/core"
 
 	. "maragu.dev/gomponents"
 	. "maragu.dev/gomponents/html"
@@ -49,7 +49,7 @@ func overviewHero(principal domain.ContextPrincipal, recentCount int, savedCount
 
 	return Div(
 		Class("relative"),
-		El("duck-home-hero",
+		El("quack-home-hero",
 			Attr("display-name", name),
 		),
 	)

@@ -9,9 +9,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	internaldb "duck-demo/internal/db"
-	"duck-demo/internal/db/crypto"
-	"duck-demo/internal/domain"
+	internaldb "github.com/Yacobolo/quackstack/internal/db"
+	"github.com/Yacobolo/quackstack/internal/db/crypto"
+	"github.com/Yacobolo/quackstack/internal/domain"
 )
 
 // setupExternalLocationRepo creates the repo and seeds storage credentials

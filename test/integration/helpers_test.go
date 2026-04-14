@@ -32,37 +32,37 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 	"google.golang.org/grpc"
 
-	"duck-demo/internal/agent"
-	"duck-demo/internal/api"
-	"duck-demo/internal/compute"
-	"duck-demo/internal/config"
-	internaldb "duck-demo/internal/db"
-	"duck-demo/internal/db/crypto"
-	dbstore "duck-demo/internal/db/dbstore"
-	"duck-demo/internal/db/repository"
-	"duck-demo/internal/domain"
-	"duck-demo/internal/engine"
-	"duck-demo/internal/middleware"
-	assetsvc "duck-demo/internal/service/asset"
-	authsvc "duck-demo/internal/service/auth"
-	"duck-demo/internal/service/catalog"
-	svccompute "duck-demo/internal/service/compute"
-	dashboardsvc "duck-demo/internal/service/dashboard"
-	exploresvc "duck-demo/internal/service/explore"
-	"duck-demo/internal/service/governance"
-	"duck-demo/internal/service/macro"
-	svcmodel "duck-demo/internal/service/model"
-	svcnotebook "duck-demo/internal/service/notebook"
-	"duck-demo/internal/service/orchestration"
-	svcpipeline "duck-demo/internal/service/pipeline"
-	productsvc "duck-demo/internal/service/product"
-	projectsvc "duck-demo/internal/service/project"
-	"duck-demo/internal/service/query"
-	"duck-demo/internal/service/security"
-	svcsemantic "duck-demo/internal/service/semantic"
-	"duck-demo/internal/service/storage"
-	workspacesvc "duck-demo/internal/service/workspace"
-	"duck-demo/internal/ui"
+	"github.com/Yacobolo/quackstack/internal/agent"
+	"github.com/Yacobolo/quackstack/internal/api"
+	"github.com/Yacobolo/quackstack/internal/compute"
+	"github.com/Yacobolo/quackstack/internal/config"
+	internaldb "github.com/Yacobolo/quackstack/internal/db"
+	"github.com/Yacobolo/quackstack/internal/db/crypto"
+	dbstore "github.com/Yacobolo/quackstack/internal/db/dbstore"
+	"github.com/Yacobolo/quackstack/internal/db/repository"
+	"github.com/Yacobolo/quackstack/internal/domain"
+	"github.com/Yacobolo/quackstack/internal/engine"
+	"github.com/Yacobolo/quackstack/internal/middleware"
+	assetsvc "github.com/Yacobolo/quackstack/internal/service/asset"
+	authsvc "github.com/Yacobolo/quackstack/internal/service/auth"
+	"github.com/Yacobolo/quackstack/internal/service/catalog"
+	svccompute "github.com/Yacobolo/quackstack/internal/service/compute"
+	dashboardsvc "github.com/Yacobolo/quackstack/internal/service/dashboard"
+	exploresvc "github.com/Yacobolo/quackstack/internal/service/explore"
+	"github.com/Yacobolo/quackstack/internal/service/governance"
+	"github.com/Yacobolo/quackstack/internal/service/macro"
+	svcmodel "github.com/Yacobolo/quackstack/internal/service/model"
+	svcnotebook "github.com/Yacobolo/quackstack/internal/service/notebook"
+	"github.com/Yacobolo/quackstack/internal/service/orchestration"
+	svcpipeline "github.com/Yacobolo/quackstack/internal/service/pipeline"
+	productsvc "github.com/Yacobolo/quackstack/internal/service/product"
+	projectsvc "github.com/Yacobolo/quackstack/internal/service/project"
+	"github.com/Yacobolo/quackstack/internal/service/query"
+	"github.com/Yacobolo/quackstack/internal/service/security"
+	svcsemantic "github.com/Yacobolo/quackstack/internal/service/semantic"
+	"github.com/Yacobolo/quackstack/internal/service/storage"
+	workspacesvc "github.com/Yacobolo/quackstack/internal/service/workspace"
+	"github.com/Yacobolo/quackstack/internal/ui"
 )
 
 // ctx is a package-level background context used by setup helpers.
@@ -232,13 +232,13 @@ func projectRoot() string {
 
 func extensionPath() string {
 	return filepath.Join(projectRoot(),
-		"extension", "duck_access", "build", "release",
-		"extension", "duck_access", "duck_access.duckdb_extension")
+		"extension", "quack_access", "build", "release",
+		"extension", "quack_access", "quack_access.duckdb_extension")
 }
 
 func duckdbCLIPath() string {
 	return filepath.Join(projectRoot(),
-		"extension", "duck_access", "build", "release", "duckdb")
+		"extension", "quack_access", "build", "release", "duckdb")
 }
 
 func dotEnvPath() string {
@@ -249,13 +249,13 @@ func dotEnvPath() string {
 // Prerequisites
 // ---------------------------------------------------------------------------
 
-// checkExtensionBinaries skips the test if the DuckDB CLI or duck_access
+// checkExtensionBinaries skips the test if the DuckDB CLI or quack_access
 // extension binary are not present on disk. Does NOT check S3 credentials.
 func checkExtensionBinaries(t *testing.T) {
 	t.Helper()
 
 	if _, err := os.Stat(extensionPath()); err != nil {
-		t.Skipf("extension binary not found at %s — build with: cd extension/duck_access && make", extensionPath())
+		t.Skipf("extension binary not found at %s — build with: cd extension/quack_access && make", extensionPath())
 	}
 	if _, err := os.Stat(duckdbCLIPath()); err != nil {
 		t.Skipf("DuckDB CLI not found at %s", duckdbCLIPath())
@@ -892,7 +892,7 @@ func setupLocalExtensionServer(t *testing.T) *testEnv {
 // DuckDB -json outputs [{"col":"val"}, ...].
 type duckDBResult []map[string]interface{}
 
-// runDuckDBQuery executes SQL through the DuckDB CLI with the duck_access
+// runDuckDBQuery executes SQL through the DuckDB CLI with the quack_access
 // extension loaded and a secret configured for the given API key/server.
 func runDuckDBQuery(t *testing.T, serverURL, apiKey, query string) (duckDBResult, string, error) {
 	t.Helper()
@@ -907,7 +907,7 @@ func runDuckDBQuery(t *testing.T, serverURL, apiKey, query string) (duckDBResult
 	sqlText := fmt.Sprintf(`SET autoinstall_known_extensions=true;
 SET autoload_known_extensions=true;
 LOAD '%s';
-CREATE SECRET my_platform (TYPE duck_access, API_URL '%s/v1', API_KEY '%s');
+CREATE SECRET my_platform (TYPE quack_access, API_URL '%s/v1', API_KEY '%s');
 %s
 `, absExtPath, serverURL, apiKey, query)
 

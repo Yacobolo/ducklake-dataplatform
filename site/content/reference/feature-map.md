@@ -1,6 +1,6 @@
 ---
 title: Feature Map
-description: See how Duck’s major platform capabilities connect to concepts, task guides, and generated reference.
+description: See how QuackStack’s major platform capabilities connect to concepts, task guides, and generated reference.
 ---
 
 # Feature Map

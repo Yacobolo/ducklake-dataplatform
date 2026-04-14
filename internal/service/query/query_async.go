@@ -9,7 +9,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"duck-demo/internal/domain"
+	"github.com/Yacobolo/quackstack/internal/domain"
 )
 
 const (

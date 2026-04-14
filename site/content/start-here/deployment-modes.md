@@ -1,11 +1,11 @@
 ---
-title: Ways to Access Duck
+title: Ways to Access QuackStack
 description: Choose the right interaction mode for users, builders, and operators.
 ---
 
-# Ways to Access Duck
+# Ways to Access QuackStack
 
-Duck supports multiple interaction modes because the same governed platform serves end users, builders, and operators.
+QuackStack supports multiple interaction modes because the same governed platform serves end users, builders, and operators.
 
 ## Access Modes
 

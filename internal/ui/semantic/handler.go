@@ -6,9 +6,9 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
-	"duck-demo/internal/domain"
-	semsvc "duck-demo/internal/service/semantic"
-	"duck-demo/internal/ui/core"
+	"github.com/Yacobolo/quackstack/internal/domain"
+	semsvc "github.com/Yacobolo/quackstack/internal/service/semantic"
+	"github.com/Yacobolo/quackstack/internal/ui/core"
 )
 
 type Handler struct{ deps *core.Dependencies }

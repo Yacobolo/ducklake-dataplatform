@@ -8,8 +8,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"duck-demo/internal/domain"
-	modelsvc "duck-demo/internal/service/model"
+	"github.com/Yacobolo/quackstack/internal/domain"
+	modelsvc "github.com/Yacobolo/quackstack/internal/service/model"
 )
 
 type mockModelService struct {

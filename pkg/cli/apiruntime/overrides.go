@@ -1,7 +1,7 @@
 package apiruntime
 
 import (
-	cobraruntime "duck-demo/pkg/apigen/runtime/cobra"
+	cobraruntime "github.com/Yacobolo/quackstack/pkg/apigen/runtime/cobra"
 	"github.com/spf13/cobra"
 )
 

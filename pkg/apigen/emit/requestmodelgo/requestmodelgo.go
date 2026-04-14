@@ -5,7 +5,7 @@ import (
 	"sort"
 	"strings"
 
-	"duck-demo/pkg/apigen/ir"
+	"github.com/Yacobolo/quackstack/pkg/apigen/ir"
 )
 
 // Options configures Go schema emission.

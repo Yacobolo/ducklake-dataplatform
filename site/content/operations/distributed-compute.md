@@ -5,7 +5,7 @@ description: Roll out remote workers without moving identity, policy, or governa
 
 # Distributed Compute
 
-This runbook describes how to roll out remote compute without weakening Duck’s security and governance model.
+This runbook describes how to roll out remote compute without weakening QuackStack’s security and governance model.
 
 ## Architecture Boundaries
 

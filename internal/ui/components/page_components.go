@@ -1,8 +1,8 @@
 package components
 
 import (
-	"duck-demo/internal/domain"
-	"duck-demo/internal/ui/core"
+	"github.com/Yacobolo/quackstack/internal/domain"
+	"github.com/Yacobolo/quackstack/internal/ui/core"
 
 	. "maragu.dev/gomponents"
 	. "maragu.dev/gomponents/html"

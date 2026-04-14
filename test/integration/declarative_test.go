@@ -18,9 +18,9 @@ import (
 	"github.com/stretchr/testify/require"
 	"gopkg.in/yaml.v3"
 
-	"duck-demo/internal/declarative"
-	"duck-demo/pkg/cli"
-	"duck-demo/pkg/cli/apiruntime"
+	"github.com/Yacobolo/quackstack/internal/declarative"
+	"github.com/Yacobolo/quackstack/pkg/cli"
+	"github.com/Yacobolo/quackstack/pkg/cli/apiruntime"
 )
 
 // ---------------------------------------------------------------------------
@@ -42,7 +42,7 @@ func ensureCUEModule(t *testing.T, dir string) {
 		return
 	}
 	require.NoError(t, os.MkdirAll(filepath.Dir(moduleFile), 0o750))
-	require.NoError(t, os.WriteFile(moduleFile, []byte(`module: "duck.local/integration-config"
+	require.NoError(t, os.WriteFile(moduleFile, []byte(`module: "quackstack.local/integration-config"
 language: {
 	version: "v0.14.0"
 }
@@ -278,7 +278,7 @@ func makeStateClient(t *testing.T, serverURL, apiKey string) *cli.APIStateClient
 // ---------------------------------------------------------------------------
 
 // seedPrincipalsYAML declares the 4 principals that seedRBAC creates.
-const seedPrincipalsYAML = `apiVersion: duck/v1
+const seedPrincipalsYAML = `apiVersion: quackstack/v1
 kind: PrincipalList
 principals:
   - name: admin_user
@@ -296,7 +296,7 @@ principals:
 `
 
 // seedGroupsYAML declares the 3 groups (with memberships) that seedRBAC creates.
-const seedGroupsYAML = `apiVersion: duck/v1
+const seedGroupsYAML = `apiVersion: quackstack/v1
 kind: GroupList
 groups:
   - name: admins
@@ -406,7 +406,7 @@ func TestDeclarative_ValidateOnly(t *testing.T) {
 	t.Run("invalid_principal_type", func(t *testing.T) {
 		dir := t.TempDir()
 
-		writeYAML(t, dir, "security/principals.yaml", `apiVersion: duck/v1
+		writeYAML(t, dir, "security/principals.yaml", `apiVersion: quackstack/v1
 kind: PrincipalList
 principals:
   - name: bad-user
@@ -425,13 +425,13 @@ principals:
 	t.Run("missing_group_member_reference", func(t *testing.T) {
 		dir := t.TempDir()
 
-		writeYAML(t, dir, "security/principals.yaml", `apiVersion: duck/v1
+		writeYAML(t, dir, "security/principals.yaml", `apiVersion: quackstack/v1
 kind: PrincipalList
 principals:
   - name: user1
     type: user
 `)
-		writeYAML(t, dir, "security/groups.yaml", `apiVersion: duck/v1
+		writeYAML(t, dir, "security/groups.yaml", `apiVersion: quackstack/v1
 kind: GroupList
 groups:
   - name: team
@@ -620,7 +620,7 @@ func TestDeclarative_ApplyUpdates(t *testing.T) {
 	// Write YAML with seeded principals (no change) and groups where
 	// the "admins" group has a description change.
 	writeYAML(t, dir, "security/principals.yaml", seedPrincipalsYAML)
-	writeYAML(t, dir, "security/groups.yaml", `apiVersion: duck/v1
+	writeYAML(t, dir, "security/groups.yaml", `apiVersion: quackstack/v1
 kind: GroupList
 groups:
   - name: admins
@@ -668,7 +668,7 @@ func TestDeclarative_GroupDescriptionUpdateConverges(t *testing.T) {
 
 	dir := t.TempDir()
 	writeYAML(t, dir, "security/principals.yaml", seedPrincipalsYAML)
-	writeYAML(t, dir, "security/groups.yaml", `apiVersion: duck/v1
+	writeYAML(t, dir, "security/groups.yaml", `apiVersion: quackstack/v1
 kind: GroupList
 groups:
   - name: admins
@@ -1057,7 +1057,7 @@ func TestDeclarative_PlanOutputFormat(t *testing.T) {
     type: user
     is_admin: false
 `)
-	writeYAML(t, dir, "security/groups.yaml", `apiVersion: duck/v1
+	writeYAML(t, dir, "security/groups.yaml", `apiVersion: quackstack/v1
 kind: GroupList
 groups:
   - name: admins
@@ -1117,7 +1117,7 @@ func TestDeclarative_GrantLifecycle(t *testing.T) {
 	writeYAML(t, dir, "security/groups.yaml", seedGroupsYAML)
 
 	// Build grants YAML that includes existing grants from the server + a new one.
-	grantsYAML := "apiVersion: duck/v1\nkind: GrantList\ngrants:\n"
+	grantsYAML := "apiVersion: quackstack/v1\nkind: GrantList\ngrants:\n"
 	for _, g := range actual.Grants {
 		grantsYAML += fmt.Sprintf(`  - principal: %s
     principal_type: %s
@@ -1154,7 +1154,7 @@ func TestDeclarative_ModelLifecycle(t *testing.T) {
 	stateClient := makeStateClient(t, env.Server.URL, env.Keys.Admin)
 
 	dir := t.TempDir()
-	writeYAML(t, dir, "models/analytics/stg_orders.yaml", `apiVersion: duck/v1
+	writeYAML(t, dir, "models/analytics/stg_orders.yaml", `apiVersion: quackstack/v1
 kind: Model
 metadata:
   name: stg_orders
@@ -1194,7 +1194,7 @@ spec:
 	assert.Empty(t, actionsOfKindAndOp(replan, declarative.KindModel, declarative.OpCreate), "model should be idempotent after create")
 	assert.Empty(t, actionsOfKindAndOp(replan, declarative.KindModel, declarative.OpUpdate), "model should be idempotent after create")
 
-	writeYAML(t, dir, "models/analytics/stg_orders.yaml", `apiVersion: duck/v1
+	writeYAML(t, dir, "models/analytics/stg_orders.yaml", `apiVersion: quackstack/v1
 kind: Model
 metadata:
   name: stg_orders
@@ -1247,7 +1247,7 @@ func TestDeclarative_NotebookPublishRemovalConverges(t *testing.T) {
 	stateClient := makeStateClient(t, env.Server.URL, env.Keys.Admin)
 
 	dir := t.TempDir()
-	writeYAML(t, dir, "notebooks/revenue_review.yaml", `apiVersion: duck/v1
+	writeYAML(t, dir, "notebooks/revenue_review.yaml", `apiVersion: quackstack/v1
 kind: Notebook
 metadata:
   name: revenue_review
@@ -1288,7 +1288,7 @@ spec:
 	replanCreate := declarative.Diff(desired, actualAfterCreate)
 	assertNotebookDriftFields(t, actionsOfKindAndOp(replanCreate, declarative.KindNotebook, declarative.OpUpdate), "workspace_ref")
 
-	writeYAML(t, dir, "notebooks/revenue_review.yaml", `apiVersion: duck/v1
+	writeYAML(t, dir, "notebooks/revenue_review.yaml", `apiVersion: quackstack/v1
 kind: Notebook
 metadata:
   name: revenue_review
@@ -1323,14 +1323,14 @@ func TestDeclarative_DataProductVersionRemovalConverges(t *testing.T) {
 	stateClient := makeStateClient(t, env.Server.URL, env.Keys.Admin)
 
 	dir := t.TempDir()
-	writeYAML(t, dir, "domains/revenue.yaml", `apiVersion: duck/v1
+	writeYAML(t, dir, "domains/revenue.yaml", `apiVersion: quackstack/v1
 kind: Domain
 metadata:
   name: revenue
 spec:
   description: Revenue domain
 `)
-	writeYAML(t, dir, "teams/analytics-engineering.yaml", `apiVersion: duck/v1
+	writeYAML(t, dir, "teams/analytics-engineering.yaml", `apiVersion: quackstack/v1
 kind: Team
 metadata:
   name: analytics-engineering
@@ -1338,7 +1338,7 @@ spec:
   domain_ref: revenue
   contact_channel: "#rev-data"
 `)
-	writeYAML(t, dir, "data-products/daily-orders.yaml", `apiVersion: duck/v1
+	writeYAML(t, dir, "data-products/daily-orders.yaml", `apiVersion: quackstack/v1
 kind: DataProduct
 metadata:
   name: daily-orders
@@ -1412,7 +1412,7 @@ func TestDeclarative_MacroLifecycle(t *testing.T) {
 	stateClient := makeStateClient(t, env.Server.URL, env.Keys.Admin)
 
 	dir := t.TempDir()
-	writeYAML(t, dir, "macros/fmt_money.yaml", `apiVersion: duck/v1
+	writeYAML(t, dir, "macros/fmt_money.yaml", `apiVersion: quackstack/v1
 kind: Macro
 metadata:
   name: fmt_money
@@ -1442,7 +1442,7 @@ spec:
 	assert.Empty(t, actionsOfKindAndOp(replan, declarative.KindMacro, declarative.OpCreate))
 	assert.Empty(t, actionsOfKindAndOp(replan, declarative.KindMacro, declarative.OpUpdate))
 
-	writeYAML(t, dir, "macros/fmt_money.yaml", `apiVersion: duck/v1
+	writeYAML(t, dir, "macros/fmt_money.yaml", `apiVersion: quackstack/v1
 kind: Macro
 metadata:
   name: fmt_money
@@ -1485,14 +1485,14 @@ func TestDeclarative_SemanticModelLifecycle(t *testing.T) {
 	stateClient := makeStateClient(t, env.Server.URL, env.Keys.Admin)
 
 	dir := t.TempDir()
-	writeYAML(t, dir, "semantic_models/customers.yaml", `apiVersion: duck/v1
+	writeYAML(t, dir, "semantic_models/customers.yaml", `apiVersion: quackstack/v1
 kind: SemanticModel
 metadata:
   name: customers
 spec:
   base_model_ref: analytics.dim_customers
 `)
-	writeYAML(t, dir, "semantic_models/sales.yaml", `apiVersion: duck/v1
+	writeYAML(t, dir, "semantic_models/sales.yaml", `apiVersion: quackstack/v1
 kind: SemanticModel
 metadata:
   name: sales
@@ -1531,7 +1531,7 @@ spec:
 	assert.Empty(t, actionsOfKindAndOp(replan, declarative.KindSemanticModel, declarative.OpCreate))
 	assert.Empty(t, actionsOfKindAndOp(replan, declarative.KindSemanticModel, declarative.OpUpdate))
 
-	writeYAML(t, dir, "semantic_models/sales.yaml", `apiVersion: duck/v1
+	writeYAML(t, dir, "semantic_models/sales.yaml", `apiVersion: quackstack/v1
 kind: SemanticModel
 metadata:
   name: sales
@@ -1601,7 +1601,7 @@ func TestDeclarative_SemanticApplyThenExplainAndRun(t *testing.T) {
 	require.NoError(t, err)
 
 	dir := t.TempDir()
-	writeYAML(t, dir, "semantic_models/sales_runtime.yaml", `apiVersion: duck/v1
+	writeYAML(t, dir, "semantic_models/sales_runtime.yaml", `apiVersion: quackstack/v1
 kind: SemanticModel
 metadata:
   name: sales_runtime

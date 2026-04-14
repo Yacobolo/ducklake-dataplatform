@@ -3,7 +3,7 @@ module github.com/example/apigen-consumer
 go 1.25.8
 
 require (
-	duck-demo v0.0.0
+	github.com/Yacobolo/quackstack v0.0.0
 	github.com/go-chi/chi/v5 v5.2.5
 	github.com/spf13/cobra v1.10.2
 )
@@ -15,4 +15,4 @@ require (
 	golang.org/x/term v0.41.0 // indirect
 )
 
-replace duck-demo => ../..
+replace github.com/Yacobolo/quackstack => ../..

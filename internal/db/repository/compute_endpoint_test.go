@@ -9,9 +9,9 @@ import (
 
 	_ "github.com/mattn/go-sqlite3"
 
-	internaldb "duck-demo/internal/db"
-	"duck-demo/internal/db/crypto"
-	"duck-demo/internal/domain"
+	internaldb "github.com/Yacobolo/quackstack/internal/db"
+	"github.com/Yacobolo/quackstack/internal/db/crypto"
+	"github.com/Yacobolo/quackstack/internal/domain"
 )
 
 func setupComputeEndpointRepo(t *testing.T) *ComputeEndpointRepo {

@@ -5,7 +5,7 @@ description: Learn the end-to-end builder workflow from source registration to p
 
 # Build
 
-This section teaches Duck as one continuous builder workflow:
+This section teaches QuackStack as one continuous builder workflow:
 
 1. register or select source data
 2. shape it with models, macros, and notebooks

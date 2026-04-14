@@ -14,7 +14,7 @@ import (
 	"strings"
 	"sync"
 
-	"duck-demo/internal/domain"
+	"github.com/Yacobolo/quackstack/internal/domain"
 )
 
 // Service provides business logic for model management.

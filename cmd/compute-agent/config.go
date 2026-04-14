@@ -84,7 +84,7 @@ func loadAgentConfig() (*AgentConfig, error) {
 		cfg.GRPCListenAddr = ":9444"
 	}
 	if cfg.S3Bucket == "" {
-		cfg.S3Bucket = "duck-demo"
+		cfg.S3Bucket = "github.com/Yacobolo/quackstack"
 	}
 	if cfg.QueryResultTTL <= 0 {
 		cfg.QueryResultTTL = 10 * time.Minute

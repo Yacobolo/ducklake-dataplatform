@@ -5,7 +5,7 @@ package model
 import (
 	"sort"
 
-	"duck-demo/internal/domain"
+	"github.com/Yacobolo/quackstack/internal/domain"
 )
 
 // DAGNode represents a model in the execution graph.

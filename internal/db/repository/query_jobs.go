@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"time"
 
-	"duck-demo/internal/domain"
+	"github.com/Yacobolo/quackstack/internal/domain"
 )
 
 var _ domain.QueryJobRepository = (*QueryJobRepo)(nil)

@@ -10,7 +10,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"duck-demo/pkg/cli/apiruntime"
+	"github.com/Yacobolo/quackstack/pkg/cli/apiruntime"
 )
 
 func newFindCmd(client *apiruntime.Client) *cobra.Command {
@@ -26,16 +26,16 @@ func newFindCmd(client *apiruntime.Client) *cobra.Command {
 		Long: `Search across all catalog objects (schemas, tables, columns) by name, comment, tag, or property.
 This is designed as the agent's "grep" for the data catalog.`,
 		Example: `  # Search for anything matching "revenue"
-  duck find "revenue"
+  quack find "revenue"
 
   # Search only tables
-  duck find "orders" --type table
+  quack find "orders" --type table
 
   # Search columns across all tables
-  duck find "customer_id" --type column
+  quack find "customer_id" --type column
 
   # Scoped search with JSON output for agent consumption
-  duck find "user" --catalog main --output json`,
+  quack find "user" --catalog main --output json`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runFind(cmd, client, args[0], objectType, catalog, maxResults)
@@ -58,8 +58,8 @@ func newFindTablesCmd(client *apiruntime.Client, catalog *string, maxResults *in
 		Use:   "tables <pattern>",
 		Short: "Search for tables by name pattern",
 		Long:  "Search for tables matching a name pattern. Supports * as wildcard for client-side filtering.",
-		Example: `  duck find tables "order*"
-  duck find tables "user" --catalog main --output json`,
+		Example: `  quack find tables "order*"
+  quack find tables "user" --catalog main --output json`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runFind(cmd, client, args[0], "table", *catalog, *maxResults)
@@ -72,8 +72,8 @@ func newFindColumnsCmd(client *apiruntime.Client, catalog *string, maxResults *i
 		Use:   "columns <pattern>",
 		Short: "Search for columns by name pattern across all tables",
 		Long:  "Search for columns matching a name pattern. Supports * as wildcard for client-side filtering.",
-		Example: `  duck find columns "id"
-  duck find columns "email*" --catalog main --output json`,
+		Example: `  quack find columns "id"
+  quack find columns "email*" --catalog main --output json`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runFind(cmd, client, args[0], "column", *catalog, *maxResults)

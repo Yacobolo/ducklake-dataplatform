@@ -2,7 +2,7 @@ package security
 
 import (
 	"context"
-	servicepolicy "duck-demo/internal/service/policy"
+	servicepolicy "github.com/Yacobolo/quackstack/internal/service/policy"
 )
 
 // requireAdmin checks that the caller in context has admin privileges.

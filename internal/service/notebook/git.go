@@ -13,8 +13,8 @@ import (
 	"strings"
 	"time"
 
-	"duck-demo/internal/declarative"
-	"duck-demo/internal/domain"
+	"github.com/Yacobolo/quackstack/internal/declarative"
+	"github.com/Yacobolo/quackstack/internal/domain"
 )
 
 // GitService provides business logic for Git repository operations.
@@ -301,7 +301,7 @@ func firstNonEmpty(values ...string) string {
 }
 
 func (s *GitService) cloneRepo(ctx context.Context, repo *domain.GitRepo) (string, string, error) {
-	dir, err := os.MkdirTemp("", "duck-git-sync-*")
+	dir, err := os.MkdirTemp("", "quack-git-sync-*")
 	if err != nil {
 		return "", "", fmt.Errorf("create temp dir: %w", err)
 	}

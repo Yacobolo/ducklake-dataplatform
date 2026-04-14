@@ -35,7 +35,7 @@ The generated declarative reference documents the CUE-native `platform` contract
 
 Use a CUE-aware editor or language server and point it at your config module root:
 
-`duck-config/cue.mod/module.cue`
+`quackstack-config/cue.mod/module.cue`
 
 ## Next Steps
 

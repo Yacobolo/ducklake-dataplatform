@@ -284,7 +284,7 @@ func TestCLI_AuthProviderOIDCCommands(t *testing.T) {
 		defer srv.Close()
 
 		rootCmd := newTestRootCmd(t, srv)
-		rootCmd.SetArgs([]string{"--host", srv.URL, "auth", "provider", "oidc", "set", "--issuer", "https://issuer.example.com", "--client-id", "duck-client", "--client-secret", "secret"})
+		rootCmd.SetArgs([]string{"--host", srv.URL, "auth", "provider", "oidc", "set", "--issuer", "https://issuer.example.com", "--client-id", "quack-client", "--client-secret", "secret"})
 		require.NoError(t, rootCmd.Execute())
 
 		captured := rec.last()

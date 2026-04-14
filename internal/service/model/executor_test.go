@@ -8,8 +8,8 @@ import (
 	"sort"
 	"testing"
 
-	"duck-demo/internal/domain"
-	"duck-demo/internal/sqlrewrite"
+	"github.com/Yacobolo/quackstack/internal/domain"
+	"github.com/Yacobolo/quackstack/internal/sqlrewrite"
 
 	_ "github.com/duckdb/duckdb-go/v2"
 	"github.com/stretchr/testify/assert"

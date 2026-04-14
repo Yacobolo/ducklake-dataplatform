@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"duck-demo/internal/domain"
+	"github.com/Yacobolo/quackstack/internal/domain"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -58,7 +58,7 @@ func TestOverviewPage_RendersHomeExperience(t *testing.T) {
 	require.NoError(t, page.Render(&buf))
 	html := buf.String()
 
-	assert.Contains(t, html, "duck-home-hero")
+	assert.Contains(t, html, "quack-home-hero")
 	assert.Contains(t, html, "Recent resources")
 	assert.Contains(t, html, "Saved resources")
 	assert.Contains(t, html, ">Path<")
@@ -72,5 +72,5 @@ func TestOverviewPage_RendersHomeExperience(t *testing.T) {
 	assert.Contains(t, html, "Remove saved resource")
 	assert.Contains(t, html, "disabled")
 	assert.Contains(t, html, `/ui/static/js/home-hero`)
-	assert.NotContains(t, html, "duck-ui-recent-resources")
+	assert.NotContains(t, html, "quack-ui-recent-resources")
 }

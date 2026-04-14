@@ -1,4 +1,4 @@
-apiVersion: duck/v1
+apiVersion: quackstack/v1
 kind: PrincipalList
 principals:
   - name: admin

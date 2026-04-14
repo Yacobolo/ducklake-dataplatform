@@ -185,7 +185,7 @@ func TestQueryExecute_DefaultsToLocalBYOC(t *testing.T) {
 	dir := t.TempDir()
 	t.Setenv("HOME", dir)
 
-	extensionPath := filepath.Join(dir, "duck_access.duckdb_extension")
+	extensionPath := filepath.Join(dir, "quack_access.duckdb_extension")
 	require.NoError(t, os.WriteFile(extensionPath, []byte("test extension"), 0o644))
 
 	restoreStdout := captureStdout(t)
@@ -213,7 +213,7 @@ func TestQueryExecute_DefaultsToLocalBYOC(t *testing.T) {
 	rootCmd.SetArgs([]string{
 		"--host", srv.URL,
 		"--api-key", "test-key",
-		"--duck-access-extension-path", extensionPath,
+		"--quack-access-extension-path", extensionPath,
 		"--output", "json",
 		"query", "execute", "--sql", "SELECT 42 AS answer", "--compute-mode", "BYOC_LOCAL",
 	})
@@ -280,14 +280,14 @@ func TestQueryExecute_LocalRequiresAPIKey(t *testing.T) {
 	dir := t.TempDir()
 	t.Setenv("HOME", dir)
 
-	extensionPath := filepath.Join(dir, "duck_access.duckdb_extension")
+	extensionPath := filepath.Join(dir, "quack_access.duckdb_extension")
 	require.NoError(t, os.WriteFile(extensionPath, []byte("test extension"), 0o644))
 
 	rootCmd := newRootCmd()
 	rootCmd.SetArgs([]string{
 		"--host", "http://example.com",
 		"--token", "jwt-token",
-		"--duck-access-extension-path", extensionPath,
+		"--quack-access-extension-path", extensionPath,
 		"query", "execute", "--sql", "SELECT 1", "--compute-mode", "BYOC_LOCAL",
 	})
 

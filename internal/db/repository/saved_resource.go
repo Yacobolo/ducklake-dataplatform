@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"time"
 
-	"duck-demo/internal/domain"
+	"github.com/Yacobolo/quackstack/internal/domain"
 )
 
 // SavedResourceRepo stores principal-scoped saved resources in SQLite.

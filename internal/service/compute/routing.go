@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"strings"
 
-	"duck-demo/internal/domain"
+	"github.com/Yacobolo/quackstack/internal/domain"
 )
 
 // ListAvailableTargets returns compute targets visible to the principal for selection.

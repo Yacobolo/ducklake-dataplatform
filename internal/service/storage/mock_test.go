@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"strings"
 
-	"duck-demo/internal/domain"
-	"duck-demo/internal/testutil"
+	"github.com/Yacobolo/quackstack/internal/domain"
+	"github.com/Yacobolo/quackstack/internal/testutil"
 )
 
 // errTest is a sentinel error for test scenarios.

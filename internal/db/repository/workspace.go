@@ -6,7 +6,7 @@ import (
 	"errors"
 	"time"
 
-	"duck-demo/internal/domain"
+	"github.com/Yacobolo/quackstack/internal/domain"
 )
 
 var _ domain.WorkspaceRepository = (*WorkspaceRepo)(nil)

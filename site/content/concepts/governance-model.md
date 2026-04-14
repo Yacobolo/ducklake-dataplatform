@@ -5,11 +5,11 @@ description: Understand RBAC, row filters, and column masks as one layered enfor
 
 # Governance Model
 
-If you only remember one thing, remember this: Duck treats authentication, grants, row filters, and column masks as separate layers because they solve different problems.
+If you only remember one thing, remember this: QuackStack treats authentication, grants, row filters, and column masks as separate layers because they solve different problems.
 
 ## Why It Matters
 
-Teams often assume access control begins and ends with “can this user query the table?” In Duck, that is only the first question. A principal may be allowed to reach an object and still be allowed to see only some rows or transformed values. The governance model exists so teams can share useful data safely without cloning everything into separate per-audience copies.
+Teams often assume access control begins and ends with “can this user query the table?” In QuackStack, that is only the first question. A principal may be allowed to reach an object and still be allowed to see only some rows or transformed values. The governance model exists so teams can share useful data safely without cloning everything into separate per-audience copies.
 
 ## The Four Layers
 
@@ -43,7 +43,7 @@ Governance is easy to confuse with architecture or products:
 - this page explains what policy decisions are made
 - [Data Products](/docs/concepts/data-products) explain how governed outputs are packaged for discovery
 
-## Example In Duck
+## Example In QuackStack
 
 Imagine two analysts querying the same sales table. Both analysts authenticate successfully. Both have a grant that lets them reach the table. One analyst belongs to the APAC group, so a row filter shows only APAC rows. Both analysts can still see a customer email column, but a column mask rewrites the value to a redacted form. In that example:
 
@@ -52,7 +52,7 @@ Imagine two analysts querying the same sales table. Both analysts authenticate s
 - the row filter narrowed the result set
 - the mask transformed a sensitive field
 
-That is why Duck separates these layers. If all four concerns were collapsed into a single rule, the system would be much harder to reason about and much harder to operate safely.
+That is why QuackStack separates these layers. If all four concerns were collapsed into a single rule, the system would be much harder to reason about and much harder to operate safely.
 
 ## Common Misunderstandings
 

@@ -3,7 +3,7 @@ package catalogs
 import (
 	"encoding/json"
 
-	"duck-demo/internal/ui/core"
+	"github.com/Yacobolo/quackstack/internal/ui/core"
 )
 
 type workspaceAsideTab = core.WorkspaceAsideTab

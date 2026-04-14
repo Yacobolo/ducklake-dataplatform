@@ -11,9 +11,9 @@ import (
 	"strings"
 	"time"
 
-	"duck-demo/internal/domain"
-	dashboardsvc "duck-demo/internal/service/dashboard"
-	"duck-demo/internal/ui/core"
+	"github.com/Yacobolo/quackstack/internal/domain"
+	dashboardsvc "github.com/Yacobolo/quackstack/internal/service/dashboard"
+	"github.com/Yacobolo/quackstack/internal/ui/core"
 
 	. "maragu.dev/gomponents"
 	data "maragu.dev/gomponents-datastar"
@@ -58,39 +58,39 @@ type dashboardDetailPageData struct {
 }
 
 type dashboardWidgetFormData struct {
-	Title             string
-	Action            string
-	SubmitLabel       string
-	PageName          string
-	Name              string
-	Description       string
-	SourceKind        string
-	SQL               string
-	NotebookID        string
-	CellID            string
-	SemanticModelID   string
-	Metrics           string
-	Dimensions        string
-	Filters           string
-	OrderBy           string
-	Limit             string
-	TimeGrain         string
-	VisualKind        string
-	ChartType         string
-	VisualTitle       string
-	VisualSubtitle    string
-	VisualLegendMode  string
-	VisualLegendPos   string
-	VisualX           string
-	VisualY           string
-	VisualSeries      string
-	VisualLabel       string
-	VisualValue       string
-	VisualSecondary   string
-	LayoutX           string
-	LayoutY           string
-	LayoutW           string
-	LayoutH           string
+	Title            string
+	Action           string
+	SubmitLabel      string
+	PageName         string
+	Name             string
+	Description      string
+	SourceKind       string
+	SQL              string
+	NotebookID       string
+	CellID           string
+	SemanticModelID  string
+	Metrics          string
+	Dimensions       string
+	Filters          string
+	OrderBy          string
+	Limit            string
+	TimeGrain        string
+	VisualKind       string
+	ChartType        string
+	VisualTitle      string
+	VisualSubtitle   string
+	VisualLegendMode string
+	VisualLegendPos  string
+	VisualX          string
+	VisualY          string
+	VisualSeries     string
+	VisualLabel      string
+	VisualValue      string
+	VisualSecondary  string
+	LayoutX          string
+	LayoutY          string
+	LayoutW          string
+	LayoutH          string
 }
 
 func dashboardsListPage(principal domain.ContextPrincipal, rows []dashboardListRowData, page domain.PageRequest, total int64) Node {
@@ -1185,7 +1185,7 @@ func chartHost(widget dashboardsvc.ResolvedWidget, editMode bool) Node {
 	} else {
 		nodes = append(nodes, Attr("data-ignore-morph", ""))
 	}
-	return El("duck-chart", nodes...)
+	return El("quack-chart", nodes...)
 }
 
 func metricHost(widget dashboardsvc.ResolvedWidget, editMode bool) Node {
@@ -1199,7 +1199,7 @@ func metricHost(widget dashboardsvc.ResolvedWidget, editMode bool) Node {
 	} else {
 		nodes = append(nodes, Attr("data-ignore-morph", ""))
 	}
-	return El("duck-metric", nodes...)
+	return El("quack-metric", nodes...)
 }
 
 func tableHost(widget dashboardsvc.ResolvedWidget, editMode bool) Node {
@@ -1213,7 +1213,7 @@ func tableHost(widget dashboardsvc.ResolvedWidget, editMode bool) Node {
 	} else {
 		nodes = append(nodes, Attr("data-ignore-morph", ""))
 	}
-	return El("duck-table", nodes...)
+	return El("quack-table", nodes...)
 }
 
 type widgetRenderPayload struct {

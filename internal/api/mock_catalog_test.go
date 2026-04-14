@@ -9,8 +9,8 @@ import (
 	"sync"
 	"time"
 
-	"duck-demo/internal/ddl"
-	"duck-demo/internal/domain"
+	"github.com/Yacobolo/quackstack/internal/ddl"
+	"github.com/Yacobolo/quackstack/internal/domain"
 )
 
 // mockCatalogRepo implements domain.CatalogRepository using in-memory state.

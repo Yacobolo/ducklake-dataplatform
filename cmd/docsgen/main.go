@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"os"
 
-	"duck-demo/internal/docsgen/declarative"
-	"duck-demo/internal/docsgen/discovery"
-	"duck-demo/internal/docsgen/openapi"
+	"github.com/Yacobolo/quackstack/internal/docsgen/declarative"
+	"github.com/Yacobolo/quackstack/internal/docsgen/discovery"
+	"github.com/Yacobolo/quackstack/internal/docsgen/openapi"
 )
 
 func main() {

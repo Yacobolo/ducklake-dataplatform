@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"strings"
 
-	"duck-demo/internal/domain"
+	"github.com/Yacobolo/quackstack/internal/domain"
 )
 
 // validateContract checks that a materialized model's output matches its contract.

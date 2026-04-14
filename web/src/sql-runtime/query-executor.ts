@@ -294,7 +294,7 @@ function buildSecureViewSQL(manifest: ManifestResponse, fileNames: string[]): st
 }
 
 function buildVirtualParquetPath(schema: string, table: string, index: number): string {
-  return `/duck-runtime/${schema}/${table}/part-${index}.parquet`;
+  return `/quack-runtime/${schema}/${table}/part-${index}.parquet`;
 }
 
 async function registerManifestFiles(

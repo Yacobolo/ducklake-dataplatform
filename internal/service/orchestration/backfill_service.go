@@ -8,8 +8,8 @@ import (
 	"strings"
 	"time"
 
-	"duck-demo/internal/domain"
-	servicepolicy "duck-demo/internal/service/policy"
+	"github.com/Yacobolo/quackstack/internal/domain"
+	servicepolicy "github.com/Yacobolo/quackstack/internal/service/policy"
 )
 
 type BackfillService struct {

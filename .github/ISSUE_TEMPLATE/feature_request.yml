@@ -26,7 +26,7 @@ body:
         - "engine (internal/engine — SecureEngine, DuckDB query execution)"
         - "sqlrewrite (internal/sqlrewrite — SQL parsing/rewriting)"
         - "middleware (internal/middleware — JWT, API key auth)"
-        - "extension (extension/duck_access — C++ DuckDB extension)"
+        - "extension (extension/quack_access — C++ DuckDB extension)"
         - "cmd (cmd/server — composition root, startup)"
         - "new component"
     validations:

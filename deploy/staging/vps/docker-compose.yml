@@ -16,7 +16,7 @@ services:
       - caddy_config:/config
 
   control-plane:
-    image: ghcr.io/yacobolo/ducklake-dataplatform-control-plane:${IMAGE_TAG:-main-latest}
+    image: ghcr.io/yacobolo/quackstack-control-plane:${IMAGE_TAG:-main-latest}
     pull_policy: always
     restart: unless-stopped
     depends_on:
@@ -27,7 +27,7 @@ services:
       - "5433:5433"
     environment:
       LISTEN_ADDR: ":8080"
-      META_DB_PATH: "/data/ducklake_meta.sqlite"
+      META_DB_PATH: "/data/quackstack_meta.sqlite"
       LOG_LEVEL: "info"
       ENV: "production"
       TRUST_DOWNSTREAM_PROXY: "true"
@@ -53,7 +53,7 @@ services:
       - control_plane_data:/data
 
   compute-agent:
-    image: ghcr.io/yacobolo/ducklake-dataplatform-compute-agent:${IMAGE_TAG:-main-latest}
+    image: ghcr.io/yacobolo/quackstack-compute-agent:${IMAGE_TAG:-main-latest}
     pull_policy: always
     restart: unless-stopped
     depends_on:

@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"strings"
 
-	"duck-demo/internal/domain"
+	"github.com/Yacobolo/quackstack/internal/domain"
 )
 
 // SearchRepo implements domain.SearchRepository using SQLite.

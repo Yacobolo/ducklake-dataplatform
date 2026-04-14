@@ -6,7 +6,7 @@ func newDeclarativeCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "declarative",
 		Short: "Manage declarative CUE configuration",
-		Long:  "Generate and work with declarative CUE configuration modules for Duck.",
+		Long:  "Generate and work with declarative CUE configuration modules for QuackStack.",
 	}
 
 	cmd.AddCommand(newDeclarativeInitCmd())

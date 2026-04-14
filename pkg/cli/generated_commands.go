@@ -5,9 +5,9 @@ import (
 
 	"github.com/spf13/cobra"
 
-	cobraruntime "duck-demo/pkg/apigen/runtime/cobra"
-	"duck-demo/pkg/cli/apiruntime"
-	"duck-demo/pkg/cli/gen"
+	cobraruntime "github.com/Yacobolo/quackstack/pkg/apigen/runtime/cobra"
+	"github.com/Yacobolo/quackstack/pkg/cli/apiruntime"
+	"github.com/Yacobolo/quackstack/pkg/cli/gen"
 )
 
 func addRuntimeGeneratedCommands(rootCmd *cobra.Command, client *apiruntime.Client) {

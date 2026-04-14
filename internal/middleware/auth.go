@@ -10,8 +10,8 @@ import (
 	"net/http"
 	"strings"
 
-	"duck-demo/internal/config"
-	"duck-demo/internal/domain"
+	"github.com/Yacobolo/quackstack/internal/config"
+	"github.com/Yacobolo/quackstack/internal/domain"
 )
 
 // PrincipalProvisioner resolves or creates a principal from an external identity.

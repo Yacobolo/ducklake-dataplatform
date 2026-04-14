@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"duck-demo/internal/ui/core"
+	"github.com/Yacobolo/quackstack/internal/ui/core"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

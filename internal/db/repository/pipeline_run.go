@@ -7,8 +7,8 @@ import (
 	"fmt"
 	"time"
 
-	"duck-demo/internal/db/dbstore"
-	"duck-demo/internal/domain"
+	"github.com/Yacobolo/quackstack/internal/db/dbstore"
+	"github.com/Yacobolo/quackstack/internal/domain"
 )
 
 // Compile-time check.

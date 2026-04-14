@@ -2,11 +2,11 @@
 layout: home
 
 hero:
-  name: Duck Data Platform
+  name: QuackStack Data Platform
   eyebrow: Open source data platform
   headline: Governed Data Infrastructure
   tagline: Query, build, and ship trusted data products on DuckDB and DuckLake.
-  snapshot_title: What makes Duck different
+  snapshot_title: What makes QuackStack different
   snapshot_note: Policy stays in the control plane even when compute, products, and orchestration expand around it.
   actions:
     - theme: brand
@@ -63,4 +63,4 @@ pillars:
       link: /build/semantic-models-and-metrics
 ---
 
-Duck is a governed data platform built on DuckDB and DuckLake, with product-first workflows for data consumers, builders, and operators.
+QuackStack is a governed data platform built on DuckDB and DuckLake, with product-first workflows for data consumers, builders, and operators.

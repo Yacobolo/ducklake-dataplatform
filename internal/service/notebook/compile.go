@@ -5,8 +5,8 @@ import (
 	"sort"
 	"strings"
 
-	"duck-demo/internal/domain"
-	"duck-demo/internal/duckdbsql"
+	"github.com/Yacobolo/quackstack/internal/domain"
+	"github.com/Yacobolo/quackstack/internal/duckdbsql"
 )
 
 // CompileContext controls template rendering while compiling notebook SQL.

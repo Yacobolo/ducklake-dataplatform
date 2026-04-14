@@ -8,8 +8,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"duck-demo/internal/domain"
-	"duck-demo/internal/service/query"
+	"github.com/Yacobolo/quackstack/internal/domain"
+	"github.com/Yacobolo/quackstack/internal/service/query"
 )
 
 type mockQueryAsyncService struct {
@@ -154,7 +154,7 @@ func TestHandler_CreateManifest(t *testing.T) {
 		assertFn func(t *testing.T, resp GenCreateManifestResponse, err error)
 	}{
 		{
-			name: "happy path returns 200",
+			name:    "happy path returns 200",
 			request: GenCreateManifestRequest{CatalogName: "demo", SchemaName: "main", TableName: "users"},
 			svcFn: func(_ context.Context, _, _, _, _ string) (*query.ManifestResult, error) {
 				return &query.ManifestResult{
@@ -184,7 +184,7 @@ func TestHandler_CreateManifest(t *testing.T) {
 			},
 		},
 		{
-			name: "not found returns 404",
+			name:    "not found returns 404",
 			request: GenCreateManifestRequest{CatalogName: "demo", SchemaName: "main", TableName: "nonexistent"},
 			svcFn: func(_ context.Context, _, _, _, _ string) (*query.ManifestResult, error) {
 				return nil, domain.ErrNotFound("table not found")
@@ -198,7 +198,7 @@ func TestHandler_CreateManifest(t *testing.T) {
 			},
 		},
 		{
-			name: "access denied returns 403",
+			name:    "access denied returns 403",
 			request: GenCreateManifestRequest{CatalogName: "demo", SchemaName: "main", TableName: "secret"},
 			svcFn: func(_ context.Context, _, _, _, _ string) (*query.ManifestResult, error) {
 				return nil, domain.ErrAccessDenied("not allowed")
@@ -212,7 +212,7 @@ func TestHandler_CreateManifest(t *testing.T) {
 			},
 		},
 		{
-			name: "validation error returns 400",
+			name:    "validation error returns 400",
 			request: GenCreateManifestRequest{CatalogName: "demo", SchemaName: "main", TableName: ""},
 			svcFn: func(_ context.Context, _, _, _, _ string) (*query.ManifestResult, error) {
 				return nil, domain.ErrValidation("table name is required")
@@ -226,7 +226,7 @@ func TestHandler_CreateManifest(t *testing.T) {
 			},
 		},
 		{
-			name: "internal error returns 500",
+			name:    "internal error returns 500",
 			request: GenCreateManifestRequest{CatalogName: "demo", SchemaName: "main", TableName: "users"},
 			svcFn: func(_ context.Context, _, _, _, _ string) (*query.ManifestResult, error) {
 				return nil, assert.AnError
@@ -240,7 +240,7 @@ func TestHandler_CreateManifest(t *testing.T) {
 			},
 		},
 		{
-			name: "catalog and table path values are passed through",
+			name:    "catalog and table path values are passed through",
 			request: GenCreateManifestRequest{CatalogName: "demo", SchemaName: "titanic", TableName: "passengers"},
 			svcFn: func(_ context.Context, _ string, catalogName, schemaName, tableName string) (*query.ManifestResult, error) {
 				if catalogName != "demo" || schemaName != "titanic" || tableName != "passengers" {

@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	computeproto "duck-demo/internal/compute/proto"
+	computeproto "github.com/Yacobolo/quackstack/internal/compute/proto"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"

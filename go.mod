@@ -1,4 +1,4 @@
-module duck-demo
+module github.com/Yacobolo/quackstack
 
 go 1.25.8
 

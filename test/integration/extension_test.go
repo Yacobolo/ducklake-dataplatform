@@ -8,7 +8,7 @@ import (
 
 // TestExtension_Local runs the full extension test suite against local files.
 // No S3 credentials required — uses local parquet files via localPresigner.
-// Requires only the DuckDB CLI and duck_access extension binary.
+// Requires only the DuckDB CLI and quack_access extension binary.
 func TestExtension_Local(t *testing.T) {
 	checkExtensionBinaries(t)
 
@@ -27,7 +27,7 @@ func TestExtension_S3(t *testing.T) {
 }
 
 // runExtensionTestCases contains the shared table-driven test cases for the
-// duck_access DuckDB extension. Both local and S3 variants run identical assertions
+// quack_access DuckDB extension. Both local and S3 variants run identical assertions
 // covering RBAC, RLS, column masking, auth errors, and audit logging.
 func runExtensionTestCases(t *testing.T, env *testEnv) {
 	t.Helper()

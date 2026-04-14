@@ -3,8 +3,8 @@ package security
 import (
 	"context"
 
-	"duck-demo/internal/domain"
-	"duck-demo/internal/duckdbsql"
+	"github.com/Yacobolo/quackstack/internal/domain"
+	"github.com/Yacobolo/quackstack/internal/duckdbsql"
 )
 
 // ColumnMaskService provides column masking operations.

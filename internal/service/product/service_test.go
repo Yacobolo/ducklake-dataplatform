@@ -11,9 +11,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	internaldb "duck-demo/internal/db"
-	"duck-demo/internal/db/repository"
-	"duck-demo/internal/domain"
+	internaldb "github.com/Yacobolo/quackstack/internal/db"
+	"github.com/Yacobolo/quackstack/internal/db/repository"
+	"github.com/Yacobolo/quackstack/internal/domain"
 )
 
 func TestService_CreateProductCreatesDraftVersionAndLinksAsset(t *testing.T) {
@@ -336,11 +336,11 @@ func TestService_DeleteVersion_RemovesDraftVersion(t *testing.T) {
 
 	_, err = svc.CreateVersion(ctx, "orders", domain.CreateDataProductVersionRequest{
 		CompatibilityLevel: domain.ProductCompatibilityBackwardCompatible,
-		DocsURL:           "https://docs.example.com/orders",
-		AccessRequestPath: "/access/orders",
-		ProducingBuildID:  &buildID,
-		OutputAssetKeys:   []string{ordersKey},
-		CreatedBy:         "alice",
+		DocsURL:            "https://docs.example.com/orders",
+		AccessRequestPath:  "/access/orders",
+		ProducingBuildID:   &buildID,
+		OutputAssetKeys:    []string{ordersKey},
+		CreatedBy:          "alice",
 	})
 	require.NoError(t, err)
 

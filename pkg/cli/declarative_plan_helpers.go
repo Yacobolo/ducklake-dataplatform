@@ -1,6 +1,6 @@
 package cli
 
-import "duck-demo/internal/declarative"
+import "github.com/Yacobolo/quackstack/internal/declarative"
 
 func planExitCode(plan *declarative.Plan) int {
 	if len(plan.Errors) > 0 {

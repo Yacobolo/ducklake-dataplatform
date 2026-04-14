@@ -1,8 +1,8 @@
 openapi: 3.0.0
 info:
-  title: Duck Data Platform API
+  title: QuackStack API
   version: 0.1.0
-  description: Duck Data Platform exposes a secure SQL query layer over DuckDB together with metadata management, RBAC, row-level security, column masking, lineage, orchestration, and semantic modeling APIs backed by SQLite metadata.
+  description: QuackStack exposes a secure SQL query layer over DuckDB together with metadata management, RBAC, row-level security, column masking, lineage, orchestration, and semantic modeling APIs backed by SQLite metadata.
 tags:
   - name: Semantic Layer
     description: Semantic models, metrics, relationships, and metric query execution.
@@ -165,7 +165,7 @@ paths:
                   - created_at: "2026-04-13T09:30:00Z"
                     expires_at: "2026-06-30T00:00:00Z"
                     id: key_01hzyapi7m7p5x4t3
-                    key_prefix: duck_prod_
+                    key_prefix: quack_prod_
                     name: CI deploy key
                     principal_id: user_01hzyadmin8km6w2n
                 next_page_token: example
@@ -235,8 +235,8 @@ paths:
                 created_at: "2026-04-13T09:30:00Z"
                 expires_at: "2026-12-31T00:00:00Z"
                 id: key_01hzyapi7m7p5x4t3
-                key: duck_prod_live_2mY5...redacted
-                key_prefix: duck_prod_
+                key: quack_prod_live_2mY5...redacted
+                key_prefix: quack_prod_
                 name: dbt-cloud
         '400':
           description: The server could not understand the request due to invalid syntax.
@@ -3256,8 +3256,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/OIDCProviderResponse'
               example:
-                audience: duck-demo
-                client_id: duck-demo-web
+                audience: github.com/Yacobolo/quackstack
+                client_id: github.com/Yacobolo/quackstack-web
                 enabled: true
                 issuer_url: https://login.example.com
                 jwks_url: https://login.example.com/.well-known/jwks.json
@@ -3393,8 +3393,8 @@ paths:
             schema:
               $ref: '#/components/schemas/OIDCProviderRequest'
             example:
-              audience: duck-demo
-              client_id: duck-demo-web
+              audience: github.com/Yacobolo/quackstack
+              client_id: github.com/Yacobolo/quackstack-web
               client_secret: client-secret-ref
               enabled: true
               issuer_url: https://login.example.com
@@ -3615,7 +3615,7 @@ paths:
                 catalogs:
                   - comment: Primary analytics catalog.
                     created_at: "2026-03-01T08:00:00Z"
-                    data_path: s3://duck-demo/analytics
+                    data_path: s3://github.com/Yacobolo/quackstack/analytics
                     dsn: file:metadata/analytics.db
                     id: cat_analytics
                     is_default: true
@@ -3705,7 +3705,7 @@ paths:
               example:
                 comment: Primary analytics catalog.
                 created_at: "2026-03-01T08:00:00Z"
-                data_path: s3://duck-demo/analytics
+                data_path: s3://github.com/Yacobolo/quackstack/analytics
                 dsn: file:metadata/analytics.db
                 id: cat_analytics
                 is_default: true
@@ -4007,7 +4007,7 @@ paths:
               example:
                 comment: Primary analytics catalog.
                 created_at: "2026-03-01T08:00:00Z"
-                data_path: s3://duck-demo/analytics
+                data_path: s3://github.com/Yacobolo/quackstack/analytics
                 dsn: file:metadata/analytics.db
                 id: cat_analytics
                 is_default: true
@@ -4111,7 +4111,7 @@ paths:
               example:
                 comment: Primary analytics catalog.
                 created_at: "2026-03-01T08:00:00Z"
-                data_path: s3://duck-demo/analytics
+                data_path: s3://github.com/Yacobolo/quackstack/analytics
                 dsn: file:metadata/analytics.db
                 id: cat_analytics
                 is_default: true
@@ -4226,7 +4226,7 @@ paths:
               example:
                 comment: Primary analytics catalog.
                 created_at: "2026-03-01T08:00:00Z"
-                data_path: s3://duck-demo/analytics
+                data_path: s3://github.com/Yacobolo/quackstack/analytics
                 dsn: file:metadata/analytics.db
                 id: cat_analytics
                 is_default: true
@@ -6206,7 +6206,7 @@ paths:
                 allow_missing_columns: false
                 ignore_extra_columns: true
               paths:
-                - s3://duck-demo/raw/orders/2026/04/13/*.parquet
+                - s3://github.com/Yacobolo/quackstack/raw/orders/2026/04/13/*.parquet
       x-authz:
         mode: privilege
         checks:
@@ -36466,7 +36466,7 @@ components:
         created_at: "2026-04-13T09:30:00Z"
         expires_at: "2026-06-30T00:00:00Z"
         id: key_01hzyapi7m7p5x4t3
-        key_prefix: duck_prod_
+        key_prefix: quack_prod_
         name: CI deploy key
         principal_id: user_01hzyadmin8km6w2n
     AddWorkspaceMemberRequest:
@@ -37841,7 +37841,7 @@ components:
       example:
         comment: Primary analytics catalog.
         created_at: "2026-03-01T08:00:00Z"
-        data_path: s3://duck-demo/analytics
+        data_path: s3://github.com/Yacobolo/quackstack/analytics
         dsn: file:metadata/analytics.db
         id: cat_analytics
         is_default: true
@@ -37862,7 +37862,7 @@ components:
           example:
             - comment: Primary analytics catalog.
               created_at: "2026-03-01T08:00:00Z"
-              data_path: s3://duck-demo/analytics
+              data_path: s3://github.com/Yacobolo/quackstack/analytics
               dsn: file:metadata/analytics.db
               id: cat_analytics
               is_default: true
@@ -37882,7 +37882,7 @@ components:
         catalogs:
           - comment: Primary analytics catalog.
             created_at: "2026-03-01T08:00:00Z"
-            data_path: s3://duck-demo/analytics
+            data_path: s3://github.com/Yacobolo/quackstack/analytics
             dsn: file:metadata/analytics.db
             id: cat_analytics
             is_default: true
@@ -38560,8 +38560,8 @@ components:
         created_at: "2026-04-13T09:30:00Z"
         expires_at: "2026-12-31T00:00:00Z"
         id: key_01hzyapi7m7p5x4t3
-        key: duck_prod_live_2mY5...redacted
-        key_prefix: duck_prod_
+        key: quack_prod_live_2mY5...redacted
+        key_prefix: quack_prod_
         name: dbt-cloud
     CreateAssetBackfillRequest:
       type: object
@@ -42672,7 +42672,7 @@ components:
           allow_missing_columns: false
           ignore_extra_columns: true
         paths:
-          - s3://duck-demo/raw/orders/2026/04/13/*.parquet
+          - s3://github.com/Yacobolo/quackstack/raw/orders/2026/04/13/*.parquet
     LocalLoginRequest:
       type: object
       required:
@@ -44445,8 +44445,8 @@ components:
           type: string
           example: example
       example:
-        audience: duck-demo
-        client_id: duck-demo-web
+        audience: github.com/Yacobolo/quackstack
+        client_id: github.com/Yacobolo/quackstack-web
         client_secret: client-secret-ref
         enabled: true
         issuer_url: https://login.example.com
@@ -44484,8 +44484,8 @@ components:
           type: boolean
           example: true
       example:
-        audience: duck-demo
-        client_id: duck-demo-web
+        audience: github.com/Yacobolo/quackstack
+        client_id: github.com/Yacobolo/quackstack-web
         enabled: true
         issuer_url: https://login.example.com
         jwks_url: https://login.example.com/.well-known/jwks.json
@@ -44525,7 +44525,7 @@ components:
             - created_at: "2026-04-13T09:30:00Z"
               expires_at: "2026-06-30T00:00:00Z"
               id: key_01hzyapi7m7p5x4t3
-              key_prefix: duck_prod_
+              key_prefix: quack_prod_
               name: CI deploy key
               principal_id: user_01hzyadmin8km6w2n
         next_page_token:
@@ -44536,7 +44536,7 @@ components:
           - created_at: "2026-04-13T09:30:00Z"
             expires_at: "2026-06-30T00:00:00Z"
             id: key_01hzyapi7m7p5x4t3
-            key_prefix: duck_prod_
+            key_prefix: quack_prod_
             name: CI deploy key
             principal_id: user_01hzyadmin8km6w2n
         next_page_token: example

@@ -11,7 +11,7 @@ import (
 )
 
 // TestExtension_MultiTable tests complex SQL, cross-table queries, and security
-// edge cases for the duck_access extension against a multi-table local server.
+// edge cases for the quack_access extension against a multi-table local server.
 func TestExtension_MultiTable(t *testing.T) {
 	checkExtensionBinaries(t)
 	env := setupMultiTableLocalServer(t)

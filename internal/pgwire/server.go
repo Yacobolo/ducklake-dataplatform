@@ -17,15 +17,15 @@ import (
 	"sync"
 	"time"
 
-	"duck-demo/internal/domain"
-	"duck-demo/internal/duckdbsql"
+	"github.com/Yacobolo/quackstack/internal/domain"
+	"github.com/Yacobolo/quackstack/internal/duckdbsql"
 )
 
 const (
 	pgProtocolVersion3 int32 = 196608
 	pgSSLRequestCode   int32 = 80877103
 	pgCancelReqCode    int32 = 80877102
-	pgDatabaseName           = "duck"
+	pgDatabaseName           = "quack"
 )
 
 type QueryResult struct {

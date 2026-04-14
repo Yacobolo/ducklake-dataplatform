@@ -7,9 +7,9 @@ import (
 	"strings"
 	"time"
 
-	"duck-demo/internal/domain"
-	modelsvc "duck-demo/internal/service/model"
-	"duck-demo/internal/ui/core"
+	"github.com/Yacobolo/quackstack/internal/domain"
+	modelsvc "github.com/Yacobolo/quackstack/internal/service/model"
+	"github.com/Yacobolo/quackstack/internal/ui/core"
 )
 
 func pageFromRequest(r *http.Request, defaultPageSize int) domain.PageRequest {

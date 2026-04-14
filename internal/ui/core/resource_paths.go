@@ -4,7 +4,7 @@ import (
 	"context"
 	"strings"
 
-	"duck-demo/internal/domain"
+	"github.com/Yacobolo/quackstack/internal/domain"
 )
 
 func ResourceFolderPath(ctx context.Context, deps *Dependencies, principal domain.ContextPrincipal, owner string, folderID string) string {

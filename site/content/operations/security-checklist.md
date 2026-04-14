@@ -1,6 +1,6 @@
 ---
 title: Security Checklist
-description: Review the minimum controls required before exposing Duck to shared users or sensitive data.
+description: Review the minimum controls required before exposing QuackStack to shared users or sensitive data.
 ---
 
 # Security Checklist

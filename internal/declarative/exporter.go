@@ -13,7 +13,7 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-const cueModuleFile = `module: "duck.local/duck-config"
+const cueModuleFile = `module: "quackstack.local/quackstack-config"
 language: {
 	version: "v0.14.0"
 }

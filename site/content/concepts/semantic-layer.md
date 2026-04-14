@@ -19,7 +19,7 @@ A semantic model is not the same thing as a transformation model or a data produ
 - a semantic model defines how data should be understood and queried from a business point of view
 - a data product packages outputs and contracts for discovery and ownership
 
-In Duck, a semantic model usually sits on top of a trusted base model and provides a business-facing interface to it.
+In QuackStack, a semantic model usually sits on top of a trusted base model and provides a business-facing interface to it.
 
 ## What The Semantic Layer Contains
 
@@ -36,7 +36,7 @@ A semantic model usually sits on top of a trusted base model and defines:
   <img class="mx-auto block h-auto w-max max-w-none rounded-none border-0 bg-transparent" src="/_site/diagrams/semantic-query-flow.svg" alt="Diagram showing semantic models and metrics resolving through the semantic planner into governed query execution." loading="lazy" decoding="async">
 </figure>
 
-Read the diagram from left to right. Semantic models define the available business structure. Metrics sit on top of those models because they are the named measurements consumers ask for. The metric planner sits in the middle because it translates business-facing requests into a governed query plan. The Duck API and governed SQL execution sit on the right because the semantic layer still runs through the same secure platform path as any other query.
+Read the diagram from left to right. Semantic models define the available business structure. Metrics sit on top of those models because they are the named measurements consumers ask for. The metric planner sits in the middle because it translates business-facing requests into a governed query plan. The QuackStack API and governed SQL execution sit on the right because the semantic layer still runs through the same secure platform path as any other query.
 
 ## Metrics, Relationships, And Pre-Aggregations
 
@@ -44,9 +44,9 @@ A metric is a named business measurement, such as gross revenue or weekly active
 
 These matter because the semantic layer is not only about naming columns. It is about giving consumers a stable vocabulary and letting the platform plan repeatable metric queries around that vocabulary.
 
-## Example In Duck
+## Example In QuackStack
 
-Imagine a finance team wants to ask for `gross_revenue` by `pickup_zone` and week. Without a semantic layer, every analyst would need to know which curated model to start from, which joins are allowed, which timestamp column defines the reporting grain, and how gross revenue is calculated. With a semantic model, the builder defines those choices once. The consumer asks for the metric. Duck explains or runs the metric query against the governed base model and can also report freshness for that metric.
+Imagine a finance team wants to ask for `gross_revenue` by `pickup_zone` and week. Without a semantic layer, every analyst would need to know which curated model to start from, which joins are allowed, which timestamp column defines the reporting grain, and how gross revenue is calculated. With a semantic model, the builder defines those choices once. The consumer asks for the metric. QuackStack explains or runs the metric query against the governed base model and can also report freshness for that metric.
 
 ## Common Misunderstandings
 

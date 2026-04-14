@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"duck-demo/internal/domain"
+	"github.com/Yacobolo/quackstack/internal/domain"
 	"github.com/apache/arrow-go/v18/arrow/array"
 	arrowflight "github.com/apache/arrow-go/v18/arrow/flight"
 	arrowflightsql "github.com/apache/arrow-go/v18/arrow/flight/flightsql"
@@ -49,7 +49,7 @@ func TestServer_StartAndShutdown(t *testing.T) {
 
 func TestServer_ExecuteStatementQuery(t *testing.T) {
 	srv := NewServer("127.0.0.1:0", nil, func(_ context.Context, principal string, sqlQuery string) (*QueryResult, error) {
-		require.Equal(t, "duck", principal)
+		require.Equal(t, "quack", principal)
 		require.Equal(t, "SELECT 1", sqlQuery)
 		return &QueryResult{
 			Columns: []string{"value"},
@@ -245,7 +245,7 @@ func TestServer_MetadataDiscovery(t *testing.T) {
 
 func TestServer_GetTables(t *testing.T) {
 	srv := NewServer("127.0.0.1:0", nil, func(_ context.Context, principal string, sqlQuery string) (*QueryResult, error) {
-		require.Equal(t, "duck", principal)
+		require.Equal(t, "quack", principal)
 		if strings.Contains(sqlQuery, "information_schema.tables") {
 			return &QueryResult{
 				Columns: []string{"table_catalog", "table_schema", "table_name", "table_type"},
@@ -487,7 +487,7 @@ func testAuthenticator() Authenticator {
 		if !ok || metadataValue(md, "authorization") != "Bearer test-token" {
 			return nil, fmt.Errorf("unauthorized")
 		}
-		return &domain.ContextPrincipal{Name: "duck", Type: "user"}, nil
+		return &domain.ContextPrincipal{Name: "quack", Type: "user"}, nil
 	}
 }
 

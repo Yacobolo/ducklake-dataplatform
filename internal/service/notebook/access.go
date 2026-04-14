@@ -4,7 +4,7 @@ import (
 	"context"
 	"strings"
 
-	"duck-demo/internal/domain"
+	"github.com/Yacobolo/quackstack/internal/domain"
 )
 
 type accessResolver struct {
@@ -17,12 +17,12 @@ type accessResolver struct {
 
 type principalAccessResolver struct {
 	accessResolver
-	principal             string
-	isAdmin               bool
-	workspaceRolesByID    map[string]string
-	folderRolesByFolder   map[string]string
-	notebookRolesByID     map[string]string
-	folderAncestorsByID   map[string][]domain.Folder
+	principal           string
+	isAdmin             bool
+	workspaceRolesByID  map[string]string
+	folderRolesByFolder map[string]string
+	notebookRolesByID   map[string]string
+	folderAncestorsByID map[string][]domain.Folder
 }
 
 func newPrincipalAccessResolver(

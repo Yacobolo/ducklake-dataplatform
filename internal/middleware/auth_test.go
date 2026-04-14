@@ -11,8 +11,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"duck-demo/internal/config"
-	"duck-demo/internal/domain"
+	"github.com/Yacobolo/quackstack/internal/config"
+	"github.com/Yacobolo/quackstack/internal/domain"
 )
 
 // === Test JWT Validator ===
@@ -311,12 +311,12 @@ func TestAuth_AuthenticateCredentials_BearerThenAPIKeyFallback(t *testing.T) {
 func TestAuth_AuthenticatePassword_RequiresMatchingPrincipal(t *testing.T) {
 	auth := NewAuthenticator(
 		&stubValidator{claims: &JWTClaims{
-			Subject: "duck",
-			Raw:     map[string]interface{}{"sub": "duck"},
+			Subject: "quack",
+			Raw:     map[string]interface{}{"sub": "quack"},
 		}},
 		nil,
 		&stubPrincipalLookup{principals: map[string]*domain.Principal{
-			"duck": {Name: "duck", Type: "user"},
+			"quack": {Name: "quack", Type: "user"},
 		}},
 		nil,
 		config.AuthConfig{NameClaim: "sub"},
@@ -327,10 +327,10 @@ func TestAuth_AuthenticatePassword_RequiresMatchingPrincipal(t *testing.T) {
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "does not match startup user")
 
-	principal, err := auth.AuthenticatePassword(context.Background(), "duck", "test-token")
+	principal, err := auth.AuthenticatePassword(context.Background(), "quack", "test-token")
 	require.NoError(t, err)
 	require.NotNil(t, principal)
-	assert.Equal(t, "duck", principal.Name)
+	assert.Equal(t, "quack", principal.Name)
 }
 
 func TestAuth_JITProvisionNewUser(t *testing.T) {

@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"duck-demo/internal/domain"
+	"github.com/Yacobolo/quackstack/internal/domain"
 )
 
 // apiKeyService defines the API key management operations used by the API handler.

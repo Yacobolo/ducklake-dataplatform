@@ -14,11 +14,11 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/stretchr/testify/require"
 
-	internaldb "duck-demo/internal/db"
-	dbstore "duck-demo/internal/db/dbstore"
-	"duck-demo/internal/db/repository"
-	"duck-demo/internal/engine"
-	"duck-demo/internal/service/security"
+	internaldb "github.com/Yacobolo/quackstack/internal/db"
+	dbstore "github.com/Yacobolo/quackstack/internal/db/dbstore"
+	"github.com/Yacobolo/quackstack/internal/db/repository"
+	"github.com/Yacobolo/quackstack/internal/engine"
+	"github.com/Yacobolo/quackstack/internal/service/security"
 )
 
 // ctx is a package-level background context used by setup helpers.

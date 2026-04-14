@@ -354,7 +354,7 @@ func LoadFromEnv() (*Config, error) {
 
 	// Defaults
 	if cfg.MetaDBPath == "" {
-		cfg.MetaDBPath = "ducklake_meta.sqlite"
+		cfg.MetaDBPath = "quackstack_meta.sqlite"
 	}
 	if cfg.ListenAddr == "" {
 		cfg.ListenAddr = ":8080"

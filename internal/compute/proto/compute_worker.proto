@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package duckdemo.compute.v1;
 
-option go_package = "duck-demo/internal/compute/proto;computeproto";
+option go_package = "github.com/Yacobolo/quackstack/internal/compute/proto;computeproto";
 
 service ComputeWorker {
   rpc Execute(ExecuteRequest) returns (ExecuteResponse);

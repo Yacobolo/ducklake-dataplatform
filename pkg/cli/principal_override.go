@@ -8,7 +8,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"duck-demo/pkg/cli/apiruntime"
+	"github.com/Yacobolo/quackstack/pkg/cli/apiruntime"
 )
 
 func init() {

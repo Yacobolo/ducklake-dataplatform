@@ -11,7 +11,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"duck-demo/pkg/cli/apiruntime"
+	"github.com/Yacobolo/quackstack/pkg/cli/apiruntime"
 )
 
 type initOptions struct {
@@ -244,7 +244,7 @@ func newInitVerifyCmd(client *apiruntime.Client) *cobra.Command {
 				return nil
 			}
 			printPlan(plan)
-			return fmt.Errorf("init verify: %d resources missing; run 'duck init apply'", missing)
+			return fmt.Errorf("init verify: %d resources missing; run 'quack init apply'", missing)
 		},
 	}
 	bindInitFlags(cmd, &opts)

@@ -1,9 +1,9 @@
 ---
 title: Administration
-description: Run Duck in shared and production environments with clear posture, storage, compute, and troubleshooting guidance.
+description: Run QuackStack in shared and production environments with clear posture, storage, compute, and troubleshooting guidance.
 ---
 
-# Operate Duck
+# Operate QuackStack
 
 Use this section when you are responsible for runtime posture, auth, storage, integrations, or compute topology.
 

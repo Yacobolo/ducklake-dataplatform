@@ -3,7 +3,7 @@ package api
 import (
 	"context"
 
-	"duck-demo/internal/domain"
+	"github.com/Yacobolo/quackstack/internal/domain"
 )
 
 // computeEndpointService defines the compute endpoint operations used by the API handler.

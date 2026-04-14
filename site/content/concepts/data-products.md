@@ -5,11 +5,11 @@ description: Understand domains, teams, contracts, outputs, versions, status, an
 
 # Data Products
 
-If you only remember one thing, remember this: a data product in Duck packages technical outputs into something people can discover, trust, and request as a supported contract.
+If you only remember one thing, remember this: a data product in QuackStack packages technical outputs into something people can discover, trust, and request as a supported contract.
 
 ## Why It Matters
 
-Without a product layer, consumers are forced to guess. They infer trust from table names, Slack threads, or whoever built the dashboard last year. Duck adds a packaging layer so ownership, intended audience, outputs, semantic entrypoints, and release state are explicit instead of tribal knowledge.
+Without a product layer, consumers are forced to guess. They infer trust from table names, Slack threads, or whoever built the dashboard last year. QuackStack adds a packaging layer so ownership, intended audience, outputs, semantic entrypoints, and release state are explicit instead of tribal knowledge.
 
 ## What A Data Product Is
 
@@ -47,7 +47,7 @@ Read the diagram from left to right. A domain and owner team define who stands b
 
 Outputs tell consumers what concrete things they can use. Semantic entrypoints tell them which business-facing interfaces are part of the contract. Versions tell them the product is managed over time rather than overwritten without ceremony. Subscriptions matter because once other teams depend on a product, changes need a communication path.
 
-## Example In Duck
+## Example In QuackStack
 
 Imagine a “Daily Revenue” product owned by the Finance Analytics team in the `revenue` domain. The product might expose:
 

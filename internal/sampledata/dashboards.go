@@ -4,8 +4,8 @@ import (
 	"context"
 	"reflect"
 
-	"duck-demo/internal/domain"
-	"duck-demo/internal/service/dashboard"
+	"github.com/Yacobolo/quackstack/internal/domain"
+	"github.com/Yacobolo/quackstack/internal/service/dashboard"
 )
 
 const (
@@ -465,8 +465,8 @@ func sampleChartLabDashboardWidgets(_ string) []sampleDashboardWidget {
 				Title:     "Zone Revenue vs Trips (Scatter)",
 				Encodings: domain.VisualEncodings{
 					Label: &domain.VisualFieldBinding{Field: "pickup_zone"},
-					X: &domain.VisualFieldBinding{Field: "trip_count"},
-					Y: &domain.VisualFieldBinding{Field: "gross_revenue"},
+					X:     &domain.VisualFieldBinding{Field: "trip_count"},
+					Y:     &domain.VisualFieldBinding{Field: "gross_revenue"},
 				},
 			},
 			Layout: domain.DashboardWidgetLayout{X: 8, Y: 8, W: 4, H: 4},

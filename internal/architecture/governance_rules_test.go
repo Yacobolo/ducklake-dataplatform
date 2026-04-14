@@ -14,7 +14,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-const modulePath = "duck-demo"
+const modulePath = "github.com/Yacobolo/quackstack"
 
 type layerRule struct {
 	sourcePrefix string

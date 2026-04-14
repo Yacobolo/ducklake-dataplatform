@@ -12,9 +12,9 @@ import (
 	"net/http"
 	"strings"
 
-	"duck-demo/internal/config"
-	"duck-demo/internal/domain"
-	"duck-demo/internal/ui/core"
+	"github.com/Yacobolo/quackstack/internal/config"
+	"github.com/Yacobolo/quackstack/internal/domain"
+	"github.com/Yacobolo/quackstack/internal/ui/core"
 )
 
 const (

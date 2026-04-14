@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"strings"
 
-	"duck-demo/internal/domain"
+	"github.com/Yacobolo/quackstack/internal/domain"
 )
 
 var (

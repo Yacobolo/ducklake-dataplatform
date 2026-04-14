@@ -5,7 +5,7 @@ description: Understand the privilege vocabulary that appears across governance,
 
 # Privileges
 
-Duck uses privileges to define object reachability and mutation rights. The exact privilege names are enforced in the API and policy layers.
+QuackStack uses privileges to define object reachability and mutation rights. The exact privilege names are enforced in the API and policy layers.
 
 ## Use This Page For
 

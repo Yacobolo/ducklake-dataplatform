@@ -14,7 +14,7 @@ task test:unit      # unit tests only
 task lint           # Go + OpenAPI linters
 task check          # lint + test with CI-style summary — run before PRs
 task generate       # regenerate all code
-task build-cli      # build CLI binary → bin/duck
+task build-cli      # build CLI binary → bin/quack
 ```
 
 Lint policy reference: `LINTING.md`
@@ -35,7 +35,7 @@ Single package/test: `go test -race -run TestName ./internal/pkg/...`
 
 ```
 cmd/server/          → HTTP server entry point
-cmd/cli/             → CLI binary (duck)
+cmd/cli/             → CLI binary (quack)
 cmd/apigen/          → APIGen CLI wrapper over reusable `pkg/apigen/...` packages
 pkg/apigen/          → importable APIGen IR, CUE compiler, emitters, and runtimes
 internal/api/        → HTTP handlers and APIGen-generated transport code

@@ -8,9 +8,9 @@ import (
 	"fmt"
 	"strings"
 
-	dbstore "duck-demo/internal/db/dbstore"
-	"duck-demo/internal/ddl"
-	"duck-demo/internal/domain"
+	dbstore "github.com/Yacobolo/quackstack/internal/db/dbstore"
+	"github.com/Yacobolo/quackstack/internal/ddl"
+	"github.com/Yacobolo/quackstack/internal/domain"
 )
 
 // CreateTable creates a new table via DuckDB DDL and reads it back.

@@ -8,8 +8,8 @@ import (
 	"log/slog"
 	"time"
 
-	dbstore "duck-demo/internal/db/dbstore"
-	"duck-demo/internal/domain"
+	dbstore "github.com/Yacobolo/quackstack/internal/db/dbstore"
+	"github.com/Yacobolo/quackstack/internal/domain"
 )
 
 // resolveSchemaID looks up the ducklake_schema row by name and returns its ID.

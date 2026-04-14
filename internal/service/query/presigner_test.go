@@ -6,17 +6,17 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"duck-demo/internal/domain"
+	"github.com/Yacobolo/quackstack/internal/domain"
 )
 
 func TestNormalizeS3Endpoint(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
-		name     string
-		input    string
-		want     string
-		wantErr  string
+		name    string
+		input   string
+		want    string
+		wantErr string
 	}{
 		{
 			name:  "adds_https_to_bare_host",

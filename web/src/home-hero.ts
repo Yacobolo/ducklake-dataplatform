@@ -24,15 +24,15 @@ class DuckHomeHero extends LitElement {
       --hero-wave-1: color-mix(in srgb, var(--hero-accent) 10%, var(--hero-surface) 90%);
       --hero-wave-2: color-mix(in srgb, var(--hero-accent) 18%, var(--hero-surface-muted) 82%);
       --hero-wave-3: color-mix(in srgb, var(--hero-accent) 28%, var(--hero-surface-muted) 72%);
-      --hero-duck-shadow: color-mix(in srgb, var(--hero-text) 12%, transparent);
+      --hero-quack-shadow: color-mix(in srgb, var(--hero-text) 12%, transparent);
       --hero-light: color-mix(in srgb, var(--hero-surface) 72%, var(--hero-text) 28%);
       --hero-light-strong: color-mix(in srgb, var(--hero-surface) 88%, var(--hero-text) 12%);
       --hero-light-soft: color-mix(in srgb, var(--hero-surface) 56%, transparent);
-      --hero-duck-feather-top: color-mix(in srgb, var(--display-yellow-bgColor-muted) 74%, var(--hero-light-strong) 26%);
-      --hero-duck-feather-mid: color-mix(in srgb, var(--display-yellow-bgColor-muted) 44%, var(--display-yellow-fgColor) 56%);
-      --hero-duck-feather-low: color-mix(in srgb, var(--display-yellow-fgColor) 82%, var(--display-yellow-bgColor-muted) 18%);
-      --hero-duck-highlight: color-mix(in srgb, var(--hero-light) 75%, transparent);
-      --hero-duck-shade: color-mix(in srgb, var(--hero-border) 44%, transparent);
+      --hero-quack-feather-top: color-mix(in srgb, var(--display-yellow-bgColor-muted) 74%, var(--hero-light-strong) 26%);
+      --hero-quack-feather-mid: color-mix(in srgb, var(--display-yellow-bgColor-muted) 44%, var(--display-yellow-fgColor) 56%);
+      --hero-quack-feather-low: color-mix(in srgb, var(--display-yellow-fgColor) 82%, var(--display-yellow-bgColor-muted) 18%);
+      --hero-quack-highlight: color-mix(in srgb, var(--hero-light) 75%, transparent);
+      --hero-quack-shade: color-mix(in srgb, var(--hero-border) 44%, transparent);
       --hero-beak-top: color-mix(in srgb, var(--hero-attention) 78%, var(--hero-light-strong) 22%);
       --hero-beak-bottom: color-mix(in srgb, var(--hero-attention) 88%, var(--hero-text) 12%);
       --hero-eye-white: color-mix(in srgb, white 92%, var(--hero-surface) 8%);
@@ -92,93 +92,93 @@ class DuckHomeHero extends LitElement {
       mask-image: linear-gradient(180deg, transparent 0%, black 12%, black 100%);
     }
 
-    .duck {
+    .quack {
       position: absolute;
       right: 10%;
       bottom: 3.1rem;
       width: min(18rem, 92%);
       aspect-ratio: 1.1;
       transform:
-        translate3d(var(--duck-shift-x, 0px), calc(var(--duck-shift-y, 0px) - 2px), 0)
-        rotate(calc(var(--duck-tilt, 0deg) + 0deg));
+        translate3d(var(--quack-shift-x, 0px), calc(var(--quack-shift-y, 0px) - 2px), 0)
+        rotate(calc(var(--quack-tilt, 0deg) + 0deg));
       transition: transform 220ms cubic-bezier(0.22, 1, 0.36, 1);
-      animation: duck-bob 4.6s ease-in-out infinite;
+      animation: quack-bob 4.6s ease-in-out infinite;
       transform-origin: center 72%;
       will-change: transform;
     }
 
-    .duck-shadow {
+    .quack-shadow {
       position: absolute;
       left: 29%;
       bottom: 1rem;
       width: 42%;
       height: 1rem;
       border-radius: 50%;
-      background: var(--hero-duck-shadow);
+      background: var(--hero-quack-shadow);
       filter: blur(10px);
       animation: shadow-sway 4.6s ease-in-out infinite;
     }
 
-    .duck-body {
+    .quack-body {
       position: absolute;
       left: 20%;
       bottom: 1.2rem;
       width: 58%;
       height: 38%;
       border-radius: 54% 46% 48% 52% / 58% 56% 44% 42%;
-      background: linear-gradient(180deg, var(--hero-duck-feather-top) 0%, var(--hero-duck-feather-mid) 100%);
+      background: linear-gradient(180deg, var(--hero-quack-feather-top) 0%, var(--hero-quack-feather-mid) 100%);
       box-shadow:
-        inset 0 -0.8rem 0 var(--hero-duck-shade),
-        inset 0 0.2rem 0 var(--hero-duck-highlight);
+        inset 0 -0.8rem 0 var(--hero-quack-shade),
+        inset 0 0.2rem 0 var(--hero-quack-highlight);
     }
 
-    .duck-tail {
+    .quack-tail {
       position: absolute;
       left: -2%;
       top: 34%;
       width: 22%;
       height: 22%;
       border-radius: 30% 70% 30% 70%;
-      background: var(--hero-duck-feather-top);
+      background: var(--hero-quack-feather-top);
       transform: rotate(-24deg);
     }
 
-    .duck-wing {
+    .quack-wing {
       position: absolute;
       left: 31%;
       top: 18%;
       width: 34%;
       height: 42%;
       border-radius: 50% 50% 48% 52% / 56% 54% 46% 44%;
-      background: linear-gradient(180deg, var(--hero-duck-feather-mid) 0%, var(--hero-duck-feather-low) 100%);
+      background: linear-gradient(180deg, var(--hero-quack-feather-mid) 0%, var(--hero-quack-feather-low) 100%);
       transform: rotate(-12deg);
       box-shadow: inset 0 0.12rem 0 color-mix(in srgb, var(--hero-light-soft) 36%, transparent);
     }
 
-    .duck-neck {
+    .quack-neck {
       position: absolute;
       right: 22%;
       bottom: 44%;
       width: 20%;
       height: 28%;
       border-radius: 48% 52% 46% 54% / 20% 20% 80% 80%;
-      background: linear-gradient(180deg, var(--hero-duck-feather-top) 0%, var(--hero-duck-feather-mid) 100%);
+      background: linear-gradient(180deg, var(--hero-quack-feather-top) 0%, var(--hero-quack-feather-mid) 100%);
       transform: rotate(-10deg);
       transform-origin: bottom center;
     }
 
-    .duck-head {
+    .quack-head {
       position: absolute;
       right: 7%;
       bottom: 59%;
       width: 30%;
       height: 26%;
       border-radius: 52% 48% 50% 50% / 48% 48% 52% 52%;
-      background: linear-gradient(180deg, var(--hero-duck-feather-top) 0%, var(--hero-duck-feather-mid) 100%);
+      background: linear-gradient(180deg, var(--hero-quack-feather-top) 0%, var(--hero-quack-feather-mid) 100%);
       box-shadow: inset 0 0.14rem 0 color-mix(in srgb, var(--hero-light) 58%, transparent);
     }
 
-    .duck-head::after {
+    .quack-head::after {
       content: "";
       position: absolute;
       left: 70%;
@@ -191,7 +191,7 @@ class DuckHomeHero extends LitElement {
       box-shadow: inset 0 -0.1rem 0 color-mix(in srgb, var(--hero-text) 18%, transparent);
     }
 
-    .duck-eye {
+    .quack-eye {
       position: absolute;
       top: 34%;
       width: 0.95rem;
@@ -202,15 +202,15 @@ class DuckHomeHero extends LitElement {
       overflow: hidden;
     }
 
-    .duck-eye.left {
+    .quack-eye.left {
       left: 34%;
     }
 
-    .duck-eye.right {
+    .quack-eye.right {
       left: 54%;
     }
 
-    .duck-pupil {
+    .quack-pupil {
       position: absolute;
       left: 50%;
       top: 50%;
@@ -222,7 +222,7 @@ class DuckHomeHero extends LitElement {
       transition: transform 70ms linear;
     }
 
-    .duck-cheek {
+    .quack-cheek {
       position: absolute;
       left: 22%;
       bottom: 18%;
@@ -233,7 +233,7 @@ class DuckHomeHero extends LitElement {
       filter: blur(4px);
     }
 
-    .duck-waterline {
+    .quack-waterline {
       position: absolute;
       left: 22%;
       bottom: 3.3rem;
@@ -276,17 +276,17 @@ class DuckHomeHero extends LitElement {
       fill: var(--hero-wave-1);
     }
 
-    @keyframes duck-bob {
+    @keyframes quack-bob {
       0%,
       100% {
         transform:
-          translate3d(var(--duck-shift-x, 0px), calc(var(--duck-shift-y, 0px) - 2px), 0)
-          rotate(calc(var(--duck-tilt, 0deg) - 0.6deg));
+          translate3d(var(--quack-shift-x, 0px), calc(var(--quack-shift-y, 0px) - 2px), 0)
+          rotate(calc(var(--quack-tilt, 0deg) - 0.6deg));
       }
       50% {
         transform:
-          translate3d(var(--duck-shift-x, 0px), calc(var(--duck-shift-y, 0px) - 12px), 0)
-          rotate(calc(var(--duck-tilt, 0deg) + 0.7deg));
+          translate3d(var(--quack-shift-x, 0px), calc(var(--quack-shift-y, 0px) - 12px), 0)
+          rotate(calc(var(--quack-tilt, 0deg) + 0.7deg));
       }
     }
 
@@ -321,23 +321,23 @@ class DuckHomeHero extends LitElement {
         padding-top: 0.25rem;
       }
 
-      .duck {
+      .quack {
         right: 50%;
         width: min(15rem, 76%);
-        transform: translate3d(calc(50% + var(--duck-shift-x, 0px)), calc(var(--duck-shift-y, 0px) - 2px), 0) rotate(var(--duck-tilt, 0deg));
+        transform: translate3d(calc(50% + var(--quack-shift-x, 0px)), calc(var(--quack-shift-y, 0px) - 2px), 0) rotate(var(--quack-tilt, 0deg));
       }
 
-      @keyframes duck-bob {
+      @keyframes quack-bob {
         0%,
         100% {
           transform:
-            translate3d(calc(50% + var(--duck-shift-x, 0px)), calc(var(--duck-shift-y, 0px) - 2px), 0)
-            rotate(calc(var(--duck-tilt, 0deg) - 0.6deg));
+            translate3d(calc(50% + var(--quack-shift-x, 0px)), calc(var(--quack-shift-y, 0px) - 2px), 0)
+            rotate(calc(var(--quack-tilt, 0deg) - 0.6deg));
         }
         50% {
           transform:
-            translate3d(calc(50% + var(--duck-shift-x, 0px)), calc(var(--duck-shift-y, 0px) - 12px), 0)
-            rotate(calc(var(--duck-tilt, 0deg) + 0.7deg));
+            translate3d(calc(50% + var(--quack-shift-x, 0px)), calc(var(--quack-shift-y, 0px) - 12px), 0)
+            rotate(calc(var(--quack-tilt, 0deg) + 0.7deg));
         }
       }
     }
@@ -353,8 +353,8 @@ class DuckHomeHero extends LitElement {
     }
 
     @media (prefers-reduced-motion: reduce) {
-      .duck,
-      .duck-shadow,
+      .quack,
+      .quack-shadow,
       .wave {
         animation: none;
         transition: none;
@@ -389,17 +389,17 @@ class DuckHomeHero extends LitElement {
         </div>
 
         <div class="scene" aria-hidden="true">
-          <div class="duck">
-            <div class="duck-shadow"></div>
-            <div class="duck-waterline"></div>
-            <div class="duck-body">
-              <div class="duck-tail"></div>
-              <div class="duck-wing"></div>
-              <div class="duck-neck"></div>
-              <div class="duck-head">
-                <div class="duck-cheek"></div>
-                <div class="duck-eye left"><span class="duck-pupil"></span></div>
-                <div class="duck-eye right"><span class="duck-pupil"></span></div>
+          <div class="quack">
+            <div class="quack-shadow"></div>
+            <div class="quack-waterline"></div>
+            <div class="quack-body">
+              <div class="quack-tail"></div>
+              <div class="quack-wing"></div>
+              <div class="quack-neck"></div>
+              <div class="quack-head">
+                <div class="quack-cheek"></div>
+                <div class="quack-eye left"><span class="quack-pupil"></span></div>
+                <div class="quack-eye right"><span class="quack-pupil"></span></div>
               </div>
             </div>
           </div>
@@ -445,9 +445,9 @@ class DuckHomeHero extends LitElement {
 
     hero.style.setProperty("--pupil-x", `${pupilX}px`);
     hero.style.setProperty("--pupil-y", `${pupilY}px`);
-    hero.style.setProperty("--duck-shift-x", `${duckShiftX}px`);
-    hero.style.setProperty("--duck-shift-y", `${duckShiftY}px`);
-    hero.style.setProperty("--duck-tilt", `${duckTilt}deg`);
+    hero.style.setProperty("--quack-shift-x", `${duckShiftX}px`);
+    hero.style.setProperty("--quack-shift-y", `${duckShiftY}px`);
+    hero.style.setProperty("--quack-tilt", `${duckTilt}deg`);
   };
 
   #handleWindowPointerLeave = () => {
@@ -458,12 +458,12 @@ class DuckHomeHero extends LitElement {
 
     hero.style.setProperty("--pupil-x", "0px");
     hero.style.setProperty("--pupil-y", "0px");
-    hero.style.setProperty("--duck-shift-x", "0px");
-    hero.style.setProperty("--duck-shift-y", "0px");
-    hero.style.setProperty("--duck-tilt", "0deg");
+    hero.style.setProperty("--quack-shift-x", "0px");
+    hero.style.setProperty("--quack-shift-y", "0px");
+    hero.style.setProperty("--quack-tilt", "0deg");
   };
 }
 
-if (!customElements.get("duck-home-hero")) {
-  customElements.define("duck-home-hero", DuckHomeHero);
+if (!customElements.get("quack-home-hero")) {
+  customElements.define("quack-home-hero", DuckHomeHero);
 }

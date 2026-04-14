@@ -8,8 +8,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"duck-demo/internal/domain"
-	dashboardsvc "duck-demo/internal/service/dashboard"
+	"github.com/Yacobolo/quackstack/internal/domain"
+	dashboardsvc "github.com/Yacobolo/quackstack/internal/service/dashboard"
 )
 
 type mockDashboardService struct {

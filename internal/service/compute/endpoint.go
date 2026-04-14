@@ -8,11 +8,11 @@ import (
 	"net/url"
 	"strings"
 
-	workercompute "duck-demo/internal/compute"
-	computeproto "duck-demo/internal/compute/proto"
-	"duck-demo/internal/domain"
-	"duck-demo/internal/service/auditutil"
-	servicepolicy "duck-demo/internal/service/policy"
+	workercompute "github.com/Yacobolo/quackstack/internal/compute"
+	computeproto "github.com/Yacobolo/quackstack/internal/compute/proto"
+	"github.com/Yacobolo/quackstack/internal/domain"
+	"github.com/Yacobolo/quackstack/internal/service/auditutil"
+	servicepolicy "github.com/Yacobolo/quackstack/internal/service/policy"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
