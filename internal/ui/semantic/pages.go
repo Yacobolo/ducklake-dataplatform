@@ -2,6 +2,7 @@ package semantic
 
 import (
 	"strconv"
+	"strings"
 
 	"github.com/Yacobolo/quackstack/internal/domain"
 	semsvc "github.com/Yacobolo/quackstack/internal/service/semantic"
@@ -20,6 +21,7 @@ type semanticModelRowData struct {
 }
 
 type semanticMetricRowData struct {
+	WorkspaceID       string
 	Name              string
 	Type              string
 	Expression        string
@@ -30,18 +32,20 @@ type semanticMetricRowData struct {
 }
 
 type semanticPreAggRowData struct {
-	Name      string
-	Grain     string
-	Target    string
-	EditURL   string
-	DeleteURL string
+	WorkspaceID string
+	Name        string
+	Grain       string
+	Target      string
+	EditURL     string
+	DeleteURL   string
 }
 
 type semanticModelDetailPageData struct {
 	Principal            domain.ContextPrincipal
+	WorkspaceID          string
 	SemanticModelID      string
 	ModelName            string
-	BaseModelRef         string
+	BaseRelationRef      string
 	DefaultTimeDim       string
 	Description          string
 	EditURL              string
@@ -61,6 +65,7 @@ type semanticModelDetailPageData struct {
 }
 
 type semanticEditableRelationshipRowData struct {
+	WorkspaceID     string
 	Name            string
 	RelatedRelation string
 	Type            string
@@ -74,10 +79,11 @@ type semanticEditableRelationshipRowData struct {
 
 type semanticModelEditPageData struct {
 	Principal             domain.ContextPrincipal
+	WorkspaceID           string
 	SemanticModelID       string
 	ModelName             string
 	Description           string
-	BaseModelRef          string
+	BaseRelationRef       string
 	DefaultTimeDim        string
 	TagsCSV               string
 	UpdateURL             string
@@ -107,7 +113,13 @@ type semanticQueryResultPageData struct {
 	CSRFFieldProvider func() Node
 }
 
-func semanticModelsListPage(principal domain.ContextPrincipal, rows []semanticModelRowData, page domain.PageRequest, total int64) Node {
+func semanticModelsListPage(principal domain.ContextPrincipal, rows []semanticModelRowData, page domain.PageRequest, total int64, workspaceID string) Node {
+	newSemanticModelURL := "/ui/semantic/models/new"
+	paginationBaseURL := "/ui/semantic/models"
+	if strings.TrimSpace(workspaceID) != "" {
+		newSemanticModelURL += "?workspace_id=" + workspaceID
+		paginationBaseURL += "?workspace_id=" + workspaceID
+	}
 	table := Node(P(Class("text-xs text-[var(--fgColor-muted)]"), Text("No semantic models defined.")))
 	if len(rows) > 0 {
 		tableRows := make([]Node, 0, len(rows))
@@ -132,23 +144,24 @@ func semanticModelsListPage(principal domain.ContextPrincipal, rows []semanticMo
 	}
 	return core.AppPage("Semantic Models", "semantic", principal,
 		core.ListPageLayout(
-			core.ListPageHeader("Semantic models", "Use the semantic workspace for the consumer-facing semantic layer. Relationship paths stay nearby, but semantic model management remains the default landing surface.", core.PrimaryLink("/ui/semantic/models/new", "", Text("New semantic model"))),
+			core.ListPageHeader("Semantic models", "Use the semantic workspace for the consumer-facing semantic layer. Relationship paths stay nearby, but semantic model management remains the default landing surface.", core.PrimaryLink(newSemanticModelURL, "", Text("New semantic model"))),
 			core.ListPageBody(
 				table,
-				core.ListPagination("/ui/semantic/models", page, total),
+				core.ListPagination(paginationBaseURL, page, total),
 			),
 		),
 	)
 }
 
-func semanticModelsNewPage(principal domain.ContextPrincipal, csrfFieldProvider func() Node) Node {
+func semanticModelsNewPage(principal domain.ContextPrincipal, workspaceID string, csrfFieldProvider func() Node) Node {
 	return semanticFormPage(principal, "New Semantic Model", "/ui/semantic/models", csrfFieldProvider,
+		Input(Type("hidden"), Name("workspace_id"), Value(workspaceID)),
 		Label(Text("Name")),
 		core.InputControl("", Name("name"), Required()),
 		Label(Text("Description")),
 		core.TextareaControl("min-h-24", Name("description")),
 		Label(Text("Base relation reference")),
-		core.InputControl("", Name("base_model_ref"), Required()),
+		core.InputControl("", Name("base_relation_ref"), Required()),
 		Label(Text("Default time dimension")),
 		core.InputControl("", Name("default_time_dimension")),
 		Label(Text("Tags (comma separated)")),
@@ -173,7 +186,7 @@ func semanticModelDetailPage(d semanticModelDetailPageData) Node {
 						H1(Class("m-0 text-3xl font-semibold tracking-tight"), Text(d.ModelName)),
 						descriptionNode,
 						core.BadgeRow(
-							core.Badge("Base relation "+d.BaseModelRef, "accent"),
+							core.Badge("Base relation "+d.BaseRelationRef, "accent"),
 							core.Badge("Time "+valueOrDash(d.DefaultTimeDim), ""),
 							core.Badge(strconv.Itoa(d.RelationshipCount)+" join paths", ""),
 							core.Badge(strconv.Itoa(len(d.Metrics))+" metrics", ""),
@@ -270,7 +283,7 @@ func semanticMetricsTable(rows []semanticMetricRowData, csrfFieldProvider func()
 		if showActions {
 			cells = append(cells, core.TableActionCell(
 				core.SecondaryLink(metric.EditURL, "small", Text("Edit")),
-				Form(Method("post"), Action(metric.DeleteURL), csrfFieldProvider(), core.DangerButton("small", Type("submit"), Text("Delete"))),
+				Form(Method("post"), Action(metric.DeleteURL), csrfFieldProvider(), Input(Type("hidden"), Name("workspace_id"), Value(metric.WorkspaceID)), core.DangerButton("small", Type("submit"), Text("Delete"))),
 			))
 		}
 		tableRows = append(tableRows, Tr(Group(cells)))
@@ -305,7 +318,7 @@ func semanticPreAggregationsTable(rows []semanticPreAggRowData, csrfFieldProvide
 		if showActions {
 			cells = append(cells, core.TableActionCell(
 				core.SecondaryLink(item.EditURL, "small", Text("Edit")),
-				Form(Method("post"), Action(item.DeleteURL), csrfFieldProvider(), core.DangerButton("small", Type("submit"), Text("Delete"))),
+				Form(Method("post"), Action(item.DeleteURL), csrfFieldProvider(), Input(Type("hidden"), Name("workspace_id"), Value(item.WorkspaceID)), core.DangerButton("small", Type("submit"), Text("Delete"))),
 			))
 		}
 		tableRows = append(tableRows, Tr(Group(cells)))
@@ -329,6 +342,7 @@ func semanticMetricCreateForm(d semanticModelDetailPageData) Node {
 		P(Class("m-0 text-sm leading-6 text-[var(--fgColor-muted)]"), Text("Define a new metric after reviewing the current inventory.")),
 		Form(Class("grid gap-3 sm:grid-cols-2"), Method("post"), Action(d.MetricsCreateURL),
 			d.CSRFFieldProvider(),
+			Input(Type("hidden"), Name("workspace_id"), Value(d.WorkspaceID)),
 			Div(Class("grid gap-2"),
 				Label(Text("Name")),
 				core.InputControl("", Name("name"), Required()),
@@ -383,6 +397,7 @@ func semanticPreAggregationCreateForm(d semanticModelDetailPageData) Node {
 		P(Class("m-0 text-sm leading-6 text-[var(--fgColor-muted)]"), Text("Keep acceleration authoring close at hand, but separate from the core model overview.")),
 		Form(Class("grid gap-3 sm:grid-cols-2"), Method("post"), Action(d.PreAggCreateURL),
 			d.CSRFFieldProvider(),
+			Input(Type("hidden"), Name("workspace_id"), Value(d.WorkspaceID)),
 			Div(Class("grid gap-2"),
 				Label(Text("Name")),
 				core.InputControl("", Name("name"), Required()),
@@ -468,12 +483,12 @@ func semanticQueryResultPage(d semanticQueryResultPageData) Node {
 		})
 	}
 	return core.AppPage("Semantic Query", "semantic", d.Principal,
-		semanticQueryCard(d.Request.SemanticModelID, "/ui/semantic/query/explain", "/ui/semantic/query/run", d.CSRFFieldProvider, &d.Request),
+		semanticQueryCard(d.Request.WorkspaceID, d.Request.SemanticModelID, "/ui/semantic/query/explain", "/ui/semantic/query/run", d.CSRFFieldProvider, &d.Request),
 		resultNode,
 	)
 }
 
-func semanticQueryCard(semanticModelID, explainURL, runURL string, csrfFieldProvider func() Node, req ...*semsvc.MetricQueryRequest) Node {
+func semanticQueryCard(workspaceID, semanticModelID, explainURL, runURL string, csrfFieldProvider func() Node, req ...*semsvc.MetricQueryRequest) Node {
 	var request *semsvc.MetricQueryRequest
 	if len(req) > 0 {
 		request = req[0]
@@ -500,11 +515,15 @@ func semanticQueryCard(semanticModelID, explainURL, runURL string, csrfFieldProv
 		if request.SemanticModelID != "" {
 			semanticModelID = request.SemanticModelID
 		}
+		if request.WorkspaceID != "" {
+			workspaceID = request.WorkspaceID
+		}
 	}
 	return Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-xs"),
 		H3(Class("mt-0 text-lg font-semibold"), Text("Metric query")),
 		Form(Class("grid gap-3"), Method("post"), Action(explainURL),
 			csrfFieldProvider(),
+			Input(Type("hidden"), Name("workspace_id"), Value(workspaceID)),
 			Label(Text("Semantic model ID")),
 			core.InputControl("", Name("semantic_model_id"), Value(semanticModelID), Required()),
 			Label(Text("Metrics (comma separated)")),
@@ -552,6 +571,7 @@ func semanticModelEditPage(d semanticModelEditPageData) Node {
 				Div(Class("grid gap-4 pt-4"),
 					Form(Class("grid gap-3 sm:grid-cols-2"), Method("post"), Action(row.UpdateURL),
 						d.CSRFFieldProvider(),
+						Input(Type("hidden"), Name("workspace_id"), Value(row.WorkspaceID)),
 						Div(Class("grid gap-2"),
 							Label(Text("Relationship type")),
 							core.SelectControl("", Name("relationship_type"), optionSelected("ONE_TO_ONE", row.Type), optionSelected("ONE_TO_MANY", row.Type), optionSelected("MANY_TO_ONE", row.Type), optionSelected("MANY_TO_MANY", row.Type)),
@@ -572,7 +592,7 @@ func semanticModelEditPage(d semanticModelEditPageData) Node {
 							core.PrimaryButton("", Type("submit"), Text("Save join path")),
 						),
 					),
-					Form(Method("post"), Action(row.DeleteURL), d.CSRFFieldProvider(), core.DangerButton("", Type("submit"), Text("Delete"))),
+					Form(Method("post"), Action(row.DeleteURL), d.CSRFFieldProvider(), Input(Type("hidden"), Name("workspace_id"), Value(row.WorkspaceID)), core.DangerButton("", Type("submit"), Text("Delete"))),
 				),
 			),
 		)
@@ -597,17 +617,18 @@ func semanticModelEditPage(d semanticModelEditPageData) Node {
 				Div(Class("grid gap-3"),
 					Form(Class("grid gap-3"), Method("post"), Action(d.UpdateURL),
 						d.CSRFFieldProvider(),
+						Input(Type("hidden"), Name("workspace_id"), Value(d.WorkspaceID)),
 						Label(Text("Description")),
 						core.TextareaControl("min-h-24", Name("description"), Text(d.Description)),
 						Label(Text("Base relation reference")),
-						core.InputControl("", Name("base_model_ref"), Value(d.BaseModelRef), Required()),
+						core.InputControl("", Name("base_relation_ref"), Value(d.BaseRelationRef), Required()),
 						Label(Text("Default time dimension")),
 						core.InputControl("", Name("default_time_dimension"), Value(d.DefaultTimeDim)),
 						Label(Text("Tags (comma separated)")),
 						core.InputControl("", Name("tags"), Value(d.TagsCSV)),
 						Div(Class("mt-4"), core.PrimaryButton("", Type("submit"), Text("Save semantic model"))),
 					),
-					Form(Method("post"), Action(d.DeleteURL), d.CSRFFieldProvider(), core.DangerButton("", Type("submit"), Text("Delete semantic model"))),
+					Form(Method("post"), Action(d.DeleteURL), d.CSRFFieldProvider(), Input(Type("hidden"), Name("workspace_id"), Value(d.WorkspaceID)), core.DangerButton("", Type("submit"), Text("Delete semantic model"))),
 				),
 			),
 			core.SectionSurface(
@@ -620,6 +641,7 @@ func semanticModelEditPage(d semanticModelEditPageData) Node {
 						P(Class("m-0 text-sm leading-6 text-[var(--fgColor-muted)]"), Text("The current semantic model is the fixed source for every join path. Choose the related relation and define the join SQL.")),
 						Form(Class("grid gap-3 sm:grid-cols-2"), Method("post"), Action(d.RelationshipCreateURL),
 							d.CSRFFieldProvider(),
+							Input(Type("hidden"), Name("workspace_id"), Value(d.WorkspaceID)),
 							Div(Class("grid gap-2"),
 								Label(Text("Join path name")),
 								core.InputControl("", Name("name"), Required()),
@@ -656,6 +678,7 @@ func semanticModelEditPage(d semanticModelEditPageData) Node {
 					Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-xs"),
 					Summary(Class("cursor-pointer list-none text-sm font-medium text-[var(--fgColor-default)] [&::-webkit-details-marker]:hidden"), Text("New metric")),
 					Div(Class("pt-4"), semanticMetricCreateForm(semanticModelDetailPageData{
+						WorkspaceID:       d.WorkspaceID,
 						MetricsCreateURL:  d.MetricsCreateURL,
 						CSRFFieldProvider: d.CSRFFieldProvider,
 					})),
@@ -671,13 +694,14 @@ func semanticModelEditPage(d semanticModelEditPageData) Node {
 							H3(Class("m-0 text-lg font-semibold"), Text("Pre-aggregations")),
 							preAggRows,
 							semanticPreAggregationCreateForm(semanticModelDetailPageData{
+								WorkspaceID:       d.WorkspaceID,
 								PreAggCreateURL:   d.PreAggCreateURL,
 								CSRFFieldProvider: d.CSRFFieldProvider,
 							}),
 						),
 						Div(Class("grid gap-4 border-t border-[var(--borderColor-default)] pt-6"),
 							H3(Class("m-0 text-lg font-semibold"), Text("Metric query")),
-							semanticQueryCard(d.SemanticModelID, d.QueryExplainURL, d.QueryRunURL, d.CSRFFieldProvider),
+							semanticQueryCard(d.WorkspaceID, d.SemanticModelID, d.QueryExplainURL, d.QueryRunURL, d.CSRFFieldProvider),
 						),
 					),
 				),
@@ -686,8 +710,9 @@ func semanticModelEditPage(d semanticModelEditPageData) Node {
 	)
 }
 
-func semanticMetricEditPage(principal domain.ContextPrincipal, semanticModelID string, metric *domain.SemanticMetric, csrfFieldProvider func() Node) Node {
+func semanticMetricEditPage(principal domain.ContextPrincipal, workspaceID, semanticModelID string, metric *domain.SemanticMetric, csrfFieldProvider func() Node) Node {
 	return semanticFormPage(principal, "Edit Semantic Metric", "/ui/semantic/models/"+semanticModelID+"/metrics/"+metric.Name+"/update", csrfFieldProvider,
+		Input(Type("hidden"), Name("workspace_id"), Value(workspaceID)),
 		Label(Text("Label")),
 		core.InputControl("", Name("label"), Value(metric.Label)),
 		Label(Text("Description")),
@@ -711,8 +736,9 @@ func semanticMetricEditPage(principal domain.ContextPrincipal, semanticModelID s
 	)
 }
 
-func semanticPreAggregationEditPage(principal domain.ContextPrincipal, semanticModelID string, item *domain.SemanticPreAggregation, csrfFieldProvider func() Node) Node {
+func semanticPreAggregationEditPage(principal domain.ContextPrincipal, workspaceID, semanticModelID string, item *domain.SemanticPreAggregation, csrfFieldProvider func() Node) Node {
 	return semanticFormPage(principal, "Edit Pre-Aggregation", "/ui/semantic/models/"+semanticModelID+"/pre-aggregations/"+item.Name+"/update", csrfFieldProvider,
+		Input(Type("hidden"), Name("workspace_id"), Value(workspaceID)),
 		Label(Text("Metric set (comma separated)")),
 		core.InputControl("", Name("metric_set"), Value(csvValues(item.MetricSet))),
 		Label(Text("Dimension set (comma separated)")),

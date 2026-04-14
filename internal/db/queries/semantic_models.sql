@@ -1,33 +1,41 @@
 -- name: CreateSemanticModel :one
 INSERT INTO semantic_models (
-    id, name, description, owner, base_model_ref,
+    id, workspace_id, name, description, owner, base_relation_ref,
     default_time_dimension, tags, created_by
 )
-VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
 RETURNING *;
 
 -- name: GetSemanticModelByID :one
 SELECT * FROM semantic_models WHERE id = ?;
 
--- name: GetSemanticModelByName :one
-SELECT * FROM semantic_models WHERE name = ?;
+-- name: GetSemanticModelByWorkspaceAndName :one
+SELECT * FROM semantic_models WHERE workspace_id = ? AND name = ?;
 
--- name: ListSemanticModels :many
+-- name: ListSemanticModelsByWorkspace :many
 SELECT * FROM semantic_models
+WHERE workspace_id = ?
 ORDER BY name
 LIMIT ? OFFSET ?;
 
--- name: CountSemanticModels :one
-SELECT COUNT(*) FROM semantic_models;
+-- name: CountSemanticModelsByWorkspace :one
+SELECT COUNT(*) FROM semantic_models
+WHERE workspace_id = ?;
+
+-- name: ListAllSemanticModelsByWorkspace :many
+SELECT * FROM semantic_models
+WHERE workspace_id = ?
+ORDER BY name;
 
 -- name: ListAllSemanticModels :many
-SELECT * FROM semantic_models ORDER BY name;
+SELECT * FROM semantic_models
+ORDER BY workspace_id, name;
 
 -- name: UpdateSemanticModel :exec
 UPDATE semantic_models
 SET description = COALESCE(?, description),
     owner = COALESCE(?, owner),
-    base_model_ref = COALESCE(?, base_model_ref),
+    base_relation_ref = COALESCE(?, base_relation_ref),
     default_time_dimension = COALESCE(?, default_time_dimension),
     tags = COALESCE(?, tags),
     updated_at = datetime('now')

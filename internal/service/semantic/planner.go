@@ -44,7 +44,10 @@ func (s *Service) ExplainMetricQuery(ctx context.Context, req MetricQueryRequest
 
 func (s *Service) explainMetricQuery(ctx context.Context, req MetricQueryRequest, opts explainMetricQueryOptions) (*MetricQueryPlan, error) {
 	if strings.TrimSpace(req.SemanticModelID) == "" && strings.TrimSpace(req.SemanticModelName) != "" {
-		model, err := s.models.GetByName(ctx, req.SemanticModelName)
+		if strings.TrimSpace(req.WorkspaceID) == "" {
+			return nil, domain.ErrValidation("workspace_id is required when semantic_model_name is provided")
+		}
+		model, err := s.models.GetByWorkspaceAndName(ctx, req.WorkspaceID, req.SemanticModelName)
 		if err != nil {
 			return nil, err
 		}
@@ -109,7 +112,7 @@ func (s *Service) explainMetricQuery(ctx context.Context, req MetricQueryRequest
 		resolvedMetricSQL[metric.Name] = filteredExpr
 	}
 
-	models, _, err := s.models.List(ctx, domain.PageRequest{MaxResults: 10000})
+	models, err := s.models.ListAllByWorkspace(ctx, baseModel.WorkspaceID)
 	if err != nil {
 		return nil, fmt.Errorf("list semantic models: %w", err)
 	}
@@ -147,7 +150,7 @@ func (s *Service) explainMetricQuery(ctx context.Context, req MetricQueryRequest
 		if joinedNames[step.ToModel] {
 			continue
 		}
-		joins = append(joins, fmt.Sprintf("LEFT JOIN %s AS %s ON %s", modelByName[step.ToModel].BaseModelRef, step.ToModel, step.JoinSQL))
+		joins = append(joins, fmt.Sprintf("LEFT JOIN %s AS %s ON %s", modelByName[step.ToModel].BaseRelationRef, step.ToModel, step.JoinSQL))
 		joinedNames[step.ToModel] = true
 		joinSteps = append(joinSteps, step)
 	}
@@ -163,14 +166,14 @@ func (s *Service) explainMetricQuery(ctx context.Context, req MetricQueryRequest
 			if joinedNames[step.ToModel] {
 				continue
 			}
-			joins = append(joins, fmt.Sprintf("LEFT JOIN %s AS %s ON %s", modelByName[step.ToModel].BaseModelRef, step.ToModel, step.JoinSQL))
+			joins = append(joins, fmt.Sprintf("LEFT JOIN %s AS %s ON %s", modelByName[step.ToModel].BaseRelationRef, step.ToModel, step.JoinSQL))
 			joinedNames[step.ToModel] = true
 			joinSteps = append(joinSteps, step)
 		}
 	}
 
 	selectedPreAgg, preAggRelation := s.matchPreAggregation(ctx, baseModel.ID, req, opts)
-	fromRelation := baseModel.BaseModelRef
+	fromRelation := baseModel.BaseRelationRef
 	if preAggRelation != "" {
 		fromRelation = preAggRelation
 		joins = nil
@@ -193,10 +196,10 @@ func (s *Service) explainMetricQuery(ctx context.Context, req MetricQueryRequest
 		return nil, err
 	}
 
-	freshnessBasis := []string{baseModel.BaseModelRef}
+	freshnessBasis := []string{baseModel.BaseRelationRef}
 	for _, step := range joinSteps {
 		if model, ok := modelByName[step.ToModel]; ok {
-			freshnessBasis = append(freshnessBasis, model.BaseModelRef)
+			freshnessBasis = append(freshnessBasis, model.BaseRelationRef)
 		}
 	}
 	sort.Strings(freshnessBasis)
@@ -904,7 +907,7 @@ func (s *Service) baseModelUniqueKeys(ctx context.Context, baseModel *domain.Sem
 	if s.modelRepo == nil {
 		return nil, nil
 	}
-	projectName, modelName, ok := parseQualifiedModelRef(baseModel.BaseModelRef)
+	projectName, modelName, ok := parseQualifiedModelRef(baseModel.BaseRelationRef)
 	if !ok {
 		return nil, nil
 	}
@@ -914,7 +917,7 @@ func (s *Service) baseModelUniqueKeys(ctx context.Context, baseModel *domain.Sem
 		if errors.As(err, &notFound) {
 			return nil, nil
 		}
-		return nil, fmt.Errorf("lookup base model %q: %w", baseModel.BaseModelRef, err)
+		return nil, fmt.Errorf("lookup base model %q: %w", baseModel.BaseRelationRef, err)
 	}
 	return model.Config.UniqueKey, nil
 }

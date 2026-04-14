@@ -10,31 +10,50 @@ import (
 
 const sampleDashboardSemanticDescription = "Semantic layer entrypoint for the built-in NYC taxi dashboard review surface."
 
-func ensureSampleDashboardSemanticModel(ctx context.Context, semanticSvc *semanticsvc.Service) error {
+func ensureSampleDashboardSemanticModel(ctx context.Context, semanticSvc *semanticsvc.Service, workspaces domain.WorkspaceRepository) error {
 	if semanticSvc == nil {
 		return nil
 	}
+	if workspaces == nil {
+		return domain.ErrValidation("workspace repository is required")
+	}
+	workspace, err := workspaces.GetPersonalByPrincipal(ctx, sampleDashboardOwner)
+	if err != nil {
+		var notFoundErr *domain.NotFoundError
+		if !errors.As(err, &notFoundErr) {
+			return err
+		}
+		workspace, err = workspaces.Create(ctx, &domain.Workspace{
+			Name:           sampleDashboardOwner + " workspace",
+			Kind:           domain.WorkspaceKindPersonal,
+			OwnerPrincipal: strPtr(sampleDashboardOwner),
+			CreatedBy:      sampleDashboardOwner,
+		})
+		if err != nil {
+			return err
+		}
+	}
 
-	model, err := semanticSvc.GetSemanticModel(ctx, sampleDashboardSemanticProj, sampleDashboardSemanticModel)
+	model, err := semanticSvc.GetSemanticModelByName(ctx, workspace.ID, sampleDashboardSemanticModel)
 	if err != nil {
 		var notFoundErr *domain.NotFoundError
 		if !errors.As(err, &notFoundErr) {
 			return err
 		}
 		model, err = semanticSvc.CreateSemanticModel(ctx, sampleDashboardOwner, domain.CreateSemanticModelRequest{
-			ProjectName:          sampleDashboardSemanticProj,
+			WorkspaceID:          workspace.ID,
 			Name:                 sampleDashboardSemanticModel,
 			Description:          sampleDashboardSemanticDescription,
-			BaseModelRef:         "sample_data.nyc_taxi.dashboard_metrics",
+			BaseRelationRef:      "sample_data.nyc_taxi.dashboard_metrics",
 			DefaultTimeDimension: "pickup_date",
 		})
 		if err != nil {
 			return err
 		}
-	} else if model.Description != sampleDashboardSemanticDescription || model.BaseModelRef != "sample_data.nyc_taxi.dashboard_metrics" || model.DefaultTimeDimension != "pickup_date" {
-		model, err = semanticSvc.UpdateSemanticModel(ctx, sampleDashboardSemanticProj, sampleDashboardSemanticModel, domain.UpdateSemanticModelRequest{
+	} else if model.Description != sampleDashboardSemanticDescription || model.BaseRelationRef != "sample_data.nyc_taxi.dashboard_metrics" || model.DefaultTimeDimension != "pickup_date" {
+		model, err = semanticSvc.UpdateSemanticModel(ctx, workspace.ID, model.ID, domain.UpdateSemanticModelRequest{
 			Description:          strPtr(sampleDashboardSemanticDescription),
-			BaseModelRef:         strPtr("sample_data.nyc_taxi.dashboard_metrics"),
+			BaseRelationRef:      strPtr("sample_data.nyc_taxi.dashboard_metrics"),
 			DefaultTimeDimension: strPtr("pickup_date"),
 		})
 		if err != nil {
@@ -46,7 +65,7 @@ func ensureSampleDashboardSemanticModel(ctx context.Context, semanticSvc *semant
 }
 
 func ensureSampleDashboardSemanticMetrics(ctx context.Context, semanticSvc *semanticsvc.Service, model *domain.SemanticModel) error {
-	existing, err := semanticSvc.ListMetrics(ctx, sampleDashboardSemanticProj, sampleDashboardSemanticModel)
+	existing, err := semanticSvc.ListMetrics(ctx, model.WorkspaceID, model.ID)
 	if err != nil {
 		return err
 	}
@@ -82,7 +101,7 @@ func ensureSampleDashboardSemanticMetrics(ctx context.Context, semanticSvc *sema
 	} {
 		current, ok := byName[desired.Name]
 		if !ok {
-			if _, err := semanticSvc.CreateMetric(ctx, sampleDashboardOwner, sampleDashboardSemanticProj, sampleDashboardSemanticModel, desired); err != nil {
+			if _, err := semanticSvc.CreateMetric(ctx, sampleDashboardOwner, model.WorkspaceID, model.ID, desired); err != nil {
 				return err
 			}
 			continue
@@ -96,7 +115,7 @@ func ensureSampleDashboardSemanticMetrics(ctx context.Context, semanticSvc *sema
 			current.CertificationState == desired.CertificationState {
 			continue
 		}
-		if _, err := semanticSvc.UpdateMetric(ctx, sampleDashboardSemanticProj, sampleDashboardSemanticModel, desired.Name, domain.UpdateSemanticMetricRequest{
+		if _, err := semanticSvc.UpdateMetric(ctx, model.WorkspaceID, model.ID, desired.Name, domain.UpdateSemanticMetricRequest{
 			Description:        strPtr(desired.Description),
 			Label:              strPtr(desired.Label),
 			MetricType:         strPtr(desired.MetricType),

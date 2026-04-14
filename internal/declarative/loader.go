@@ -69,6 +69,7 @@ const cuePlatformSchemaSource = `
 		git_root_path?: string
 		folders?: [string]: _
 		dashboards?: [string]: _
+		semantic_models?: [string]: _
 	}
 	projects?: [string]: {
 		workspace_ref: string
@@ -84,7 +85,6 @@ const cuePlatformSchemaSource = `
 		}
 		macros?: [string]: _
 		models?: [string]: _
-		semantic_models?: [string]: _
 	}
 	assets?: [string]: _
 })
@@ -394,6 +394,12 @@ func normalizeCuePlatform(compiled cuePlatform) (*DesiredState, error) {
 		appendNamedMap(workspace.Dashboards, func(name string, item DashboardSpec) {
 			state.Dashboards = append(state.Dashboards, DashboardResource{Name: name, Spec: item})
 		})
+		appendNamedMap(workspace.SemanticModels, func(name string, item SemanticModelSpec) {
+			if strings.TrimSpace(item.WorkspaceRef) == "" {
+				item.WorkspaceRef = workspaceName
+			}
+			state.SemanticModels = append(state.SemanticModels, SemanticModelResource{ModelName: name, Spec: item})
+		})
 		if err := normalizeWorkspaceFolders(state, workspaceName, "", workspace.Folders); err != nil {
 			return nil, err
 		}
@@ -420,9 +426,6 @@ func normalizeCuePlatform(compiled cuePlatform) (*DesiredState, error) {
 		})
 		appendNamedMap(project.Models, func(name string, item ModelSpec) {
 			state.Models = append(state.Models, ModelResource{ProjectName: projectName, ModelName: name, Spec: item})
-		})
-		appendNamedMap(project.SemanticModels, func(name string, item SemanticModelSpec) {
-			state.SemanticModels = append(state.SemanticModels, SemanticModelResource{ModelName: name, Spec: item})
 		})
 	}
 

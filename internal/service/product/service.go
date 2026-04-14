@@ -1012,6 +1012,11 @@ func (s *Service) resolveSemanticEntrypoints(ctx context.Context, productVersion
 	if s.semantic == nil {
 		return nil, domain.ErrValidation("semantic model linkage is unavailable")
 	}
+	allModels, err := s.semantic.ListAll(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("list semantic models: %w", err)
+	}
+
 	entrypoints := make([]domain.ProductSemanticEntrypoint, 0, len(refs))
 	seen := make(map[string]struct{}, len(refs))
 	for i := range refs {
@@ -1023,14 +1028,24 @@ func (s *Service) resolveSemanticEntrypoints(ctx context.Context, productVersion
 			return nil, domain.ErrValidation("duplicate semantic model ref %q", ref)
 		}
 		seen[ref] = struct{}{}
-		model, err := s.semantic.GetByName(ctx, ref)
-		if err != nil {
-			return nil, fmt.Errorf("resolve semantic model %q: %w", ref, err)
+
+		var match *domain.SemanticModel
+		for i := range allModels {
+			if strings.TrimSpace(allModels[i].Name) != ref {
+				continue
+			}
+			if match != nil {
+				return nil, domain.ErrValidation("semantic model ref %q is ambiguous across workspaces", ref)
+			}
+			match = &allModels[i]
+		}
+		if match == nil {
+			return nil, fmt.Errorf("resolve semantic model %q: %w", ref, domain.ErrNotFound("semantic model %q not found", ref))
 		}
 		entrypoints = append(entrypoints, domain.ProductSemanticEntrypoint{
 			ProductVersionID: productVersionID,
-			SemanticModelID:  model.ID,
-			ModelName:        model.Name,
+			SemanticModelID:  match.ID,
+			ModelName:        match.Name,
 		})
 	}
 	return entrypoints, nil

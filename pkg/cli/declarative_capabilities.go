@@ -104,8 +104,8 @@ func (c *APIStateClient) ValidateApplyCapabilities(ctx context.Context, actions 
 		}
 	}
 	if endpointRequiredByPlan(actions, declarative.KindSemanticModel) {
-		if err := c.probeEndpoint(ctx, "/semantic-models"); err != nil {
-			return fmt.Errorf("semantic model actions present but /semantic-models endpoint is unavailable: %w", err)
+		if err := c.probeEndpoint(ctx, "/workspaces"); err != nil {
+			return fmt.Errorf("semantic model actions present but /workspaces endpoint is unavailable: %w", err)
 		}
 	}
 	if endpointRequiredByPlan(actions, declarative.KindAsset) {

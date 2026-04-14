@@ -64,7 +64,7 @@ func TestService_CreateAndListSemanticModelResources(t *testing.T) {
 		ProjectName:          "analytics",
 		Name:                 "sales",
 		Description:          "Sales semantics",
-		BaseModelRef:         "analytics.fct_sales",
+		BaseRelationRef:         "analytics.fct_sales",
 		DefaultTimeDimension: "order_date",
 		Tags:                 []string{"core"},
 	})
@@ -117,14 +117,14 @@ func TestService_ExplainAndRunMetricQuery(t *testing.T) {
 	_, err := svc.CreateSemanticModel(ctx, "admin", domain.CreateSemanticModelRequest{
 		ProjectName:  "analytics",
 		Name:         "sales",
-		BaseModelRef: "analytics.fct_sales",
+		BaseRelationRef: "analytics.fct_sales",
 	})
 	require.NoError(t, err)
 
 	_, err = svc.CreateSemanticModel(ctx, "admin", domain.CreateSemanticModelRequest{
 		ProjectName:  "analytics",
 		Name:         "customers",
-		BaseModelRef: "analytics.dim_customers",
+		BaseRelationRef: "analytics.dim_customers",
 	})
 	require.NoError(t, err)
 
@@ -184,7 +184,7 @@ func TestService_MaterializePreAggregation_RebuildsTargetWithoutSelfReference(t 
 	_, err := svc.CreateSemanticModel(ctx, "admin", domain.CreateSemanticModelRequest{
 		ProjectName:          "analytics",
 		Name:                 "sales",
-		BaseModelRef:         "analytics.fct_sales",
+		BaseRelationRef:         "analytics.fct_sales",
 		DefaultTimeDimension: "sales.order_date",
 	})
 	require.NoError(t, err)
@@ -230,7 +230,7 @@ func TestService_ExplainMetricQuery_AmbiguousJoinPath(t *testing.T) {
 		_, err := svc.CreateSemanticModel(ctx, "admin", domain.CreateSemanticModelRequest{
 			ProjectName:  "analytics",
 			Name:         name,
-			BaseModelRef: "analytics." + name,
+			BaseRelationRef: "analytics." + name,
 		})
 		require.NoError(t, err)
 	}
@@ -304,7 +304,7 @@ func TestService_ExplainMetricQuery_RejectsDangerousSQLFragments(t *testing.T) {
 	_, err := svc.CreateSemanticModel(ctx, "admin", domain.CreateSemanticModelRequest{
 		ProjectName:  "analytics",
 		Name:         "sales",
-		BaseModelRef: "analytics.fct_sales",
+		BaseRelationRef: "analytics.fct_sales",
 	})
 	require.NoError(t, err)
 
@@ -351,7 +351,7 @@ func TestService_ExplainMetricQuery_FilterSQLApplied(t *testing.T) {
 	_, err := svc.CreateSemanticModel(ctx, "admin", domain.CreateSemanticModelRequest{
 		ProjectName:  "analytics",
 		Name:         "sales",
-		BaseModelRef: "analytics.fct_sales",
+		BaseRelationRef: "analytics.fct_sales",
 	})
 	require.NoError(t, err)
 
@@ -381,7 +381,7 @@ func TestService_RunMetricQuery_ReturnsPreAggregationReadinessError(t *testing.T
 	_, err := svc.CreateSemanticModel(ctx, "admin", domain.CreateSemanticModelRequest{
 		ProjectName:  "analytics",
 		Name:         "sales",
-		BaseModelRef: "analytics.fct_sales",
+		BaseRelationRef: "analytics.fct_sales",
 	})
 	require.NoError(t, err)
 
@@ -425,7 +425,7 @@ func TestService_RunMetricQuery_ReturnsTransformationModelReadinessError(t *test
 	_, err := svc.CreateSemanticModel(ctx, "admin", domain.CreateSemanticModelRequest{
 		ProjectName:  "analytics",
 		Name:         "customer_revenue",
-		BaseModelRef: "fct_customer_revenue",
+		BaseRelationRef: "fct_customer_revenue",
 	})
 	require.NoError(t, err)
 
@@ -481,14 +481,14 @@ func TestService_ExplainMetricQuery_UnsafeJoinUsesBaseUniqueKey(t *testing.T) {
 	_, err = svc.CreateSemanticModel(ctx, "admin", domain.CreateSemanticModelRequest{
 		ProjectName:  "analytics",
 		Name:         "sales",
-		BaseModelRef: "analytics.sales",
+		BaseRelationRef: "analytics.sales",
 	})
 	require.NoError(t, err)
 
 	_, err = svc.CreateSemanticModel(ctx, "admin", domain.CreateSemanticModelRequest{
 		ProjectName:  "analytics",
 		Name:         "sales_tags",
-		BaseModelRef: "analytics.sales_tags",
+		BaseRelationRef: "analytics.sales_tags",
 	})
 	require.NoError(t, err)
 
@@ -547,14 +547,14 @@ func TestService_ExplainMetricQuery_UnsafeJoinSupportsCountDistinct(t *testing.T
 	_, err = svc.CreateSemanticModel(ctx, "admin", domain.CreateSemanticModelRequest{
 		ProjectName:  "analytics",
 		Name:         "sales",
-		BaseModelRef: "analytics.sales",
+		BaseRelationRef: "analytics.sales",
 	})
 	require.NoError(t, err)
 
 	_, err = svc.CreateSemanticModel(ctx, "admin", domain.CreateSemanticModelRequest{
 		ProjectName:  "analytics",
 		Name:         "sales_tags",
-		BaseModelRef: "analytics.sales_tags",
+		BaseRelationRef: "analytics.sales_tags",
 	})
 	require.NoError(t, err)
 
@@ -611,14 +611,14 @@ func TestService_ExplainMetricQuery_UnsafeJoinSupportsRatio(t *testing.T) {
 	_, err = svc.CreateSemanticModel(ctx, "admin", domain.CreateSemanticModelRequest{
 		ProjectName:  "analytics",
 		Name:         "sales",
-		BaseModelRef: "analytics.sales",
+		BaseRelationRef: "analytics.sales",
 	})
 	require.NoError(t, err)
 
 	_, err = svc.CreateSemanticModel(ctx, "admin", domain.CreateSemanticModelRequest{
 		ProjectName:  "analytics",
 		Name:         "sales_tags",
-		BaseModelRef: "analytics.sales_tags",
+		BaseRelationRef: "analytics.sales_tags",
 	})
 	require.NoError(t, err)
 
@@ -676,14 +676,14 @@ func TestService_ExplainMetricQuery_UnsafeJoinSupportsDerivedArithmetic(t *testi
 	_, err = svc.CreateSemanticModel(ctx, "admin", domain.CreateSemanticModelRequest{
 		ProjectName:  "analytics",
 		Name:         "sales",
-		BaseModelRef: "analytics.sales",
+		BaseRelationRef: "analytics.sales",
 	})
 	require.NoError(t, err)
 
 	_, err = svc.CreateSemanticModel(ctx, "admin", domain.CreateSemanticModelRequest{
 		ProjectName:  "analytics",
 		Name:         "sales_tags",
-		BaseModelRef: "analytics.sales_tags",
+		BaseRelationRef: "analytics.sales_tags",
 	})
 	require.NoError(t, err)
 
@@ -742,14 +742,14 @@ func TestService_ExplainMetricQuery_UnsafeJoinSupportsScalarWrappers(t *testing.
 	_, err = svc.CreateSemanticModel(ctx, "admin", domain.CreateSemanticModelRequest{
 		ProjectName:  "analytics",
 		Name:         "sales",
-		BaseModelRef: "analytics.sales",
+		BaseRelationRef: "analytics.sales",
 	})
 	require.NoError(t, err)
 
 	_, err = svc.CreateSemanticModel(ctx, "admin", domain.CreateSemanticModelRequest{
 		ProjectName:  "analytics",
 		Name:         "sales_tags",
-		BaseModelRef: "analytics.sales_tags",
+		BaseRelationRef: "analytics.sales_tags",
 	})
 	require.NoError(t, err)
 

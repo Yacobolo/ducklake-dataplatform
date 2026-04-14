@@ -252,7 +252,7 @@ func setupDashboardStateFixture(t *testing.T) dashboardStateFixture {
 	_, err := semanticSvc.CreateSemanticModel(ctx, "alice", domain.CreateSemanticModelRequest{
 		ProjectName:  "analytics",
 		Name:         "sales",
-		BaseModelRef: "analytics.sales",
+		BaseRelationRef: "analytics.sales",
 	})
 	require.NoError(t, err)
 	_, err = semanticSvc.CreateMetric(ctx, "alice", "analytics", "sales", domain.CreateSemanticMetricRequest{

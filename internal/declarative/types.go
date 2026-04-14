@@ -999,8 +999,9 @@ type SemanticModelDoc struct {
 
 // SemanticModelSpec holds semantic-layer configuration for a model.
 type SemanticModelSpec struct {
+	WorkspaceRef         string                     `yaml:"workspace_ref"`
 	Description          string                     `yaml:"description,omitempty"`
-	BaseModelRef         string                     `yaml:"base_model_ref"`
+	BaseRelationRef      string                     `yaml:"base_relation_ref"`
 	DefaultTimeDimension string                     `yaml:"default_time_dimension,omitempty"`
 	Tags                 []string                   `yaml:"tags,omitempty"`
 	Metrics              []SemanticMetricSpec       `yaml:"metrics,omitempty"`

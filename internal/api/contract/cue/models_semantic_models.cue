@@ -129,20 +129,20 @@ schemas_semantic_models: {
     example: {
       name:                   "customer_360"
       description:            "Semantic model for customer lifecycle and commercial performance."
-      base_model_ref:         "revenue.fct_customer_360"
+      base_relation_ref:         "revenue.fct_customer_360"
       default_time_dimension: "snapshot_date"
       tags:                   ["growth", "finance"]
     }
     #fields: {
       name: #nameProperty,
       description: #descriptionProperty,
-      base_model_ref: #stringProperty,
+      base_relation_ref: #stringProperty,
       default_time_dimension: #stringProperty,
       tags: #stringArrayProperty
     },
     #required: [
       "name",
-      "base_model_ref"
+      "base_relation_ref"
     ]
   },
   CreateSemanticPreAggregationRequest: #objectSchema & {
@@ -619,10 +619,11 @@ schemas_semantic_models: {
   SemanticModel: #objectSchema & {
     example: {
       id:                     "sem_01hzycust360"
+      workspace_id:           "ws_01hzworkspace"
       name:                   "customer_360"
       description:            "Semantic model for customer lifecycle and commercial performance."
       owner:                  "team-analytics"
-      base_model_ref:         "revenue.fct_customer_360"
+      base_relation_ref:      "revenue.fct_customer_360"
       default_time_dimension: "snapshot_date"
       tags:                   ["growth", "finance"]
       created_by:             "alice@example.com"
@@ -631,10 +632,11 @@ schemas_semantic_models: {
     }
     #fields: {
       id: #idProperty,
+      workspace_id: #stringProperty,
       name: #nameProperty,
       description: #descriptionProperty,
       owner: #ownerProperty,
-      base_model_ref: #stringProperty,
+      base_relation_ref: #stringProperty,
       default_time_dimension: #stringProperty,
       tags: #stringArrayProperty,
       created_by: #stringProperty,
@@ -740,7 +742,7 @@ schemas_semantic_models: {
     #fields: {
       description: #descriptionProperty,
       owner: #ownerProperty,
-      base_model_ref: #stringProperty,
+      base_relation_ref: #stringProperty,
       default_time_dimension: #stringProperty,
       tags: #stringArrayProperty
     }

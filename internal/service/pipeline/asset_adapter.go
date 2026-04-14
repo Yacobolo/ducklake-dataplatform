@@ -280,7 +280,7 @@ func BuildSemanticAssetGraph(
 			IsActive:    true,
 		})
 
-		if upstreamID, ok := modelIDsByQualifiedName[semanticModel.BaseModelRef]; ok {
+		if upstreamID, ok := modelIDsByQualifiedName[semanticModel.BaseRelationRef]; ok {
 			deps = append(deps, domain.AssetDependency{
 				ID:              domain.NewID(),
 				AssetID:         semanticModel.ID,

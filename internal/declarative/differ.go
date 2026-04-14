@@ -1767,19 +1767,24 @@ func diffModels(plan *Plan, desired, actual []ModelResource) {
 
 // === Semantic Models ===
 
-func semanticModelKey(modelName string) string {
-	return modelName
+func semanticModelKey(workspaceRef, modelName string) string {
+	workspaceRef = strings.TrimSpace(workspaceRef)
+	modelName = strings.TrimSpace(modelName)
+	if workspaceRef == "" {
+		return modelName
+	}
+	return workspaceRef + "/" + modelName
 }
 
 func diffSemanticModels(plan *Plan, desired, actual []SemanticModelResource) {
 	actualMap := make(map[string]SemanticModelResource, len(actual))
 	for _, a := range actual {
-		actualMap[semanticModelKey(a.ModelName)] = a
+		actualMap[semanticModelKey(a.Spec.WorkspaceRef, a.ModelName)] = a
 	}
 
 	seen := make(map[string]bool, len(desired))
 	for _, d := range desired {
-		k := semanticModelKey(d.ModelName)
+		k := semanticModelKey(d.Spec.WorkspaceRef, d.ModelName)
 		seen[k] = true
 		a, exists := actualMap[k]
 		if !exists {
@@ -1789,7 +1794,7 @@ func diffSemanticModels(plan *Plan, desired, actual []SemanticModelResource) {
 
 		var changes []FieldDiff
 		diffField(&changes, "description", a.Spec.Description, d.Spec.Description)
-		diffField(&changes, "base_model_ref", a.Spec.BaseModelRef, d.Spec.BaseModelRef)
+		diffField(&changes, "base_relation_ref", a.Spec.BaseRelationRef, d.Spec.BaseRelationRef)
 		diffField(&changes, "default_time_dimension", a.Spec.DefaultTimeDimension, d.Spec.DefaultTimeDimension)
 		diffField(&changes, "tags", formatStringSlice(a.Spec.Tags), formatStringSlice(d.Spec.Tags))
 		diffField(&changes, "metrics", stableJSON(normalizeSemanticMetricSpecs(a.Spec.Metrics)), stableJSON(normalizeSemanticMetricSpecs(d.Spec.Metrics)))
@@ -1801,7 +1806,7 @@ func diffSemanticModels(plan *Plan, desired, actual []SemanticModelResource) {
 	}
 
 	for _, a := range actual {
-		k := semanticModelKey(a.ModelName)
+		k := semanticModelKey(a.Spec.WorkspaceRef, a.ModelName)
 		if !seen[k] {
 			addDelete(plan, KindSemanticModel, k, a)
 		}

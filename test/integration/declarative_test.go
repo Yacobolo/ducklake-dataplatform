@@ -129,11 +129,16 @@ func legacyConfigToCUE(t *testing.T, relPath, content string) string {
 	case declarative.KindNameSemanticModel:
 		var parsed declarative.SemanticModelDoc
 		require.NoError(t, yaml.Unmarshal([]byte(content), &parsed))
-		projectName := inferSemanticProject(parsed.Spec.BaseModelRef)
-		platform = scaffoldAdHocProjectPlatform(projectName)
-		projects := platform["projects"].(map[string]any)
-		project := projects[projectName].(map[string]any)
-		project["semantic_models"] = map[string]any{parsed.Metadata.Name: parsed.Spec}
+		workspaceRef := strings.TrimSpace(parsed.Spec.WorkspaceRef)
+		if workspaceRef == "" {
+			workspaceRef = inferWorkspaceNameFromPath(relPath, "admin_user workspace")
+		}
+		platform = scaffoldWorkspacePlatform(workspaceRef)
+		workspaces := platform["workspaces"].(map[string]any)
+		workspace := workspaces[workspaceRef].(map[string]any)
+		semanticSpec := parsed.Spec
+		semanticSpec.WorkspaceRef = workspaceRef
+		workspace["semantic_models"] = map[string]any{parsed.Metadata.Name: semanticSpec}
 	case declarative.KindNameNotebook:
 		var parsed declarative.NotebookDoc
 		require.NoError(t, yaml.Unmarshal([]byte(content), &parsed))
@@ -205,17 +210,6 @@ func scaffoldExistingProjectPlatform(projectName string) map[string]any {
 	})
 }
 
-func scaffoldAdHocProjectPlatform(projectName string) map[string]any {
-	return mergeMaps(scaffoldWorkspaceShell("admin_user workspace"), map[string]any{
-		"projects": map[string]any{
-			projectName: map[string]any{
-				"workspace_ref": "admin_user workspace",
-				"kind":          "personal",
-			},
-		},
-	})
-}
-
 func inferProjectNameFromPath(relPath, fallback string) string {
 	parts := strings.Split(filepath.ToSlash(relPath), "/")
 	for idx, part := range parts {
@@ -226,12 +220,14 @@ func inferProjectNameFromPath(relPath, fallback string) string {
 	return fallback
 }
 
-func inferSemanticProject(baseModelRef string) string {
-	parts := strings.Split(strings.TrimSpace(baseModelRef), ".")
-	if len(parts) > 1 && strings.TrimSpace(parts[0]) != "" {
-		return parts[0]
+func inferWorkspaceNameFromPath(relPath, fallback string) string {
+	parts := strings.Split(filepath.ToSlash(relPath), "/")
+	for idx, part := range parts {
+		if part == "workspaces" && idx+1 < len(parts) && strings.TrimSpace(parts[idx+1]) != "" {
+			return parts[idx+1]
+		}
 	}
-	return "analytics"
+	return fallback
 }
 
 func mergeMaps(base, overlay map[string]any) map[string]any {
@@ -1485,20 +1481,20 @@ func TestDeclarative_SemanticModelLifecycle(t *testing.T) {
 	stateClient := makeStateClient(t, env.Server.URL, env.Keys.Admin)
 
 	dir := t.TempDir()
-	writeYAML(t, dir, "semantic_models/customers.yaml", `apiVersion: quackstack/v1
+	writeYAML(t, dir, "workspaces/admin_user workspace/semantic-models/customers.yaml", `apiVersion: quackstack/v1
 kind: SemanticModel
 metadata:
   name: customers
 spec:
-  base_model_ref: analytics.dim_customers
+  base_relation_ref: analytics.dim_customers
 `)
-	writeYAML(t, dir, "semantic_models/sales.yaml", `apiVersion: quackstack/v1
+	writeYAML(t, dir, "workspaces/admin_user workspace/semantic-models/sales.yaml", `apiVersion: quackstack/v1
 kind: SemanticModel
 metadata:
   name: sales
 spec:
   description: sales semantic model
-  base_model_ref: analytics.fct_sales
+  base_relation_ref: analytics.fct_sales
   default_time_dimension: order_date
   metrics:
     - name: total_revenue
@@ -1531,13 +1527,13 @@ spec:
 	assert.Empty(t, actionsOfKindAndOp(replan, declarative.KindSemanticModel, declarative.OpCreate))
 	assert.Empty(t, actionsOfKindAndOp(replan, declarative.KindSemanticModel, declarative.OpUpdate))
 
-	writeYAML(t, dir, "semantic_models/sales.yaml", `apiVersion: quackstack/v1
+	writeYAML(t, dir, "workspaces/admin_user workspace/semantic-models/sales.yaml", `apiVersion: quackstack/v1
 kind: SemanticModel
 metadata:
   name: sales
 spec:
   description: sales semantic model updated
-  base_model_ref: analytics.fct_sales
+  base_relation_ref: analytics.fct_sales
   default_time_dimension: order_date
   metrics:
     - name: total_revenue
@@ -1547,7 +1543,7 @@ spec:
       certification_state: CERTIFIED
   relationships:
     - name: sales_to_customers
-      to_model: customers
+      to_model: admin_user workspace/customers
       relationship_type: MANY_TO_ONE
       join_sql: sales.customer_id = customers.customer_id
   pre_aggregations:
@@ -1572,8 +1568,8 @@ spec:
 	assert.Empty(t, actionsOfKindAndOp(replanUpdate, declarative.KindSemanticModel, declarative.OpCreate))
 	assert.Empty(t, actionsOfKindAndOp(replanUpdate, declarative.KindSemanticModel, declarative.OpUpdate))
 
-	require.NoError(t, os.Remove(filepath.Join(dir, "semantic_models", "sales.cue")))
-	require.NoError(t, os.Remove(filepath.Join(dir, "semantic_models", "customers.cue")))
+	require.NoError(t, os.Remove(filepath.Join(dir, "workspaces", "admin_user workspace", "semantic-models", "sales.cue")))
+	require.NoError(t, os.Remove(filepath.Join(dir, "workspaces", "admin_user workspace", "semantic-models", "customers.cue")))
 
 	desiredDeleted, err := declarative.LoadDirectory(dir)
 	require.NoError(t, err)
@@ -1601,12 +1597,12 @@ func TestDeclarative_SemanticApplyThenExplainAndRun(t *testing.T) {
 	require.NoError(t, err)
 
 	dir := t.TempDir()
-	writeYAML(t, dir, "semantic_models/sales_runtime.yaml", `apiVersion: quackstack/v1
+	writeYAML(t, dir, "workspaces/admin_user workspace/semantic-models/sales_runtime.yaml", `apiVersion: quackstack/v1
 kind: SemanticModel
 metadata:
   name: sales_runtime
 spec:
-  base_model_ref: main.titanic
+  base_relation_ref: main.titanic
   metrics:
     - name: total_fare
       metric_type: SUM
@@ -1627,7 +1623,9 @@ spec:
 	require.Len(t, creates, 1)
 	executeActions(t, stateClient, createActionsWithDependencies(plan, declarative.KindSemanticModel))
 
-	semanticModelsResp := doRequest(t, http.MethodGet, env.Server.URL+"/v1/semantic-models", env.Keys.Admin, nil)
+	workspaceID := lookupWorkspaceIDByName(t, env.MetaDB, "admin_user workspace")
+
+	semanticModelsResp := doRequest(t, http.MethodGet, env.Server.URL+"/v1/workspaces/"+workspaceID+"/semantic-models", env.Keys.Admin, nil)
 	if semanticModelsResp.StatusCode != http.StatusOK {
 		require.Equal(t, http.StatusOK, semanticModelsResp.StatusCode, string(readBody(t, semanticModelsResp)))
 	}
@@ -1641,7 +1639,7 @@ spec:
 	require.NotEmpty(t, semanticModels.Data)
 	semanticModelID := semanticModels.Data[0].ID
 
-	explainResp := doRequest(t, http.MethodPost, env.Server.URL+"/v1/semantic-models/"+semanticModelID+"/query-explanations", env.Keys.Admin, map[string]interface{}{
+	explainResp := doRequest(t, http.MethodPost, env.Server.URL+"/v1/workspaces/"+workspaceID+"/semantic-models/"+semanticModelID+"/query-explanations", env.Keys.Admin, map[string]interface{}{
 		"metrics": []string{"total_fare"},
 	})
 	if explainResp.StatusCode != http.StatusOK {
@@ -1656,7 +1654,7 @@ spec:
 	decodeJSON(t, explainResp, &explainBody)
 	assert.NotEmpty(t, explainBody.Plan.GeneratedSQL)
 
-	runResp := doRequest(t, http.MethodPost, env.Server.URL+"/v1/semantic-models/"+semanticModelID+"/query-runs", env.Keys.Admin, map[string]interface{}{
+	runResp := doRequest(t, http.MethodPost, env.Server.URL+"/v1/workspaces/"+workspaceID+"/semantic-models/"+semanticModelID+"/query-runs", env.Keys.Admin, map[string]interface{}{
 		"metrics": []string{"total_fare"},
 	})
 	if runResp.StatusCode != http.StatusOK {

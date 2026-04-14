@@ -34,7 +34,7 @@ type semanticFlowNodeData struct {
 	ID                   string                  `json:"id"`
 	Label                string                  `json:"label"`
 	Role                 string                  `json:"role"`
-	BaseModelRef         string                  `json:"baseModelRef,omitempty"`
+	BaseRelationRef         string                  `json:"baseRelationRef,omitempty"`
 	DefaultTimeDimension string                  `json:"defaultTimeDimension,omitempty"`
 	Fields               []semanticFlowFieldData `json:"fields"`
 	Position             map[string]int          `json:"position"`
@@ -164,7 +164,7 @@ func buildSemanticFlowNodes(current domain.SemanticModel, modelByID map[string]d
 		ID:                   current.ID,
 		Label:                semanticModelLabel(current),
 		Role:                 "current",
-		BaseModelRef:         current.BaseModelRef,
+		BaseRelationRef:         current.BaseRelationRef,
 		DefaultTimeDimension: current.DefaultTimeDimension,
 		Fields:               semanticNodeFields(current.ID, registry, current.DefaultTimeDimension),
 		Position:             map[string]int{"x": semanticFlowColumnXCenter, "y": semanticFlowColumnYTop + semanticFlowNodeGapY/2},
@@ -187,7 +187,7 @@ func semanticFlowNodesForIDs(ids []string, modelByID map[string]domain.SemanticM
 			ID:                   ids[i],
 			Label:                defaultString(modelNames[ids[i]], ids[i]),
 			Role:                 role,
-			BaseModelRef:         model.BaseModelRef,
+			BaseRelationRef:         model.BaseRelationRef,
 			DefaultTimeDimension: model.DefaultTimeDimension,
 			Fields:               semanticNodeFields(ids[i], registry, model.DefaultTimeDimension),
 			Position:             map[string]int{"x": xStart, "y": yStart + i*semanticFlowNodeGapY},

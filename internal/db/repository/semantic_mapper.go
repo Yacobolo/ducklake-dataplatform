@@ -28,10 +28,11 @@ func semanticModelFromDB(row dbstore.SemanticModel) *domain.SemanticModel {
 	}
 	return &domain.SemanticModel{
 		ID:                   row.ID,
+		WorkspaceID:          row.WorkspaceID,
 		Name:                 row.Name,
 		Description:          row.Description,
 		Owner:                row.Owner,
-		BaseModelRef:         row.BaseModelRef,
+		BaseRelationRef:      row.BaseRelationRef,
 		DefaultTimeDimension: row.DefaultTimeDimension,
 		Tags:                 tags,
 		CreatedBy:            row.CreatedBy,

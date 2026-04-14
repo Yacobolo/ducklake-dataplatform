@@ -143,7 +143,8 @@ func Bootstrap(ctx context.Context, controlDB, duckDB *sql.DB, logger *slog.Logg
 		repository.NewSemanticPreAggregationRepo(controlDB),
 		repository.NewModelRepo(controlDB),
 	)
-	if err := ensureSampleDashboardSemanticModel(ctx, semanticSvc); err != nil {
+	workspaceRepo := repository.NewWorkspaceRepo(controlDB)
+	if err := ensureSampleDashboardSemanticModel(ctx, semanticSvc, workspaceRepo); err != nil {
 		return fmt.Errorf("ensure sample dashboard semantic model: %w", err)
 	}
 	dashboardRepo := repository.NewDashboardRepo(controlDB)

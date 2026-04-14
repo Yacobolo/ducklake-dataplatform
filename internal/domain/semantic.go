@@ -30,14 +30,14 @@ const (
 	CertificationDeprecated = "DEPRECATED"
 )
 
-// SemanticModel defines business-facing semantic metadata anchored to a base model.
+// SemanticModel defines business-facing semantic metadata anchored to a queryable relation.
 type SemanticModel struct {
 	ID                   string
-	ProjectName          string
+	WorkspaceID          string
 	Name                 string
 	Description          string
 	Owner                string
-	BaseModelRef         string
+	BaseRelationRef      string
 	DefaultTimeDimension string
 	Tags                 []string
 	CreatedBy            string
@@ -47,24 +47,27 @@ type SemanticModel struct {
 
 // CreateSemanticModelRequest holds parameters for creating a semantic model.
 type CreateSemanticModelRequest struct {
-	ProjectName          string
+	WorkspaceID          string
 	Name                 string
 	Description          string
-	BaseModelRef         string
+	BaseRelationRef      string
 	DefaultTimeDimension string
 	Tags                 []string
 }
 
 // Validate checks that the request is well-formed.
 func (r *CreateSemanticModelRequest) Validate() error {
+	if r.WorkspaceID == "" {
+		return ErrValidation("workspace_id is required")
+	}
 	if r.Name == "" {
 		return ErrValidation("name is required")
 	}
 	if utf8.RuneCountInString(r.Name) > MaxSemanticNameLength {
 		return ErrValidation("name must be <= %d characters", MaxSemanticNameLength)
 	}
-	if r.BaseModelRef == "" {
-		return ErrValidation("base_model_ref is required")
+	if r.BaseRelationRef == "" {
+		return ErrValidation("base_relation_ref is required")
 	}
 	return nil
 }
@@ -73,7 +76,7 @@ func (r *CreateSemanticModelRequest) Validate() error {
 type UpdateSemanticModelRequest struct {
 	Description          *string
 	Owner                *string
-	BaseModelRef         *string
+	BaseRelationRef      *string
 	DefaultTimeDimension *string
 	Tags                 []string // nil = no change, empty = clear
 }

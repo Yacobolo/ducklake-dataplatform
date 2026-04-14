@@ -3,6 +3,7 @@ package semantic
 import (
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/go-chi/chi/v5"
 
@@ -15,13 +16,31 @@ type Handler struct{ deps *core.Dependencies }
 
 func New(deps *core.Dependencies) *Handler { return &Handler{deps: deps} }
 
+func semanticWorkspaceIDFromRequest(r *http.Request) string {
+	return strings.TrimSpace(r.URL.Query().Get("workspace_id"))
+}
+
+func semanticWorkspaceIDFromForm(r *http.Request) string {
+	return strings.TrimSpace(r.FormValue("workspace_id"))
+}
+
+func (h *Handler) semanticModelWorkspaceID(w http.ResponseWriter, r *http.Request, semanticModelID string) (*domain.SemanticModel, string, bool) {
+	item, err := h.deps.Semantic.GetSemanticModel(r.Context(), "", semanticModelID)
+	if err != nil {
+		renderServiceError(w, err)
+		return nil, "", false
+	}
+	return item, item.WorkspaceID, true
+}
+
 func (h *Handler) SemanticHome(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/ui/semantic/models", http.StatusSeeOther)
 }
 
 func (h *Handler) SemanticModelsList(w http.ResponseWriter, r *http.Request) {
 	pageReq := pageFromRequest(r, 30)
-	items, total, err := h.deps.Semantic.ListSemanticModels(r.Context(), pageReq)
+	workspaceID := semanticWorkspaceIDFromRequest(r)
+	items, total, err := h.deps.Semantic.ListSemanticModels(r.Context(), workspaceID, pageReq)
 	if err != nil {
 		renderServiceError(w, err)
 		return
@@ -33,7 +52,7 @@ func (h *Handler) SemanticModelsList(w http.ResponseWriter, r *http.Request) {
 		rows = append(rows, semanticModelRowData{
 			Name:      item.Name,
 			URL:       "/ui/semantic/models/" + item.ID,
-			BaseModel: item.BaseModelRef,
+			BaseModel: item.BaseRelationRef,
 			Owner:     item.Owner,
 			UpdatedAt: formatTime(item.UpdatedAt),
 		})
@@ -45,11 +64,11 @@ func (h *Handler) SemanticModelsList(w http.ResponseWriter, r *http.Request) {
 		DisplayName:  "Semantic Models",
 		Section:      "Build",
 	})
-	core.RenderHTML(w, http.StatusOK, semanticModelsListPage(core.PrincipalFromContext(r.Context()), rows, pageReq, total))
+	core.RenderHTML(w, http.StatusOK, semanticModelsListPage(core.PrincipalFromContext(r.Context()), rows, pageReq, total, workspaceID))
 }
 
 func (h *Handler) SemanticModelsNew(w http.ResponseWriter, r *http.Request) {
-	core.RenderHTML(w, http.StatusOK, semanticModelsNewPage(core.PrincipalFromContext(r.Context()), h.deps.CSRFFieldProvider(r)))
+	core.RenderHTML(w, http.StatusOK, semanticModelsNewPage(core.PrincipalFromContext(r.Context()), semanticWorkspaceIDFromRequest(r), h.deps.CSRFFieldProvider(r)))
 }
 
 func (h *Handler) SemanticModelsCreate(w http.ResponseWriter, r *http.Request) {
@@ -57,9 +76,10 @@ func (h *Handler) SemanticModelsCreate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	item, err := h.deps.Semantic.CreateSemanticModel(r.Context(), principalName(r), domain.CreateSemanticModelRequest{
+		WorkspaceID:          semanticWorkspaceIDFromForm(r),
 		Name:                 formString(r.Form, "name"),
 		Description:          formString(r.Form, "description"),
-		BaseModelRef:         formString(r.Form, "base_model_ref"),
+		BaseRelationRef:      formString(r.Form, "base_relation_ref"),
 		DefaultTimeDimension: formString(r.Form, "default_time_dimension"),
 		Tags:                 formCSV(r.Form, "tags"),
 	})
@@ -73,22 +93,21 @@ func (h *Handler) SemanticModelsCreate(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) SemanticModelsDetail(w http.ResponseWriter, r *http.Request) {
 	semanticModelID := chi.URLParam(r, "semanticModelID")
 
-	item, err := h.deps.Semantic.GetSemanticModel(r.Context(), semanticModelID)
+	item, workspaceID, ok := h.semanticModelWorkspaceID(w, r, semanticModelID)
+	if !ok {
+		return
+	}
+	metrics, err := h.deps.Semantic.ListMetrics(r.Context(), workspaceID, semanticModelID)
 	if err != nil {
 		renderServiceError(w, err)
 		return
 	}
-	metrics, err := h.deps.Semantic.ListMetrics(r.Context(), semanticModelID)
+	models, _, err := h.deps.Semantic.ListSemanticModels(r.Context(), workspaceID, domain.PageRequest{MaxResults: 1000})
 	if err != nil {
 		renderServiceError(w, err)
 		return
 	}
-	models, _, err := h.deps.Semantic.ListSemanticModels(r.Context(), domain.PageRequest{MaxResults: 1000})
-	if err != nil {
-		renderServiceError(w, err)
-		return
-	}
-	relationships, err := h.deps.Semantic.ListRelationshipsForModel(r.Context(), semanticModelID)
+	relationships, err := h.deps.Semantic.ListRelationshipsForModel(r.Context(), workspaceID, semanticModelID)
 	if err != nil {
 		renderServiceError(w, err)
 		return
@@ -98,6 +117,7 @@ func (h *Handler) SemanticModelsDetail(w http.ResponseWriter, r *http.Request) {
 	for i := range metrics {
 		metric := metrics[i]
 		metricRows = append(metricRows, semanticMetricRowData{
+			WorkspaceID:       workspaceID,
 			Name:              metric.Name,
 			Type:              metric.MetricType,
 			Expression:        metric.Expression,
@@ -113,9 +133,10 @@ func (h *Handler) SemanticModelsDetail(w http.ResponseWriter, r *http.Request) {
 
 	core.RenderHTML(w, http.StatusOK, semanticModelDetailPage(semanticModelDetailPageData{
 		Principal:            core.PrincipalFromContext(r.Context()),
+		WorkspaceID:          workspaceID,
 		SemanticModelID:      semanticModelID,
 		ModelName:            item.Name,
-		BaseModelRef:         item.BaseModelRef,
+		BaseRelationRef:      item.BaseRelationRef,
 		DefaultTimeDim:       valueOrDash(item.DefaultTimeDimension),
 		Description:          item.Description,
 		EditURL:              "/ui/semantic/models/" + semanticModelID + "/edit",
@@ -132,27 +153,26 @@ func (h *Handler) SemanticModelsDetail(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) SemanticModelsEdit(w http.ResponseWriter, r *http.Request) {
 	semanticModelID := chi.URLParam(r, "semanticModelID")
-	item, err := h.deps.Semantic.GetSemanticModel(r.Context(), semanticModelID)
+	item, workspaceID, ok := h.semanticModelWorkspaceID(w, r, semanticModelID)
+	if !ok {
+		return
+	}
+	models, _, err := h.deps.Semantic.ListSemanticModels(r.Context(), workspaceID, domain.PageRequest{MaxResults: 1000})
 	if err != nil {
 		renderServiceError(w, err)
 		return
 	}
-	models, _, err := h.deps.Semantic.ListSemanticModels(r.Context(), domain.PageRequest{MaxResults: 1000})
+	relationships, err := h.deps.Semantic.ListRelationshipsForModel(r.Context(), workspaceID, semanticModelID)
 	if err != nil {
 		renderServiceError(w, err)
 		return
 	}
-	relationships, err := h.deps.Semantic.ListRelationshipsForModel(r.Context(), semanticModelID)
+	metrics, err := h.deps.Semantic.ListMetrics(r.Context(), workspaceID, semanticModelID)
 	if err != nil {
 		renderServiceError(w, err)
 		return
 	}
-	metrics, err := h.deps.Semantic.ListMetrics(r.Context(), semanticModelID)
-	if err != nil {
-		renderServiceError(w, err)
-		return
-	}
-	preAggs, err := h.deps.Semantic.ListPreAggregations(r.Context(), semanticModelID)
+	preAggs, err := h.deps.Semantic.ListPreAggregations(r.Context(), workspaceID, semanticModelID)
 	if err != nil {
 		renderServiceError(w, err)
 		return
@@ -179,6 +199,7 @@ func (h *Handler) SemanticModelsEdit(w http.ResponseWriter, r *http.Request) {
 			connectedLabel = connectedModel.Name
 		}
 		relationshipRows = append(relationshipRows, semanticEditableRelationshipRowData{
+			WorkspaceID:     workspaceID,
 			Name:            rel.Name,
 			RelatedRelation: connectedLabel,
 			Type:            rel.RelationshipType,
@@ -195,6 +216,7 @@ func (h *Handler) SemanticModelsEdit(w http.ResponseWriter, r *http.Request) {
 	for i := range metrics {
 		metric := metrics[i]
 		metricRows = append(metricRows, semanticMetricRowData{
+			WorkspaceID:       workspaceID,
 			Name:              metric.Name,
 			Type:              metric.MetricType,
 			Expression:        metric.Expression,
@@ -209,11 +231,12 @@ func (h *Handler) SemanticModelsEdit(w http.ResponseWriter, r *http.Request) {
 	for i := range preAggs {
 		preAgg := preAggs[i]
 		preAggRows = append(preAggRows, semanticPreAggRowData{
-			Name:      preAgg.Name,
-			Grain:     preAgg.Grain,
-			Target:    preAgg.TargetRelation,
-			EditURL:   "/ui/semantic/models/" + semanticModelID + "/pre-aggregations/" + preAgg.Name + "/edit",
-			DeleteURL: "/ui/semantic/models/" + semanticModelID + "/pre-aggregations/" + preAgg.Name + "/delete",
+			WorkspaceID: workspaceID,
+			Name:        preAgg.Name,
+			Grain:       preAgg.Grain,
+			Target:      preAgg.TargetRelation,
+			EditURL:     "/ui/semantic/models/" + semanticModelID + "/pre-aggregations/" + preAgg.Name + "/edit",
+			DeleteURL:   "/ui/semantic/models/" + semanticModelID + "/pre-aggregations/" + preAgg.Name + "/delete",
 		})
 	}
 
@@ -225,10 +248,11 @@ func (h *Handler) SemanticModelsEdit(w http.ResponseWriter, r *http.Request) {
 	})
 	core.RenderHTML(w, http.StatusOK, semanticModelEditPage(semanticModelEditPageData{
 		Principal:             core.PrincipalFromContext(r.Context()),
+		WorkspaceID:           workspaceID,
 		SemanticModelID:       semanticModelID,
 		ModelName:             item.Name,
 		Description:           item.Description,
-		BaseModelRef:          item.BaseModelRef,
+		BaseRelationRef:       item.BaseRelationRef,
 		DefaultTimeDim:        item.DefaultTimeDimension,
 		TagsCSV:               csvValues(item.Tags),
 		UpdateURL:             "/ui/semantic/models/" + semanticModelID + "/update",
@@ -252,11 +276,12 @@ func (h *Handler) SemanticModelsUpdate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	description := formString(r.Form, "description")
-	baseModelRef := formString(r.Form, "base_model_ref")
+	workspaceID := semanticWorkspaceIDFromForm(r)
+	baseRelationRef := formString(r.Form, "base_relation_ref")
 	defaultTimeDimension := formString(r.Form, "default_time_dimension")
-	_, err := h.deps.Semantic.UpdateSemanticModel(r.Context(), semanticModelID, domain.UpdateSemanticModelRequest{
+	_, err := h.deps.Semantic.UpdateSemanticModel(r.Context(), workspaceID, semanticModelID, domain.UpdateSemanticModelRequest{
 		Description:          &description,
-		BaseModelRef:         &baseModelRef,
+		BaseRelationRef:      &baseRelationRef,
 		DefaultTimeDimension: &defaultTimeDimension,
 		Tags:                 formCSV(r.Form, "tags"),
 	})
@@ -269,7 +294,7 @@ func (h *Handler) SemanticModelsUpdate(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) SemanticModelsDelete(w http.ResponseWriter, r *http.Request) {
 	semanticModelID := chi.URLParam(r, "semanticModelID")
-	if err := h.deps.Semantic.DeleteSemanticModel(r.Context(), semanticModelID); err != nil {
+	if err := h.deps.Semantic.DeleteSemanticModel(r.Context(), semanticWorkspaceIDFromForm(r), semanticModelID); err != nil {
 		renderServiceError(w, err)
 		return
 	}
@@ -279,14 +304,18 @@ func (h *Handler) SemanticModelsDelete(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) SemanticMetricsEdit(w http.ResponseWriter, r *http.Request) {
 	semanticModelID := chi.URLParam(r, "semanticModelID")
 	metricName := chi.URLParam(r, "metricName")
-	metrics, err := h.deps.Semantic.ListMetrics(r.Context(), semanticModelID)
+	item, workspaceID, ok := h.semanticModelWorkspaceID(w, r, semanticModelID)
+	if !ok {
+		return
+	}
+	metrics, err := h.deps.Semantic.ListMetrics(r.Context(), workspaceID, semanticModelID)
 	if err != nil {
 		renderServiceError(w, err)
 		return
 	}
 	for i := range metrics {
 		if metrics[i].Name == metricName {
-			core.RenderHTML(w, http.StatusOK, semanticMetricEditPage(core.PrincipalFromContext(r.Context()), semanticModelID, &metrics[i], h.deps.CSRFFieldProvider(r)))
+			core.RenderHTML(w, http.StatusOK, semanticMetricEditPage(core.PrincipalFromContext(r.Context()), item.WorkspaceID, semanticModelID, &metrics[i], h.deps.CSRFFieldProvider(r)))
 			return
 		}
 	}
@@ -308,7 +337,7 @@ func (h *Handler) SemanticMetricsUpdate(w http.ResponseWriter, r *http.Request) 
 	defaultTimeGrain := formString(r.Form, "default_time_grain")
 	format := formString(r.Form, "format")
 	certificationState := formString(r.Form, "certification_state")
-	_, err := h.deps.Semantic.UpdateMetric(r.Context(), semanticModelID, metricName, domain.UpdateSemanticMetricRequest{
+	_, err := h.deps.Semantic.UpdateMetric(r.Context(), semanticWorkspaceIDFromForm(r), semanticModelID, metricName, domain.UpdateSemanticMetricRequest{
 		Label:              &label,
 		Description:        &description,
 		MetricType:         &metricType,
@@ -332,7 +361,7 @@ func (h *Handler) SemanticMetricsCreate(w http.ResponseWriter, r *http.Request) 
 	if !parseFormOrRenderBadRequest(w, r) {
 		return
 	}
-	_, err := h.deps.Semantic.CreateMetric(r.Context(), principalName(r), semanticModelID, domain.CreateSemanticMetricRequest{
+	_, err := h.deps.Semantic.CreateMetric(r.Context(), principalName(r), semanticWorkspaceIDFromForm(r), semanticModelID, domain.CreateSemanticMetricRequest{
 		Name:               formString(r.Form, "name"),
 		Label:              formString(r.Form, "label"),
 		Description:        formString(r.Form, "description"),
@@ -355,7 +384,7 @@ func (h *Handler) SemanticMetricsCreate(w http.ResponseWriter, r *http.Request) 
 func (h *Handler) SemanticMetricsDelete(w http.ResponseWriter, r *http.Request) {
 	semanticModelID := chi.URLParam(r, "semanticModelID")
 	metricName := chi.URLParam(r, "metricName")
-	if err := h.deps.Semantic.DeleteMetric(r.Context(), semanticModelID, metricName); err != nil {
+	if err := h.deps.Semantic.DeleteMetric(r.Context(), semanticWorkspaceIDFromForm(r), semanticModelID, metricName); err != nil {
 		renderServiceError(w, err)
 		return
 	}
@@ -365,14 +394,18 @@ func (h *Handler) SemanticMetricsDelete(w http.ResponseWriter, r *http.Request) 
 func (h *Handler) SemanticPreAggregationsEdit(w http.ResponseWriter, r *http.Request) {
 	semanticModelID := chi.URLParam(r, "semanticModelID")
 	preAggName := chi.URLParam(r, "preAggName")
-	items, err := h.deps.Semantic.ListPreAggregations(r.Context(), semanticModelID)
+	item, workspaceID, ok := h.semanticModelWorkspaceID(w, r, semanticModelID)
+	if !ok {
+		return
+	}
+	items, err := h.deps.Semantic.ListPreAggregations(r.Context(), workspaceID, semanticModelID)
 	if err != nil {
 		renderServiceError(w, err)
 		return
 	}
 	for i := range items {
 		if items[i].Name == preAggName {
-			core.RenderHTML(w, http.StatusOK, semanticPreAggregationEditPage(core.PrincipalFromContext(r.Context()), semanticModelID, &items[i], h.deps.CSRFFieldProvider(r)))
+			core.RenderHTML(w, http.StatusOK, semanticPreAggregationEditPage(core.PrincipalFromContext(r.Context()), item.WorkspaceID, semanticModelID, &items[i], h.deps.CSRFFieldProvider(r)))
 			return
 		}
 	}
@@ -388,7 +421,7 @@ func (h *Handler) SemanticPreAggregationsUpdate(w http.ResponseWriter, r *http.R
 	grain := formString(r.Form, "grain")
 	targetRelation := formString(r.Form, "target_relation")
 	refreshPolicy := formString(r.Form, "refresh_policy")
-	_, err := h.deps.Semantic.UpdatePreAggregation(r.Context(), semanticModelID, preAggName, domain.UpdateSemanticPreAggregationRequest{
+	_, err := h.deps.Semantic.UpdatePreAggregation(r.Context(), semanticWorkspaceIDFromForm(r), semanticModelID, preAggName, domain.UpdateSemanticPreAggregationRequest{
 		MetricSet:      formCSV(r.Form, "metric_set"),
 		DimensionSet:   formCSV(r.Form, "dimension_set"),
 		Grain:          &grain,
@@ -407,7 +440,7 @@ func (h *Handler) SemanticPreAggregationsCreate(w http.ResponseWriter, r *http.R
 	if !parseFormOrRenderBadRequest(w, r) {
 		return
 	}
-	_, err := h.deps.Semantic.CreatePreAggregation(r.Context(), principalName(r), semanticModelID, domain.CreateSemanticPreAggregationRequest{
+	_, err := h.deps.Semantic.CreatePreAggregation(r.Context(), principalName(r), semanticWorkspaceIDFromForm(r), semanticModelID, domain.CreateSemanticPreAggregationRequest{
 		Name:           formString(r.Form, "name"),
 		MetricSet:      formCSV(r.Form, "metric_set"),
 		DimensionSet:   formCSV(r.Form, "dimension_set"),
@@ -425,7 +458,7 @@ func (h *Handler) SemanticPreAggregationsCreate(w http.ResponseWriter, r *http.R
 func (h *Handler) SemanticPreAggregationsDelete(w http.ResponseWriter, r *http.Request) {
 	semanticModelID := chi.URLParam(r, "semanticModelID")
 	preAggName := chi.URLParam(r, "preAggName")
-	if err := h.deps.Semantic.DeletePreAggregation(r.Context(), semanticModelID, preAggName); err != nil {
+	if err := h.deps.Semantic.DeletePreAggregation(r.Context(), semanticWorkspaceIDFromForm(r), semanticModelID, preAggName); err != nil {
 		renderServiceError(w, err)
 		return
 	}
@@ -450,7 +483,7 @@ func (h *Handler) SemanticModelRelationshipsUpdate(w http.ResponseWriter, r *htt
 		core.RenderHTML(w, http.StatusBadRequest, core.ErrorPage("Invalid Request", "max_hops must be an integer."))
 		return
 	}
-	_, err = h.deps.Semantic.UpdateRelationshipForModel(r.Context(), semanticModelID, relationshipName, domain.UpdateSemanticRelationshipRequest{
+	_, err = h.deps.Semantic.UpdateRelationshipForModel(r.Context(), semanticWorkspaceIDFromForm(r), semanticModelID, relationshipName, domain.UpdateSemanticRelationshipRequest{
 		RelationshipType: &relationshipType,
 		JoinSQL:          &joinSQL,
 		Cost:             intPtr(cost),
@@ -478,13 +511,12 @@ func (h *Handler) SemanticModelRelationshipsCreate(w http.ResponseWriter, r *htt
 		return
 	}
 	relatedSemanticID := formString(r.Form, "related_semantic_id")
-	currentModel, err := h.deps.Semantic.GetSemanticModel(r.Context(), semanticModelID)
-	if err != nil {
-		renderServiceError(w, err)
+	currentModel, workspaceID, ok := h.semanticModelWorkspaceID(w, r, semanticModelID)
+	if !ok {
 		return
 	}
 
-	_, err = h.deps.Semantic.CreateRelationshipForModel(r.Context(), principalName(r), semanticModelID, domain.CreateSemanticRelationshipRequest{
+	_, err = h.deps.Semantic.CreateRelationshipForModel(r.Context(), principalName(r), workspaceID, semanticModelID, domain.CreateSemanticRelationshipRequest{
 		Name:             formString(r.Form, "name"),
 		FromSemanticID:   currentModel.ID,
 		ToSemanticID:     relatedSemanticID,
@@ -502,7 +534,7 @@ func (h *Handler) SemanticModelRelationshipsCreate(w http.ResponseWriter, r *htt
 func (h *Handler) SemanticModelRelationshipsDelete(w http.ResponseWriter, r *http.Request) {
 	semanticModelID := chi.URLParam(r, "semanticModelID")
 	relationshipName := chi.URLParam(r, "relationshipName")
-	if err := h.deps.Semantic.DeleteRelationshipForModel(r.Context(), semanticModelID, relationshipName); err != nil {
+	if err := h.deps.Semantic.DeleteRelationshipForModel(r.Context(), semanticWorkspaceIDFromForm(r), semanticModelID, relationshipName); err != nil {
 		renderServiceError(w, err)
 		return
 	}
@@ -520,6 +552,7 @@ func (h *Handler) semanticQueryRender(w http.ResponseWriter, r *http.Request, ex
 		return
 	}
 	req := semsvc.MetricQueryRequest{
+		WorkspaceID:       semanticWorkspaceIDFromForm(r),
 		SemanticModelID:   formString(r.Form, "semantic_model_id"),
 		Metrics:           formCSV(r.Form, "metrics"),
 		RelationshipNames: formCSV(r.Form, "relationship_names"),

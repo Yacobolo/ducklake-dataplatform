@@ -235,6 +235,7 @@ func TestValidate_PrincipalErrors(t *testing.T) {
 
 func TestValidate_DashboardErrors(t *testing.T) {
 	state := &DesiredState{
+		Workspaces: []WorkspaceResource{{Name: "analytics", Spec: WorkspaceSpec{Kind: "personal", OwnerPrincipal: "alice"}}},
 		Notebooks: []NotebookResource{{
 			Name: "sales-kpis",
 			Spec: NotebookSpec{
@@ -244,7 +245,7 @@ func TestValidate_DashboardErrors(t *testing.T) {
 		}},
 		SemanticModels: []SemanticModelResource{{
 			ModelName: "revenue",
-			Spec:      SemanticModelSpec{BaseModelRef: "analytics.revenue"},
+			Spec:      SemanticModelSpec{WorkspaceRef: "analytics", BaseRelationRef: "analytics.revenue"},
 		}},
 		Dashboards: []DashboardResource{{
 			Name: "revenue-overview",
@@ -296,6 +297,7 @@ func TestValidate_DashboardErrors(t *testing.T) {
 
 func TestValidate_DashboardValidNotebookAndSemanticBindings(t *testing.T) {
 	state := &DesiredState{
+		Workspaces: []WorkspaceResource{{Name: "analytics", Spec: WorkspaceSpec{Kind: "personal", OwnerPrincipal: "alice"}}},
 		Notebooks: []NotebookResource{{
 			Name: "sales-kpis",
 			Spec: NotebookSpec{
@@ -305,7 +307,7 @@ func TestValidate_DashboardValidNotebookAndSemanticBindings(t *testing.T) {
 		}},
 		SemanticModels: []SemanticModelResource{{
 			ModelName: "revenue",
-			Spec:      SemanticModelSpec{BaseModelRef: "analytics.revenue"},
+			Spec:      SemanticModelSpec{WorkspaceRef: "analytics", BaseRelationRef: "analytics.revenue"},
 		}},
 		Dashboards: []DashboardResource{{
 			Name: "revenue-overview",
@@ -1092,6 +1094,7 @@ func TestValidate_AssetPartitionDefinitionRules(t *testing.T) {
 
 func TestValidate_ProductControlPlaneRefs(t *testing.T) {
 	valid := &DesiredState{
+		Workspaces: []WorkspaceResource{{Name: "sales", Spec: WorkspaceSpec{Kind: "shared", OwnerTeamID: "analytics-engineering"}}},
 		Domains: []DomainResource{{
 			Name: "revenue",
 			Spec: DomainSpec{Description: "Revenue domain"},
@@ -1142,7 +1145,7 @@ func TestValidate_ProductControlPlaneRefs(t *testing.T) {
 		}},
 		SemanticModels: []SemanticModelResource{{
 			ModelName: "orders",
-			Spec:      SemanticModelSpec{BaseModelRef: "sales.orders"},
+			Spec:      SemanticModelSpec{WorkspaceRef: "sales", BaseRelationRef: "sales.orders"},
 		}},
 	}
 

@@ -2522,18 +2522,21 @@ var validMacroStatus = map[string]bool{
 func validateSemanticModels(models []SemanticModelResource, errs *[]ValidationError) {
 	seenModels := make(map[string]bool, len(models))
 	for i, m := range models {
-		key := m.ModelName
+		key := semanticModelKey(m.Spec.WorkspaceRef, m.ModelName)
 		path := fmt.Sprintf("semantic_model[%s]", key)
 		if m.ModelName == "" {
 			addErr(errs, path, "model name is required")
+		}
+		if strings.TrimSpace(m.Spec.WorkspaceRef) == "" {
+			addErr(errs, path, "spec.workspace_ref is required")
 		}
 		if seenModels[key] {
 			addErr(errs, path, "duplicate semantic model %q", key)
 		}
 		seenModels[key] = true
 
-		if strings.TrimSpace(m.Spec.BaseModelRef) == "" {
-			addErr(errs, path, "spec.base_model_ref is required")
+		if strings.TrimSpace(m.Spec.BaseRelationRef) == "" {
+			addErr(errs, path, "spec.base_relation_ref is required")
 		}
 
 		seenMetrics := make(map[string]bool, len(m.Spec.Metrics))

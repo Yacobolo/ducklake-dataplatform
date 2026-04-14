@@ -37,7 +37,7 @@ type SemanticFlowNode = {
   id: string;
   label: string;
   role?: string;
-  baseModelRef?: string;
+  baseRelationRef?: string;
   defaultTimeDimension?: string;
   fields?: SemanticFlowField[];
   position?: { x?: number; y?: number };
@@ -63,7 +63,7 @@ type SemanticFlowEdge = {
 type SemanticNodeData = {
   label: string;
   role: string;
-  baseModelRef?: string;
+  baseRelationRef?: string;
   defaultTimeDimension?: string;
   fields: SemanticFlowField[];
 };
@@ -308,7 +308,7 @@ function toReactFlowNodes(nodes: SemanticFlowNode[]): SemanticModelNodeType[] {
     data: {
       label: node.label,
       role: node.role ?? "connected",
-      baseModelRef: node.baseModelRef,
+      baseRelationRef: node.baseRelationRef,
       defaultTimeDimension: node.defaultTimeDimension,
       fields: (node.fields ?? []).map((field) => ({
         id: field.id,

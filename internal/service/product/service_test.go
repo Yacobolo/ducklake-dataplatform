@@ -219,18 +219,27 @@ func TestService_CreateAndPublishSemanticOnlyProduct(t *testing.T) {
 	productRepo := repository.NewDataProductRepo(writeDB)
 	projectRepo := repository.NewProjectRepo(writeDB)
 	semanticRepo := repository.NewSemanticModelRepo(writeDB)
+	workspaceRepo := repository.NewWorkspaceRepo(writeDB)
 	svc := NewService(domainRepo, teamRepo, assetRepo, assetRunRepo, assetCheckRepo, productRepo)
 	buildRepo := repository.NewBuildRepo(writeDB)
 	svc.SetBuildRepository(buildRepo)
 	svc.SetProjectRepository(projectRepo)
 	svc.SetSemanticModelRepository(semanticRepo)
 
+	workspace, err := workspaceRepo.Create(ctx, &domain.Workspace{
+		Name:           "orders-semantic-workspace",
+		Kind:           domain.WorkspaceKindShared,
+		OwnerPrincipal: ptr("alice"),
+		CreatedBy:      "alice",
+	})
+	require.NoError(t, err)
+
 	semanticModel, err := semanticRepo.Create(ctx, &domain.SemanticModel{
-		ProjectName:  "sales",
-		Name:         "orders",
-		Description:  "Orders semantic model",
-		BaseModelRef: "sales.orders",
-		CreatedBy:    "alice",
+		WorkspaceID:     workspace.ID,
+		Name:            "orders",
+		Description:     "Orders semantic model",
+		BaseRelationRef: "sales.orders",
+		CreatedBy:       "alice",
 	})
 	require.NoError(t, err)
 	require.NotNil(t, semanticModel)
@@ -251,12 +260,11 @@ func TestService_CreateAndPublishSemanticOnlyProduct(t *testing.T) {
 			BreakingChangePolicy: "new version required",
 		},
 		SLO:               domain.ProductSLO{FreshnessSLO: "60m"},
-		SemanticModelRefs: []string{"sales.orders"},
+		SemanticModelRefs: []string{"orders"},
 		CreatedBy:         "alice",
 	})
 	require.NoError(t, err)
 	require.Len(t, created.SemanticEntrypoints, 1)
-	assert.Equal(t, "sales", created.SemanticEntrypoints[0].ProjectName)
 	assert.Equal(t, "orders", created.SemanticEntrypoints[0].ModelName)
 
 	_, err = svc.PublishVersion(ctx, "orders-semantic", 1)
@@ -275,7 +283,7 @@ func TestService_CreateAndPublishSemanticOnlyProduct(t *testing.T) {
 		DocsURL:           "https://docs.example.com/orders-semantic",
 		AccessRequestPath: "/access/orders-semantic",
 		ProducingBuildID:  &buildID,
-		SemanticModelRefs: []string{"sales.orders"},
+		SemanticModelRefs: []string{"orders"},
 		CreatedBy:         "alice",
 	})
 	require.NoError(t, err)
@@ -364,10 +372,19 @@ func TestService_GetPortfolioReport(t *testing.T) {
 	productRepo := repository.NewDataProductRepo(writeDB)
 	semanticRepo := repository.NewSemanticModelRepo(writeDB)
 	projectRepo := repository.NewProjectRepo(writeDB)
+	workspaceRepo := repository.NewWorkspaceRepo(writeDB)
 	svc := NewService(domainRepo, teamRepo, assetRepo, assetRunRepo, assetCheckRepo, productRepo)
 	svc.SetBuildRepository(repository.NewBuildRepo(writeDB))
 	svc.SetProjectRepository(projectRepo)
 	svc.SetSemanticModelRepository(semanticRepo)
+
+	workspace, err := workspaceRepo.Create(ctx, &domain.Workspace{
+		Name:           "portfolio-workspace",
+		Kind:           domain.WorkspaceKindShared,
+		OwnerPrincipal: ptr("alice"),
+		CreatedBy:      "alice",
+	})
+	require.NoError(t, err)
 
 	_, err := assetRepo.Create(ctx, &domain.DataAsset{
 		AssetKey:  "main.analytics.orders",
@@ -386,11 +403,11 @@ func TestService_GetPortfolioReport(t *testing.T) {
 	})
 	require.NoError(t, err)
 	_, err = semanticRepo.Create(ctx, &domain.SemanticModel{
-		ProjectName:  "sales",
-		Name:         "orphan_model",
-		Description:  "Orphan semantic model",
-		BaseModelRef: "sales.orders",
-		CreatedBy:    "alice",
+		WorkspaceID:     workspace.ID,
+		Name:            "orphan_model",
+		Description:     "Orphan semantic model",
+		BaseRelationRef: "sales.orders",
+		CreatedBy:       "alice",
 	})
 	require.NoError(t, err)
 
@@ -426,7 +443,7 @@ func TestService_GetPortfolioReport(t *testing.T) {
 	require.Len(t, report.OrphanAssets, 1)
 	assert.Equal(t, "main.analytics.orphaned", report.OrphanAssets[0].ResourceName)
 	require.Len(t, report.OrphanSemanticModels, 1)
-	assert.Equal(t, "sales.orphan_model", report.OrphanSemanticModels[0].ResourceName)
+	assert.Equal(t, "orphan_model", report.OrphanSemanticModels[0].ResourceName)
 }
 
 func TestService_PublishVersion_RejectsNonDefaultBranchBuild(t *testing.T) {

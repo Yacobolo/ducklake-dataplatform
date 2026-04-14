@@ -68,6 +68,16 @@ import (
 // ctx is a package-level background context used by setup helpers.
 var ctx = context.Background()
 
+func lookupWorkspaceIDByName(t *testing.T, db *sql.DB, name string) string {
+	t.Helper()
+
+	var workspaceID string
+	err := db.QueryRowContext(context.Background(), `SELECT id FROM workspaces WHERE name = ?`, name).Scan(&workspaceID)
+	require.NoError(t, err)
+	require.NotEmpty(t, workspaceID)
+	return workspaceID
+}
+
 type noOpCatalogAttacher struct{}
 
 func (noOpCatalogAttacher) Attach(_ context.Context, _ domain.CatalogRegistration) error { return nil }

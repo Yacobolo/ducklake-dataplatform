@@ -2,7 +2,6 @@ package explore
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"slices"
 	"sort"
@@ -188,93 +187,28 @@ func (s *Service) List(ctx context.Context, principal string, isAdmin bool, filt
 	}
 
 	if selectedFolder != nil {
-		projectID := s.resolveProjectID(*selectedFolder, allFolders)
-		if projectID != nil {
-			projectName, err := s.resolveProjectName(ctx, *projectID)
+		if kindAllowed(selectedKinds, domain.ExploreKindSemanticModel) {
+			semanticModels, err := s.semantics.ListAllByWorkspace(ctx, selectedFolder.WorkspaceID)
 			if err != nil {
-				return nil, err
+				return nil, fmt.Errorf("list semantic models: %w", err)
 			}
-			if projectName != nil {
-				if kindAllowed(selectedKinds, domain.ExploreKindModel) {
-					models, err := s.models.ListAll(ctx)
-					if err != nil {
-						return nil, fmt.Errorf("list models: %w", err)
-					}
-					for _, model := range models {
-						if model.ProjectName != *projectName {
-							continue
-						}
-						if !ownerAllowed(selectedOwners, model.CreatedBy) {
-							continue
-						}
-						if !exploreSearchMatch(query, model.Name, model.CreatedBy, *projectName) {
-							continue
-						}
-						items = append(items, domain.ExploreItem{
-							Kind:         domain.ExploreKindModel,
-							Scope:        domain.ExploreScopeProject,
-							ID:           model.ID,
-							Name:         model.Name,
-							Owner:        model.CreatedBy,
-							ProjectName:  projectName,
-							UpdatedAt:    model.UpdatedAt,
-							Shared:       strings.TrimSpace(model.CreatedBy) != strings.TrimSpace(principal),
-							ProjectBound: true,
-						})
-					}
+			for _, semanticModel := range semanticModels {
+				if !ownerAllowed(selectedOwners, semanticModel.CreatedBy) {
+					continue
 				}
-				if kindAllowed(selectedKinds, domain.ExploreKindMacro) {
-					macros, err := s.macros.ListAll(ctx)
-					if err != nil {
-						return nil, fmt.Errorf("list macros: %w", err)
-					}
-					for _, macro := range macros {
-						if strings.TrimSpace(macro.ProjectName) != *projectName {
-							continue
-						}
-						if !ownerAllowed(selectedOwners, macro.CreatedBy) {
-							continue
-						}
-						if !exploreSearchMatch(query, macro.Name, macro.CreatedBy, *projectName) {
-							continue
-						}
-						items = append(items, domain.ExploreItem{
-							Kind:         domain.ExploreKindMacro,
-							Scope:        domain.ExploreScopeProject,
-							ID:           macro.Name,
-							Name:         macro.Name,
-							Owner:        macro.CreatedBy,
-							ProjectName:  projectName,
-							UpdatedAt:    macro.UpdatedAt,
-							Shared:       strings.TrimSpace(macro.CreatedBy) != strings.TrimSpace(principal),
-							ProjectBound: true,
-						})
-					}
+				if !exploreSearchMatch(query, semanticModel.Name, semanticModel.CreatedBy) {
+					continue
 				}
-				if kindAllowed(selectedKinds, domain.ExploreKindSemanticModel) {
-					semanticModels, err := s.semantics.ListAll(ctx)
-					if err != nil {
-						return nil, fmt.Errorf("list semantic models: %w", err)
-					}
-					for _, semanticModel := range semanticModels {
-						if !ownerAllowed(selectedOwners, semanticModel.CreatedBy) {
-							continue
-						}
-						if !exploreSearchMatch(query, semanticModel.Name, semanticModel.CreatedBy, "") {
-							continue
-						}
-						items = append(items, domain.ExploreItem{
-							Kind:         domain.ExploreKindSemanticModel,
-							Scope:        domain.ExploreScopeFolder,
-							ID:           semanticModel.ID,
-							Name:         semanticModel.Name,
-							Owner:        semanticModel.CreatedBy,
-							UpdatedAt:    semanticModel.UpdatedAt,
-							Shared:       strings.TrimSpace(semanticModel.CreatedBy) != strings.TrimSpace(principal),
-							ProjectBound: false,
-						})
-					}
-				}
+				items = append(items, domain.ExploreItem{
+					Kind:         domain.ExploreKindSemanticModel,
+					Scope:        domain.ExploreScopeFolder,
+					ID:           semanticModel.ID,
+					Name:         semanticModel.Name,
+					Owner:        semanticModel.CreatedBy,
+					UpdatedAt:    semanticModel.UpdatedAt,
+					Shared:       strings.TrimSpace(semanticModel.CreatedBy) != strings.TrimSpace(principal),
+					ProjectBound: false,
+				})
 			}
 		}
 	}
@@ -346,21 +280,6 @@ func (s *Service) resolveProjectID(folder domain.Folder, allFolders []domain.Fol
 		}
 	}
 	return nil
-}
-
-func (s *Service) resolveProjectName(ctx context.Context, projectID string) (*string, error) {
-	if s.projects == nil || strings.TrimSpace(projectID) == "" {
-		return nil, nil
-	}
-	project, err := s.projects.GetByID(ctx, projectID)
-	if err != nil {
-		var notFound *domain.NotFoundError
-		if strings.Contains(err.Error(), "not found") || errors.As(err, &notFound) {
-			return nil, nil
-		}
-		return nil, fmt.Errorf("get project %q: %w", projectID, err)
-	}
-	return ptrString(project.Name), nil
 }
 
 func normalizeExploreKinds(kinds []string) []string {

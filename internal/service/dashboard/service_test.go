@@ -273,7 +273,7 @@ func TestService_ResolveWidget_SemanticQuery(t *testing.T) {
 
 	model, err := semanticSvc.CreateSemanticModel(ctx, "alice", domain.CreateSemanticModelRequest{
 		Name:         "sales",
-		BaseModelRef: "analytics.sales",
+		BaseRelationRef: "analytics.sales",
 	})
 	require.NoError(t, err)
 	_, err = semanticSvc.CreateMetric(ctx, "alice", model.ID, domain.CreateSemanticMetricRequest{
@@ -327,7 +327,7 @@ func TestService_ResolveWidgetsForDashboard_AppliesDashboardFiltersAndTimeBucket
 	_, err := semanticSvc.CreateSemanticModel(ctx, "alice", domain.CreateSemanticModelRequest{
 		ProjectName:          "analytics",
 		Name:                 "sales",
-		BaseModelRef:         "analytics.sales",
+		BaseRelationRef:         "analytics.sales",
 		DefaultTimeDimension: "order_date",
 	})
 	require.NoError(t, err)
@@ -401,7 +401,7 @@ func TestService_ResolveWidgetsForDashboard_ScatterLabelBindingCanInitiate(t *te
 	_, err := semanticSvc.CreateSemanticModel(ctx, "alice", domain.CreateSemanticModelRequest{
 		ProjectName:  "analytics",
 		Name:         "sales",
-		BaseModelRef: "analytics.sales",
+		BaseRelationRef: "analytics.sales",
 	})
 	require.NoError(t, err)
 	_, err = semanticSvc.CreateMetric(ctx, "alice", "analytics", "sales", domain.CreateSemanticMetricRequest{
@@ -476,7 +476,7 @@ func TestService_ResolveWidgetsForDashboard_UsesDashboardComputePolicyForSemanti
 	_, err := semanticSvc.CreateSemanticModel(ctx, "alice", domain.CreateSemanticModelRequest{
 		ProjectName:  "analytics",
 		Name:         "sales",
-		BaseModelRef: "analytics.sales",
+		BaseRelationRef: "analytics.sales",
 	})
 	require.NoError(t, err)
 	_, err = semanticSvc.CreateMetric(ctx, "alice", "analytics", "sales", domain.CreateSemanticMetricRequest{
@@ -662,7 +662,7 @@ func TestService_ResolveWidgetsForDashboardPaged_TablePagesSemanticResults(t *te
 	_, err := semanticSvc.CreateSemanticModel(ctx, "alice", domain.CreateSemanticModelRequest{
 		ProjectName:  "analytics",
 		Name:         "sales",
-		BaseModelRef: "analytics.sales",
+		BaseRelationRef: "analytics.sales",
 	})
 	require.NoError(t, err)
 	_, err = semanticSvc.CreateMetric(ctx, "alice", "analytics", "sales", domain.CreateSemanticMetricRequest{
@@ -736,7 +736,7 @@ func TestService_BuildDashboardPageState_ScopesPageAndPreservesOriginFilters(t *
 	_, err := semanticSvc.CreateSemanticModel(ctx, "alice", domain.CreateSemanticModelRequest{
 		ProjectName:  "analytics",
 		Name:         "sales",
-		BaseModelRef: "analytics.sales",
+		BaseRelationRef: "analytics.sales",
 	})
 	require.NoError(t, err)
 	_, err = semanticSvc.CreateMetric(ctx, "alice", "analytics", "sales", domain.CreateSemanticMetricRequest{
@@ -864,7 +864,7 @@ func TestService_BuildDashboardPageState_AppliesTablePageRequests(t *testing.T) 
 	_, err := semanticSvc.CreateSemanticModel(ctx, "alice", domain.CreateSemanticModelRequest{
 		ProjectName:  "analytics",
 		Name:         "sales",
-		BaseModelRef: "analytics.sales",
+		BaseRelationRef: "analytics.sales",
 	})
 	require.NoError(t, err)
 	_, err = semanticSvc.CreateMetric(ctx, "alice", "analytics", "sales", domain.CreateSemanticMetricRequest{
@@ -1000,7 +1000,7 @@ func TestService_ResolveWidgetsForDashboard_TableWidgetsCanInitiateFilters(t *te
 	_, err := semanticSvc.CreateSemanticModel(ctx, "alice", domain.CreateSemanticModelRequest{
 		ProjectName:  "analytics",
 		Name:         "sales",
-		BaseModelRef: "analytics.sales",
+		BaseRelationRef: "analytics.sales",
 	})
 	require.NoError(t, err)
 	_, err = semanticSvc.CreateMetric(ctx, "alice", "analytics", "sales", domain.CreateSemanticMetricRequest{
@@ -1070,7 +1070,7 @@ func TestService_ResolveWidgetsForDashboard_SourceChartKeepsOwnDimensionUnfilter
 	_, err := semanticSvc.CreateSemanticModel(ctx, "alice", domain.CreateSemanticModelRequest{
 		ProjectName:  "analytics",
 		Name:         "sales",
-		BaseModelRef: "analytics.sales",
+		BaseRelationRef: "analytics.sales",
 	})
 	require.NoError(t, err)
 	_, err = semanticSvc.CreateMetric(ctx, "alice", "analytics", "sales", domain.CreateSemanticMetricRequest{
@@ -1162,13 +1162,13 @@ func TestService_ResolveWidgetsForDashboard_ExcludesNonInteractiveWidgets(t *tes
 	_, err := semanticSvc.CreateSemanticModel(ctx, "alice", domain.CreateSemanticModelRequest{
 		ProjectName:  "analytics",
 		Name:         "sales",
-		BaseModelRef: "analytics.sales",
+		BaseRelationRef: "analytics.sales",
 	})
 	require.NoError(t, err)
 	_, err = semanticSvc.CreateSemanticModel(ctx, "alice", domain.CreateSemanticModelRequest{
 		ProjectName:  "analytics",
 		Name:         "marketing",
-		BaseModelRef: "analytics.marketing",
+		BaseRelationRef: "analytics.marketing",
 	})
 	require.NoError(t, err)
 	_, err = semanticSvc.CreateMetric(ctx, "alice", "analytics", "sales", domain.CreateSemanticMetricRequest{
