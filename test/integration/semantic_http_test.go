@@ -3,12 +3,16 @@
 package integration
 
 import (
+	"context"
 	"io"
 	"net/http"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/Yacobolo/quackstack/internal/db/repository"
+	"github.com/Yacobolo/quackstack/internal/domain"
 )
 
 type semanticModelResp struct {
@@ -31,30 +35,46 @@ type semanticRelationshipResp struct {
 	Name string `json:"name"`
 }
 
+func createSemanticWorkspace(t *testing.T, env *httpTestEnv, name string) string {
+	t.Helper()
+
+	workspaceRepo := repository.NewWorkspaceRepo(env.MetaDB)
+	ownerPrincipal := "admin"
+	workspace, err := workspaceRepo.Create(context.Background(), &domain.Workspace{
+		Name:           name,
+		Kind:           domain.WorkspaceKindShared,
+		OwnerPrincipal: &ownerPrincipal,
+		CreatedBy:      "admin",
+	})
+	require.NoError(t, err)
+	return workspace.ID
+}
+
 func TestSemanticAPI_CRUDAndExplain(t *testing.T) {
 	t.Parallel()
 
 	env := setupHTTPServer(t, httpTestOpts{WithSemantic: true})
+	workspaceID := createSemanticWorkspace(t, env, "semantic-api")
 
-	createSalesResp := doRequest(t, http.MethodPost, env.Server.URL+"/v1/semantic-models", env.Keys.Admin, map[string]interface{}{
-		"name":           "sales",
-		"base_model_ref": "analytics.fct_sales",
+	createSalesResp := doRequest(t, http.MethodPost, env.Server.URL+"/v1/workspaces/"+workspaceID+"/semantic-models", env.Keys.Admin, map[string]interface{}{
+		"name":              "sales",
+		"base_relation_ref": "analytics.fct_sales",
 	})
 	require.Equal(t, http.StatusCreated, createSalesResp.StatusCode, responseBodyOnStatusMismatch(t, createSalesResp, http.StatusCreated))
 	var salesModel semanticModelResp
 	decodeJSON(t, createSalesResp, &salesModel)
 	require.NotEmpty(t, salesModel.ID)
 
-	createCustomersResp := doRequest(t, http.MethodPost, env.Server.URL+"/v1/semantic-models", env.Keys.Admin, map[string]interface{}{
-		"name":           "customers",
-		"base_model_ref": "analytics.dim_customers",
+	createCustomersResp := doRequest(t, http.MethodPost, env.Server.URL+"/v1/workspaces/"+workspaceID+"/semantic-models", env.Keys.Admin, map[string]interface{}{
+		"name":              "customers",
+		"base_relation_ref": "analytics.dim_customers",
 	})
 	require.Equal(t, http.StatusCreated, createCustomersResp.StatusCode, responseBodyOnStatusMismatch(t, createCustomersResp, http.StatusCreated))
 	var customersModel semanticModelResp
 	decodeJSON(t, createCustomersResp, &customersModel)
 	require.NotEmpty(t, customersModel.ID)
 
-	createMetricResp := doRequest(t, http.MethodPost, env.Server.URL+"/v1/semantic-models/"+salesModel.ID+"/metrics", env.Keys.Admin, map[string]interface{}{
+	createMetricResp := doRequest(t, http.MethodPost, env.Server.URL+"/v1/workspaces/"+workspaceID+"/semantic-models/"+salesModel.ID+"/metrics", env.Keys.Admin, map[string]interface{}{
 		"name":                "total_revenue",
 		"metric_type":         "SUM",
 		"expression_mode":     "SQL",
@@ -66,7 +86,7 @@ func TestSemanticAPI_CRUDAndExplain(t *testing.T) {
 	decodeJSON(t, createMetricResp, &metric)
 	require.NotEmpty(t, metric.ID)
 
-	createPreAggResp := doRequest(t, http.MethodPost, env.Server.URL+"/v1/semantic-models/"+salesModel.ID+"/pre-aggregations", env.Keys.Admin, map[string]interface{}{
+	createPreAggResp := doRequest(t, http.MethodPost, env.Server.URL+"/v1/workspaces/"+workspaceID+"/semantic-models/"+salesModel.ID+"/pre-aggregations", env.Keys.Admin, map[string]interface{}{
 		"name":            "daily_sales",
 		"metric_set":      []string{"total_revenue"},
 		"dimension_set":   []string{"order_date"},
@@ -77,7 +97,7 @@ func TestSemanticAPI_CRUDAndExplain(t *testing.T) {
 	decodeJSON(t, createPreAggResp, &preAgg)
 	require.NotEmpty(t, preAgg.ID)
 
-	createRelationshipResp := doRequest(t, http.MethodPost, env.Server.URL+"/v1/semantic-models/"+salesModel.ID+"/relationships", env.Keys.Admin, map[string]interface{}{
+	createRelationshipResp := doRequest(t, http.MethodPost, env.Server.URL+"/v1/workspaces/"+workspaceID+"/semantic-models/"+salesModel.ID+"/relationships", env.Keys.Admin, map[string]interface{}{
 		"name":              "sales_to_customers",
 		"from_semantic_id":  salesModel.ID,
 		"to_semantic_id":    customersModel.ID,
@@ -89,7 +109,7 @@ func TestSemanticAPI_CRUDAndExplain(t *testing.T) {
 	decodeJSON(t, createRelationshipResp, &relationship)
 	require.NotEmpty(t, relationship.ID)
 
-	listModelsResp := doRequest(t, http.MethodGet, env.Server.URL+"/v1/semantic-models", env.Keys.Admin, nil)
+	listModelsResp := doRequest(t, http.MethodGet, env.Server.URL+"/v1/workspaces/"+workspaceID+"/semantic-models", env.Keys.Admin, nil)
 	require.Equal(t, http.StatusOK, listModelsResp.StatusCode, responseBodyOnStatusMismatch(t, listModelsResp, http.StatusOK))
 	var listed struct {
 		Data []semanticModelResp `json:"data"`
@@ -97,7 +117,7 @@ func TestSemanticAPI_CRUDAndExplain(t *testing.T) {
 	decodeJSON(t, listModelsResp, &listed)
 	require.Len(t, listed.Data, 2)
 
-	explainResp := doRequest(t, http.MethodPost, env.Server.URL+"/v1/semantic-models/"+salesModel.ID+"/query-explanations", env.Keys.Admin, map[string]interface{}{
+	explainResp := doRequest(t, http.MethodPost, env.Server.URL+"/v1/workspaces/"+workspaceID+"/semantic-models/"+salesModel.ID+"/query-explanations", env.Keys.Admin, map[string]interface{}{
 		"metrics": []string{"total_revenue"},
 	})
 	require.Equal(t, http.StatusOK, explainResp.StatusCode, responseBodyOnStatusMismatch(t, explainResp, http.StatusOK))
@@ -116,6 +136,7 @@ func TestSemanticAPI_RunMetricQuery(t *testing.T) {
 	t.Parallel()
 
 	env := setupHTTPServer(t, httpTestOpts{WithSemantic: true, WithComputeEndpoints: true, SeedDuckLakeMetadata: true})
+	workspaceID := createSemanticWorkspace(t, env, "semantic-runtime")
 	require.NotNil(t, env.DuckDB)
 
 	_, err := env.DuckDB.ExecContext(ctx, `CREATE TABLE IF NOT EXISTS titanic (Fare DOUBLE)`)
@@ -125,15 +146,15 @@ func TestSemanticAPI_RunMetricQuery(t *testing.T) {
 	_, err = env.DuckDB.ExecContext(ctx, `INSERT INTO titanic VALUES (10.5), (20.0)`)
 	require.NoError(t, err)
 
-	createModelResp := doRequest(t, http.MethodPost, env.Server.URL+"/v1/semantic-models", env.Keys.Admin, map[string]interface{}{
-		"name":           "sales_runtime",
-		"base_model_ref": "main.titanic",
+	createModelResp := doRequest(t, http.MethodPost, env.Server.URL+"/v1/workspaces/"+workspaceID+"/semantic-models", env.Keys.Admin, map[string]interface{}{
+		"name":              "sales_runtime",
+		"base_relation_ref": "main.titanic",
 	})
 	require.Equal(t, http.StatusCreated, createModelResp.StatusCode, responseBodyOnStatusMismatch(t, createModelResp, http.StatusCreated))
 	var semanticModel semanticModelResp
 	decodeJSON(t, createModelResp, &semanticModel)
 
-	createMetricResp := doRequest(t, http.MethodPost, env.Server.URL+"/v1/semantic-models/"+semanticModel.ID+"/metrics", env.Keys.Admin, map[string]interface{}{
+	createMetricResp := doRequest(t, http.MethodPost, env.Server.URL+"/v1/workspaces/"+workspaceID+"/semantic-models/"+semanticModel.ID+"/metrics", env.Keys.Admin, map[string]interface{}{
 		"name":                "total_amount",
 		"metric_type":         "SUM",
 		"expression_mode":     "SQL",
@@ -142,7 +163,7 @@ func TestSemanticAPI_RunMetricQuery(t *testing.T) {
 	})
 	require.Equal(t, http.StatusCreated, createMetricResp.StatusCode, responseBodyOnStatusMismatch(t, createMetricResp, http.StatusCreated))
 
-	runResp := doRequest(t, http.MethodPost, env.Server.URL+"/v1/semantic-models/"+semanticModel.ID+"/query-runs", env.Keys.Admin, map[string]interface{}{
+	runResp := doRequest(t, http.MethodPost, env.Server.URL+"/v1/workspaces/"+workspaceID+"/semantic-models/"+semanticModel.ID+"/query-runs", env.Keys.Admin, map[string]interface{}{
 		"metrics": []string{"total_amount"},
 	})
 	require.Equal(t, http.StatusOK, runResp.StatusCode, responseBodyOnStatusMismatch(t, runResp, http.StatusOK))
@@ -172,6 +193,7 @@ func TestSemanticAPI_RunMetricQuery_RLSMaskParityWithRawSQL(t *testing.T) {
 	t.Parallel()
 
 	env := setupHTTPServer(t, httpTestOpts{WithSemantic: true, WithComputeEndpoints: true, SeedDuckLakeMetadata: true})
+	workspaceID := createSemanticWorkspace(t, env, "semantic-security")
 	require.NotNil(t, env.DuckDB)
 
 	_, err := env.DuckDB.ExecContext(ctx, `CREATE TABLE IF NOT EXISTS titanic (Name VARCHAR, Pclass INTEGER)`)
@@ -181,15 +203,15 @@ func TestSemanticAPI_RunMetricQuery_RLSMaskParityWithRawSQL(t *testing.T) {
 	_, err = env.DuckDB.ExecContext(ctx, `INSERT INTO titanic VALUES ('Alice', 1), ('Bob', 1), ('Carol', 2)`)
 	require.NoError(t, err)
 
-	createModelResp := doRequest(t, http.MethodPost, env.Server.URL+"/v1/semantic-models", env.Keys.Admin, map[string]interface{}{
-		"name":           "titanic_security_parity",
-		"base_model_ref": "main.titanic",
+	createModelResp := doRequest(t, http.MethodPost, env.Server.URL+"/v1/workspaces/"+workspaceID+"/semantic-models", env.Keys.Admin, map[string]interface{}{
+		"name":              "titanic_security_parity",
+		"base_relation_ref": "main.titanic",
 	})
 	require.Equal(t, http.StatusCreated, createModelResp.StatusCode, responseBodyOnStatusMismatch(t, createModelResp, http.StatusCreated))
 	var parityModel semanticModelResp
 	decodeJSON(t, createModelResp, &parityModel)
 
-	createMetricResp := doRequest(t, http.MethodPost, env.Server.URL+"/v1/semantic-models/"+parityModel.ID+"/metrics", env.Keys.Admin, map[string]interface{}{
+	createMetricResp := doRequest(t, http.MethodPost, env.Server.URL+"/v1/workspaces/"+workspaceID+"/semantic-models/"+parityModel.ID+"/metrics", env.Keys.Admin, map[string]interface{}{
 		"name":                "passenger_count",
 		"metric_type":         "COUNT",
 		"expression_mode":     "SQL",
@@ -198,7 +220,7 @@ func TestSemanticAPI_RunMetricQuery_RLSMaskParityWithRawSQL(t *testing.T) {
 	})
 	require.Equal(t, http.StatusCreated, createMetricResp.StatusCode, responseBodyOnStatusMismatch(t, createMetricResp, http.StatusCreated))
 
-	semanticRunResp := doRequest(t, http.MethodPost, env.Server.URL+"/v1/semantic-models/"+parityModel.ID+"/query-runs", env.Keys.Analyst, map[string]interface{}{
+	semanticRunResp := doRequest(t, http.MethodPost, env.Server.URL+"/v1/workspaces/"+workspaceID+"/semantic-models/"+parityModel.ID+"/query-runs", env.Keys.Analyst, map[string]interface{}{
 		"metrics":    []string{"passenger_count"},
 		"dimensions": []string{"Name"},
 		"order_by":   []string{"Name"},

@@ -109,7 +109,7 @@ func TestBuildSemanticAssetGraph(t *testing.T) {
 		{ID: "model-1", ProjectName: "sales", Name: "fct_orders", CreatedBy: "alice"},
 	}
 	semanticModels := []domain.SemanticModel{
-		{ID: "sem-1", Name: "orders", BaseModelRef: "sales.fct_orders", CreatedBy: "alice"},
+		{ID: "sem-1", Name: "orders", BaseRelationRef: "sales.fct_orders", CreatedBy: "alice"},
 	}
 	metricsByModel := map[string][]domain.SemanticMetric{
 		"sem-1": {{ID: "metric-1", Name: "revenue", CreatedBy: "alice"}},

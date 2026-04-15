@@ -4,6 +4,7 @@ import "github.com/Yacobolo/quackstack/internal/service/query"
 
 // MetricQueryRequest is the runtime request contract for semantic query planning and execution.
 type MetricQueryRequest struct {
+	WorkspaceID       string
 	ProjectName       string
 	SemanticModelName string
 	SemanticModelID   string

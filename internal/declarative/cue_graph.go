@@ -63,8 +63,9 @@ type cueTable struct {
 
 type cueWorkspace struct {
 	WorkspaceSpec `yaml:",inline"`
-	Folders       map[string]cueFolder     `yaml:"folders,omitempty"`
-	Dashboards    map[string]DashboardSpec `yaml:"dashboards,omitempty"`
+	Folders        map[string]cueFolder        `yaml:"folders,omitempty"`
+	Dashboards     map[string]DashboardSpec    `yaml:"dashboards,omitempty"`
+	SemanticModels map[string]SemanticModelSpec `yaml:"semantic_models,omitempty"`
 }
 
 type cueFolder struct {
@@ -77,9 +78,8 @@ type cueFolder struct {
 }
 
 type cueProject struct {
-	ProjectSpec    `yaml:",inline"`
-	Environments   map[string]EnvironmentSpec   `yaml:"environments,omitempty"`
-	Macros         map[string]MacroSpec         `yaml:"macros,omitempty"`
-	Models         map[string]ModelSpec         `yaml:"models,omitempty"`
-	SemanticModels map[string]SemanticModelSpec `yaml:"semantic_models,omitempty"`
+	ProjectSpec  `yaml:",inline"`
+	Environments map[string]EnvironmentSpec `yaml:"environments,omitempty"`
+	Macros       map[string]MacroSpec       `yaml:"macros,omitempty"`
+	Models       map[string]ModelSpec       `yaml:"models,omitempty"`
 }

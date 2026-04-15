@@ -32,10 +32,11 @@ func (r *SemanticModelRepo) Create(ctx context.Context, m *domain.SemanticModel)
 
 	row, err := r.q.CreateSemanticModel(ctx, dbstore.CreateSemanticModelParams{
 		ID:                   newID(),
+		WorkspaceID:          m.WorkspaceID,
 		Name:                 m.Name,
 		Description:          m.Description,
 		Owner:                m.Owner,
-		BaseModelRef:         m.BaseModelRef,
+		BaseRelationRef:      m.BaseRelationRef,
 		DefaultTimeDimension: m.DefaultTimeDimension,
 		Tags:                 string(tagsJSON),
 		CreatedBy:            m.CreatedBy,
@@ -55,25 +56,29 @@ func (r *SemanticModelRepo) GetByID(ctx context.Context, id string) (*domain.Sem
 	return semanticModelFromDB(row), nil
 }
 
-// GetByName returns a semantic model by name.
-func (r *SemanticModelRepo) GetByName(ctx context.Context, name string) (*domain.SemanticModel, error) {
-	row, err := r.q.GetSemanticModelByName(ctx, name)
+// GetByWorkspaceAndName returns a semantic model by workspace/name.
+func (r *SemanticModelRepo) GetByWorkspaceAndName(ctx context.Context, workspaceID, name string) (*domain.SemanticModel, error) {
+	row, err := r.q.GetSemanticModelByWorkspaceAndName(ctx, dbstore.GetSemanticModelByWorkspaceAndNameParams{
+		WorkspaceID: workspaceID,
+		Name:        name,
+	})
 	if err != nil {
 		return nil, mapDBError(err)
 	}
 	return semanticModelFromDB(row), nil
 }
 
-// List returns a paginated list of semantic models.
-func (r *SemanticModelRepo) List(ctx context.Context, page domain.PageRequest) ([]domain.SemanticModel, int64, error) {
-	total, err := r.q.CountSemanticModels(ctx)
+// ListByWorkspace returns a paginated list of semantic models for a workspace.
+func (r *SemanticModelRepo) ListByWorkspace(ctx context.Context, workspaceID string, page domain.PageRequest) ([]domain.SemanticModel, int64, error) {
+	total, err := r.q.CountSemanticModelsByWorkspace(ctx, workspaceID)
 	if err != nil {
 		return nil, 0, err
 	}
 
-	rows, err := r.q.ListSemanticModels(ctx, dbstore.ListSemanticModelsParams{
-		Limit:  int64(page.Limit()),
-		Offset: int64(page.Offset()),
+	rows, err := r.q.ListSemanticModelsByWorkspace(ctx, dbstore.ListSemanticModelsByWorkspaceParams{
+		WorkspaceID: workspaceID,
+		Limit:       int64(page.Limit()),
+		Offset:      int64(page.Offset()),
 	})
 	if err != nil {
 		return nil, 0, err
@@ -101,9 +106,9 @@ func (r *SemanticModelRepo) Update(ctx context.Context, id string, req domain.Up
 	if req.Owner != nil {
 		owner = *req.Owner
 	}
-	baseModelRef := current.BaseModelRef
-	if req.BaseModelRef != nil {
-		baseModelRef = *req.BaseModelRef
+	baseRelationRef := current.BaseRelationRef
+	if req.BaseRelationRef != nil {
+		baseRelationRef = *req.BaseRelationRef
 	}
 	defaultTimeDim := current.DefaultTimeDimension
 	if req.DefaultTimeDimension != nil {
@@ -121,7 +126,7 @@ func (r *SemanticModelRepo) Update(ctx context.Context, id string, req domain.Up
 	err = r.q.UpdateSemanticModel(ctx, dbstore.UpdateSemanticModelParams{
 		Description:          description,
 		Owner:                owner,
-		BaseModelRef:         baseModelRef,
+		BaseRelationRef:      baseRelationRef,
 		DefaultTimeDimension: defaultTimeDim,
 		Tags:                 string(tagsJSON),
 		ID:                   id,
@@ -137,7 +142,21 @@ func (r *SemanticModelRepo) Delete(ctx context.Context, id string) error {
 	return mapDBError(r.q.DeleteSemanticModel(ctx, id))
 }
 
-// ListAll returns all semantic models ordered by name.
+// ListAllByWorkspace returns all semantic models ordered by name for a workspace.
+func (r *SemanticModelRepo) ListAllByWorkspace(ctx context.Context, workspaceID string) ([]domain.SemanticModel, error) {
+	rows, err := r.q.ListAllSemanticModelsByWorkspace(ctx, workspaceID)
+	if err != nil {
+		return nil, err
+	}
+
+	models := make([]domain.SemanticModel, 0, len(rows))
+	for _, row := range rows {
+		models = append(models, *semanticModelFromDB(row))
+	}
+	return models, nil
+}
+
+// ListAll returns all semantic models ordered by workspace and name.
 func (r *SemanticModelRepo) ListAll(ctx context.Context) ([]domain.SemanticModel, error) {
 	rows, err := r.q.ListAllSemanticModels(ctx)
 	if err != nil {

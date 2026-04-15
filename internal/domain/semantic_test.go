@@ -8,8 +8,9 @@ import (
 
 func TestCreateSemanticModelRequest_Validate(t *testing.T) {
 	req := CreateSemanticModelRequest{
-		Name:         "sales",
-		BaseModelRef: "analytics.fct_sales",
+		WorkspaceID:     "analytics",
+		Name:            "sales",
+		BaseRelationRef: "analytics.fct_sales",
 	}
 
 	require.NoError(t, req.Validate())

@@ -31326,2345 +31326,6 @@ paths:
       tags:
         - Semantic Layer
       x-cli-command: semantic freshness check-metric-freshness
-  /semantic-models:
-    get:
-      operationId: listSemanticModels
-      summary: List semantic models
-      parameters:
-        - name: max_results
-          in: query
-          required: false
-          schema:
-            type: integer
-            format: int32
-          example: 1
-          explode: false
-        - name: page_token
-          in: query
-          required: false
-          schema:
-            type: string
-          example: example
-          explode: false
-      responses:
-        '200':
-          description: The request has succeeded.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PaginatedSemanticModels'
-              example:
-                data:
-                  - base_model_ref: revenue.fct_customer_360
-                    created_at: "2026-04-13T08:00:00Z"
-                    created_by: alice@example.com
-                    default_time_dimension: snapshot_date
-                    description: Semantic model for customer lifecycle and commercial performance.
-                    id: sem_01hzycust360
-                    name: customer_360
-                    owner: team-analytics
-                    tags:
-                      - growth
-                      - finance
-                    updated_at: "2026-04-13T08:00:00Z"
-                next_page_token: example
-        '400':
-          description: The server could not understand the request due to invalid syntax.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-              example:
-                code: 400
-                details:
-                  field: name
-                  reason: must not be empty
-                message: validation failed
-        '401':
-          description: Access is unauthorized.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-              example:
-                code: 400
-                details:
-                  field: name
-                  reason: must not be empty
-                message: validation failed
-        '429':
-          description: Client error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-              example:
-                code: 400
-                details:
-                  field: name
-                  reason: must not be empty
-                message: validation failed
-        '500':
-          description: Server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-              example:
-                code: 400
-                details:
-                  field: name
-                  reason: must not be empty
-                message: validation failed
-      tags:
-        - Semantic Layer
-      x-cli-command: semantic semantic-models list
-    post:
-      operationId: createSemanticModel
-      summary: Create semantic model
-      parameters: []
-      responses:
-        '201':
-          description: The request has succeeded and a new resource has been created as a result.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SemanticModel'
-              example:
-                base_model_ref: revenue.fct_customer_360
-                created_at: "2026-04-13T08:00:00Z"
-                created_by: alice@example.com
-                default_time_dimension: snapshot_date
-                description: Semantic model for customer lifecycle and commercial performance.
-                id: sem_01hzycust360
-                name: customer_360
-                owner: team-analytics
-                tags:
-                  - growth
-                  - finance
-                updated_at: "2026-04-13T08:00:00Z"
-        '400':
-          description: The server could not understand the request due to invalid syntax.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-              example:
-                code: 400
-                details:
-                  field: name
-                  reason: must not be empty
-                message: validation failed
-        '401':
-          description: Access is unauthorized.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-              example:
-                code: 400
-                details:
-                  field: name
-                  reason: must not be empty
-                message: validation failed
-        '403':
-          description: Access is forbidden.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-              example:
-                code: 400
-                details:
-                  field: name
-                  reason: must not be empty
-                message: validation failed
-        '429':
-          description: Client error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-              example:
-                code: 400
-                details:
-                  field: name
-                  reason: must not be empty
-                message: validation failed
-        '500':
-          description: Server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-              example:
-                code: 400
-                details:
-                  field: name
-                  reason: must not be empty
-                message: validation failed
-      tags:
-        - Semantic Layer
-      requestBody:
-        required: true
-        description: Request payload
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/CreateSemanticModelRequest'
-            example:
-              base_model_ref: revenue.fct_customer_360
-              default_time_dimension: snapshot_date
-              description: Semantic model for customer lifecycle and commercial performance.
-              name: customer_360
-              tags:
-                - growth
-                - finance
-      x-cli-command: semantic semantic-models create
-  /semantic-models/{semantic_model_id}:
-    delete:
-      operationId: deleteSemanticModel
-      summary: Delete semantic model
-      parameters:
-        - name: semantic_model_id
-          in: path
-          required: true
-          schema:
-            type: string
-          example: example
-      responses:
-        '204':
-          description: 'There is no content to send for this request, but the headers may be useful. '
-        '400':
-          description: The server could not understand the request due to invalid syntax.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-              example:
-                code: 400
-                details:
-                  field: name
-                  reason: must not be empty
-                message: validation failed
-        '401':
-          description: Access is unauthorized.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-              example:
-                code: 400
-                details:
-                  field: name
-                  reason: must not be empty
-                message: validation failed
-        '403':
-          description: Access is forbidden.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-              example:
-                code: 400
-                details:
-                  field: name
-                  reason: must not be empty
-                message: validation failed
-        '429':
-          description: Client error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-              example:
-                code: 400
-                details:
-                  field: name
-                  reason: must not be empty
-                message: validation failed
-        '500':
-          description: Server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-              example:
-                code: 400
-                details:
-                  field: name
-                  reason: must not be empty
-                message: validation failed
-      tags:
-        - Semantic Layer
-      x-cli-command: semantic semantic-models delete
-    get:
-      operationId: getSemanticModel
-      summary: Get semantic model
-      parameters:
-        - name: semantic_model_id
-          in: path
-          required: true
-          schema:
-            type: string
-          example: example
-      responses:
-        '200':
-          description: The request has succeeded.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SemanticModel'
-              example:
-                base_model_ref: revenue.fct_customer_360
-                created_at: "2026-04-13T08:00:00Z"
-                created_by: alice@example.com
-                default_time_dimension: snapshot_date
-                description: Semantic model for customer lifecycle and commercial performance.
-                id: sem_01hzycust360
-                name: customer_360
-                owner: team-analytics
-                tags:
-                  - growth
-                  - finance
-                updated_at: "2026-04-13T08:00:00Z"
-        '400':
-          description: The server could not understand the request due to invalid syntax.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-              example:
-                code: 400
-                details:
-                  field: name
-                  reason: must not be empty
-                message: validation failed
-        '401':
-          description: Access is unauthorized.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-              example:
-                code: 400
-                details:
-                  field: name
-                  reason: must not be empty
-                message: validation failed
-        '403':
-          description: Access is forbidden.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-              example:
-                code: 400
-                details:
-                  field: name
-                  reason: must not be empty
-                message: validation failed
-        '404':
-          description: The server cannot find the requested resource.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-              example:
-                code: 400
-                details:
-                  field: name
-                  reason: must not be empty
-                message: validation failed
-        '429':
-          description: Client error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-              example:
-                code: 400
-                details:
-                  field: name
-                  reason: must not be empty
-                message: validation failed
-        '500':
-          description: Server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-              example:
-                code: 400
-                details:
-                  field: name
-                  reason: must not be empty
-                message: validation failed
-      tags:
-        - Semantic Layer
-      x-cli-command: semantic semantic-models get
-    patch:
-      operationId: updateSemanticModel
-      summary: Update semantic model
-      parameters:
-        - name: semantic_model_id
-          in: path
-          required: true
-          schema:
-            type: string
-          example: example
-      responses:
-        '200':
-          description: The request has succeeded.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SemanticModel'
-              example:
-                base_model_ref: revenue.fct_customer_360
-                created_at: "2026-04-13T08:00:00Z"
-                created_by: alice@example.com
-                default_time_dimension: snapshot_date
-                description: Semantic model for customer lifecycle and commercial performance.
-                id: sem_01hzycust360
-                name: customer_360
-                owner: team-analytics
-                tags:
-                  - growth
-                  - finance
-                updated_at: "2026-04-13T08:00:00Z"
-        '400':
-          description: The server could not understand the request due to invalid syntax.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-              example:
-                code: 400
-                details:
-                  field: name
-                  reason: must not be empty
-                message: validation failed
-        '401':
-          description: Access is unauthorized.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-              example:
-                code: 400
-                details:
-                  field: name
-                  reason: must not be empty
-                message: validation failed
-        '403':
-          description: Access is forbidden.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-              example:
-                code: 400
-                details:
-                  field: name
-                  reason: must not be empty
-                message: validation failed
-        '429':
-          description: Client error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-              example:
-                code: 400
-                details:
-                  field: name
-                  reason: must not be empty
-                message: validation failed
-        '500':
-          description: Server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-              example:
-                code: 400
-                details:
-                  field: name
-                  reason: must not be empty
-                message: validation failed
-      tags:
-        - Semantic Layer
-      requestBody:
-        required: true
-        description: Request payload
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/UpdateSemanticModelRequest'
-            example:
-              base_model_ref: example
-              default_time_dimension: example
-              description: example
-              owner: example
-              tags:
-                - example
-      x-cli-command: semantic semantic-models update
-  /semantic-models/{semantic_model_id}/metrics:
-    get:
-      operationId: listSemanticMetrics
-      summary: List semantic metrics
-      parameters:
-        - name: semantic_model_id
-          in: path
-          required: true
-          schema:
-            type: string
-          example: example
-      responses:
-        '200':
-          description: The request has succeeded.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SemanticMetricList'
-              example:
-                data:
-                  - certification_state: CERTIFIED
-                    created_at: "2026-04-13T08:00:00Z"
-                    created_by: alice@example.com
-                    default_time_grain: month
-                    description: Monthly recurring revenue for active subscriptions.
-                    expression: subscription_mrr
-                    expression_mode: SQL
-                    filter_sql: subscription_status = 'ACTIVE'
-                    format: currency_usd
-                    id: metric_01hzymrr
-                    label: MRR
-                    metric_type: SUM
-                    name: monthly_recurring_revenue
-                    owner: team-analytics
-                    relationship_names:
-                      - account_to_subscription
-                    semantic_model_id: sem_01hzycust360
-                    updated_at: "2026-04-13T08:00:00Z"
-        '400':
-          description: The server could not understand the request due to invalid syntax.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-              example:
-                code: 400
-                details:
-                  field: name
-                  reason: must not be empty
-                message: validation failed
-        '401':
-          description: Access is unauthorized.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-              example:
-                code: 400
-                details:
-                  field: name
-                  reason: must not be empty
-                message: validation failed
-        '403':
-          description: Access is forbidden.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-              example:
-                code: 400
-                details:
-                  field: name
-                  reason: must not be empty
-                message: validation failed
-        '404':
-          description: The server cannot find the requested resource.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-              example:
-                code: 400
-                details:
-                  field: name
-                  reason: must not be empty
-                message: validation failed
-        '429':
-          description: Client error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-              example:
-                code: 400
-                details:
-                  field: name
-                  reason: must not be empty
-                message: validation failed
-        '500':
-          description: Server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-              example:
-                code: 400
-                details:
-                  field: name
-                  reason: must not be empty
-                message: validation failed
-      tags:
-        - Semantic Layer
-      x-cli-command: semantic metrics list
-    post:
-      operationId: createSemanticMetric
-      summary: Create semantic metric
-      parameters:
-        - name: semantic_model_id
-          in: path
-          required: true
-          schema:
-            type: string
-          example: example
-      responses:
-        '201':
-          description: The request has succeeded and a new resource has been created as a result.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SemanticMetric'
-              example:
-                certification_state: CERTIFIED
-                created_at: "2026-04-13T08:00:00Z"
-                created_by: alice@example.com
-                default_time_grain: month
-                description: Monthly recurring revenue for active subscriptions.
-                expression: subscription_mrr
-                expression_mode: SQL
-                filter_sql: subscription_status = 'ACTIVE'
-                format: currency_usd
-                id: metric_01hzymrr
-                label: MRR
-                metric_type: SUM
-                name: monthly_recurring_revenue
-                owner: team-analytics
-                relationship_names:
-                  - account_to_subscription
-                semantic_model_id: sem_01hzycust360
-                updated_at: "2026-04-13T08:00:00Z"
-        '400':
-          description: The server could not understand the request due to invalid syntax.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-              example:
-                code: 400
-                details:
-                  field: name
-                  reason: must not be empty
-                message: validation failed
-        '401':
-          description: Access is unauthorized.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-              example:
-                code: 400
-                details:
-                  field: name
-                  reason: must not be empty
-                message: validation failed
-        '403':
-          description: Access is forbidden.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-              example:
-                code: 400
-                details:
-                  field: name
-                  reason: must not be empty
-                message: validation failed
-        '429':
-          description: Client error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-              example:
-                code: 400
-                details:
-                  field: name
-                  reason: must not be empty
-                message: validation failed
-        '500':
-          description: Server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-              example:
-                code: 400
-                details:
-                  field: name
-                  reason: must not be empty
-                message: validation failed
-      tags:
-        - Semantic Layer
-      requestBody:
-        required: true
-        description: Request payload
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/CreateSemanticMetricRequest'
-            example:
-              certification_state: CERTIFIED
-              default_time_grain: month
-              description: Monthly recurring revenue for active subscriptions.
-              expression: subscription_mrr
-              expression_mode: SQL
-              filter_sql: subscription_status = 'ACTIVE'
-              format: currency_usd
-              label: MRR
-              metric_type: SUM
-              name: monthly_recurring_revenue
-              relationship_names:
-                - account_to_subscription
-      x-cli-command: semantic metrics create
-  /semantic-models/{semantic_model_id}/metrics/{metric_name}:
-    delete:
-      operationId: deleteSemanticMetric
-      summary: Delete semantic metric
-      parameters:
-        - name: semantic_model_id
-          in: path
-          required: true
-          schema:
-            type: string
-          example: example
-        - name: metric_name
-          in: path
-          required: true
-          schema:
-            type: string
-          example: example
-      responses:
-        '204':
-          description: 'There is no content to send for this request, but the headers may be useful. '
-        '400':
-          description: The server could not understand the request due to invalid syntax.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-              example:
-                code: 400
-                details:
-                  field: name
-                  reason: must not be empty
-                message: validation failed
-        '401':
-          description: Access is unauthorized.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-              example:
-                code: 400
-                details:
-                  field: name
-                  reason: must not be empty
-                message: validation failed
-        '403':
-          description: Access is forbidden.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-              example:
-                code: 400
-                details:
-                  field: name
-                  reason: must not be empty
-                message: validation failed
-        '429':
-          description: Client error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-              example:
-                code: 400
-                details:
-                  field: name
-                  reason: must not be empty
-                message: validation failed
-        '500':
-          description: Server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-              example:
-                code: 400
-                details:
-                  field: name
-                  reason: must not be empty
-                message: validation failed
-      tags:
-        - Semantic Layer
-      x-cli-command: semantic metrics delete
-    get:
-      operationId: getSemanticMetric
-      summary: Get semantic metric
-      parameters:
-        - name: semantic_model_id
-          in: path
-          required: true
-          schema:
-            type: string
-          example: example
-        - name: metric_name
-          in: path
-          required: true
-          schema:
-            type: string
-          example: example
-      responses:
-        '200':
-          description: The request has succeeded.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SemanticMetric'
-              example:
-                certification_state: CERTIFIED
-                created_at: "2026-04-13T08:00:00Z"
-                created_by: alice@example.com
-                default_time_grain: month
-                description: Monthly recurring revenue for active subscriptions.
-                expression: subscription_mrr
-                expression_mode: SQL
-                filter_sql: subscription_status = 'ACTIVE'
-                format: currency_usd
-                id: metric_01hzymrr
-                label: MRR
-                metric_type: SUM
-                name: monthly_recurring_revenue
-                owner: team-analytics
-                relationship_names:
-                  - account_to_subscription
-                semantic_model_id: sem_01hzycust360
-                updated_at: "2026-04-13T08:00:00Z"
-        '400':
-          description: The server could not understand the request due to invalid syntax.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-              example:
-                code: 400
-                details:
-                  field: name
-                  reason: must not be empty
-                message: validation failed
-        '401':
-          description: Access is unauthorized.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-              example:
-                code: 400
-                details:
-                  field: name
-                  reason: must not be empty
-                message: validation failed
-        '403':
-          description: Access is forbidden.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-              example:
-                code: 400
-                details:
-                  field: name
-                  reason: must not be empty
-                message: validation failed
-        '404':
-          description: The server cannot find the requested resource.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-              example:
-                code: 400
-                details:
-                  field: name
-                  reason: must not be empty
-                message: validation failed
-        '429':
-          description: Client error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-              example:
-                code: 400
-                details:
-                  field: name
-                  reason: must not be empty
-                message: validation failed
-        '500':
-          description: Server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-              example:
-                code: 400
-                details:
-                  field: name
-                  reason: must not be empty
-                message: validation failed
-      tags:
-        - Semantic Layer
-    patch:
-      operationId: updateSemanticMetric
-      summary: Update semantic metric
-      parameters:
-        - name: semantic_model_id
-          in: path
-          required: true
-          schema:
-            type: string
-          example: example
-        - name: metric_name
-          in: path
-          required: true
-          schema:
-            type: string
-          example: example
-      responses:
-        '200':
-          description: The request has succeeded.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SemanticMetric'
-              example:
-                certification_state: CERTIFIED
-                created_at: "2026-04-13T08:00:00Z"
-                created_by: alice@example.com
-                default_time_grain: month
-                description: Monthly recurring revenue for active subscriptions.
-                expression: subscription_mrr
-                expression_mode: SQL
-                filter_sql: subscription_status = 'ACTIVE'
-                format: currency_usd
-                id: metric_01hzymrr
-                label: MRR
-                metric_type: SUM
-                name: monthly_recurring_revenue
-                owner: team-analytics
-                relationship_names:
-                  - account_to_subscription
-                semantic_model_id: sem_01hzycust360
-                updated_at: "2026-04-13T08:00:00Z"
-        '400':
-          description: The server could not understand the request due to invalid syntax.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-              example:
-                code: 400
-                details:
-                  field: name
-                  reason: must not be empty
-                message: validation failed
-        '401':
-          description: Access is unauthorized.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-              example:
-                code: 400
-                details:
-                  field: name
-                  reason: must not be empty
-                message: validation failed
-        '403':
-          description: Access is forbidden.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-              example:
-                code: 400
-                details:
-                  field: name
-                  reason: must not be empty
-                message: validation failed
-        '429':
-          description: Client error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-              example:
-                code: 400
-                details:
-                  field: name
-                  reason: must not be empty
-                message: validation failed
-        '500':
-          description: Server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-              example:
-                code: 400
-                details:
-                  field: name
-                  reason: must not be empty
-                message: validation failed
-      tags:
-        - Semantic Layer
-      requestBody:
-        required: true
-        description: Request payload
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/UpdateSemanticMetricRequest'
-            example:
-              certification_state: DRAFT
-              default_time_grain: example
-              description: example
-              expression: example
-              expression_mode: DSL
-              filter_sql: example
-              format: example
-              label: example
-              metric_type: SUM
-              owner: example
-              relationship_names:
-                - example
-      x-cli-command: semantic metrics update
-  /semantic-models/{semantic_model_id}/pre-aggregations:
-    get:
-      operationId: listSemanticPreAggregations
-      summary: List semantic pre aggregations
-      parameters:
-        - name: semantic_model_id
-          in: path
-          required: true
-          schema:
-            type: string
-          example: example
-      responses:
-        '200':
-          description: The request has succeeded.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SemanticPreAggregationList'
-              example:
-                data:
-                  - created_at: "2026-01-02T15:04:05Z"
-                    created_by: example
-                    dimension_set:
-                      - example
-                    grain: example
-                    id: example
-                    metric_set:
-                      - example
-                    name: example
-                    refresh_policy: example
-                    semantic_model_id: example
-                    target_relation: example
-                    updated_at: "2026-01-02T15:04:05Z"
-        '400':
-          description: The server could not understand the request due to invalid syntax.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-              example:
-                code: 400
-                details:
-                  field: name
-                  reason: must not be empty
-                message: validation failed
-        '401':
-          description: Access is unauthorized.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-              example:
-                code: 400
-                details:
-                  field: name
-                  reason: must not be empty
-                message: validation failed
-        '403':
-          description: Access is forbidden.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-              example:
-                code: 400
-                details:
-                  field: name
-                  reason: must not be empty
-                message: validation failed
-        '404':
-          description: The server cannot find the requested resource.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-              example:
-                code: 400
-                details:
-                  field: name
-                  reason: must not be empty
-                message: validation failed
-        '429':
-          description: Client error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-              example:
-                code: 400
-                details:
-                  field: name
-                  reason: must not be empty
-                message: validation failed
-        '500':
-          description: Server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-              example:
-                code: 400
-                details:
-                  field: name
-                  reason: must not be empty
-                message: validation failed
-      tags:
-        - Semantic Layer
-      x-cli-command: semantic pre-aggregations list
-    post:
-      operationId: createSemanticPreAggregation
-      summary: Create semantic pre aggregation
-      parameters:
-        - name: semantic_model_id
-          in: path
-          required: true
-          schema:
-            type: string
-          example: example
-      responses:
-        '201':
-          description: The request has succeeded and a new resource has been created as a result.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SemanticPreAggregation'
-              example:
-                created_at: "2026-01-02T15:04:05Z"
-                created_by: example
-                dimension_set:
-                  - example
-                grain: example
-                id: example
-                metric_set:
-                  - example
-                name: example
-                refresh_policy: example
-                semantic_model_id: example
-                target_relation: example
-                updated_at: "2026-01-02T15:04:05Z"
-        '400':
-          description: The server could not understand the request due to invalid syntax.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-              example:
-                code: 400
-                details:
-                  field: name
-                  reason: must not be empty
-                message: validation failed
-        '401':
-          description: Access is unauthorized.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-              example:
-                code: 400
-                details:
-                  field: name
-                  reason: must not be empty
-                message: validation failed
-        '403':
-          description: Access is forbidden.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-              example:
-                code: 400
-                details:
-                  field: name
-                  reason: must not be empty
-                message: validation failed
-        '429':
-          description: Client error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-              example:
-                code: 400
-                details:
-                  field: name
-                  reason: must not be empty
-                message: validation failed
-        '500':
-          description: Server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-              example:
-                code: 400
-                details:
-                  field: name
-                  reason: must not be empty
-                message: validation failed
-      tags:
-        - Semantic Layer
-      requestBody:
-        required: true
-        description: Request payload
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/CreateSemanticPreAggregationRequest'
-            example:
-              dimension_set:
-                - example
-              grain: example
-              metric_set:
-                - example
-              name: example
-              refresh_policy: example
-              target_relation: example
-      x-cli-command: semantic pre-aggregations create
-  /semantic-models/{semantic_model_id}/pre-aggregations/{pre_aggregation_name}:
-    delete:
-      operationId: deleteSemanticPreAggregation
-      summary: Delete semantic pre aggregation
-      parameters:
-        - name: semantic_model_id
-          in: path
-          required: true
-          schema:
-            type: string
-          example: example
-        - name: pre_aggregation_name
-          in: path
-          required: true
-          schema:
-            type: string
-          example: example
-      responses:
-        '204':
-          description: 'There is no content to send for this request, but the headers may be useful. '
-        '400':
-          description: The server could not understand the request due to invalid syntax.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-              example:
-                code: 400
-                details:
-                  field: name
-                  reason: must not be empty
-                message: validation failed
-        '401':
-          description: Access is unauthorized.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-              example:
-                code: 400
-                details:
-                  field: name
-                  reason: must not be empty
-                message: validation failed
-        '403':
-          description: Access is forbidden.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-              example:
-                code: 400
-                details:
-                  field: name
-                  reason: must not be empty
-                message: validation failed
-        '429':
-          description: Client error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-              example:
-                code: 400
-                details:
-                  field: name
-                  reason: must not be empty
-                message: validation failed
-        '500':
-          description: Server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-              example:
-                code: 400
-                details:
-                  field: name
-                  reason: must not be empty
-                message: validation failed
-      tags:
-        - Semantic Layer
-      x-cli-command: semantic pre-aggregations delete
-    get:
-      operationId: getSemanticPreAggregation
-      summary: Get semantic pre aggregation
-      parameters:
-        - name: semantic_model_id
-          in: path
-          required: true
-          schema:
-            type: string
-          example: example
-        - name: pre_aggregation_name
-          in: path
-          required: true
-          schema:
-            type: string
-          example: example
-      responses:
-        '200':
-          description: The request has succeeded.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SemanticPreAggregation'
-              example:
-                created_at: "2026-01-02T15:04:05Z"
-                created_by: example
-                dimension_set:
-                  - example
-                grain: example
-                id: example
-                metric_set:
-                  - example
-                name: example
-                refresh_policy: example
-                semantic_model_id: example
-                target_relation: example
-                updated_at: "2026-01-02T15:04:05Z"
-        '400':
-          description: The server could not understand the request due to invalid syntax.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-              example:
-                code: 400
-                details:
-                  field: name
-                  reason: must not be empty
-                message: validation failed
-        '401':
-          description: Access is unauthorized.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-              example:
-                code: 400
-                details:
-                  field: name
-                  reason: must not be empty
-                message: validation failed
-        '403':
-          description: Access is forbidden.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-              example:
-                code: 400
-                details:
-                  field: name
-                  reason: must not be empty
-                message: validation failed
-        '404':
-          description: The server cannot find the requested resource.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-              example:
-                code: 400
-                details:
-                  field: name
-                  reason: must not be empty
-                message: validation failed
-        '429':
-          description: Client error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-              example:
-                code: 400
-                details:
-                  field: name
-                  reason: must not be empty
-                message: validation failed
-        '500':
-          description: Server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-              example:
-                code: 400
-                details:
-                  field: name
-                  reason: must not be empty
-                message: validation failed
-      tags:
-        - Semantic Layer
-    patch:
-      operationId: updateSemanticPreAggregation
-      summary: Update semantic pre aggregation
-      parameters:
-        - name: semantic_model_id
-          in: path
-          required: true
-          schema:
-            type: string
-          example: example
-        - name: pre_aggregation_name
-          in: path
-          required: true
-          schema:
-            type: string
-          example: example
-      responses:
-        '200':
-          description: The request has succeeded.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SemanticPreAggregation'
-              example:
-                created_at: "2026-01-02T15:04:05Z"
-                created_by: example
-                dimension_set:
-                  - example
-                grain: example
-                id: example
-                metric_set:
-                  - example
-                name: example
-                refresh_policy: example
-                semantic_model_id: example
-                target_relation: example
-                updated_at: "2026-01-02T15:04:05Z"
-        '400':
-          description: The server could not understand the request due to invalid syntax.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-              example:
-                code: 400
-                details:
-                  field: name
-                  reason: must not be empty
-                message: validation failed
-        '401':
-          description: Access is unauthorized.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-              example:
-                code: 400
-                details:
-                  field: name
-                  reason: must not be empty
-                message: validation failed
-        '403':
-          description: Access is forbidden.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-              example:
-                code: 400
-                details:
-                  field: name
-                  reason: must not be empty
-                message: validation failed
-        '429':
-          description: Client error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-              example:
-                code: 400
-                details:
-                  field: name
-                  reason: must not be empty
-                message: validation failed
-        '500':
-          description: Server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-              example:
-                code: 400
-                details:
-                  field: name
-                  reason: must not be empty
-                message: validation failed
-      tags:
-        - Semantic Layer
-      requestBody:
-        required: true
-        description: Request payload
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/UpdateSemanticPreAggregationRequest'
-            example:
-              dimension_set:
-                - example
-              grain: example
-              metric_set:
-                - example
-              refresh_policy: example
-              target_relation: example
-      x-cli-command: semantic pre-aggregations update
-  /semantic-models/{semantic_model_id}/query-explanations:
-    post:
-      operationId: explainMetricQuery
-      summary: Explain metric query
-      parameters:
-        - name: semantic_model_id
-          in: path
-          required: true
-          schema:
-            type: string
-          example: example
-      responses:
-        '200':
-          description: The request has succeeded.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/MetricQueryExplainResponse'
-              example:
-                plan:
-                  base_model_name: example
-                  base_relation: example
-                  dimensions:
-                    - example
-                  freshness_basis:
-                    - example
-                  freshness_status: example
-                  generated_sql: example
-                  join_path:
-                    - from_model: example
-                      join_sql: example
-                      relationship_name: example
-                      relationship_type: example
-                      to_model: example
-                  metrics:
-                    - example
-                  selected_pre_aggregation: example
-                  time_grain: example
-        '400':
-          description: The server could not understand the request due to invalid syntax.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-              example:
-                code: 400
-                details:
-                  field: name
-                  reason: must not be empty
-                message: validation failed
-        '401':
-          description: Access is unauthorized.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-              example:
-                code: 400
-                details:
-                  field: name
-                  reason: must not be empty
-                message: validation failed
-        '403':
-          description: Access is forbidden.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-              example:
-                code: 400
-                details:
-                  field: name
-                  reason: must not be empty
-                message: validation failed
-        '429':
-          description: Client error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-              example:
-                code: 400
-                details:
-                  field: name
-                  reason: must not be empty
-                message: validation failed
-        '500':
-          description: Server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-              example:
-                code: 400
-                details:
-                  field: name
-                  reason: must not be empty
-                message: validation failed
-      tags:
-        - Semantic Layer
-      requestBody:
-        required: true
-        description: Request payload
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/MetricQueryRequest'
-            example:
-              dimensions:
-                - account_name
-                - plan_tier
-              filters:
-                - billing_month >= '2026-01-01'
-              limit: 25
-              metrics:
-                - monthly_recurring_revenue
-              order_by:
-                - monthly_recurring_revenue DESC
-              relationship_names:
-                - account_to_subscription
-              time_grain: month
-      x-cli-command: semantic explain
-  /semantic-models/{semantic_model_id}/query-runs:
-    post:
-      operationId: runMetricQuery
-      summary: Run metric query
-      parameters:
-        - name: semantic_model_id
-          in: path
-          required: true
-          schema:
-            type: string
-          example: example
-      responses:
-        '200':
-          description: The request has succeeded.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/MetricQueryRunResponse'
-              example:
-                plan:
-                  base_model_name: example
-                  base_relation: example
-                  dimensions:
-                    - example
-                  freshness_basis:
-                    - example
-                  freshness_status: example
-                  generated_sql: example
-                  join_path:
-                    - from_model: example
-                      join_sql: example
-                      relationship_name: example
-                      relationship_type: example
-                      to_model: example
-                  metrics:
-                    - example
-                  selected_pre_aggregation: example
-                  time_grain: example
-                result:
-                  columns:
-                    - name: order_id
-                      type: VARCHAR
-                    - name: total_amount
-                      type: DOUBLE
-                  next_page_token: ""
-                  row_count: 2
-                  rows:
-                    - order_id: ord_1001
-                      total_amount: 1250.75
-                    - order_id: ord_1002
-                      total_amount: 842.1
-        '400':
-          description: The server could not understand the request due to invalid syntax.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-              example:
-                code: 400
-                details:
-                  field: name
-                  reason: must not be empty
-                message: validation failed
-        '401':
-          description: Access is unauthorized.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-              example:
-                code: 400
-                details:
-                  field: name
-                  reason: must not be empty
-                message: validation failed
-        '403':
-          description: Access is forbidden.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-              example:
-                code: 400
-                details:
-                  field: name
-                  reason: must not be empty
-                message: validation failed
-        '429':
-          description: Client error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-              example:
-                code: 400
-                details:
-                  field: name
-                  reason: must not be empty
-                message: validation failed
-        '500':
-          description: Server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-              example:
-                code: 400
-                details:
-                  field: name
-                  reason: must not be empty
-                message: validation failed
-      tags:
-        - Semantic Layer
-      requestBody:
-        required: true
-        description: Request payload
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/MetricQueryRequest'
-            example:
-              dimensions:
-                - account_name
-                - plan_tier
-              filters:
-                - billing_month >= '2026-01-01'
-              limit: 25
-              metrics:
-                - monthly_recurring_revenue
-              order_by:
-                - monthly_recurring_revenue DESC
-              relationship_names:
-                - account_to_subscription
-              time_grain: month
-      x-cli-command: semantic run
-  /semantic-models/{semantic_model_id}/relationships:
-    get:
-      operationId: listSemanticModelRelationships
-      summary: List semantic relationships for a semantic model
-      parameters:
-        - name: semantic_model_id
-          in: path
-          required: true
-          schema:
-            type: string
-          example: example
-      responses:
-        '200':
-          description: The request has succeeded.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SemanticRelationshipList'
-              example:
-                data:
-                  - cost: 1
-                    created_at: "2026-01-02T15:04:05Z"
-                    created_by: example
-                    from_semantic_id: example
-                    id: example
-                    join_sql: example
-                    max_hops: 1
-                    name: example
-                    relationship_type: ONE_TO_ONE
-                    to_semantic_id: example
-                    updated_at: "2026-01-02T15:04:05Z"
-        '400':
-          description: The server could not understand the request due to invalid syntax.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-              example:
-                code: 400
-                details:
-                  field: name
-                  reason: must not be empty
-                message: validation failed
-        '401':
-          description: Access is unauthorized.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-              example:
-                code: 400
-                details:
-                  field: name
-                  reason: must not be empty
-                message: validation failed
-        '403':
-          description: Access is forbidden.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-              example:
-                code: 400
-                details:
-                  field: name
-                  reason: must not be empty
-                message: validation failed
-        '404':
-          description: The server cannot find the requested resource.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-              example:
-                code: 400
-                details:
-                  field: name
-                  reason: must not be empty
-                message: validation failed
-        '429':
-          description: Client error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-              example:
-                code: 400
-                details:
-                  field: name
-                  reason: must not be empty
-                message: validation failed
-        '500':
-          description: Server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-              example:
-                code: 400
-                details:
-                  field: name
-                  reason: must not be empty
-                message: validation failed
-      tags:
-        - Semantic Layer
-      x-cli-command: semantic semantic-relationships list
-    post:
-      operationId: createSemanticModelRelationship
-      summary: Create semantic relationship for a semantic model
-      parameters:
-        - name: semantic_model_id
-          in: path
-          required: true
-          schema:
-            type: string
-          example: example
-      responses:
-        '201':
-          description: The request has succeeded and a new resource has been created as a result.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SemanticRelationship'
-              example:
-                cost: 1
-                created_at: "2026-01-02T15:04:05Z"
-                created_by: example
-                from_semantic_id: example
-                id: example
-                join_sql: example
-                max_hops: 1
-                name: example
-                relationship_type: ONE_TO_ONE
-                to_semantic_id: example
-                updated_at: "2026-01-02T15:04:05Z"
-        '400':
-          description: The server could not understand the request due to invalid syntax.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-              example:
-                code: 400
-                details:
-                  field: name
-                  reason: must not be empty
-                message: validation failed
-        '401':
-          description: Access is unauthorized.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-              example:
-                code: 400
-                details:
-                  field: name
-                  reason: must not be empty
-                message: validation failed
-        '403':
-          description: Access is forbidden.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-              example:
-                code: 400
-                details:
-                  field: name
-                  reason: must not be empty
-                message: validation failed
-        '429':
-          description: Client error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-              example:
-                code: 400
-                details:
-                  field: name
-                  reason: must not be empty
-                message: validation failed
-        '500':
-          description: Server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-              example:
-                code: 400
-                details:
-                  field: name
-                  reason: must not be empty
-                message: validation failed
-      tags:
-        - Semantic Layer
-      requestBody:
-        required: true
-        description: Request payload
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/CreateSemanticRelationshipRequest'
-            example:
-              cost: 1
-              from_semantic_id: example
-              join_sql: example
-              max_hops: 1
-              name: example
-              relationship_type: ONE_TO_ONE
-              to_semantic_id: example
-      x-cli-command: semantic semantic-relationships create
-  /semantic-models/{semantic_model_id}/relationships/{relationship_name}:
-    delete:
-      operationId: deleteSemanticModelRelationship
-      summary: Delete semantic relationship for a semantic model
-      parameters:
-        - name: semantic_model_id
-          in: path
-          required: true
-          schema:
-            type: string
-          example: example
-        - name: relationship_name
-          in: path
-          required: true
-          schema:
-            type: string
-          example: example
-      responses:
-        '204':
-          description: 'There is no content to send for this request, but the headers may be useful. '
-        '400':
-          description: The server could not understand the request due to invalid syntax.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-              example:
-                code: 400
-                details:
-                  field: name
-                  reason: must not be empty
-                message: validation failed
-        '401':
-          description: Access is unauthorized.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-              example:
-                code: 400
-                details:
-                  field: name
-                  reason: must not be empty
-                message: validation failed
-        '403':
-          description: Access is forbidden.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-              example:
-                code: 400
-                details:
-                  field: name
-                  reason: must not be empty
-                message: validation failed
-        '429':
-          description: Client error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-              example:
-                code: 400
-                details:
-                  field: name
-                  reason: must not be empty
-                message: validation failed
-        '500':
-          description: Server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-              example:
-                code: 400
-                details:
-                  field: name
-                  reason: must not be empty
-                message: validation failed
-      tags:
-        - Semantic Layer
-      x-cli-command: semantic semantic-relationships delete
-    get:
-      operationId: getSemanticModelRelationship
-      summary: Get semantic relationship for a semantic model
-      parameters:
-        - name: semantic_model_id
-          in: path
-          required: true
-          schema:
-            type: string
-          example: example
-        - name: relationship_name
-          in: path
-          required: true
-          schema:
-            type: string
-          example: example
-      responses:
-        '200':
-          description: The request has succeeded.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SemanticRelationship'
-              example:
-                cost: 1
-                created_at: "2026-01-02T15:04:05Z"
-                created_by: example
-                from_semantic_id: example
-                id: example
-                join_sql: example
-                max_hops: 1
-                name: example
-                relationship_type: ONE_TO_ONE
-                to_semantic_id: example
-                updated_at: "2026-01-02T15:04:05Z"
-        '400':
-          description: The server could not understand the request due to invalid syntax.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-              example:
-                code: 400
-                details:
-                  field: name
-                  reason: must not be empty
-                message: validation failed
-        '401':
-          description: Access is unauthorized.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-              example:
-                code: 400
-                details:
-                  field: name
-                  reason: must not be empty
-                message: validation failed
-        '403':
-          description: Access is forbidden.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-              example:
-                code: 400
-                details:
-                  field: name
-                  reason: must not be empty
-                message: validation failed
-        '404':
-          description: The server cannot find the requested resource.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-              example:
-                code: 400
-                details:
-                  field: name
-                  reason: must not be empty
-                message: validation failed
-        '429':
-          description: Client error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-              example:
-                code: 400
-                details:
-                  field: name
-                  reason: must not be empty
-                message: validation failed
-        '500':
-          description: Server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-              example:
-                code: 400
-                details:
-                  field: name
-                  reason: must not be empty
-                message: validation failed
-      tags:
-        - Semantic Layer
-    patch:
-      operationId: updateSemanticModelRelationship
-      summary: Update semantic relationship for a semantic model
-      parameters:
-        - name: semantic_model_id
-          in: path
-          required: true
-          schema:
-            type: string
-          example: example
-        - name: relationship_name
-          in: path
-          required: true
-          schema:
-            type: string
-          example: example
-      responses:
-        '200':
-          description: The request has succeeded.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SemanticRelationship'
-              example:
-                cost: 1
-                created_at: "2026-01-02T15:04:05Z"
-                created_by: example
-                from_semantic_id: example
-                id: example
-                join_sql: example
-                max_hops: 1
-                name: example
-                relationship_type: ONE_TO_ONE
-                to_semantic_id: example
-                updated_at: "2026-01-02T15:04:05Z"
-        '400':
-          description: The server could not understand the request due to invalid syntax.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-              example:
-                code: 400
-                details:
-                  field: name
-                  reason: must not be empty
-                message: validation failed
-        '401':
-          description: Access is unauthorized.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-              example:
-                code: 400
-                details:
-                  field: name
-                  reason: must not be empty
-                message: validation failed
-        '403':
-          description: Access is forbidden.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-              example:
-                code: 400
-                details:
-                  field: name
-                  reason: must not be empty
-                message: validation failed
-        '429':
-          description: Client error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-              example:
-                code: 400
-                details:
-                  field: name
-                  reason: must not be empty
-                message: validation failed
-        '500':
-          description: Server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-              example:
-                code: 400
-                details:
-                  field: name
-                  reason: must not be empty
-                message: validation failed
-      tags:
-        - Semantic Layer
-      requestBody:
-        required: true
-        description: Request payload
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/UpdateSemanticRelationshipRequest'
-            example:
-              cost: 1
-              join_sql: example
-              max_hops: 1
-              relationship_type: ONE_TO_ONE
-      x-cli-command: semantic semantic-relationships update
   /semantic-sources/{source_schema}/{source_table}/freshness:
     get:
       operationId: checkSourceFreshness
@@ -36428,6 +34089,2481 @@ paths:
               kind: personal
               name: example
               product_id: example
+  /workspaces/{workspace_id}/semantic-models:
+    get:
+      operationId: listSemanticModels
+      summary: List semantic models
+      parameters:
+        - name: workspace_id
+          in: path
+          required: true
+          schema:
+            type: string
+          example: example
+        - name: max_results
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+          example: 1
+          explode: false
+        - name: page_token
+          in: query
+          required: false
+          schema:
+            type: string
+          example: example
+          explode: false
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedSemanticModels'
+              example:
+                data:
+                  - base_relation_ref: revenue.fct_customer_360
+                    created_at: "2026-04-13T08:00:00Z"
+                    created_by: alice@example.com
+                    default_time_dimension: snapshot_date
+                    description: Semantic model for customer lifecycle and commercial performance.
+                    id: sem_01hzycust360
+                    name: customer_360
+                    owner: team-analytics
+                    tags:
+                      - growth
+                      - finance
+                    updated_at: "2026-04-13T08:00:00Z"
+                    workspace_id: ws_01hzworkspace
+                next_page_token: example
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+      tags:
+        - Semantic Layer
+      x-cli-command: semantic semantic-models list
+    post:
+      operationId: createSemanticModel
+      summary: Create semantic model
+      parameters:
+        - name: workspace_id
+          in: path
+          required: true
+          schema:
+            type: string
+          example: example
+      responses:
+        '201':
+          description: The request has succeeded and a new resource has been created as a result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SemanticModel'
+              example:
+                base_relation_ref: revenue.fct_customer_360
+                created_at: "2026-04-13T08:00:00Z"
+                created_by: alice@example.com
+                default_time_dimension: snapshot_date
+                description: Semantic model for customer lifecycle and commercial performance.
+                id: sem_01hzycust360
+                name: customer_360
+                owner: team-analytics
+                tags:
+                  - growth
+                  - finance
+                updated_at: "2026-04-13T08:00:00Z"
+                workspace_id: ws_01hzworkspace
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+      tags:
+        - Semantic Layer
+      requestBody:
+        required: true
+        description: Request payload
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateSemanticModelRequest'
+            example:
+              base_relation_ref: revenue.fct_customer_360
+              default_time_dimension: snapshot_date
+              description: Semantic model for customer lifecycle and commercial performance.
+              name: customer_360
+              tags:
+                - growth
+                - finance
+      x-cli-command: semantic semantic-models create
+  /workspaces/{workspace_id}/semantic-models/{semantic_model_id}:
+    delete:
+      operationId: deleteSemanticModel
+      summary: Delete semantic model
+      parameters:
+        - name: workspace_id
+          in: path
+          required: true
+          schema:
+            type: string
+          example: example
+        - name: semantic_model_id
+          in: path
+          required: true
+          schema:
+            type: string
+          example: example
+      responses:
+        '204':
+          description: 'There is no content to send for this request, but the headers may be useful. '
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+      tags:
+        - Semantic Layer
+      x-cli-command: semantic semantic-models delete
+    get:
+      operationId: getSemanticModel
+      summary: Get semantic model
+      parameters:
+        - name: workspace_id
+          in: path
+          required: true
+          schema:
+            type: string
+          example: example
+        - name: semantic_model_id
+          in: path
+          required: true
+          schema:
+            type: string
+          example: example
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SemanticModel'
+              example:
+                base_relation_ref: revenue.fct_customer_360
+                created_at: "2026-04-13T08:00:00Z"
+                created_by: alice@example.com
+                default_time_dimension: snapshot_date
+                description: Semantic model for customer lifecycle and commercial performance.
+                id: sem_01hzycust360
+                name: customer_360
+                owner: team-analytics
+                tags:
+                  - growth
+                  - finance
+                updated_at: "2026-04-13T08:00:00Z"
+                workspace_id: ws_01hzworkspace
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '404':
+          description: The server cannot find the requested resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+      tags:
+        - Semantic Layer
+      x-cli-command: semantic semantic-models get
+    patch:
+      operationId: updateSemanticModel
+      summary: Update semantic model
+      parameters:
+        - name: workspace_id
+          in: path
+          required: true
+          schema:
+            type: string
+          example: example
+        - name: semantic_model_id
+          in: path
+          required: true
+          schema:
+            type: string
+          example: example
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SemanticModel'
+              example:
+                base_relation_ref: revenue.fct_customer_360
+                created_at: "2026-04-13T08:00:00Z"
+                created_by: alice@example.com
+                default_time_dimension: snapshot_date
+                description: Semantic model for customer lifecycle and commercial performance.
+                id: sem_01hzycust360
+                name: customer_360
+                owner: team-analytics
+                tags:
+                  - growth
+                  - finance
+                updated_at: "2026-04-13T08:00:00Z"
+                workspace_id: ws_01hzworkspace
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+      tags:
+        - Semantic Layer
+      requestBody:
+        required: true
+        description: Request payload
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateSemanticModelRequest'
+            example:
+              base_relation_ref: example
+              default_time_dimension: example
+              description: example
+              owner: example
+              tags:
+                - example
+      x-cli-command: semantic semantic-models update
+  /workspaces/{workspace_id}/semantic-models/{semantic_model_id}/metrics:
+    get:
+      operationId: listSemanticMetrics
+      summary: List semantic metrics
+      parameters:
+        - name: workspace_id
+          in: path
+          required: true
+          schema:
+            type: string
+          example: example
+        - name: semantic_model_id
+          in: path
+          required: true
+          schema:
+            type: string
+          example: example
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SemanticMetricList'
+              example:
+                data:
+                  - certification_state: CERTIFIED
+                    created_at: "2026-04-13T08:00:00Z"
+                    created_by: alice@example.com
+                    default_time_grain: month
+                    description: Monthly recurring revenue for active subscriptions.
+                    expression: subscription_mrr
+                    expression_mode: SQL
+                    filter_sql: subscription_status = 'ACTIVE'
+                    format: currency_usd
+                    id: metric_01hzymrr
+                    label: MRR
+                    metric_type: SUM
+                    name: monthly_recurring_revenue
+                    owner: team-analytics
+                    relationship_names:
+                      - account_to_subscription
+                    semantic_model_id: sem_01hzycust360
+                    updated_at: "2026-04-13T08:00:00Z"
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '404':
+          description: The server cannot find the requested resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+      tags:
+        - Semantic Layer
+      x-cli-command: semantic metrics list
+    post:
+      operationId: createSemanticMetric
+      summary: Create semantic metric
+      parameters:
+        - name: workspace_id
+          in: path
+          required: true
+          schema:
+            type: string
+          example: example
+        - name: semantic_model_id
+          in: path
+          required: true
+          schema:
+            type: string
+          example: example
+      responses:
+        '201':
+          description: The request has succeeded and a new resource has been created as a result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SemanticMetric'
+              example:
+                certification_state: CERTIFIED
+                created_at: "2026-04-13T08:00:00Z"
+                created_by: alice@example.com
+                default_time_grain: month
+                description: Monthly recurring revenue for active subscriptions.
+                expression: subscription_mrr
+                expression_mode: SQL
+                filter_sql: subscription_status = 'ACTIVE'
+                format: currency_usd
+                id: metric_01hzymrr
+                label: MRR
+                metric_type: SUM
+                name: monthly_recurring_revenue
+                owner: team-analytics
+                relationship_names:
+                  - account_to_subscription
+                semantic_model_id: sem_01hzycust360
+                updated_at: "2026-04-13T08:00:00Z"
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+      tags:
+        - Semantic Layer
+      requestBody:
+        required: true
+        description: Request payload
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateSemanticMetricRequest'
+            example:
+              certification_state: CERTIFIED
+              default_time_grain: month
+              description: Monthly recurring revenue for active subscriptions.
+              expression: subscription_mrr
+              expression_mode: SQL
+              filter_sql: subscription_status = 'ACTIVE'
+              format: currency_usd
+              label: MRR
+              metric_type: SUM
+              name: monthly_recurring_revenue
+              relationship_names:
+                - account_to_subscription
+      x-cli-command: semantic metrics create
+  /workspaces/{workspace_id}/semantic-models/{semantic_model_id}/metrics/{metric_name}:
+    delete:
+      operationId: deleteSemanticMetric
+      summary: Delete semantic metric
+      parameters:
+        - name: workspace_id
+          in: path
+          required: true
+          schema:
+            type: string
+          example: example
+        - name: semantic_model_id
+          in: path
+          required: true
+          schema:
+            type: string
+          example: example
+        - name: metric_name
+          in: path
+          required: true
+          schema:
+            type: string
+          example: example
+      responses:
+        '204':
+          description: 'There is no content to send for this request, but the headers may be useful. '
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+      tags:
+        - Semantic Layer
+      x-cli-command: semantic metrics delete
+    get:
+      operationId: getSemanticMetric
+      summary: Get semantic metric
+      parameters:
+        - name: workspace_id
+          in: path
+          required: true
+          schema:
+            type: string
+          example: example
+        - name: semantic_model_id
+          in: path
+          required: true
+          schema:
+            type: string
+          example: example
+        - name: metric_name
+          in: path
+          required: true
+          schema:
+            type: string
+          example: example
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SemanticMetric'
+              example:
+                certification_state: CERTIFIED
+                created_at: "2026-04-13T08:00:00Z"
+                created_by: alice@example.com
+                default_time_grain: month
+                description: Monthly recurring revenue for active subscriptions.
+                expression: subscription_mrr
+                expression_mode: SQL
+                filter_sql: subscription_status = 'ACTIVE'
+                format: currency_usd
+                id: metric_01hzymrr
+                label: MRR
+                metric_type: SUM
+                name: monthly_recurring_revenue
+                owner: team-analytics
+                relationship_names:
+                  - account_to_subscription
+                semantic_model_id: sem_01hzycust360
+                updated_at: "2026-04-13T08:00:00Z"
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '404':
+          description: The server cannot find the requested resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+      tags:
+        - Semantic Layer
+    patch:
+      operationId: updateSemanticMetric
+      summary: Update semantic metric
+      parameters:
+        - name: workspace_id
+          in: path
+          required: true
+          schema:
+            type: string
+          example: example
+        - name: semantic_model_id
+          in: path
+          required: true
+          schema:
+            type: string
+          example: example
+        - name: metric_name
+          in: path
+          required: true
+          schema:
+            type: string
+          example: example
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SemanticMetric'
+              example:
+                certification_state: CERTIFIED
+                created_at: "2026-04-13T08:00:00Z"
+                created_by: alice@example.com
+                default_time_grain: month
+                description: Monthly recurring revenue for active subscriptions.
+                expression: subscription_mrr
+                expression_mode: SQL
+                filter_sql: subscription_status = 'ACTIVE'
+                format: currency_usd
+                id: metric_01hzymrr
+                label: MRR
+                metric_type: SUM
+                name: monthly_recurring_revenue
+                owner: team-analytics
+                relationship_names:
+                  - account_to_subscription
+                semantic_model_id: sem_01hzycust360
+                updated_at: "2026-04-13T08:00:00Z"
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+      tags:
+        - Semantic Layer
+      requestBody:
+        required: true
+        description: Request payload
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateSemanticMetricRequest'
+            example:
+              certification_state: DRAFT
+              default_time_grain: example
+              description: example
+              expression: example
+              expression_mode: DSL
+              filter_sql: example
+              format: example
+              label: example
+              metric_type: SUM
+              owner: example
+              relationship_names:
+                - example
+      x-cli-command: semantic metrics update
+  /workspaces/{workspace_id}/semantic-models/{semantic_model_id}/pre-aggregations:
+    get:
+      operationId: listSemanticPreAggregations
+      summary: List semantic pre aggregations
+      parameters:
+        - name: workspace_id
+          in: path
+          required: true
+          schema:
+            type: string
+          example: example
+        - name: semantic_model_id
+          in: path
+          required: true
+          schema:
+            type: string
+          example: example
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SemanticPreAggregationList'
+              example:
+                data:
+                  - created_at: "2026-01-02T15:04:05Z"
+                    created_by: example
+                    dimension_set:
+                      - example
+                    grain: example
+                    id: example
+                    metric_set:
+                      - example
+                    name: example
+                    refresh_policy: example
+                    semantic_model_id: example
+                    target_relation: example
+                    updated_at: "2026-01-02T15:04:05Z"
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '404':
+          description: The server cannot find the requested resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+      tags:
+        - Semantic Layer
+      x-cli-command: semantic pre-aggregations list
+    post:
+      operationId: createSemanticPreAggregation
+      summary: Create semantic pre aggregation
+      parameters:
+        - name: workspace_id
+          in: path
+          required: true
+          schema:
+            type: string
+          example: example
+        - name: semantic_model_id
+          in: path
+          required: true
+          schema:
+            type: string
+          example: example
+      responses:
+        '201':
+          description: The request has succeeded and a new resource has been created as a result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SemanticPreAggregation'
+              example:
+                created_at: "2026-01-02T15:04:05Z"
+                created_by: example
+                dimension_set:
+                  - example
+                grain: example
+                id: example
+                metric_set:
+                  - example
+                name: example
+                refresh_policy: example
+                semantic_model_id: example
+                target_relation: example
+                updated_at: "2026-01-02T15:04:05Z"
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+      tags:
+        - Semantic Layer
+      requestBody:
+        required: true
+        description: Request payload
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateSemanticPreAggregationRequest'
+            example:
+              dimension_set:
+                - example
+              grain: example
+              metric_set:
+                - example
+              name: example
+              refresh_policy: example
+              target_relation: example
+      x-cli-command: semantic pre-aggregations create
+  /workspaces/{workspace_id}/semantic-models/{semantic_model_id}/pre-aggregations/{pre_aggregation_name}:
+    delete:
+      operationId: deleteSemanticPreAggregation
+      summary: Delete semantic pre aggregation
+      parameters:
+        - name: workspace_id
+          in: path
+          required: true
+          schema:
+            type: string
+          example: example
+        - name: semantic_model_id
+          in: path
+          required: true
+          schema:
+            type: string
+          example: example
+        - name: pre_aggregation_name
+          in: path
+          required: true
+          schema:
+            type: string
+          example: example
+      responses:
+        '204':
+          description: 'There is no content to send for this request, but the headers may be useful. '
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+      tags:
+        - Semantic Layer
+      x-cli-command: semantic pre-aggregations delete
+    get:
+      operationId: getSemanticPreAggregation
+      summary: Get semantic pre aggregation
+      parameters:
+        - name: workspace_id
+          in: path
+          required: true
+          schema:
+            type: string
+          example: example
+        - name: semantic_model_id
+          in: path
+          required: true
+          schema:
+            type: string
+          example: example
+        - name: pre_aggregation_name
+          in: path
+          required: true
+          schema:
+            type: string
+          example: example
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SemanticPreAggregation'
+              example:
+                created_at: "2026-01-02T15:04:05Z"
+                created_by: example
+                dimension_set:
+                  - example
+                grain: example
+                id: example
+                metric_set:
+                  - example
+                name: example
+                refresh_policy: example
+                semantic_model_id: example
+                target_relation: example
+                updated_at: "2026-01-02T15:04:05Z"
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '404':
+          description: The server cannot find the requested resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+      tags:
+        - Semantic Layer
+    patch:
+      operationId: updateSemanticPreAggregation
+      summary: Update semantic pre aggregation
+      parameters:
+        - name: workspace_id
+          in: path
+          required: true
+          schema:
+            type: string
+          example: example
+        - name: semantic_model_id
+          in: path
+          required: true
+          schema:
+            type: string
+          example: example
+        - name: pre_aggregation_name
+          in: path
+          required: true
+          schema:
+            type: string
+          example: example
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SemanticPreAggregation'
+              example:
+                created_at: "2026-01-02T15:04:05Z"
+                created_by: example
+                dimension_set:
+                  - example
+                grain: example
+                id: example
+                metric_set:
+                  - example
+                name: example
+                refresh_policy: example
+                semantic_model_id: example
+                target_relation: example
+                updated_at: "2026-01-02T15:04:05Z"
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+      tags:
+        - Semantic Layer
+      requestBody:
+        required: true
+        description: Request payload
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateSemanticPreAggregationRequest'
+            example:
+              dimension_set:
+                - example
+              grain: example
+              metric_set:
+                - example
+              refresh_policy: example
+              target_relation: example
+      x-cli-command: semantic pre-aggregations update
+  /workspaces/{workspace_id}/semantic-models/{semantic_model_id}/query-explanations:
+    post:
+      operationId: explainMetricQuery
+      summary: Explain metric query
+      parameters:
+        - name: workspace_id
+          in: path
+          required: true
+          schema:
+            type: string
+          example: example
+        - name: semantic_model_id
+          in: path
+          required: true
+          schema:
+            type: string
+          example: example
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MetricQueryExplainResponse'
+              example:
+                plan:
+                  base_model_name: example
+                  base_relation: example
+                  dimensions:
+                    - example
+                  freshness_basis:
+                    - example
+                  freshness_status: example
+                  generated_sql: example
+                  join_path:
+                    - from_model: example
+                      join_sql: example
+                      relationship_name: example
+                      relationship_type: example
+                      to_model: example
+                  metrics:
+                    - example
+                  selected_pre_aggregation: example
+                  time_grain: example
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+      tags:
+        - Semantic Layer
+      requestBody:
+        required: true
+        description: Request payload
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MetricQueryRequest'
+            example:
+              dimensions:
+                - account_name
+                - plan_tier
+              filters:
+                - billing_month >= '2026-01-01'
+              limit: 25
+              metrics:
+                - monthly_recurring_revenue
+              order_by:
+                - monthly_recurring_revenue DESC
+              relationship_names:
+                - account_to_subscription
+              time_grain: month
+      x-cli-command: semantic explain
+  /workspaces/{workspace_id}/semantic-models/{semantic_model_id}/query-runs:
+    post:
+      operationId: runMetricQuery
+      summary: Run metric query
+      parameters:
+        - name: workspace_id
+          in: path
+          required: true
+          schema:
+            type: string
+          example: example
+        - name: semantic_model_id
+          in: path
+          required: true
+          schema:
+            type: string
+          example: example
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MetricQueryRunResponse'
+              example:
+                plan:
+                  base_model_name: example
+                  base_relation: example
+                  dimensions:
+                    - example
+                  freshness_basis:
+                    - example
+                  freshness_status: example
+                  generated_sql: example
+                  join_path:
+                    - from_model: example
+                      join_sql: example
+                      relationship_name: example
+                      relationship_type: example
+                      to_model: example
+                  metrics:
+                    - example
+                  selected_pre_aggregation: example
+                  time_grain: example
+                result:
+                  columns:
+                    - name: order_id
+                      type: VARCHAR
+                    - name: total_amount
+                      type: DOUBLE
+                  next_page_token: ""
+                  row_count: 2
+                  rows:
+                    - order_id: ord_1001
+                      total_amount: 1250.75
+                    - order_id: ord_1002
+                      total_amount: 842.1
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+      tags:
+        - Semantic Layer
+      requestBody:
+        required: true
+        description: Request payload
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MetricQueryRequest'
+            example:
+              dimensions:
+                - account_name
+                - plan_tier
+              filters:
+                - billing_month >= '2026-01-01'
+              limit: 25
+              metrics:
+                - monthly_recurring_revenue
+              order_by:
+                - monthly_recurring_revenue DESC
+              relationship_names:
+                - account_to_subscription
+              time_grain: month
+      x-cli-command: semantic run
+  /workspaces/{workspace_id}/semantic-models/{semantic_model_id}/relationships:
+    get:
+      operationId: listSemanticModelRelationships
+      summary: List semantic relationships for a semantic model
+      parameters:
+        - name: workspace_id
+          in: path
+          required: true
+          schema:
+            type: string
+          example: example
+        - name: semantic_model_id
+          in: path
+          required: true
+          schema:
+            type: string
+          example: example
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SemanticRelationshipList'
+              example:
+                data:
+                  - cost: 1
+                    created_at: "2026-01-02T15:04:05Z"
+                    created_by: example
+                    from_semantic_id: example
+                    id: example
+                    join_sql: example
+                    max_hops: 1
+                    name: example
+                    relationship_type: ONE_TO_ONE
+                    to_semantic_id: example
+                    updated_at: "2026-01-02T15:04:05Z"
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '404':
+          description: The server cannot find the requested resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+      tags:
+        - Semantic Layer
+      x-cli-command: semantic semantic-relationships list
+    post:
+      operationId: createSemanticModelRelationship
+      summary: Create semantic relationship for a semantic model
+      parameters:
+        - name: workspace_id
+          in: path
+          required: true
+          schema:
+            type: string
+          example: example
+        - name: semantic_model_id
+          in: path
+          required: true
+          schema:
+            type: string
+          example: example
+      responses:
+        '201':
+          description: The request has succeeded and a new resource has been created as a result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SemanticRelationship'
+              example:
+                cost: 1
+                created_at: "2026-01-02T15:04:05Z"
+                created_by: example
+                from_semantic_id: example
+                id: example
+                join_sql: example
+                max_hops: 1
+                name: example
+                relationship_type: ONE_TO_ONE
+                to_semantic_id: example
+                updated_at: "2026-01-02T15:04:05Z"
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+      tags:
+        - Semantic Layer
+      requestBody:
+        required: true
+        description: Request payload
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateSemanticRelationshipRequest'
+            example:
+              cost: 1
+              from_semantic_id: example
+              join_sql: example
+              max_hops: 1
+              name: example
+              relationship_type: ONE_TO_ONE
+              to_semantic_id: example
+      x-cli-command: semantic semantic-relationships create
+  /workspaces/{workspace_id}/semantic-models/{semantic_model_id}/relationships/{relationship_name}:
+    delete:
+      operationId: deleteSemanticModelRelationship
+      summary: Delete semantic relationship for a semantic model
+      parameters:
+        - name: workspace_id
+          in: path
+          required: true
+          schema:
+            type: string
+          example: example
+        - name: semantic_model_id
+          in: path
+          required: true
+          schema:
+            type: string
+          example: example
+        - name: relationship_name
+          in: path
+          required: true
+          schema:
+            type: string
+          example: example
+      responses:
+        '204':
+          description: 'There is no content to send for this request, but the headers may be useful. '
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+      tags:
+        - Semantic Layer
+      x-cli-command: semantic semantic-relationships delete
+    get:
+      operationId: getSemanticModelRelationship
+      summary: Get semantic relationship for a semantic model
+      parameters:
+        - name: workspace_id
+          in: path
+          required: true
+          schema:
+            type: string
+          example: example
+        - name: semantic_model_id
+          in: path
+          required: true
+          schema:
+            type: string
+          example: example
+        - name: relationship_name
+          in: path
+          required: true
+          schema:
+            type: string
+          example: example
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SemanticRelationship'
+              example:
+                cost: 1
+                created_at: "2026-01-02T15:04:05Z"
+                created_by: example
+                from_semantic_id: example
+                id: example
+                join_sql: example
+                max_hops: 1
+                name: example
+                relationship_type: ONE_TO_ONE
+                to_semantic_id: example
+                updated_at: "2026-01-02T15:04:05Z"
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '404':
+          description: The server cannot find the requested resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+      tags:
+        - Semantic Layer
+    patch:
+      operationId: updateSemanticModelRelationship
+      summary: Update semantic relationship for a semantic model
+      parameters:
+        - name: workspace_id
+          in: path
+          required: true
+          schema:
+            type: string
+          example: example
+        - name: semantic_model_id
+          in: path
+          required: true
+          schema:
+            type: string
+          example: example
+        - name: relationship_name
+          in: path
+          required: true
+          schema:
+            type: string
+          example: example
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SemanticRelationship'
+              example:
+                cost: 1
+                created_at: "2026-01-02T15:04:05Z"
+                created_by: example
+                from_semantic_id: example
+                id: example
+                join_sql: example
+                max_hops: 1
+                name: example
+                relationship_type: ONE_TO_ONE
+                to_semantic_id: example
+                updated_at: "2026-01-02T15:04:05Z"
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+      tags:
+        - Semantic Layer
+      requestBody:
+        required: true
+        description: Request payload
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateSemanticRelationshipRequest'
+            example:
+              cost: 1
+              join_sql: example
+              max_hops: 1
+              relationship_type: ONE_TO_ONE
+      x-cli-command: semantic semantic-relationships update
 security:
   - BearerAuth: []
   - ApiKeyAuth: []
@@ -39899,7 +40035,7 @@ components:
       type: object
       required:
         - name
-        - base_model_ref
+        - base_relation_ref
       properties:
         name:
           type: string
@@ -39907,7 +40043,7 @@ components:
         description:
           type: string
           example: example
-        base_model_ref:
+        base_relation_ref:
           type: string
           example: example
         default_time_dimension:
@@ -39920,7 +40056,7 @@ components:
           example:
             - example
       example:
-        base_model_ref: revenue.fct_customer_360
+        base_relation_ref: revenue.fct_customer_360
         default_time_dimension: snapshot_date
         description: Semantic model for customer lifecycle and commercial performance.
         name: customer_360
@@ -46362,7 +46498,7 @@ components:
           items:
             $ref: '#/components/schemas/SemanticModel'
           example:
-            - base_model_ref: revenue.fct_customer_360
+            - base_relation_ref: revenue.fct_customer_360
               created_at: "2026-04-13T08:00:00Z"
               created_by: alice@example.com
               default_time_dimension: snapshot_date
@@ -46374,12 +46510,13 @@ components:
                 - growth
                 - finance
               updated_at: "2026-04-13T08:00:00Z"
+              workspace_id: ws_01hzworkspace
         next_page_token:
           type: string
           example: example
       example:
         data:
-          - base_model_ref: revenue.fct_customer_360
+          - base_relation_ref: revenue.fct_customer_360
             created_at: "2026-04-13T08:00:00Z"
             created_by: alice@example.com
             default_time_dimension: snapshot_date
@@ -46391,6 +46528,7 @@ components:
               - growth
               - finance
             updated_at: "2026-04-13T08:00:00Z"
+            workspace_id: ws_01hzworkspace
         next_page_token: example
     PaginatedStorageCredentials:
       type: object
@@ -48897,6 +49035,9 @@ components:
         id:
           type: string
           example: example
+        workspace_id:
+          type: string
+          example: example
         name:
           type: string
           example: example
@@ -48906,7 +49047,7 @@ components:
         owner:
           type: string
           example: example
-        base_model_ref:
+        base_relation_ref:
           type: string
           example: example
         default_time_dimension:
@@ -48930,7 +49071,7 @@ components:
           format: date-time
           example: "2026-01-02T15:04:05Z"
       example:
-        base_model_ref: revenue.fct_customer_360
+        base_relation_ref: revenue.fct_customer_360
         created_at: "2026-04-13T08:00:00Z"
         created_by: alice@example.com
         default_time_dimension: snapshot_date
@@ -48942,6 +49083,7 @@ components:
           - growth
           - finance
         updated_at: "2026-04-13T08:00:00Z"
+        workspace_id: ws_01hzworkspace
     SemanticPreAggregation:
       type: object
       properties:
@@ -50282,7 +50424,7 @@ components:
         owner:
           type: string
           example: example
-        base_model_ref:
+        base_relation_ref:
           type: string
           example: example
         default_time_dimension:
@@ -50295,7 +50437,7 @@ components:
           example:
             - example
       example:
-        base_model_ref: example
+        base_relation_ref: example
         default_time_dimension: example
         description: example
         owner: example

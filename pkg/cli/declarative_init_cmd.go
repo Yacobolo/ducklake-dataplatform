@@ -398,9 +398,14 @@ platform: projects: %q: {
 			  42 AS metric_value
 			"""
 	}
+}
+`, opts.name, modelName),
+		filepath.Join("workspaces", opts.workspace, "semantic-models.cue"): fmt.Sprintf(`package duckconfig
+
+platform: workspaces: %q: {
 	semantic_models: %q: {
 		description:            "Starter semantic model"
-		base_model_ref:         %q
+		base_relation_ref:      %q
 		default_time_dimension: "service_date"
 		tags: [
 			"starter",
@@ -414,6 +419,6 @@ platform: projects: %q: {
 		}]
 	}
 }
-`, opts.name, modelName, modelName, modelName),
+`, opts.workspace, modelName, modelName),
 	}
 }

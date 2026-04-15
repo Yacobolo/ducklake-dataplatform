@@ -57,7 +57,7 @@ func (s *Service) normalizeExecutionError(ctx context.Context, req MetricQueryRe
 	if s.modelRepo != nil {
 		if model, modelErr := s.resolveTransformationModel(ctx, plan.BaseRelation, req.ProjectName); modelErr == nil && model != nil {
 			return domain.ErrValidation(
-				"semantic model %q references transformation model %q, but its relation is not materialized; run the model first or point base_model_ref at a queryable relation",
+				"semantic model %q references transformation model %q, but its relation is not materialized; run the model first or point base_relation_ref at a queryable relation",
 				plan.BaseModelName, model.QualifiedName(),
 			)
 		}

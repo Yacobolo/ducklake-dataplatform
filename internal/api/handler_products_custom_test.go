@@ -175,16 +175,27 @@ func TestProductRoutes_SemanticEntrypoints(t *testing.T) {
 	productRepo := repository.NewDataProductRepo(writeDB)
 	projectRepo := repository.NewProjectRepo(writeDB)
 	semanticRepo := repository.NewSemanticModelRepo(writeDB)
+	workspaceRepo := repository.NewWorkspaceRepo(writeDB)
 	productSvc := productsvc.NewService(domainRepo, teamRepo, assetRepo, assetRunRepo, assetCheckRepo, productRepo)
 	productSvc.SetBuildRepository(repository.NewBuildRepo(writeDB))
 	productSvc.SetProjectRepository(projectRepo)
 	productSvc.SetSemanticModelRepository(semanticRepo)
 
-	_, err := semanticRepo.Create(t.Context(), &domain.SemanticModel{
-		Name:         "orders",
-		Description:  "Orders semantic model",
-		BaseModelRef: "sales.orders",
-		CreatedBy:    "alice",
+	ownerPrincipal := "alice"
+	workspace, err := workspaceRepo.Create(t.Context(), &domain.Workspace{
+		Name:           "orders-semantic-workspace",
+		Kind:           domain.WorkspaceKindShared,
+		OwnerPrincipal: &ownerPrincipal,
+		CreatedBy:      "alice",
+	})
+	require.NoError(t, err)
+
+	_, err = semanticRepo.Create(t.Context(), &domain.SemanticModel{
+		WorkspaceID:     workspace.ID,
+		Name:            "orders",
+		Description:     "Orders semantic model",
+		BaseRelationRef: "sales.orders",
+		CreatedBy:       "alice",
 	})
 	require.NoError(t, err)
 

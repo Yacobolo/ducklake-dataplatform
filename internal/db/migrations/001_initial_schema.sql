@@ -455,16 +455,17 @@ CREATE TABLE macro_revisions (
 );
 CREATE TABLE semantic_models (
     id TEXT PRIMARY KEY,
+    workspace_id TEXT NOT NULL REFERENCES workspaces(id) ON DELETE CASCADE,
     name TEXT NOT NULL,
     description TEXT NOT NULL DEFAULT '',
     owner TEXT NOT NULL DEFAULT '',
-    base_model_ref TEXT NOT NULL,
+    base_relation_ref TEXT NOT NULL,
     default_time_dimension TEXT NOT NULL DEFAULT '',
     tags TEXT NOT NULL DEFAULT '[]',
     created_by TEXT NOT NULL DEFAULT '',
     created_at TEXT NOT NULL DEFAULT (datetime('now')),
     updated_at TEXT NOT NULL DEFAULT (datetime('now')),
-    UNIQUE(name)
+    UNIQUE(workspace_id, name)
 );
 CREATE TABLE semantic_metrics (
     id TEXT PRIMARY KEY,
@@ -810,7 +811,7 @@ CREATE INDEX idx_model_test_results_step ON model_test_results(run_step_id);
 CREATE INDEX idx_macros_visibility ON macros(visibility);
 CREATE INDEX idx_macros_project ON macros(project_name);
 CREATE INDEX idx_macro_revisions_name_version ON macro_revisions(macro_name, version DESC);
-CREATE INDEX idx_semantic_models_name ON semantic_models(name);
+CREATE INDEX idx_semantic_models_workspace ON semantic_models(workspace_id);
 CREATE INDEX idx_semantic_metrics_model ON semantic_metrics(semantic_model_id);
 CREATE INDEX idx_semantic_relationships_from ON semantic_relationships(from_semantic_id);
 CREATE INDEX idx_semantic_relationships_to ON semantic_relationships(to_semantic_id);

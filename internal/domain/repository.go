@@ -725,10 +725,11 @@ type MacroRepository interface {
 type SemanticModelRepository interface {
 	Create(ctx context.Context, m *SemanticModel) (*SemanticModel, error)
 	GetByID(ctx context.Context, id string) (*SemanticModel, error)
-	GetByName(ctx context.Context, name string) (*SemanticModel, error)
-	List(ctx context.Context, page PageRequest) ([]SemanticModel, int64, error)
+	GetByWorkspaceAndName(ctx context.Context, workspaceID, name string) (*SemanticModel, error)
+	ListByWorkspace(ctx context.Context, workspaceID string, page PageRequest) ([]SemanticModel, int64, error)
 	Update(ctx context.Context, id string, req UpdateSemanticModelRequest) (*SemanticModel, error)
 	Delete(ctx context.Context, id string) error
+	ListAllByWorkspace(ctx context.Context, workspaceID string) ([]SemanticModel, error)
 	ListAll(ctx context.Context) ([]SemanticModel, error)
 }
 

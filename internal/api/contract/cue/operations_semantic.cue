@@ -12,6 +12,10 @@ package api
 	#name: "semantic_model_id"
 }
 
+#semanticWorkspaceIDPathParameter: #pathStringParameter & {
+	#name: "workspace_id"
+}
+
 #metricNamePathParameter: #pathStringParameter & {
 	#name: "metric_name"
 }
@@ -45,22 +49,32 @@ package api
 }
 
 #semanticModelPathParameters: [
+	#semanticWorkspaceIDPathParameter,
 	#semanticModelIDPathParameter,
 ]
 
 #semanticMetricPathParameters: [
+	#semanticWorkspaceIDPathParameter,
 	#semanticModelIDPathParameter,
 	#metricNamePathParameter,
 ]
 
 #semanticPreAggregationPathParameters: [
+	#semanticWorkspaceIDPathParameter,
 	#semanticModelIDPathParameter,
 	#preAggregationNamePathParameter,
 ]
 
 #semanticRelationshipPathParameters: [
+	#semanticWorkspaceIDPathParameter,
 	#semanticModelIDPathParameter,
 	#relationshipNamePathParameter,
+]
+
+#semanticWorkspaceListParameters: [
+	#semanticWorkspaceIDPathParameter,
+	#paginationParameters[0],
+	#paginationParameters[1],
 ]
 
 #metricFreshnessParameters: [
@@ -91,23 +105,24 @@ package api
 		kind:         "response"
 		method:       "get"
 		op:           "listSemanticModels"
-		path:         "/semantic-models"
+		path:         "/workspaces/{workspace_id}/semantic-models"
 		summary:      "List semantic models"
 		cli:          "semantic semantic-models list"
 		returns:      "PaginatedSemanticModels"
 		error_family: "standard"
-		params:       #paginationParameters
+		params:       #semanticWorkspaceListParameters
 	},
 	#plainSemanticOperation & {
 		kind:           "response"
 		method:         "post"
 		op:             "createSemanticModel"
-		path:           "/semantic-models"
+		path:           "/workspaces/{workspace_id}/semantic-models"
 		summary:        "Create semantic model"
 		cli:            "semantic semantic-models create"
 		returns:        "SemanticModel"
 		success_status: 201
 		error_family:   "mutating"
+		params:         [#semanticWorkspaceIDPathParameter]
 		body_ref:       "CreateSemanticModelRequest"
 		body_description: "Request payload"
 	},
@@ -115,7 +130,7 @@ package api
 		kind:         "response"
 		method:       "get"
 		op:           "getSemanticModel"
-		path:         "/semantic-models/{semantic_model_id}"
+		path:         "/workspaces/{workspace_id}/semantic-models/{semantic_model_id}"
 		summary:      "Get semantic model"
 		cli:          "semantic semantic-models get"
 		returns:      "SemanticModel"
@@ -126,7 +141,7 @@ package api
 		kind:         "response"
 		method:       "patch"
 		op:           "updateSemanticModel"
-		path:         "/semantic-models/{semantic_model_id}"
+		path:         "/workspaces/{workspace_id}/semantic-models/{semantic_model_id}"
 		summary:      "Update semantic model"
 		cli:          "semantic semantic-models update"
 		returns:      "SemanticModel"
@@ -139,7 +154,7 @@ package api
 		kind:         "no_content"
 		method:       "delete"
 		op:           "deleteSemanticModel"
-		path:         "/semantic-models/{semantic_model_id}"
+		path:         "/workspaces/{workspace_id}/semantic-models/{semantic_model_id}"
 		summary:      "Delete semantic model"
 		cli:          "semantic semantic-models delete"
 		error_family: "mutating"
@@ -149,7 +164,7 @@ package api
 		kind:         "response"
 		method:       "get"
 		op:           "listSemanticMetrics"
-		path:         "/semantic-models/{semantic_model_id}/metrics"
+		path:         "/workspaces/{workspace_id}/semantic-models/{semantic_model_id}/metrics"
 		summary:      "List semantic metrics"
 		cli:          "semantic metrics list"
 		returns:      "SemanticMetricList"
@@ -160,7 +175,7 @@ package api
 		kind:           "response"
 		method:         "post"
 		op:             "createSemanticMetric"
-		path:           "/semantic-models/{semantic_model_id}/metrics"
+		path:           "/workspaces/{workspace_id}/semantic-models/{semantic_model_id}/metrics"
 		summary:        "Create semantic metric"
 		cli:            "semantic metrics create"
 		returns:        "SemanticMetric"
@@ -174,7 +189,7 @@ package api
 		kind:         "response"
 		method:       "get"
 		op:           "getSemanticMetric"
-		path:         "/semantic-models/{semantic_model_id}/metrics/{metric_name}"
+		path:         "/workspaces/{workspace_id}/semantic-models/{semantic_model_id}/metrics/{metric_name}"
 		summary:      "Get semantic metric"
 		returns:      "SemanticMetric"
 		error_family: "resource"
@@ -184,7 +199,7 @@ package api
 		kind:         "response"
 		method:       "patch"
 		op:           "updateSemanticMetric"
-		path:         "/semantic-models/{semantic_model_id}/metrics/{metric_name}"
+		path:         "/workspaces/{workspace_id}/semantic-models/{semantic_model_id}/metrics/{metric_name}"
 		summary:      "Update semantic metric"
 		cli:          "semantic metrics update"
 		returns:      "SemanticMetric"
@@ -197,7 +212,7 @@ package api
 		kind:         "no_content"
 		method:       "delete"
 		op:           "deleteSemanticMetric"
-		path:         "/semantic-models/{semantic_model_id}/metrics/{metric_name}"
+		path:         "/workspaces/{workspace_id}/semantic-models/{semantic_model_id}/metrics/{metric_name}"
 		summary:      "Delete semantic metric"
 		cli:          "semantic metrics delete"
 		error_family: "mutating"
@@ -207,7 +222,7 @@ package api
 		kind:         "response"
 		method:       "get"
 		op:           "listSemanticPreAggregations"
-		path:         "/semantic-models/{semantic_model_id}/pre-aggregations"
+		path:         "/workspaces/{workspace_id}/semantic-models/{semantic_model_id}/pre-aggregations"
 		summary:      "List semantic pre aggregations"
 		cli:          "semantic pre-aggregations list"
 		returns:      "SemanticPreAggregationList"
@@ -218,7 +233,7 @@ package api
 		kind:           "response"
 		method:         "post"
 		op:             "createSemanticPreAggregation"
-		path:           "/semantic-models/{semantic_model_id}/pre-aggregations"
+		path:           "/workspaces/{workspace_id}/semantic-models/{semantic_model_id}/pre-aggregations"
 		summary:        "Create semantic pre aggregation"
 		cli:            "semantic pre-aggregations create"
 		returns:        "SemanticPreAggregation"
@@ -232,7 +247,7 @@ package api
 		kind:         "response"
 		method:       "get"
 		op:           "getSemanticPreAggregation"
-		path:         "/semantic-models/{semantic_model_id}/pre-aggregations/{pre_aggregation_name}"
+		path:         "/workspaces/{workspace_id}/semantic-models/{semantic_model_id}/pre-aggregations/{pre_aggregation_name}"
 		summary:      "Get semantic pre aggregation"
 		returns:      "SemanticPreAggregation"
 		error_family: "resource"
@@ -242,7 +257,7 @@ package api
 		kind:         "response"
 		method:       "patch"
 		op:           "updateSemanticPreAggregation"
-		path:         "/semantic-models/{semantic_model_id}/pre-aggregations/{pre_aggregation_name}"
+		path:         "/workspaces/{workspace_id}/semantic-models/{semantic_model_id}/pre-aggregations/{pre_aggregation_name}"
 		summary:      "Update semantic pre aggregation"
 		cli:          "semantic pre-aggregations update"
 		returns:      "SemanticPreAggregation"
@@ -255,7 +270,7 @@ package api
 		kind:         "no_content"
 		method:       "delete"
 		op:           "deleteSemanticPreAggregation"
-		path:         "/semantic-models/{semantic_model_id}/pre-aggregations/{pre_aggregation_name}"
+		path:         "/workspaces/{workspace_id}/semantic-models/{semantic_model_id}/pre-aggregations/{pre_aggregation_name}"
 		summary:      "Delete semantic pre aggregation"
 		cli:          "semantic pre-aggregations delete"
 		error_family: "mutating"
@@ -265,7 +280,7 @@ package api
 		kind:         "response"
 		method:       "get"
 		op:           "listSemanticModelRelationships"
-		path:         "/semantic-models/{semantic_model_id}/relationships"
+		path:         "/workspaces/{workspace_id}/semantic-models/{semantic_model_id}/relationships"
 		summary:      "List semantic relationships for a semantic model"
 		cli:          "semantic semantic-relationships list"
 		returns:      "SemanticRelationshipList"
@@ -276,7 +291,7 @@ package api
 		kind:           "response"
 		method:         "post"
 		op:             "createSemanticModelRelationship"
-		path:           "/semantic-models/{semantic_model_id}/relationships"
+		path:           "/workspaces/{workspace_id}/semantic-models/{semantic_model_id}/relationships"
 		summary:        "Create semantic relationship for a semantic model"
 		cli:            "semantic semantic-relationships create"
 		returns:        "SemanticRelationship"
@@ -290,7 +305,7 @@ package api
 		kind:         "response"
 		method:       "get"
 		op:           "getSemanticModelRelationship"
-		path:         "/semantic-models/{semantic_model_id}/relationships/{relationship_name}"
+		path:         "/workspaces/{workspace_id}/semantic-models/{semantic_model_id}/relationships/{relationship_name}"
 		summary:      "Get semantic relationship for a semantic model"
 		returns:      "SemanticRelationship"
 		error_family: "resource"
@@ -300,7 +315,7 @@ package api
 		kind:         "response"
 		method:       "patch"
 		op:           "updateSemanticModelRelationship"
-		path:         "/semantic-models/{semantic_model_id}/relationships/{relationship_name}"
+		path:         "/workspaces/{workspace_id}/semantic-models/{semantic_model_id}/relationships/{relationship_name}"
 		summary:      "Update semantic relationship for a semantic model"
 		cli:          "semantic semantic-relationships update"
 		returns:      "SemanticRelationship"
@@ -313,7 +328,7 @@ package api
 		kind:         "no_content"
 		method:       "delete"
 		op:           "deleteSemanticModelRelationship"
-		path:         "/semantic-models/{semantic_model_id}/relationships/{relationship_name}"
+		path:         "/workspaces/{workspace_id}/semantic-models/{semantic_model_id}/relationships/{relationship_name}"
 		summary:      "Delete semantic relationship for a semantic model"
 		cli:          "semantic semantic-relationships delete"
 		error_family: "mutating"
@@ -323,7 +338,7 @@ package api
 		kind:         "response"
 		method:       "post"
 		op:           "explainMetricQuery"
-		path:         "/semantic-models/{semantic_model_id}/query-explanations"
+		path:         "/workspaces/{workspace_id}/semantic-models/{semantic_model_id}/query-explanations"
 		summary:      "Explain metric query"
 		cli:          "semantic explain"
 		returns:      "MetricQueryExplainResponse"
@@ -336,7 +351,7 @@ package api
 		kind:         "response"
 		method:       "post"
 		op:           "runMetricQuery"
-		path:         "/semantic-models/{semantic_model_id}/query-runs"
+		path:         "/workspaces/{workspace_id}/semantic-models/{semantic_model_id}/query-runs"
 		summary:      "Run metric query"
 		cli:          "semantic run"
 		returns:      "MetricQueryRunResponse"

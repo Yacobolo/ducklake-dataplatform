@@ -979,7 +979,7 @@ const (
 )
 
 type CreateSemanticModelRequest struct {
-	BaseModelRef         string    `json:"base_model_ref"`
+	BaseRelationRef      string    `json:"base_relation_ref"`
 	DefaultTimeDimension *string   `json:"default_time_dimension,omitempty"`
 	Description          *string   `json:"description,omitempty"`
 	Name                 string    `json:"name"`
@@ -2710,7 +2710,7 @@ const (
 )
 
 type SemanticModel struct {
-	BaseModelRef         *string   `json:"base_model_ref,omitempty"`
+	BaseRelationRef      *string   `json:"base_relation_ref,omitempty"`
 	CreatedAt            *string   `json:"created_at,omitempty"`
 	CreatedBy            *string   `json:"created_by,omitempty"`
 	DefaultTimeDimension *string   `json:"default_time_dimension,omitempty"`
@@ -2720,6 +2720,7 @@ type SemanticModel struct {
 	Owner                *string   `json:"owner,omitempty"`
 	Tags                 *[]string `json:"tags,omitempty"`
 	UpdatedAt            *string   `json:"updated_at,omitempty"`
+	WorkspaceId          *string   `json:"workspace_id,omitempty"`
 }
 
 type SemanticPreAggregation struct {
@@ -3122,7 +3123,7 @@ type UpdateSemanticMetricRequest struct {
 }
 
 type UpdateSemanticModelRequest struct {
-	BaseModelRef         *string   `json:"base_model_ref,omitempty"`
+	BaseRelationRef      *string   `json:"base_relation_ref,omitempty"`
 	DefaultTimeDimension *string   `json:"default_time_dimension,omitempty"`
 	Description          *string   `json:"description,omitempty"`
 	Owner                *string   `json:"owner,omitempty"`

@@ -11,21 +11,29 @@ import (
 	"github.com/Yacobolo/quackstack/internal/domain"
 )
 
-func setupSemanticRepos(t *testing.T) (*SemanticModelRepo, *SemanticMetricRepo, *SemanticRelationshipRepo, *SemanticPreAggregationRepo) {
+func setupSemanticRepos(t *testing.T) (*SemanticModelRepo, *SemanticMetricRepo, *SemanticRelationshipRepo, *SemanticPreAggregationRepo, *WorkspaceRepo) {
 	t.Helper()
 	writeDB, _ := internaldb.OpenTestSQLite(t)
-	return NewSemanticModelRepo(writeDB), NewSemanticMetricRepo(writeDB), NewSemanticRelationshipRepo(writeDB), NewSemanticPreAggregationRepo(writeDB)
+	return NewSemanticModelRepo(writeDB), NewSemanticMetricRepo(writeDB), NewSemanticRelationshipRepo(writeDB), NewSemanticPreAggregationRepo(writeDB), NewWorkspaceRepo(writeDB)
 }
 
 func TestSemanticRepos_EndToEndCRUD(t *testing.T) {
-	modelRepo, metricRepo, relRepo, preAggRepo := setupSemanticRepos(t)
+	modelRepo, metricRepo, relRepo, preAggRepo, workspaceRepo := setupSemanticRepos(t)
 	ctx := context.Background()
+	workspace, err := workspaceRepo.Create(ctx, &domain.Workspace{
+		Name:           "analytics",
+		Kind:           domain.WorkspaceKindPersonal,
+		OwnerPrincipal: ptr("admin"),
+		CreatedBy:      "admin",
+	})
+	require.NoError(t, err)
 
 	createdModel, err := modelRepo.Create(ctx, &domain.SemanticModel{
+		WorkspaceID:          workspace.ID,
 		Name:                 "sales",
 		Description:          "Semantic model for sales analytics",
 		Owner:                "data-team",
-		BaseModelRef:         "analytics.fct_sales",
+		BaseRelationRef:      "analytics.fct_sales",
 		DefaultTimeDimension: "order_date",
 		Tags:                 []string{"finance", "core"},
 		CreatedBy:            "admin",
@@ -38,7 +46,7 @@ func TestSemanticRepos_EndToEndCRUD(t *testing.T) {
 		updated, err := modelRepo.Update(ctx, createdModel.ID, domain.UpdateSemanticModelRequest{Description: &desc})
 		require.NoError(t, err)
 		assert.Equal(t, desc, updated.Description)
-		assert.Equal(t, createdModel.BaseModelRef, updated.BaseModelRef)
+		assert.Equal(t, createdModel.BaseRelationRef, updated.BaseRelationRef)
 	})
 
 	createdMetric, err := metricRepo.Create(ctx, &domain.SemanticMetric{

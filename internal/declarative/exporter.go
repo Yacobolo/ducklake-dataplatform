@@ -387,9 +387,10 @@ func exportWorkspaces(dir string, state *DesiredState) error {
 	for _, item := range state.Workspaces {
 		specCopy := item.Spec
 		workspaceMap[item.Name] = &cueWorkspace{
-			WorkspaceSpec: specCopy,
-			Folders:       map[string]cueFolder{},
-			Dashboards:    map[string]DashboardSpec{},
+			WorkspaceSpec:  specCopy,
+			Folders:        map[string]cueFolder{},
+			Dashboards:     map[string]DashboardSpec{},
+			SemanticModels: map[string]SemanticModelSpec{},
 		}
 	}
 
@@ -457,6 +458,15 @@ func exportWorkspaces(dir string, state *DesiredState) error {
 			continue
 		}
 		workspaceMap[workspaceName].Dashboards[item.Name] = item.Spec
+	}
+	for _, item := range state.SemanticModels {
+		workspaceName := strings.TrimSpace(item.Spec.WorkspaceRef)
+		if workspaceMap[workspaceName] == nil {
+			continue
+		}
+		specCopy := item.Spec
+		specCopy.WorkspaceRef = ""
+		workspaceMap[workspaceName].SemanticModels[item.ModelName] = specCopy
 	}
 
 	for _, workspaceName := range sortedKeys(workspaceMap) {
@@ -541,11 +551,10 @@ func exportProjects(dir string, state *DesiredState) error {
 	for _, item := range state.Projects {
 		specCopy := item.Spec
 		projectMap[item.Name] = &cueProject{
-			ProjectSpec:    specCopy,
-			Environments:   map[string]EnvironmentSpec{},
-			Macros:         map[string]MacroSpec{},
-			Models:         map[string]ModelSpec{},
-			SemanticModels: map[string]SemanticModelSpec{},
+			ProjectSpec:  specCopy,
+			Environments: map[string]EnvironmentSpec{},
+			Macros:       map[string]MacroSpec{},
+			Models:       map[string]ModelSpec{},
 		}
 	}
 	for _, item := range state.Environments {
@@ -570,19 +579,6 @@ func exportProjects(dir string, state *DesiredState) error {
 			continue
 		}
 		projectMap[item.ProjectName].Models[item.ModelName] = item.Spec
-	}
-	modelProject := map[string]string{}
-	for _, item := range state.Models {
-		if _, ok := modelProject[item.ModelName]; !ok {
-			modelProject[item.ModelName] = item.ProjectName
-		}
-	}
-	for _, item := range state.SemanticModels {
-		projectName := modelProject[item.Spec.BaseModelRef]
-		if projectMap[projectName] == nil {
-			continue
-		}
-		projectMap[projectName].SemanticModels[item.ModelName] = item.Spec
 	}
 	for _, projectName := range sortedKeys(projectMap) {
 		if err := writeCueFile(filepath.Join(dir, "projects", slugPath(projectName), "project.cue"), map[string]any{
