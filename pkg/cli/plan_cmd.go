@@ -17,6 +17,7 @@ func newPlanCmd(client *apiruntime.Client) *cobra.Command {
 		output             string
 		noColor            bool
 		allowUnknownFields bool
+		loadFlags          declarativeLoadFlags
 	)
 
 	cmd := &cobra.Command{
@@ -34,9 +35,11 @@ func newPlanCmd(client *apiruntime.Client) *cobra.Command {
 			}
 
 			// 1. Load desired state from the CUE config tree.
-			desired, err := declarative.LoadDirectoryWithOptions(configDir, declarative.LoadOptions{
-				AllowUnknownFields: allowUnknownFields,
-			})
+			loadOptions, err := loadFlags.loadOptions(allowUnknownFields)
+			if err != nil {
+				return err
+			}
+			desired, err := declarative.LoadDirectoryWithOptions(configDir, loadOptions)
 			if err != nil {
 				return fmt.Errorf("load config: %w", err)
 			}
@@ -97,6 +100,7 @@ func newPlanCmd(client *apiruntime.Client) *cobra.Command {
 	cmd.Flags().StringVarP(&output, "output", "o", "text", "Output format (text, json)")
 	cmd.Flags().BoolVar(&noColor, "no-color", false, "Disable colored output")
 	cmd.Flags().BoolVar(&allowUnknownFields, "allow-unknown-fields", false, "Deprecated no-op retained for compatibility with existing CLI wiring")
+	addDeclarativeLoadFlags(cmd, &loadFlags)
 
 	return cmd
 }

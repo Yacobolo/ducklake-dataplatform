@@ -75,7 +75,6 @@ commands as an escape hatch when no dedicated UX exists yet.`,
 	cmd.AddCommand(newAPIListCmd())
 	cmd.AddCommand(newAPISearchCmd())
 	cmd.AddCommand(newAPIDescribeCmd())
-	cmd.AddCommand(newAPICurlCmd())
 	cmd.AddCommand(newAPISpecCmd(client))
 	cmd.AddCommand(newAPIRawMethodCmd(client, http.MethodGet))
 	cmd.AddCommand(newAPIRawMethodCmd(client, http.MethodHead))
@@ -352,122 +351,6 @@ func newAPIDescribeCmd() *cobra.Command {
 	}
 }
 
-func newAPICurlCmd() *cobra.Command {
-	var params []string
-
-	cmd := &cobra.Command{
-		Use:   "curl <operation-id>",
-		Short: "Generate a curl command for an API endpoint",
-		Long:  "Generates a ready-to-use curl command using the current authentication configuration.",
-		Example: `  quack api curl createSchema --param catalog_name=main --param name=analytics
-  quack api curl listSchemas --param catalog_name=main`,
-		Args: cobra.ExactArgs(1),
-		RunE: func(cmd *cobra.Command, args []string) error {
-			opID := args[0]
-			var found *gen.ReferenceOperation
-			endpoints := allAPIEndpoints()
-			for i := range endpoints {
-				if endpoints[i].OperationID == opID {
-					found = &endpoints[i]
-					break
-				}
-			}
-			if found == nil {
-				return fmt.Errorf("operation %q not found", opID)
-			}
-
-			// Parse --param flags into a map
-			paramMap := map[string]string{}
-			for _, p := range params {
-				parts := strings.SplitN(p, "=", 2)
-				if len(parts) == 2 {
-					paramMap[parts[0]] = parts[1]
-				}
-			}
-
-			// Build URL with path parameter substitution
-			host, _ := cmd.Root().PersistentFlags().GetString("host")
-			path := found.Path
-			for _, p := range found.Parameters {
-				if p.In == "path" {
-					if v, ok := paramMap[p.Name]; ok {
-						path = strings.ReplaceAll(path, "{"+p.Name+"}", url.PathEscape(v))
-						delete(paramMap, p.Name)
-					}
-				}
-			}
-
-			// Build query string from remaining query params
-			var queryParts []string
-			for _, p := range found.Parameters {
-				if p.In == "query" {
-					if v, ok := paramMap[p.Name]; ok {
-						queryParts = append(queryParts, url.QueryEscape(p.Name)+"="+url.QueryEscape(v))
-						delete(paramMap, p.Name)
-					}
-				}
-			}
-
-			fullURL := host + "/v1" + path
-			if len(queryParts) > 0 {
-				fullURL += "?" + strings.Join(queryParts, "&")
-			}
-
-			// Build curl command
-			var curlParts []string
-			curlParts = append(curlParts, "curl")
-			curlParts = append(curlParts, "-X", found.Method)
-			curlParts = append(curlParts, fmt.Sprintf("'%s'", fullURL))
-
-			// Auth
-			token, _ := cmd.Root().PersistentFlags().GetString("token")
-			apiKey, _ := cmd.Root().PersistentFlags().GetString("api-key")
-			if token != "" {
-				curlParts = append(curlParts, "-H", fmt.Sprintf("'Authorization: Bearer %s'", token))
-			} else if apiKey != "" {
-				curlParts = append(curlParts, "-H", fmt.Sprintf("'X-API-Key: %s'", apiKey))
-			}
-
-			// Body from remaining params
-			if len(found.BodyFields) > 0 && len(paramMap) > 0 {
-				curlParts = append(curlParts, "-H", "'Content-Type: application/json'")
-				bodyParts := make([]string, 0, len(paramMap))
-				fieldByName := make(map[string]gen.ReferenceField, len(found.BodyFields))
-				for _, field := range found.BodyFields {
-					fieldByName[field.Name] = field
-				}
-				for k, v := range paramMap {
-					field, ok := fieldByName[k]
-					if !ok {
-						continue
-					}
-					literal, err := jsonLiteralForField(field.Type, v)
-					if err != nil {
-						return err
-					}
-					bodyParts = append(bodyParts, fmt.Sprintf("%q:%s", k, literal))
-				}
-				curlParts = append(curlParts, "-d", fmt.Sprintf("'{%s}'", strings.Join(bodyParts, ",")))
-			}
-
-			result := strings.Join(curlParts, " \\\n  ")
-
-			if getOutputFormat(cmd) == "json" {
-				return apiruntime.PrintJSON(os.Stdout, map[string]string{
-					"curl": result,
-				})
-			}
-
-			_, _ = fmt.Fprintln(os.Stdout, result)
-			return nil
-		},
-	}
-
-	cmd.Flags().StringArrayVar(&params, "param", nil, "Parameter values (key=value, repeatable)")
-
-	return cmd
-}
-
 func newAPISpecCmd(client *apiruntime.Client) *cobra.Command {
 	var (
 		format string
@@ -517,77 +400,9 @@ func allAPIEndpoints() []gen.ReferenceOperation {
 			continue
 		}
 		seen[generated.OperationID] = struct{}{}
-		combined = append(combined, applyEndpointOverrides(generated))
+		combined = append(combined, generated)
 	}
 	return combined
-}
-
-func applyEndpointOverrides(endpoint gen.ReferenceOperation) gen.ReferenceOperation {
-	switch endpoint.OperationID {
-	case "listAuditLogs":
-		endpoint.CLICommand = "audit entries list"
-	case "listCatalogs":
-		endpoint.CLICommand = "catalog registrations list"
-	case "registerCatalog":
-		endpoint.CLICommand = "catalog registrations create"
-	case "deleteCatalogRegistration":
-		endpoint.CLICommand = "catalog registrations delete"
-	case "getCatalog":
-		endpoint.CLICommand = "catalog registrations get"
-	case "updateCatalogRegistration":
-		endpoint.CLICommand = "catalog registrations update"
-	case "setDefaultCatalog":
-		endpoint.CLICommand = "catalog registrations set-default"
-	case "getMetastoreSummary":
-		endpoint.CLICommand = "catalog metastore summary"
-	case "createManifest":
-		endpoint.CLICommand = "catalog tables manifest get"
-	case "searchCatalog":
-		endpoint.CLICommand = "catalog search"
-	case "listDashboards":
-		endpoint.CLICommand = "dashboards list"
-	case "createDashboard":
-		endpoint.CLICommand = "dashboards create"
-	case "getDashboard":
-		endpoint.CLICommand = "dashboards get"
-	case "getRenderedDashboard":
-		endpoint.CLICommand = "dashboards get-rendered"
-	case "updateDashboard":
-		endpoint.CLICommand = "dashboards update"
-	case "deleteDashboard":
-		endpoint.CLICommand = "dashboards delete"
-	case "createDashboardWidget":
-		endpoint.CLICommand = "dashboards widgets create"
-	case "updateDashboardWidget":
-		endpoint.CLICommand = "dashboards widgets update"
-	case "deleteDashboardWidget":
-		endpoint.CLICommand = "dashboards widgets delete"
-	case "getAssetFreshness":
-		endpoint.CLICommand = "assets freshness get"
-	case "explainAssetFreshness":
-		endpoint.CLICommand = "assets freshness explain"
-	case "listAssetFreshnessRequirements":
-		endpoint.CLICommand = "assets freshness requirements"
-	case "listAssetFreshnessBlockers":
-		endpoint.CLICommand = "assets freshness blockers"
-	case "reconcileAssetFreshness":
-		endpoint.CLICommand = "assets freshness reconcile"
-	case "listQueryHistory":
-		endpoint.CLICommand = "query history list"
-	case "listRecentResources":
-		endpoint.CLICommand = "me recent-resources list"
-	case "listSavedResources":
-		endpoint.CLICommand = "me saved-resources list"
-	case "createSavedResource":
-		endpoint.CLICommand = "me saved-resources create"
-	case "deleteSavedResource":
-		endpoint.CLICommand = "me saved-resources delete"
-	case "createTagAssignment":
-		endpoint.CLICommand = "governance tags assignments create"
-	case "deleteTagAssignment":
-		endpoint.CLICommand = "governance tags assignments delete"
-	}
-	return endpoint
 }
 
 func apiContentTypes(operationID string) []string {

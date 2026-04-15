@@ -110,7 +110,7 @@ package api
 		op:           "listModels"
 		path:         "/models"
 		summary:      "List models"
-		cli:          "models models list"
+		cli:          "models list"
 		returns:      "PaginatedModels"
 		error_family: "standard"
 		params:       #listModelsParameters
@@ -121,7 +121,7 @@ package api
 		op:             "createModel"
 		path:           "/models"
 		summary:        "Create model"
-		cli:            "models models create"
+		cli:            "models create"
 		returns:        "Model"
 		success_status: 201
 		error_family:   "mutating"
@@ -147,7 +147,7 @@ package api
 		op:           "getModel"
 		path:         "/models/{project_name}/{model_name}"
 		summary:      "Get model"
-		cli:          "models models get"
+		cli:          "models get"
 		returns:      "Model"
 		error_family: "resource"
 		params:       #modelPathParameters
@@ -158,7 +158,7 @@ package api
 		op:           "updateModel"
 		path:         "/models/{project_name}/{model_name}"
 		summary:      "Update model"
-		cli:          "models models update"
+		cli:          "models update"
 		returns:      "Model"
 		error_family: "mutating"
 		params:       #modelPathParameters
@@ -171,7 +171,7 @@ package api
 		op:           "deleteModel"
 		path:         "/models/{project_name}/{model_name}"
 		summary:      "Delete model"
-		cli:          "models models delete"
+		cli:          "models delete"
 		error_family: "mutating"
 		params:       #modelPathParameters
 	},
@@ -216,7 +216,7 @@ package api
 		op:           "checkModelFreshness"
 		path:         "/models/{project_name}/{model_name}/freshness"
 		summary:      "Check model freshness"
-		cli:          "models freshness check-model-freshness"
+		cli:          "models freshness check"
 		returns:      "FreshnessStatus"
 		error_family: "resource"
 		params:       #modelPathParameters
@@ -227,7 +227,7 @@ package api
 		op:             "triggerModelRun"
 		path:           "/model-runs"
 		summary:        "Trigger model run"
-		cli:            "models model-runs trigger-model-run"
+		cli:            "models runs trigger"
 		returns:        "ModelRun"
 		success_status: 201
 		error_family:   "mutating"
@@ -240,7 +240,7 @@ package api
 		op:           "listModelRuns"
 		path:         "/model-runs"
 		summary:      "List model runs"
-		cli:          "models model-runs list"
+		cli:          "models runs list"
 		returns:      "PaginatedModelRuns"
 		error_family: "standard"
 		params:       #listModelRunsParameters
@@ -251,7 +251,7 @@ package api
 		op:           "getModelRun"
 		path:         "/model-runs/{run_id}"
 		summary:      "Get model run"
-		cli:          "models model-runs get"
+		cli:          "models runs get"
 		returns:      "ModelRun"
 		error_family: "resource"
 		params: [
@@ -264,7 +264,7 @@ package api
 		op:           "cancelModelRun"
 		path:         "/model-runs/{run_id}/cancellations"
 		summary:      "Cancel model run"
-		cli:          "models cancel cancel-model-run"
+		cli:          "models runs cancel"
 		returns:      "ModelRun"
 		error_family: "mutating"
 		params: [
@@ -301,7 +301,7 @@ package api
 		op:             "promoteNotebookToModel"
 		path:           "/notebooks/{notebook_id}/model-promotions"
 		summary:        "Promote notebook to model"
-		cli:            "models from-notebook promote-notebook-to-model"
+		cli:            "models from-notebook promote"
 		returns:        "Model"
 		success_status: 201
 		error_family:   "mutating"
@@ -416,7 +416,7 @@ package api
 		op:           "diffMacroRevisions"
 		path:         "/macros/{macro_name}/revision-diffs"
 		summary:      "Diff macro revisions"
-		cli:          "models diff diff-macro-revisions"
+		cli:          "models revisions diff"
 		returns:      "MacroRevisionDiff"
 		error_family: "resource"
 		params:       #diffMacroRevisionsParameters

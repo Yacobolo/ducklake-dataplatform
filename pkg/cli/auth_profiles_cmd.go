@@ -1,12 +1,16 @@
 package cli
 
 import (
+	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"net/url"
 	"os"
 	"sort"
 	"strings"
+	"time"
 
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
 
@@ -38,6 +42,7 @@ func newAuthProfilesCmd() *cobra.Command {
 	cmd.AddCommand(newAuthProfilesSaveCmd())
 	cmd.AddCommand(newAuthProfilesUseCmd())
 	cmd.AddCommand(newAuthProfilesDeleteCmd())
+	cmd.AddCommand(newAuthProfilesValidateCmd())
 	return cmd
 }
 
@@ -83,10 +88,10 @@ func newAuthProfilesShowCmd() *cobra.Command {
 			}
 
 			payload := map[string]any{
-				"name":           name,
-				"active":         cfg.CurrentProfile == name,
+				"name":            name,
+				"active":          cfg.CurrentProfile == name,
 				"current_profile": cfg.CurrentProfile,
-				"profile":        profile,
+				"profile":         profile,
 			}
 			if !reveal {
 				payload["profile"] = maskConfig(&UserConfig{
@@ -256,6 +261,58 @@ func newAuthProfilesDeleteCmd() *cobra.Command {
 	}
 }
 
+type authProfileValidationResult struct {
+	Name     string `json:"name"`
+	Host     string `json:"host"`
+	AuthType string `json:"auth_type"`
+	Valid    bool   `json:"valid"`
+	Error    string `json:"error,omitempty"`
+}
+
+func newAuthProfilesValidateCmd() *cobra.Command {
+	var validateAll bool
+
+	cmd := &cobra.Command{
+		Use:   "validate [name]",
+		Short: "Validate one or more configured auth profiles",
+		Args:  cobra.MaximumNArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			cfg, err := LoadUserConfig()
+			if err != nil {
+				return err
+			}
+
+			names := selectedProfileNames(cfg, args, validateAll)
+			results := make([]authProfileValidationResult, 0, len(names))
+			for _, name := range names {
+				profile, ok := cfg.Profiles[name]
+				if !ok {
+					return fmt.Errorf("profile %q not found", name)
+				}
+				results = append(results, validateProfile(name, profile))
+			}
+
+			if getOutputFormat(cmd) == "json" {
+				return apiruntime.PrintJSON(os.Stdout, map[string]any{"profiles": results, "config_path": ConfigPath()})
+			}
+
+			rows := make([][]string, 0, len(results))
+			for _, result := range results {
+				status := "valid"
+				if !result.Valid {
+					status = "invalid"
+				}
+				rows = append(rows, []string{result.Name, result.Host, result.AuthType, status, result.Error})
+			}
+			apiruntime.PrintTable(os.Stdout, []string{"name", "host", "auth_type", "status", "error"}, rows)
+			return nil
+		},
+	}
+
+	cmd.Flags().BoolVar(&validateAll, "all", false, "Validate all saved profiles")
+	return cmd
+}
+
 func newAuthDescribeCmd(client *apiruntime.Client) *cobra.Command {
 	return &cobra.Command{
 		Use:   "describe",
@@ -283,6 +340,59 @@ func newAuthDescribeCmd(client *apiruntime.Client) *cobra.Command {
 				}
 			}
 			payload["authenticated"] = authenticated
+
+			if getOutputFormat(cmd) == "json" {
+				return apiruntime.PrintJSON(os.Stdout, payload)
+			}
+			apiruntime.PrintDetail(os.Stdout, payload)
+			return nil
+		},
+	}
+}
+
+func newAuthWhoAmICmd(client *apiruntime.Client) *cobra.Command {
+	return &cobra.Command{
+		Use:   "whoami",
+		Short: "Show the effective principal and session status",
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			ctx, err := resolveAuthContext(cmd)
+			if err != nil {
+				return err
+			}
+
+			payload := map[string]any{
+				"profile":       ctx.ProfileName,
+				"host":          ctx.Host,
+				"host_source":   ctx.HostSource,
+				"auth_type":     ctx.AuthType,
+				"auth_source":   ctx.AuthSource,
+				"output":        ctx.Output,
+				"output_source": ctx.OutputSource,
+			}
+
+			principal, principalSource, expiresAt := bestEffortTokenIdentity(ctx.Token)
+			if principal != "" {
+				payload["principal"] = principal
+				payload["principal_source"] = principalSource
+			}
+			if expiresAt != nil {
+				payload["token_expires_at"] = *expiresAt
+			}
+
+			if ctx.AuthType == "none" {
+				payload["session_valid"] = false
+			} else if err := probeAuth(client); err != nil {
+				payload["session_valid"] = false
+				payload["validation_error"] = err.Error()
+			} else {
+				payload["session_valid"] = true
+				if payload["principal"] == nil {
+					if matchedPrincipal, source, lookupErr := lookupPrincipalForAPIKey(client, ctx); lookupErr == nil && matchedPrincipal != "" {
+						payload["principal"] = matchedPrincipal
+						payload["principal_source"] = source
+					}
+				}
+			}
 
 			if getOutputFormat(cmd) == "json" {
 				return apiruntime.PrintJSON(os.Stdout, payload)
@@ -417,6 +527,184 @@ func resolveAuthContext(cmd *cobra.Command) (*resolvedAuthContext, error) {
 		Output:       output,
 		OutputSource: outputSource,
 	}, nil
+}
+
+func selectedProfileNames(cfg *UserConfig, args []string, validateAll bool) []string {
+	if len(args) == 1 {
+		return []string{args[0]}
+	}
+	if validateAll {
+		names := make([]string, 0, len(cfg.Profiles))
+		for name := range cfg.Profiles {
+			names = append(names, name)
+		}
+		sort.Strings(names)
+		return names
+	}
+	name := cfg.CurrentProfile
+	if strings.TrimSpace(name) == "" {
+		name = "default"
+	}
+	return []string{name}
+}
+
+func validateProfile(name string, profile Profile) authProfileValidationResult {
+	host := strings.TrimSpace(profile.Host)
+	if host == "" {
+		host = "http://localhost:8080"
+	}
+	result := authProfileValidationResult{
+		Name: name,
+		Host: host,
+	}
+
+	switch {
+	case strings.TrimSpace(profile.Token) != "":
+		result.AuthType = "token"
+	case strings.TrimSpace(profile.APIKey) != "":
+		result.AuthType = "api-key"
+	default:
+		result.AuthType = "none"
+		result.Error = "no auth configured"
+		return result
+	}
+
+	if err := validateHostURL(host); err != nil {
+		result.Error = err.Error()
+		return result
+	}
+
+	client := apiruntime.NewClient(host, profile.APIKey, profile.Token)
+	if err := probeAuth(client); err != nil {
+		result.Error = err.Error()
+		return result
+	}
+
+	result.Valid = true
+	return result
+}
+
+func bestEffortTokenIdentity(token string) (string, string, *string) {
+	trimmed := strings.TrimSpace(token)
+	if trimmed == "" {
+		return "", "", nil
+	}
+
+	claims := jwt.MapClaims{}
+	parser := jwt.Parser{}
+	if _, _, err := parser.ParseUnverified(trimmed, claims); err == nil {
+		principal, source, expiresAt := extractJWTClaims(claims)
+		if principal != "" || expiresAt != nil {
+			return principal, source, expiresAt
+		}
+	}
+
+	parts := strings.Split(trimmed, ".")
+	if len(parts) != 3 {
+		return "", "", nil
+	}
+	decoded, err := base64.RawURLEncoding.DecodeString(parts[1])
+	if err != nil {
+		return "", "", nil
+	}
+
+	var raw map[string]any
+	if err := json.Unmarshal(decoded, &raw); err != nil {
+		return "", "", nil
+	}
+	principal, _ := raw["sub"].(string)
+	expiresAt := jwtExpiry(raw["exp"])
+	if principal == "" && expiresAt == nil {
+		return "", "", nil
+	}
+	return principal, "token-subject", expiresAt
+}
+
+func extractJWTClaims(claims jwt.MapClaims) (string, string, *string) {
+	principal, _ := claims["sub"].(string)
+	expiresAt := jwtExpiry(claims["exp"])
+	if principal == "" && expiresAt == nil {
+		return "", "", nil
+	}
+	return principal, "token-subject", expiresAt
+}
+
+func jwtExpiry(value any) *string {
+	switch typed := value.(type) {
+	case float64:
+		ts := time.Unix(int64(typed), 0).UTC().Format(time.RFC3339)
+		return &ts
+	case json.Number:
+		if parsed, err := typed.Int64(); err == nil {
+			ts := time.Unix(parsed, 0).UTC().Format(time.RFC3339)
+			return &ts
+		}
+	}
+	return nil
+}
+
+func lookupPrincipalForAPIKey(client *apiruntime.Client, ctx *resolvedAuthContext) (string, string, error) {
+	if ctx == nil || strings.TrimSpace(ctx.APIKey) == "" {
+		return "", "", nil
+	}
+
+	resp, err := client.Do("GET", "/principals", url.Values{"max_results": []string{"1000"}}, nil)
+	if err != nil {
+		return "", "", err
+	}
+	if err := apiruntime.CheckError(resp); err != nil {
+		return "", "", err
+	}
+
+	var principals listResponse
+	if err := json.NewDecoder(resp.Body).Decode(&principals); err != nil {
+		_ = resp.Body.Close()
+		return "", "", err
+	}
+	_ = resp.Body.Close()
+
+	var items []apiPrincipal
+	if len(principals.Data) > 0 && string(principals.Data) != "null" {
+		if err := json.Unmarshal(principals.Data, &items); err != nil {
+			return "", "", err
+		}
+	}
+
+	for _, principal := range items {
+		query := url.Values{
+			"max_results":  []string{"1000"},
+			"principal_id": []string{principal.ID},
+		}
+		resp, err := client.Do("GET", "/api-keys", query, nil)
+		if err != nil {
+			return "", "", err
+		}
+		if err := apiruntime.CheckError(resp); err != nil {
+			_ = resp.Body.Close()
+			return "", "", err
+		}
+
+		var payload listResponse
+		if err := json.NewDecoder(resp.Body).Decode(&payload); err != nil {
+			_ = resp.Body.Close()
+			return "", "", err
+		}
+		_ = resp.Body.Close()
+
+		var apiKeys []apiAPIKey
+		if len(payload.Data) > 0 && string(payload.Data) != "null" {
+			if err := json.Unmarshal(payload.Data, &apiKeys); err != nil {
+				return "", "", err
+			}
+		}
+		for _, apiKey := range apiKeys {
+			if apiKey.KeyPrefix != "" && strings.HasPrefix(ctx.APIKey, apiKey.KeyPrefix) {
+				return principal.Name, "api-key-prefix", nil
+			}
+		}
+	}
+
+	return "", "", nil
 }
 
 func probeAuth(client *apiruntime.Client) error {

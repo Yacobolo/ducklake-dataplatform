@@ -142,6 +142,52 @@ platform: workspaces: personal: {
 	assert.Contains(t, err.Error(), "conflicting values")
 }
 
+func TestLoadDirectoryWithOptions_ResolvesTargetAndVars(t *testing.T) {
+	dir := newCUEModule(t)
+
+	writeCUEFile(t, filepath.Join(dir, "catalogs", "main", "catalog.cue"), `
+package duckconfig
+
+platform: catalogs: main: {
+	metastore_type: "sqlite"
+	dsn: "meta.sqlite"
+	data_path: "data"
+	schemas: analytics: {}
+}
+`)
+
+	writeCUEFile(t, filepath.Join(dir, "projects", "core", "project.cue"), `
+package duckconfig
+
+platform: projects: core: {
+	workspace_ref: "personal"
+	kind: "shared"
+	description: "target=${target} owner=${owner}"
+	environments: dev: {
+		kind: "development"
+		target_catalog: "main"
+		target_schema: "analytics"
+		variables: {
+			owner: "team-${target_name}"
+		}
+	}
+}
+`)
+
+	state, err := LoadDirectoryWithOptions(dir, LoadOptions{
+		Target: "dev",
+		Vars: map[string]string{
+			"owner": "alice",
+		},
+	})
+	require.NoError(t, err)
+	require.NotNil(t, state.Resolution)
+	require.Equal(t, "personal/core/dev", state.Resolution.TargetRef)
+	require.Equal(t, "alice", state.Resolution.Variables["owner"])
+	require.Len(t, state.Projects, 1)
+	assert.Equal(t, "target=dev owner=alice", state.Projects[0].Spec.Description)
+}
+
 func newCUEModule(t *testing.T) string {
 	t.Helper()
 	dir := t.TempDir()

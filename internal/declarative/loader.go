@@ -90,11 +90,18 @@ const cuePlatformSchemaSource = `
 })
 `
 
+// CUESchemaSource returns the built-in declarative CUE schema.
+func CUESchemaSource() string {
+	return cuePlatformSchemaSource
+}
+
 var errLegacyPipelines = fmt.Errorf("legacy pipelines/ configs are no longer supported; migrate pipeline definitions to assets/ and remove pipelines/")
 
 // LoadOptions configures CUE loading behavior.
 type LoadOptions struct {
 	AllowUnknownFields bool
+	Target             string
+	Vars               map[string]string
 }
 
 // LoadDirectory compiles all CUE fragments under the given root into desired state.
@@ -103,7 +110,7 @@ func LoadDirectory(dir string) (*DesiredState, error) {
 }
 
 // LoadDirectoryWithOptions compiles all CUE fragments under the given root into desired state.
-func LoadDirectoryWithOptions(dir string, _ LoadOptions) (*DesiredState, error) {
+func LoadDirectoryWithOptions(dir string, opts LoadOptions) (*DesiredState, error) {
 	if err := ensureCUEConfigRoot(dir); err != nil {
 		return nil, err
 	}
@@ -164,6 +171,9 @@ func LoadDirectoryWithOptions(dir string, _ LoadOptions) (*DesiredState, error) 
 
 	state, err := normalizeCuePlatform(compiled)
 	if err != nil {
+		return nil, err
+	}
+	if err := resolveLoadOptions(state, opts); err != nil {
 		return nil, err
 	}
 

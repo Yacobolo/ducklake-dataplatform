@@ -85,7 +85,7 @@ package api
 		op:           "listNotebooks"
 		path:         "/notebooks"
 		summary:      "List notebooks"
-		cli:          "notebooks notebooks list"
+		cli:          "notebooks list"
 		returns:      "PaginatedNotebooks"
 		error_family: "standard"
 		params:       #listNotebookParameters
@@ -96,7 +96,7 @@ package api
 		op:             "createNotebook"
 		path:           "/notebooks"
 		summary:        "Create notebook"
-		cli:            "notebooks notebooks create"
+		cli:            "notebooks create"
 		returns:        "Notebook"
 		success_status: 201
 		error_family:   "mutating"
@@ -109,7 +109,7 @@ package api
 		op:           "getNotebook"
 		path:         "/notebooks/{notebook_id}"
 		summary:      "Get notebook"
-		cli:          "notebooks notebooks get"
+		cli:          "notebooks get"
 		returns:      "NotebookDetail"
 		error_family: "resource"
 		params:       #notebookPathParameters
@@ -120,7 +120,7 @@ package api
 		op:           "updateNotebook"
 		path:         "/notebooks/{notebook_id}"
 		summary:      "Update notebook"
-		cli:          "notebooks notebooks update"
+		cli:          "notebooks update"
 		returns:      "Notebook"
 		error_family: "resource"
 		params:       #notebookPathParameters
@@ -189,7 +189,7 @@ package api
 		op:           "deleteNotebook"
 		path:         "/notebooks/{notebook_id}"
 		summary:      "Delete notebook"
-		cli:          "notebooks notebooks delete"
+		cli:          "notebooks delete"
 		error_family: "resource"
 		params:       #notebookPathParameters
 	},

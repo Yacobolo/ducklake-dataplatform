@@ -19,13 +19,12 @@ var (
 )
 
 const (
-	groupAuth       = "auth"
-	groupLifecycle  = "lifecycle"
-	groupExplore    = "explore"
-	groupBootstrap  = "bootstrap"
-	groupServer     = "server"
-	groupAPI        = "api"
-	groupPlatform   = "platform"
+	groupAuth      = "auth"
+	groupLifecycle = "lifecycle"
+	groupExplore   = "explore"
+	groupServer    = "server"
+	groupAPI       = "api"
+	groupPlatform  = "platform"
 )
 
 // Execute runs the CLI.
@@ -214,7 +213,6 @@ func newRootCmd() *cobra.Command {
 		&cobra.Group{ID: groupAuth, Title: "Authentication"},
 		&cobra.Group{ID: groupLifecycle, Title: "Platform Lifecycle"},
 		&cobra.Group{ID: groupExplore, Title: "Exploration"},
-		&cobra.Group{ID: groupBootstrap, Title: "Bootstrap"},
 		&cobra.Group{ID: groupServer, Title: "Server/Admin"},
 		&cobra.Group{ID: groupAPI, Title: "API And Tooling"},
 		&cobra.Group{ID: groupPlatform, Title: "Platform Resources"},
@@ -226,7 +224,6 @@ func newRootCmd() *cobra.Command {
 	// Add hand-written commands
 	addGroupedCommand(rootCmd, newVersionCmd(), groupAPI)
 	addGroupedCommand(rootCmd, newAuthCmd(client), groupAuth)
-	addGroupedCommand(rootCmd, newBootstrapCmd(client), groupBootstrap)
 	addGroupedCommand(rootCmd, newProjectCmd(), groupLifecycle)
 	addGroupedCommand(rootCmd, newServerCmd(), groupServer)
 
@@ -235,6 +232,9 @@ func newRootCmd() *cobra.Command {
 	addGroupedCommand(rootCmd, newApplyCmd(client), groupLifecycle)
 	addGroupedCommand(rootCmd, newExportCmd(client), groupLifecycle)
 	addGroupedCommand(rootCmd, newValidateCmd(client), groupLifecycle)
+	addGroupedCommand(rootCmd, newSummaryCmd(), groupLifecycle)
+	addGroupedCommand(rootCmd, newSchemaCmd(), groupLifecycle)
+	addGroupedCommand(rootCmd, newAdoptCmd(client), groupLifecycle)
 
 	// Agent discovery commands
 	addGroupedCommand(rootCmd, newCommandsCmd(), groupExplore)

@@ -22,6 +22,7 @@ func newAuthCmd(client *apiruntime.Client) *cobra.Command {
 	cmd.AddCommand(newAuthDevTokenCmd())
 	cmd.AddCommand(newAuthLoginCmd(client))
 	cmd.AddCommand(newAuthDescribeCmd(client))
+	cmd.AddCommand(newAuthWhoAmICmd(client))
 	cmd.AddCommand(newAuthEnvCmd())
 	cmd.AddCommand(newAuthProfilesCmd())
 	cmd.AddCommand(newAuthBootstrapCmd(client))

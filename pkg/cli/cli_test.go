@@ -600,9 +600,9 @@ func TestCLI_CommandTree(t *testing.T) {
 	expectedCommands := []string{
 		"catalog", "security", "query", "compute", "storage",
 		"assets", "notebooks", "governance", "audit",
-		"lineage", "ingestion", "bootstrap", "project", "server",
+		"lineage", "ingestion", "project", "server",
 		"version", "auth",
-		"plan", "apply", "export", "validate",
+		"plan", "apply", "export", "validate", "summary", "schema", "adopt",
 		"commands", "api", "discover", "docs", "find", "describe",
 		"completion",
 	}

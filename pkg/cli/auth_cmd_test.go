@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -314,4 +316,123 @@ func TestCLI_AuthProviderOIDCCommands(t *testing.T) {
 		require.NoError(t, json.Unmarshal([]byte(captured.Body), &body))
 		assert.Equal(t, false, body["enabled"])
 	})
+}
+
+func TestCLI_AuthWhoAmI_ReportsPrincipalAndSession(t *testing.T) {
+	rec := &requestRecorder{}
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		rec.record(r)
+		w.Header().Set("Content-Type", "application/json")
+		if r.URL.Path == "/v1/catalogs" {
+			_, _ = w.Write([]byte(`{"data":[]}`))
+			return
+		}
+		http.NotFound(w, r)
+	}))
+	defer srv.Close()
+
+	dir := t.TempDir()
+	t.Setenv("HOME", dir)
+
+	rootCmd := newRootCmd()
+	rootCmd.SetArgs([]string{
+		"--output", "json",
+		"--host", srv.URL,
+		"auth", "dev-token",
+		"--principal", "alice",
+		"--secret", "test-secret",
+	})
+	require.NoError(t, rootCmd.Execute())
+
+	rootCmd = newRootCmd()
+	rootCmd.SetArgs([]string{"--output", "json", "--host", srv.URL, "auth", "whoami"})
+	restore := captureStdout(t)
+	err := rootCmd.Execute()
+	output := restore()
+	require.NoError(t, err)
+
+	var payload map[string]any
+	require.NoError(t, json.Unmarshal([]byte(output), &payload))
+	assert.Equal(t, "alice", payload["principal"])
+	assert.Equal(t, "token-subject", payload["principal_source"])
+	assert.Equal(t, true, payload["session_valid"])
+	assert.Equal(t, "token", payload["auth_type"])
+}
+
+func TestCLI_AuthWhoAmI_DegradesOnValidationFailure(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusUnauthorized)
+		_, _ = w.Write([]byte(`{"code":401,"message":"unauthorized"}`))
+	}))
+	defer srv.Close()
+
+	dir := t.TempDir()
+	t.Setenv("HOME", dir)
+
+	rootCmd := newRootCmd()
+	rootCmd.SetArgs([]string{
+		"--host", srv.URL,
+		"auth", "dev-token",
+		"--principal", "alice",
+		"--secret", "test-secret",
+	})
+	require.NoError(t, rootCmd.Execute())
+
+	rootCmd = newRootCmd()
+	rootCmd.SetArgs([]string{"--output", "json", "--host", srv.URL, "auth", "whoami"})
+	restore := captureStdout(t)
+	err := rootCmd.Execute()
+	output := restore()
+	require.NoError(t, err)
+
+	var payload map[string]any
+	require.NoError(t, json.Unmarshal([]byte(output), &payload))
+	assert.Equal(t, false, payload["session_valid"])
+	assert.Contains(t, payload["validation_error"], "401")
+	assert.Equal(t, "alice", payload["principal"])
+}
+
+func TestCLI_AuthProfilesValidate_UsesConfigFileOverride(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"data":[]}`))
+	}))
+	defer srv.Close()
+
+	configDir := t.TempDir()
+	configPath := filepath.Join(configDir, "custom-config.yaml")
+	t.Setenv("QUACK_CONFIG_FILE", configPath)
+	t.Setenv("HOME", t.TempDir())
+
+	cfg := &UserConfig{
+		CurrentProfile: "custom",
+		Profiles: map[string]Profile{
+			"custom": {
+				Host:  srv.URL,
+				Token: "token-123",
+			},
+		},
+	}
+	require.NoError(t, SaveUserConfig(cfg))
+	_, err := os.Stat(configPath)
+	require.NoError(t, err)
+
+	rootCmd := newRootCmd()
+	rootCmd.SetArgs([]string{"--output", "json", "auth", "profiles", "validate"})
+	restore := captureStdout(t)
+	err = rootCmd.Execute()
+	output := restore()
+	require.NoError(t, err)
+
+	var payload map[string]any
+	require.NoError(t, json.Unmarshal([]byte(output), &payload))
+	assert.Equal(t, configPath, payload["config_path"])
+	profiles, ok := payload["profiles"].([]any)
+	require.True(t, ok)
+	require.Len(t, profiles, 1)
+	profile, ok := profiles[0].(map[string]any)
+	require.True(t, ok)
+	assert.Equal(t, "custom", profile["name"])
+	assert.Equal(t, true, profile["valid"])
 }

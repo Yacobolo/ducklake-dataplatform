@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"gopkg.in/yaml.v3"
 )
@@ -40,6 +41,9 @@ func (c *UserConfig) ActiveProfile(override string) (Profile, error) {
 
 // ConfigDir returns the path to ~/.quack/.
 func ConfigDir() string {
+	if path := strings.TrimSpace(os.Getenv("QUACK_CONFIG_FILE")); path != "" {
+		return filepath.Dir(path)
+	}
 	home, err := os.UserHomeDir()
 	if err != nil {
 		return ""
@@ -49,6 +53,9 @@ func ConfigDir() string {
 
 // ConfigPath returns the path to ~/.quack/config.yaml.
 func ConfigPath() string {
+	if path := strings.TrimSpace(os.Getenv("QUACK_CONFIG_FILE")); path != "" {
+		return path
+	}
 	return filepath.Join(ConfigDir(), "config.yaml")
 }
 

@@ -18,6 +18,7 @@ func newApplyCmd(client *apiruntime.Client) *cobra.Command {
 		autoApprove        bool
 		noColor            bool
 		allowUnknownFields bool
+		loadFlags          declarativeLoadFlags
 	)
 
 	cmd := &cobra.Command{
@@ -28,9 +29,11 @@ func newApplyCmd(client *apiruntime.Client) *cobra.Command {
 			isJSON := getOutputFormat(cmd) == "json"
 
 			// 1. Load desired state from the CUE config tree.
-			desired, err := declarative.LoadDirectoryWithOptions(configDir, declarative.LoadOptions{
-				AllowUnknownFields: allowUnknownFields,
-			})
+			loadOptions, err := loadFlags.loadOptions(allowUnknownFields)
+			if err != nil {
+				return err
+			}
+			desired, err := declarative.LoadDirectoryWithOptions(configDir, loadOptions)
 			if err != nil {
 				return fmt.Errorf("load config: %w", err)
 			}
@@ -207,6 +210,7 @@ func newApplyCmd(client *apiruntime.Client) *cobra.Command {
 	cmd.Flags().BoolVar(&autoApprove, "auto-approve", false, "Skip interactive confirmation prompt")
 	cmd.Flags().BoolVar(&noColor, "no-color", false, "Disable colored output")
 	cmd.Flags().BoolVar(&allowUnknownFields, "allow-unknown-fields", false, "Deprecated no-op retained for compatibility with existing CLI wiring")
+	addDeclarativeLoadFlags(cmd, &loadFlags)
 
 	return cmd
 }

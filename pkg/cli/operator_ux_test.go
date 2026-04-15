@@ -26,15 +26,15 @@ func TestCLI_RootHelp_ReflectsLeanSurface(t *testing.T) {
 
 	assert.Contains(t, output, "Authentication")
 	assert.Contains(t, output, "Platform Lifecycle")
-	assert.Contains(t, output, "Bootstrap")
 	assert.Contains(t, output, "Server/Admin")
 	assert.Contains(t, output, "\n  auth")
-	assert.Contains(t, output, "\n  bootstrap")
+	assert.Contains(t, output, "\n  adopt")
 	assert.Contains(t, output, "\n  project")
 	assert.Contains(t, output, "\n  server")
 	assert.NotContains(t, output, "\n  config")
 	assert.NotContains(t, output, "\n  declarative")
 	assert.NotContains(t, output, "\n  init")
+	assert.NotContains(t, output, "\n  bootstrap")
 }
 
 func TestAPI_RawGet(t *testing.T) {

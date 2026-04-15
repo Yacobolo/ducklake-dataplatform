@@ -1769,6 +1769,7 @@ paths:
                 message: validation failed
       tags:
         - Assets
+      x-cli-command: assets freshness get
   /assets/{asset_key}/freshness-reconciliations:
     post:
       operationId: reconcileAssetFreshness
@@ -1880,6 +1881,7 @@ paths:
                 message: validation failed
       tags:
         - Assets
+      x-cli-command: assets freshness reconcile
   /assets/{asset_key}/freshness/blockers:
     get:
       operationId: listAssetFreshnessBlockers
@@ -1999,6 +2001,7 @@ paths:
                 message: validation failed
       tags:
         - Assets
+      x-cli-command: assets freshness blockers
   /assets/{asset_key}/freshness/explanation:
     get:
       operationId: explainAssetFreshness
@@ -2120,6 +2123,7 @@ paths:
                 message: validation failed
       tags:
         - Assets
+      x-cli-command: assets freshness explain
   /assets/{asset_key}/freshness/requirements:
     get:
       operationId: listAssetFreshnessRequirements
@@ -2239,6 +2243,7 @@ paths:
                 message: validation failed
       tags:
         - Assets
+      x-cli-command: assets freshness requirements
   /assets/{asset_key}/graph:
     get:
       operationId: getAssetGraph
@@ -2951,7 +2956,7 @@ paths:
         - Audit
       x-authz:
         mode: admin_only
-      x-cli-command: observability audit-logs list
+      x-cli-command: audit entries list
   /auth/bootstrap/complete:
     post:
       operationId: bootstrapComplete
@@ -3690,7 +3695,7 @@ paths:
         - Catalogs
       x-authz:
         mode: admin_only
-      x-cli-command: catalog list-registrations
+      x-cli-command: catalog registrations list
     post:
       operationId: registerCatalog
       summary: Register catalog
@@ -3789,7 +3794,7 @@ paths:
               dsn: example
               metastore_type: sqlite
               name: example
-      x-cli-command: catalog register
+      x-cli-command: catalog registrations create
   /catalogs/search:
     get:
       operationId: searchCatalog
@@ -3897,7 +3902,7 @@ paths:
                 message: validation failed
       tags:
         - Catalogs
-      x-cli-command: governance search
+      x-cli-command: catalog search
   /catalogs/{catalog_name}:
     delete:
       operationId: deleteCatalogRegistration
@@ -3986,7 +3991,7 @@ paths:
                 message: validation failed
       tags:
         - Catalogs
-      x-cli-command: catalog delete-registration
+      x-cli-command: catalog registrations delete
     get:
       operationId: getCatalog
       summary: Get catalog
@@ -4090,7 +4095,7 @@ paths:
                 message: validation failed
       tags:
         - Catalogs
-      x-cli-command: catalog info
+      x-cli-command: catalog registrations get
     patch:
       operationId: updateCatalogRegistration
       summary: Update catalog registration
@@ -4204,7 +4209,7 @@ paths:
             example:
               comment: example
               data_path: example
-      x-cli-command: catalog update-registration
+      x-cli-command: catalog registrations update
   /catalogs/{catalog_name}/default:
     put:
       operationId: setDefaultCatalog
@@ -4305,7 +4310,7 @@ paths:
             schema:
               $ref: '#/components/schemas/SetDefaultCatalogRequest'
             example: {}
-      x-cli-command: catalog set-default
+      x-cli-command: catalog registrations set-default
   /catalogs/{catalog_name}/history:
     get:
       operationId: listCatalogHistory
@@ -4539,7 +4544,7 @@ paths:
                 message: validation failed
       tags:
         - Catalogs
-      x-cli-command: observability metastore summary
+      x-cli-command: catalog metastore summary
   /catalogs/{catalog_name}/schemas:
     get:
       operationId: listSchemas
@@ -6331,7 +6336,7 @@ paths:
                 message: validation failed
       tags:
         - Catalogs
-      x-cli-command: manifest create
+      x-cli-command: catalog tables manifest get
   /catalogs/{catalog_name}/schemas/{schema_name}/tables/{table_name}/profiles:
     post:
       operationId: profileTable
@@ -9977,6 +9982,7 @@ paths:
                 message: validation failed
       tags:
         - Dashboards
+      x-cli-command: dashboards list
     post:
       operationId: createDashboard
       summary: Create dashboard
@@ -10082,6 +10088,7 @@ paths:
               owner: team-analytics
               semantic_model_name: executive_metrics
               semantic_project_name: revenue
+      x-cli-command: dashboards create
   /dashboards/{dashboard_id}:
     delete:
       operationId: deleteDashboard
@@ -10158,6 +10165,7 @@ paths:
                 message: validation failed
       tags:
         - Dashboards
+      x-cli-command: dashboards delete
     get:
       operationId: getDashboard
       summary: Get dashboard
@@ -10296,6 +10304,7 @@ paths:
                 message: validation failed
       tags:
         - Dashboards
+      x-cli-command: dashboards get
     patch:
       operationId: updateDashboard
       summary: Update dashboard
@@ -10402,6 +10411,7 @@ paths:
               owner: team-finance
               semantic_model_name: executive_metrics
               semantic_project_name: revenue
+      x-cli-command: dashboards update
   /dashboards/{dashboard_id}/rendered:
     get:
       operationId: getRenderedDashboard
@@ -10549,6 +10559,7 @@ paths:
                 message: validation failed
       tags:
         - Dashboards
+      x-cli-command: dashboards get-rendered
   /dashboards/{dashboard_id}/widgets:
     get:
       operationId: listDashboardWidgets
@@ -10800,6 +10811,7 @@ paths:
                 kind: chart
                 legend: false
                 title: MRR by plan tier
+      x-cli-command: dashboards widgets create
   /dashboards/{dashboard_id}/widgets/{widget_id}:
     delete:
       operationId: deleteDashboardWidget
@@ -10882,6 +10894,7 @@ paths:
                 message: validation failed
       tags:
         - Dashboards
+      x-cli-command: dashboards widgets delete
     get:
       operationId: getDashboardWidget
       summary: Get dashboard widget
@@ -11154,6 +11167,7 @@ paths:
               visual_spec:
                 chart_type: stacked_bar
                 title: MRR by plan tier and region
+      x-cli-command: dashboards widgets update
   /data-products:
     get:
       operationId: listDataProducts
@@ -20694,7 +20708,7 @@ paths:
                 message: validation failed
       tags:
         - Models
-      x-cli-command: models diff diff-macro-revisions
+      x-cli-command: models revisions diff
   /macros/{macro_name}/revisions:
     get:
       operationId: listMacroRevisions
@@ -20901,6 +20915,7 @@ paths:
                 message: validation failed
       tags:
         - Resources
+      x-cli-command: me recent-resources list
   /me/saved-resources:
     get:
       operationId: listSavedResources
@@ -21002,6 +21017,7 @@ paths:
                 message: validation failed
       tags:
         - Resources
+      x-cli-command: me saved-resources list
     post:
       operationId: createSavedResource
       summary: Save resource
@@ -21098,6 +21114,7 @@ paths:
               resource_path: example
               resource_type: example
               section: example
+      x-cli-command: me saved-resources create
   /me/saved-resources/{resource_type}/{resource_key}:
     delete:
       operationId: deleteSavedResource
@@ -21181,6 +21198,7 @@ paths:
                 message: validation failed
       tags:
         - Resources
+      x-cli-command: me saved-resources delete
   /model-runs:
     get:
       operationId: listModelRuns
@@ -21287,7 +21305,7 @@ paths:
                 message: validation failed
       tags:
         - Models
-      x-cli-command: models model-runs list
+      x-cli-command: models runs list
     post:
       operationId: triggerModelRun
       summary: Trigger model run
@@ -21395,7 +21413,7 @@ paths:
                 - fct_daily_revenue
                 - dim_customer
               project_name: finance-platform
-      x-cli-command: models model-runs trigger-model-run
+      x-cli-command: models runs trigger
   /model-runs/{run_id}:
     get:
       operationId: getModelRun
@@ -21508,7 +21526,7 @@ paths:
                 message: validation failed
       tags:
         - Models
-      x-cli-command: models model-runs get
+      x-cli-command: models runs get
   /model-runs/{run_id}/cancellations:
     post:
       operationId: cancelModelRun
@@ -21609,7 +21627,7 @@ paths:
                 message: validation failed
       tags:
         - Models
-      x-cli-command: models cancel cancel-model-run
+      x-cli-command: models runs cancel
   /model-runs/{run_id}/steps:
     get:
       operationId: listModelRunSteps
@@ -21950,7 +21968,7 @@ paths:
                 message: validation failed
       tags:
         - Models
-      x-cli-command: models models list
+      x-cli-command: models list
     post:
       operationId: createModel
       summary: Create model
@@ -22090,7 +22108,7 @@ paths:
               tags:
                 - finance
                 - gold
-      x-cli-command: models models create
+      x-cli-command: models create
   /models/dag:
     get:
       operationId: getModelDAG
@@ -22252,7 +22270,7 @@ paths:
                 message: validation failed
       tags:
         - Models
-      x-cli-command: models models delete
+      x-cli-command: models delete
     get:
       operationId: getModel
       summary: Get model
@@ -22383,7 +22401,7 @@ paths:
                 message: validation failed
       tags:
         - Models
-      x-cli-command: models models get
+      x-cli-command: models get
     patch:
       operationId: updateModel
       summary: Update model
@@ -22529,7 +22547,7 @@ paths:
               sql: example
               tags:
                 - example
-      x-cli-command: models models update
+      x-cli-command: models update
   /models/{project_name}/{model_name}/freshness:
     get:
       operationId: checkModelFreshness
@@ -22633,7 +22651,7 @@ paths:
                 message: validation failed
       tags:
         - Models
-      x-cli-command: models freshness check-model-freshness
+      x-cli-command: models freshness check
   /models/{project_name}/{model_name}/tests:
     get:
       operationId: listModelTests
@@ -23050,7 +23068,7 @@ paths:
                 message: validation failed
       tags:
         - Notebooks
-      x-cli-command: notebooks notebooks list
+      x-cli-command: notebooks list
     post:
       operationId: createNotebook
       summary: Create notebook
@@ -23148,7 +23166,7 @@ paths:
               folder_id: fld_01hzynotebooks
               name: Revenue diagnostics
               source: manual
-      x-cli-command: notebooks notebooks create
+      x-cli-command: notebooks create
   /notebooks/{notebook_id}:
     delete:
       operationId: deleteNotebook
@@ -23237,7 +23255,7 @@ paths:
                 message: validation failed
       tags:
         - Notebooks
-      x-cli-command: notebooks notebooks delete
+      x-cli-command: notebooks delete
     get:
       operationId: getNotebook
       summary: Get notebook
@@ -23397,7 +23415,7 @@ paths:
                 message: validation failed
       tags:
         - Notebooks
-      x-cli-command: notebooks notebooks get
+      x-cli-command: notebooks get
     patch:
       operationId: updateNotebook
       summary: Update notebook
@@ -23513,7 +23531,7 @@ paths:
               environment_override_id: env_01hzyprod
               name: Revenue diagnostics
               project_override_id: prj_01hzyfinance
-      x-cli-command: notebooks notebooks update
+      x-cli-command: notebooks update
   /notebooks/{notebook_id}/cells:
     post:
       operationId: createCell
@@ -24617,7 +24635,7 @@ paths:
               materialization: VIEW
               name: example
               project_name: example
-      x-cli-command: models from-notebook promote-notebook-to-model
+      x-cli-command: models from-notebook promote
   /notebooks/{notebook_id}/moves:
     post:
       operationId: moveNotebook
@@ -25659,7 +25677,7 @@ paths:
                 message: validation failed
       tags:
         - Pipelines
-      x-cli-command: pipelines pipelines list
+      x-cli-command: pipelines list
     post:
       operationId: createPipeline
       summary: Create pipeline
@@ -25758,7 +25776,7 @@ paths:
               is_paused: true
               name: example
               schedule_cron: example
-      x-cli-command: pipelines pipelines create
+      x-cli-command: pipelines create
   /pipelines/runs/{run_id}:
     get:
       operationId: getPipelineRun
@@ -26136,7 +26154,7 @@ paths:
                 message: validation failed
       tags:
         - Pipelines
-      x-cli-command: pipelines pipelines delete
+      x-cli-command: pipelines delete
     get:
       operationId: getPipeline
       summary: Get pipeline
@@ -26239,7 +26257,7 @@ paths:
                 message: validation failed
       tags:
         - Pipelines
-      x-cli-command: pipelines pipelines get
+      x-cli-command: pipelines get
     patch:
       operationId: updatePipeline
       summary: Update pipeline
@@ -26343,7 +26361,7 @@ paths:
               folder_id: example
               is_paused: true
               schedule_cron: example
-      x-cli-command: pipelines pipelines update
+      x-cli-command: pipelines update
   /pipelines/{pipeline_name}/jobs:
     get:
       operationId: listPipelineJobs
@@ -29974,7 +29992,7 @@ paths:
         - Queries
       x-authz:
         mode: admin_only
-      x-cli-command: observability query-history list
+      x-cli-command: query history list
   /queries/{query_id}:
     delete:
       operationId: deleteQuery
@@ -31349,7 +31367,7 @@ paths:
                 message: validation failed
       tags:
         - Semantic Layer
-      x-cli-command: semantic freshness check-metric-freshness
+      x-cli-command: semantic freshness check
   /semantic-sources/{source_schema}/{source_table}/freshness:
     get:
       operationId: checkSourceFreshness
@@ -31471,7 +31489,7 @@ paths:
                 message: validation failed
       tags:
         - Semantic Layer
-      x-cli-command: models freshness check-source-freshness
+      x-cli-command: models sources freshness
   /storage-credentials:
     get:
       operationId: listStorageCredentials
@@ -32666,7 +32684,7 @@ paths:
               column_name: example
               securable_id: example
               securable_type: schema
-      x-cli-command: governance tag-assignments create
+      x-cli-command: governance tags assignments create
   /tags/{tag_id}/assignments/{assignment_id}:
     delete:
       operationId: deleteTagAssignment
@@ -32749,7 +32767,7 @@ paths:
                 message: validation failed
       tags:
         - Governance
-      x-cli-command: governance tag-assignments delete
+      x-cli-command: governance tags assignments delete
   /workspaces:
     get:
       operationId: listWorkspaces
@@ -34212,7 +34230,7 @@ paths:
                 message: validation failed
       tags:
         - Semantic Layer
-      x-cli-command: semantic semantic-models list
+      x-cli-command: semantic models list
     post:
       operationId: createSemanticModel
       summary: Create semantic model
@@ -34321,7 +34339,7 @@ paths:
               tags:
                 - growth
                 - finance
-      x-cli-command: semantic semantic-models create
+      x-cli-command: semantic models create
   /workspaces/{workspace_id}/semantic-models/{semantic_model_id}:
     delete:
       operationId: deleteSemanticModel
@@ -34404,7 +34422,7 @@ paths:
                 message: validation failed
       tags:
         - Semantic Layer
-      x-cli-command: semantic semantic-models delete
+      x-cli-command: semantic models delete
     get:
       operationId: getSemanticModel
       summary: Get semantic model
@@ -34516,7 +34534,7 @@ paths:
                 message: validation failed
       tags:
         - Semantic Layer
-      x-cli-command: semantic semantic-models get
+      x-cli-command: semantic models get
     patch:
       operationId: updateSemanticModel
       summary: Update semantic model
@@ -34630,7 +34648,7 @@ paths:
               owner: example
               tags:
                 - example
-      x-cli-command: semantic semantic-models update
+      x-cli-command: semantic models update
   /workspaces/{workspace_id}/semantic-models/{semantic_model_id}/metrics:
     get:
       operationId: listSemanticMetrics
@@ -36154,7 +36172,7 @@ paths:
                 message: validation failed
       tags:
         - Semantic Layer
-      x-cli-command: semantic semantic-relationships list
+      x-cli-command: semantic relationships list
     post:
       operationId: createSemanticModelRelationship
       summary: Create semantic relationship for a semantic model
@@ -36267,7 +36285,7 @@ paths:
               name: example
               relationship_type: ONE_TO_ONE
               to_semantic_id: example
-      x-cli-command: semantic semantic-relationships create
+      x-cli-command: semantic relationships create
   /workspaces/{workspace_id}/semantic-models/{semantic_model_id}/relationships/{relationship_name}:
     delete:
       operationId: deleteSemanticModelRelationship
@@ -36356,7 +36374,7 @@ paths:
                 message: validation failed
       tags:
         - Semantic Layer
-      x-cli-command: semantic semantic-relationships delete
+      x-cli-command: semantic relationships delete
     get:
       operationId: getSemanticModelRelationship
       summary: Get semantic relationship for a semantic model
@@ -36587,7 +36605,7 @@ paths:
               join_sql: example
               max_hops: 1
               relationship_type: ONE_TO_ONE
-      x-cli-command: semantic semantic-relationships update
+      x-cli-command: semantic relationships update
 security:
   - BearerAuth: []
   - ApiKeyAuth: []

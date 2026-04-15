@@ -456,7 +456,7 @@ package api
 		op:             "createTagAssignment"
 		path:           "/tags/{tag_id}/assignments"
 		summary:        "Create tag assignment"
-		cli:            "governance tag-assignments create"
+		cli:            "governance tags assignments create"
 		returns:        "TagAssignment"
 		success_status: 201
 		error_family:   "resource"
@@ -476,7 +476,7 @@ package api
 		op:            "deleteTagAssignment"
 		path:          "/tags/{tag_id}/assignments/{assignment_id}"
 		summary:       "Delete tag assignment"
-		cli:           "governance tag-assignments delete"
+		cli:           "governance tags assignments delete"
 		error_family:  "mutating"
 		params:        #tagAssignmentPathParameters
 		authz_default: false

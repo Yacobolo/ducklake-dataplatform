@@ -55,7 +55,7 @@ package api
 		op:           "listPipelines"
 		path:         "/pipelines"
 		summary:      "List pipelines"
-		cli:          "pipelines pipelines list"
+		cli:          "pipelines list"
 		returns:      "PaginatedPipelines"
 		error_family: "standard"
 		params:       #paginationParameters
@@ -66,7 +66,7 @@ package api
 		op:             "createPipeline"
 		path:           "/pipelines"
 		summary:        "Create pipeline"
-		cli:            "pipelines pipelines create"
+		cli:            "pipelines create"
 		returns:        "Pipeline"
 		success_status: 201
 		error_family:   "mutating"
@@ -79,7 +79,7 @@ package api
 		op:           "getPipeline"
 		path:         "/pipelines/{pipeline_name}"
 		summary:      "Get pipeline"
-		cli:          "pipelines pipelines get"
+		cli:          "pipelines get"
 		returns:      "Pipeline"
 		error_family: "resource"
 		params:       #pipelinePathParameters
@@ -90,7 +90,7 @@ package api
 		op:           "updatePipeline"
 		path:         "/pipelines/{pipeline_name}"
 		summary:      "Update pipeline"
-		cli:          "pipelines pipelines update"
+		cli:          "pipelines update"
 		returns:      "Pipeline"
 		error_family: "mutating"
 		params:       #pipelinePathParameters
@@ -103,7 +103,7 @@ package api
 		op:           "deletePipeline"
 		path:         "/pipelines/{pipeline_name}"
 		summary:      "Delete pipeline"
-		cli:          "pipelines pipelines delete"
+		cli:          "pipelines delete"
 		error_family: "mutating"
 		params:       #pipelinePathParameters
 	},
