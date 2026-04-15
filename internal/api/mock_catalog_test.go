@@ -75,8 +75,8 @@ func (m *mockCatalogRepo) GetCatalogVersionSummary(_ context.Context) (*domain.C
 	latestSnapshotID := int64(1)
 	return &domain.CatalogVersionSummary{
 		CatalogName:      "lake",
-		Version:          "0.3",
-		CreatedBy:        "DuckDB 6ddac802ff",
+		Version:          "1.0",
+		CreatedBy:        "DuckDB 8a5851971f",
 		Encrypted:        boolPtr(false),
 		LatestSnapshotID: &latestSnapshotID,
 		Schemas: domain.VersionedObjectSummary{

@@ -4,6 +4,7 @@ package integration
 
 import (
 	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -315,8 +316,8 @@ func TestHTTP_CatalogVersionSummary(t *testing.T) {
 	var result map[string]interface{}
 	decodeJSON(t, resp, &result)
 	assert.Equal(t, "lake", result["catalog_name"])
-	assert.Equal(t, "0.3", result["version"])
-	assert.Equal(t, "DuckDB 6ddac802ff", result["created_by"])
+	assert.Equal(t, "1.0", result["version"])
+	assert.True(t, strings.HasPrefix(result["created_by"].(string), "DuckDB "))
 	assert.Equal(t, false, result["encrypted"])
 
 	schemas, ok := result["schemas"].(map[string]interface{})

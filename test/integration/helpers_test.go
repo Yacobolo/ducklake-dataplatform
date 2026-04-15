@@ -306,123 +306,179 @@ func sha256Hex(s string) string {
 // testdata/titanic.parquet fixture into the local data directory.
 const ducklakeDataFileName = "ducklake-019c4727-c55c-7e4d-ab38-e01a2920253c.parquet"
 
-// seedDuckLakeMetadata creates the DuckLake catalog tables in the temp SQLite
-// and inserts hardcoded production values. The dataPath parameter controls the
-// data_path metadata value (e.g., "s3://yacobolo/lake_data/" for S3 tests or a
-// local temp directory path for local tests).
-func seedDuckLakeMetadata(t *testing.T, db *sql.DB, dataPath string) {
+type duckLakeTableSeedSpec struct {
+	TableName     string
+	ColumnDDL     string
+	DataFileName  string
+	RecordCount   int64
+	FileSizeBytes int64
+	FooterSize    int64
+}
+
+func sqliteMainDBPath(t *testing.T, db *sql.DB) string {
 	t.Helper()
 
-	const ddl = `
-	CREATE TABLE IF NOT EXISTS ducklake_metadata(
-		"key" VARCHAR NOT NULL,
-		"value" VARCHAR NOT NULL,
-		"scope" VARCHAR,
-		scope_id BIGINT
-	);
-	CREATE TABLE IF NOT EXISTS ducklake_schema(
-		schema_id BIGINT PRIMARY KEY,
-		schema_uuid VARCHAR,
-		begin_snapshot BIGINT,
-		end_snapshot BIGINT,
-		schema_name VARCHAR,
-		path VARCHAR,
-		path_is_relative BIGINT
-	);
-	CREATE TABLE IF NOT EXISTS ducklake_table(
-		table_id BIGINT,
-		table_uuid VARCHAR,
-		begin_snapshot BIGINT,
-		end_snapshot BIGINT,
-		schema_id BIGINT,
-		table_name VARCHAR,
-		path VARCHAR,
-		path_is_relative BIGINT
-	);
-	CREATE TABLE IF NOT EXISTS ducklake_column(
-		column_id BIGINT,
-		begin_snapshot BIGINT,
-		end_snapshot BIGINT,
-		table_id BIGINT,
-		column_order BIGINT,
-		column_name VARCHAR,
-		column_type VARCHAR,
-		initial_default VARCHAR,
-		default_value VARCHAR,
-		nulls_allowed BIGINT,
-		parent_column BIGINT
-	);
-	CREATE TABLE IF NOT EXISTS ducklake_data_file(
-		data_file_id BIGINT PRIMARY KEY,
-		table_id BIGINT,
-		begin_snapshot BIGINT,
-		end_snapshot BIGINT,
-		file_order BIGINT,
-		path VARCHAR,
-		path_is_relative BIGINT,
-		file_format VARCHAR,
-		record_count BIGINT,
-		file_size_bytes BIGINT,
-		footer_size BIGINT,
-		row_id_start BIGINT,
-		partition_id BIGINT,
-		encryption_key VARCHAR,
-		partial_file_info VARCHAR,
-		mapping_id BIGINT
-	);`
-
-	const staticData = `
-	-- ducklake_metadata (excluding data_path — inserted separately)
-	INSERT INTO ducklake_metadata("key", "value") VALUES ('version', '0.3');
-	INSERT INTO ducklake_metadata("key", "value") VALUES ('created_by', 'DuckDB 6ddac802ff');
-	INSERT INTO ducklake_metadata("key", "value") VALUES ('encrypted', 'false');
-
-	-- ducklake_schema (main)
-	INSERT INTO ducklake_schema VALUES (
-		0, '38632316-cb07-4c65-96e1-767465b56bcf', 0, NULL,
-		'main', 'main/', 1
-	);
-
-	-- ducklake_table (titanic)
-	INSERT INTO ducklake_table VALUES (
-		1, '019c4727-c55b-79e9-90bb-28f40bacf385', 1, NULL,
-		0, 'titanic', 'titanic/', 1
-	);
-
-	-- ducklake_column (all 12 columns of titanic)
-	INSERT INTO ducklake_column VALUES (1,  1, NULL, 1, 1,  'PassengerId', 'int64',   NULL, NULL, 1, NULL);
-	INSERT INTO ducklake_column VALUES (2,  1, NULL, 1, 2,  'Survived',    'int64',   NULL, NULL, 1, NULL);
-	INSERT INTO ducklake_column VALUES (3,  1, NULL, 1, 3,  'Pclass',      'int64',   NULL, NULL, 1, NULL);
-	INSERT INTO ducklake_column VALUES (4,  1, NULL, 1, 4,  'Name',        'varchar', NULL, NULL, 1, NULL);
-	INSERT INTO ducklake_column VALUES (5,  1, NULL, 1, 5,  'Sex',         'varchar', NULL, NULL, 1, NULL);
-	INSERT INTO ducklake_column VALUES (6,  1, NULL, 1, 6,  'Age',         'float64', NULL, NULL, 1, NULL);
-	INSERT INTO ducklake_column VALUES (7,  1, NULL, 1, 7,  'SibSp',       'int64',   NULL, NULL, 1, NULL);
-	INSERT INTO ducklake_column VALUES (8,  1, NULL, 1, 8,  'Parch',       'int64',   NULL, NULL, 1, NULL);
-	INSERT INTO ducklake_column VALUES (9,  1, NULL, 1, 9,  'Ticket',      'varchar', NULL, NULL, 1, NULL);
-	INSERT INTO ducklake_column VALUES (10, 1, NULL, 1, 10, 'Fare',        'float64', NULL, NULL, 1, NULL);
-	INSERT INTO ducklake_column VALUES (11, 1, NULL, 1, 11, 'Cabin',       'varchar', NULL, NULL, 1, NULL);
-	INSERT INTO ducklake_column VALUES (12, 1, NULL, 1, 12, 'Embarked',    'varchar', NULL, NULL, 1, NULL);
-
-	-- ducklake_data_file (single parquet file, 891 rows)
-	INSERT INTO ducklake_data_file VALUES (
-		0, 1, 1, NULL, NULL,
-		'ducklake-019c4727-c55c-7e4d-ab38-e01a2920253c.parquet',
-		1, 'parquet', 891, 36014, 1332, 0, NULL, NULL, NULL, NULL
-	);`
-
-	if _, err := db.ExecContext(ctx, ddl); err != nil {
-		t.Fatalf("create ducklake DDL: %v", err)
+	rows, err := db.QueryContext(ctx, `PRAGMA database_list`)
+	if err != nil {
+		t.Fatalf("query sqlite database_list: %v", err)
 	}
-	if _, err := db.ExecContext(ctx, staticData); err != nil {
-		t.Fatalf("seed ducklake static data: %v", err)
+	defer rows.Close() //nolint:errcheck
+
+	for rows.Next() {
+		var seq int
+		var name string
+		var file string
+		if err := rows.Scan(&seq, &name, &file); err != nil {
+			t.Fatalf("scan sqlite database_list: %v", err)
+		}
+		if name == "main" && file != "" {
+			return file
+		}
 	}
-	dataPathSQL := fmt.Sprintf(
-		`INSERT INTO ducklake_metadata("key", "value") VALUES ('data_path', '%s');`,
-		dataPath,
+	if err := rows.Err(); err != nil {
+		t.Fatalf("iterate sqlite database_list: %v", err)
+	}
+
+	t.Fatal("sqlite main database path not found")
+	return ""
+}
+
+func duckLakeBootstrapDataPath(t *testing.T, requestedDataPath string) string {
+	t.Helper()
+
+	bootstrapPath := requestedDataPath
+	if strings.Contains(requestedDataPath, "://") {
+		bootstrapPath = filepath.Join(t.TempDir(), "ducklake-seed-data") + string(os.PathSeparator)
+	}
+	if err := os.MkdirAll(strings.TrimSuffix(bootstrapPath, string(os.PathSeparator)), 0o755); err != nil {
+		t.Fatalf("mkdir ducklake bootstrap path: %v", err)
+	}
+	return bootstrapPath
+}
+
+func seedDuckLakeTableMetadata(t *testing.T, metaPath string, requestedDataPath string, spec duckLakeTableSeedSpec) {
+	t.Helper()
+
+	bootstrapDataPath := duckLakeBootstrapDataPath(t, requestedDataPath)
+	metadataSchema := "__ducklake_metadata_lake"
+
+	duckDB, err := sql.Open("duckdb", "")
+	if err != nil {
+		t.Fatalf("open duckdb for metastore seeding: %v", err)
+	}
+
+	for _, stmt := range []string{
+		"INSTALL ducklake; LOAD ducklake;",
+		"INSTALL sqlite; LOAD sqlite;",
+	} {
+		if _, err := duckDB.ExecContext(ctx, stmt); err != nil {
+			t.Fatalf("seed ducklake extension setup (%s): %v", stmt, err)
+		}
+	}
+
+	attachSQL := fmt.Sprintf(
+		`ATTACH 'ducklake:sqlite:%s' AS lake (DATA_PATH '%s')`,
+		metaPath, bootstrapDataPath,
 	)
-	if _, err := db.ExecContext(ctx, dataPathSQL); err != nil {
-		t.Fatalf("seed ducklake data_path: %v", err)
+	if _, err := duckDB.ExecContext(ctx, attachSQL); err != nil {
+		t.Fatalf("attach ducklake metastore for seeding: %v", err)
 	}
+	if _, err := duckDB.ExecContext(ctx, "USE lake"); err != nil {
+		t.Fatalf("use seeded ducklake catalog: %v", err)
+	}
+
+	createTableSQL := fmt.Sprintf(`CREATE TABLE IF NOT EXISTS main.%s (%s)`, spec.TableName, spec.ColumnDDL)
+	if _, err := duckDB.ExecContext(ctx, createTableSQL); err != nil {
+		_ = duckDB.Close()
+		t.Fatalf("create ducklake seed table %s: %v", spec.TableName, err)
+	}
+
+	var tableID int64
+	if err := duckDB.QueryRowContext(
+		ctx,
+		fmt.Sprintf(`SELECT table_id FROM %s.ducklake_table WHERE table_name = ? AND end_snapshot IS NULL ORDER BY table_id DESC LIMIT 1`, metadataSchema),
+		spec.TableName,
+	).Scan(&tableID); err != nil {
+		t.Fatalf("lookup ducklake table_id for %s: %v", spec.TableName, err)
+	}
+
+	var latestSnapshotID int64
+	if err := duckDB.QueryRowContext(ctx, fmt.Sprintf(`SELECT COALESCE(MAX(snapshot_id), 0) FROM %s.ducklake_snapshot`, metadataSchema)).Scan(&latestSnapshotID); err != nil {
+		t.Fatalf("lookup ducklake latest snapshot: %v", err)
+	}
+
+	var existingFiles int64
+	if err := duckDB.QueryRowContext(
+		ctx,
+		fmt.Sprintf(`SELECT COUNT(*) FROM %s.ducklake_data_file WHERE table_id = ? AND end_snapshot IS NULL`, metadataSchema),
+		tableID,
+	).Scan(&existingFiles); err != nil {
+		t.Fatalf("count ducklake data files for %s: %v", spec.TableName, err)
+	}
+	if existingFiles == 0 {
+		var nextDataFileID int64
+		if err := duckDB.QueryRowContext(ctx, fmt.Sprintf(`SELECT COALESCE(MAX(data_file_id), -1) + 1 FROM %s.ducklake_data_file`, metadataSchema)).Scan(&nextDataFileID); err != nil {
+			t.Fatalf("next ducklake data_file_id for %s: %v", spec.TableName, err)
+		}
+		if _, err := duckDB.ExecContext(ctx, `
+			INSERT INTO __ducklake_metadata_lake.ducklake_data_file (
+				data_file_id, table_id, begin_snapshot, end_snapshot, file_order,
+				path, path_is_relative, file_format, record_count, file_size_bytes,
+				footer_size, row_id_start, partition_id, encryption_key, mapping_id, partial_max
+			) VALUES (?, ?, ?, NULL, NULL, ?, 1, 'parquet', ?, ?, ?, 0, NULL, NULL, NULL, NULL)
+		`, nextDataFileID, tableID, latestSnapshotID, spec.DataFileName, spec.RecordCount, spec.FileSizeBytes, spec.FooterSize); err != nil {
+			t.Fatalf("insert ducklake data file for %s: %v", spec.TableName, err)
+		}
+	}
+
+	if _, err := duckDB.ExecContext(ctx, `UPDATE __ducklake_metadata_lake.ducklake_metadata SET value = ? WHERE key = 'data_path'`, requestedDataPath); err != nil {
+		t.Fatalf("set ducklake data_path: %v", err)
+	}
+	if err := duckDB.Close(); err != nil {
+		t.Fatalf("close duckdb after metastore seed: %v", err)
+	}
+}
+
+// seedDuckLakeMetadata creates a DuckLake v1.0 metastore using the real
+// DuckLake extension, then adds a deterministic data file entry for the test
+// Titanic fixture. The dataPath parameter controls the advertised data_path
+// value (e.g. "s3://yacobolo/lake_data/" for S3 tests or a local temp
+// directory path for local tests).
+func seedDuckLakeMetadata(t *testing.T, metaPath string, dataPath string) {
+	t.Helper()
+
+	seedDuckLakeTableMetadata(t, metaPath, dataPath, duckLakeTableSeedSpec{
+		TableName: "titanic",
+		ColumnDDL: `
+			PassengerId BIGINT,
+			Survived BIGINT,
+			Pclass BIGINT,
+			Name VARCHAR,
+			Sex VARCHAR,
+			Age DOUBLE,
+			SibSp BIGINT,
+			Parch BIGINT,
+			Ticket VARCHAR,
+			Fare DOUBLE,
+			Cabin VARCHAR,
+			Embarked VARCHAR
+		`,
+		DataFileName:  ducklakeDataFileName,
+		RecordCount:   891,
+		FileSizeBytes: 36014,
+		FooterSize:    1332,
+	})
+}
+
+func reopenSeededSQLite(t *testing.T, metaPath string) *sql.DB {
+	t.Helper()
+
+	reopened, err := internaldb.OpenSQLite(metaPath, "write", 0)
+	if err != nil {
+		t.Fatalf("reopen sqlite after ducklake seed: %v", err)
+	}
+	t.Cleanup(func() { _ = reopened.Close() })
+	return reopened
 }
 
 // ---------------------------------------------------------------------------
@@ -654,10 +710,22 @@ func setupIntegrationServer(t *testing.T) *testEnv {
 	}
 
 	// Temp SQLite with hardened connection (WAL, busy_timeout, etc.)
-	metaDB, _ := internaldb.OpenTestSQLite(t)
+	metaPath := filepath.Join(t.TempDir(), "test.sqlite")
+	metaDB, err := internaldb.OpenSQLite(metaPath, "write", 0)
+	if err != nil {
+		t.Fatalf("open test sqlite: %v", err)
+	}
+	t.Cleanup(func() { _ = metaDB.Close() })
+	if err := internaldb.RunMigrations(metaDB); err != nil {
+		t.Fatalf("run migrations: %v", err)
+	}
 
 	// Seed DuckLake catalog metadata + RBAC data
-	seedDuckLakeMetadata(t, metaDB, "s3://yacobolo/lake_data/")
+	if err := metaDB.Close(); err != nil {
+		t.Fatalf("close sqlite before ducklake seed: %v", err)
+	}
+	seedDuckLakeMetadata(t, metaPath, "s3://yacobolo/lake_data/")
+	metaDB = reopenSeededSQLite(t, metaPath)
 	keys := seedRBAC(t, metaDB)
 
 	// Build repositories
@@ -674,6 +742,7 @@ func setupIntegrationServer(t *testing.T) *testEnv {
 	searchRepo := repository.NewSearchRepo(metaDB, metaDB)
 	queryHistoryRepo := repository.NewQueryHistoryRepo(metaDB)
 	viewRepo := repository.NewViewRepo(metaDB)
+	metastoreRepo := repository.NewMetastoreRepo(metaDB)
 
 	// Build services
 	authSvc := security.NewAuthorizationService(
@@ -688,7 +757,7 @@ func setupIntegrationServer(t *testing.T) *testEnv {
 	}
 
 	manifestSvc := query.NewManifestService(
-		nil, authSvc, presigner, staticIntrospectionFactory{repo: introspectionRepo}, auditRepo,
+		staticMetastoreFactory{repo: metastoreRepo}, authSvc, presigner, staticIntrospectionFactory{repo: introspectionRepo}, auditRepo,
 		nil, nil,
 	)
 
@@ -770,6 +839,18 @@ func (f staticIntrospectionFactory) DefaultCatalogName(context.Context) (string,
 	return "main", nil
 }
 
+type staticMetastoreFactory struct {
+	repo domain.MetastoreQuerier
+}
+
+func (f staticMetastoreFactory) ForCatalog(context.Context, string) (domain.MetastoreQuerier, error) {
+	return f.repo, nil
+}
+
+func (staticMetastoreFactory) Close(string) error {
+	return nil
+}
+
 // copyFile copies a file from src to dst. Fails the test on error.
 func copyFile(t *testing.T, src, dst string) {
 	t.Helper()
@@ -810,10 +891,22 @@ func setupLocalExtensionServer(t *testing.T) *testEnv {
 	)
 
 	// Temp SQLite with hardened connection (WAL, busy_timeout, etc.)
-	metaDB, _ := internaldb.OpenTestSQLite(t)
+	metaPath := filepath.Join(t.TempDir(), "test.sqlite")
+	metaDB, err := internaldb.OpenSQLite(metaPath, "write", 0)
+	if err != nil {
+		t.Fatalf("open test sqlite: %v", err)
+	}
+	t.Cleanup(func() { _ = metaDB.Close() })
+	if err := internaldb.RunMigrations(metaDB); err != nil {
+		t.Fatalf("run migrations: %v", err)
+	}
 
 	// Seed DuckLake metadata with LOCAL data_path
-	seedDuckLakeMetadata(t, metaDB, dataPath)
+	if err := metaDB.Close(); err != nil {
+		t.Fatalf("close sqlite before ducklake seed: %v", err)
+	}
+	seedDuckLakeMetadata(t, metaPath, dataPath)
+	metaDB = reopenSeededSQLite(t, metaPath)
 	keys := seedRBAC(t, metaDB)
 
 	// Build repositories
@@ -830,6 +923,7 @@ func setupLocalExtensionServer(t *testing.T) *testEnv {
 	searchRepo := repository.NewSearchRepo(metaDB, metaDB)
 	queryHistoryRepo := repository.NewQueryHistoryRepo(metaDB)
 	viewRepo := repository.NewViewRepo(metaDB)
+	metastoreRepo := repository.NewMetastoreRepo(metaDB)
 
 	// Build services
 	authSvc := security.NewAuthorizationService(
@@ -840,7 +934,7 @@ func setupLocalExtensionServer(t *testing.T) *testEnv {
 
 	// LOCAL presigner — returns paths as-is (no S3 presigning)
 	manifestSvc := query.NewManifestService(
-		nil, authSvc, &localPresigner{}, staticIntrospectionFactory{repo: introspectionRepo}, auditRepo,
+		staticMetastoreFactory{repo: metastoreRepo}, authSvc, &localPresigner{}, staticIntrospectionFactory{repo: introspectionRepo}, auditRepo,
 		nil, nil,
 	)
 
@@ -1218,7 +1312,11 @@ func setupHTTPServer(t *testing.T, opts httpTestOpts) *httpTestEnv {
 
 	// Optionally seed DuckLake metadata (without DuckLake extensions)
 	if opts.SeedDuckLakeMetadata {
-		seedDuckLakeMetadata(t, metaDB, "s3://yacobolo/lake_data/")
+		if err := metaDB.Close(); err != nil {
+			t.Fatalf("close sqlite before ducklake seed: %v", err)
+		}
+		seedDuckLakeMetadata(t, metaPath, "s3://yacobolo/lake_data/")
+		metaDB = reopenSeededSQLite(t, metaPath)
 		// Register the "lake" catalog so ForCatalog("lake") can find it.
 		registerTestCatalog(t, metaDB, metaPath)
 	}
@@ -2015,30 +2113,23 @@ type multiTableTestEnv struct {
 }
 
 // seedMultiTableMetadata seeds both the titanic and departments tables.
-func seedMultiTableMetadata(t *testing.T, db *sql.DB, dataPath string) {
+func seedMultiTableMetadata(t *testing.T, metaPath string, dataPath string) {
 	t.Helper()
-	seedDuckLakeMetadata(t, db, dataPath)
-
-	const deptData = `
-	INSERT INTO ducklake_table VALUES (
-		2, 'dept-test-uuid', 1, NULL,
-		0, 'departments', 'departments/', 1
-	);
-	INSERT INTO ducklake_column VALUES (13, 1, NULL, 2, 1, 'dept_id',     'int64',   NULL, NULL, 1, NULL);
-	INSERT INTO ducklake_column VALUES (14, 1, NULL, 2, 2, 'dept_name',   'varchar', NULL, NULL, 1, NULL);
-	INSERT INTO ducklake_column VALUES (15, 1, NULL, 2, 3, 'region',      'varchar', NULL, NULL, 1, NULL);
-	INSERT INTO ducklake_column VALUES (16, 1, NULL, 2, 4, 'avg_salary',  'int64',   NULL, NULL, 1, NULL);
-	INSERT INTO ducklake_column VALUES (17, 1, NULL, 2, 5, 'headcount',   'int64',   NULL, NULL, 1, NULL);
-
-	INSERT INTO ducklake_data_file VALUES (
-		1, 2, 1, NULL, NULL,
-		'ducklake-departments-test-fixture.parquet',
-		1, 'parquet', 10, 2048, 512, 0, NULL, NULL, NULL, NULL
-	);`
-
-	if _, err := db.ExecContext(ctx, deptData); err != nil {
-		t.Fatalf("seed department metadata: %v", err)
-	}
+	seedDuckLakeMetadata(t, metaPath, dataPath)
+	seedDuckLakeTableMetadata(t, metaPath, dataPath, duckLakeTableSeedSpec{
+		TableName: "departments",
+		ColumnDDL: `
+			dept_id BIGINT,
+			dept_name VARCHAR,
+			region VARCHAR,
+			avg_salary BIGINT,
+			headcount BIGINT
+		`,
+		DataFileName:  ducklakeDeptDataFileName,
+		RecordCount:   10,
+		FileSizeBytes: 2048,
+		FooterSize:    512,
+	})
 }
 
 // seedMultiTableRBAC seeds base RBAC plus 4 additional principals with
@@ -2185,15 +2276,13 @@ func seedMultiTableRBAC(t *testing.T, db *sql.DB) multiTableKeys {
 	}); err != nil {
 		t.Fatalf("bind fare mask to masked_viewers: %v", err)
 	}
-	// Column mask: Name → '***' on titanic
-	nameMaskForMasked, err := q.CreateColumnMask(ctx, dbstore.CreateColumnMaskParams{
-		ID: uuid.New().String(), TableID: "1", ColumnName: "Name", MaskExpression: `'***'`,
-	})
-	if err != nil {
-		t.Fatalf("create name mask for masked_viewers: %v", err)
+	// Reuse the existing titanic Name mask created by seedRBAC and bind it for this group too.
+	var nameMaskForMaskedID string
+	if err := db.QueryRowContext(ctx, `SELECT id FROM column_masks WHERE table_id = ? AND column_name = ?`, "1", "Name").Scan(&nameMaskForMaskedID); err != nil {
+		t.Fatalf("lookup existing name mask for masked_viewers: %v", err)
 	}
 	if err := q.BindColumnMask(ctx, dbstore.BindColumnMaskParams{
-		ID: uuid.New().String(), ColumnMaskID: nameMaskForMasked.ID, PrincipalID: maskedGroup.ID,
+		ID: uuid.New().String(), ColumnMaskID: nameMaskForMaskedID, PrincipalID: maskedGroup.ID,
 		PrincipalType: "group", SeeOriginal: 0,
 	}); err != nil {
 		t.Fatalf("bind name mask to masked_viewers: %v", err)
@@ -2212,7 +2301,7 @@ func seedMultiTableRBAC(t *testing.T, db *sql.DB) multiTableKeys {
 		t.Fatalf("bind salary mask to masked_viewers: %v", err)
 	}
 
-	// --- multi_filter_user: SELECT on titanic, TWO RLS filters (Pclass=1 AND Survived=1) ---
+	// --- multi_filter_user: SELECT on titanic, TWO RLS visibility windows (OR-composed) ---
 	multiFilterUser, err := q.CreatePrincipal(ctx, dbstore.CreatePrincipalParams{
 		ID: uuid.New().String(), Name: "multi_filter_user", Type: "user", IsAdmin: 0,
 	})
@@ -2354,8 +2443,20 @@ func setupMultiTableLocalServer(t *testing.T) *multiTableTestEnv {
 	generateDepartmentsParquet(t, filepath.Join(tmpDir, "lake_data", ducklakeDeptDataFileName))
 
 	// SQLite + metadata + RBAC
-	metaDB, _ := internaldb.OpenTestSQLite(t)
-	seedMultiTableMetadata(t, metaDB, dataPath)
+	metaPath := filepath.Join(t.TempDir(), "test.sqlite")
+	metaDB, err := internaldb.OpenSQLite(metaPath, "write", 0)
+	if err != nil {
+		t.Fatalf("open test sqlite: %v", err)
+	}
+	t.Cleanup(func() { _ = metaDB.Close() })
+	if err := internaldb.RunMigrations(metaDB); err != nil {
+		t.Fatalf("run migrations: %v", err)
+	}
+	if err := metaDB.Close(); err != nil {
+		t.Fatalf("close sqlite before ducklake seed: %v", err)
+	}
+	seedMultiTableMetadata(t, metaPath, dataPath)
+	metaDB = reopenSeededSQLite(t, metaPath)
 	keys := seedMultiTableRBAC(t, metaDB)
 
 	// Build repos and services (same pattern as setupLocalExtensionServer)
@@ -2372,6 +2473,7 @@ func setupMultiTableLocalServer(t *testing.T) *multiTableTestEnv {
 	searchRepo := repository.NewSearchRepo(metaDB, metaDB)
 	queryHistoryRepo := repository.NewQueryHistoryRepo(metaDB)
 	viewRepo := repository.NewViewRepo(metaDB)
+	metastoreRepo := repository.NewMetastoreRepo(metaDB)
 
 	authSvc := security.NewAuthorizationService(
 		principalRepo, groupRepo, grantRepo,
@@ -2380,7 +2482,7 @@ func setupMultiTableLocalServer(t *testing.T) *multiTableTestEnv {
 	)
 
 	manifestSvc := query.NewManifestService(
-		nil, authSvc, &localPresigner{}, staticIntrospectionFactory{repo: introspectionRepo}, auditRepo,
+		staticMetastoreFactory{repo: metastoreRepo}, authSvc, &localPresigner{}, staticIntrospectionFactory{repo: introspectionRepo}, auditRepo,
 		nil, nil,
 	)
 

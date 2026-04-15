@@ -121,6 +121,26 @@ func TestRowFilterService_Create_ValidationError(t *testing.T) {
 	require.ErrorAs(t, err, &validation)
 }
 
+func TestRowFilterService_Create_AllowsDuckDB15Expressions(t *testing.T) {
+	repo := &mockRowFilterRepo{
+		CreateFn: func(_ context.Context, f *domain.RowFilter) (*domain.RowFilter, error) {
+			f.ID = "rf-15"
+			return f, nil
+		},
+	}
+	audit := &testutil.MockAuditRepo{}
+	svc := NewRowFilterService(repo, audit)
+
+	result, err := svc.Create(adminCtx(), domain.CreateRowFilterRequest{
+		Name:      "variant-filter",
+		TableID:   "t-1",
+		FilterSQL: "variant_extract(payload, 'name') IS NOT NULL",
+	})
+	require.NoError(t, err)
+	assert.Equal(t, "rf-15", result.ID)
+	assert.True(t, audit.HasAction("CREATE_ROW_FILTER"))
+}
+
 func TestRowFilterService_Delete_AdminAllowed(t *testing.T) {
 	called := false
 	repo := &mockRowFilterRepo{

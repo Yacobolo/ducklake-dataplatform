@@ -18,6 +18,13 @@
 
 namespace duckdb {
 
+static string ToLower(string value) {
+	for (auto &ch : value) {
+		ch = static_cast<char>(std::tolower(static_cast<unsigned char>(ch)));
+	}
+	return value;
+}
+
 void QuackAccessScan::Register(DatabaseInstance &instance) {
 	auto &config = DBConfig::GetConfig(instance);
 	config.replacement_scans.emplace_back(ReplacementScanFunction, nullptr);
@@ -46,6 +53,7 @@ unique_ptr<TableRef> QuackAccessScan::ReplacementScanFunction(
 	auto manifest = ManifestCache::GetOrFetch(
 		secret->api_url,
 		secret->api_key,
+		secret->catalog,
 		effective_schema,
 		table_name,
 		error_msg
@@ -108,7 +116,7 @@ unique_ptr<TableRef> QuackAccessScan::ReplacementScanFunction(
 	} else {
 		// Build explicit column list with mask expressions applied
 		for (auto &col : manifest->columns) {
-			auto mask_it = manifest->column_masks.find(col.name);
+			auto mask_it = manifest->column_masks.find(ToLower(col.name));
 			if (mask_it != manifest->column_masks.end()) {
 				// Parse the mask expression and alias it to the column name
 				// e.g., '***' AS "Name"

@@ -315,6 +315,9 @@ func (s *ManifestService) resolveDataFiles(ctx context.Context, catalogName stri
 // The schema path must resolve to an external location with stored credentials.
 func (s *ManifestService) resolvePresigner(ctx context.Context, schemaPath string) (FilePresigner, error) {
 	if schemaPath == "" {
+		if s.presigner != nil && (s.credRepo == nil || s.locRepo == nil) {
+			return s.presigner, nil
+		}
 		return nil, fmt.Errorf("schema has no storage path")
 	}
 	if schemaPath != "" && s.credRepo != nil && s.locRepo != nil {
@@ -333,6 +336,10 @@ func (s *ManifestService) resolvePresigner(ctx context.Context, schemaPath strin
 				}
 			}
 		}
+	}
+
+	if s.presigner != nil && (s.credRepo == nil || s.locRepo == nil) {
+		return s.presigner, nil
 	}
 
 	return nil, fmt.Errorf("no storage credential found for schema path %q", schemaPath)

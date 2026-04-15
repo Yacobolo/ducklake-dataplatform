@@ -7,6 +7,7 @@ import (
 	"errors"
 	"io"
 	"log/slog"
+	"strings"
 	"sync"
 	"testing"
 
@@ -627,9 +628,14 @@ func TestCatalog_CatalogVersionSummary(t *testing.T) {
 	require.NoError(t, err)
 
 	_, err = env.MetaDB.ExecContext(ctx, `
-		INSERT INTO ducklake_schema VALUES (99001, 'schema-historical', 1, 3, 'archive', 'archive/', 1);
-		INSERT INTO ducklake_table VALUES (99002, 'table-historical', 2, 4, 0, 'users_v1', 'users_v1/', 1);
-		INSERT INTO ducklake_column VALUES (99003, 2, 5, 1, 99, 'legacy_name', 'varchar', NULL, NULL, 1, NULL);
+		INSERT INTO ducklake_schema (schema_id, schema_uuid, begin_snapshot, end_snapshot, schema_name, path, path_is_relative)
+		VALUES (99001, 'schema-historical', 1, 3, 'archive', 'archive/', 1);
+		INSERT INTO ducklake_table (table_id, table_uuid, begin_snapshot, end_snapshot, schema_id, table_name, path, path_is_relative)
+		VALUES (99002, 'table-historical', 2, 4, 0, 'users_v1', 'users_v1/', 1);
+		INSERT INTO ducklake_column (
+			column_id, begin_snapshot, end_snapshot, table_id, column_order, column_name, column_type,
+			initial_default, default_value, nulls_allowed, parent_column, default_value_type, default_value_dialect
+		) VALUES (99003, 2, 5, 1, 99, 'legacy_name', 'varchar', '', 'NULL', 1, NULL, 'literal', 'duckdb');
 	`)
 	require.NoError(t, err)
 
@@ -638,8 +644,8 @@ func TestCatalog_CatalogVersionSummary(t *testing.T) {
 	require.NotNil(t, summary)
 
 	require.Equal(t, "lake", summary.CatalogName)
-	assert.Equal(t, "0.3", summary.Version)
-	assert.Equal(t, "DuckDB 6ddac802ff", summary.CreatedBy)
+	assert.Equal(t, "1.0", summary.Version)
+	assert.True(t, strings.HasPrefix(summary.CreatedBy, "DuckDB "))
 	if assert.NotNil(t, summary.Encrypted) {
 		assert.False(t, *summary.Encrypted)
 	}
@@ -670,9 +676,14 @@ func TestCatalog_ListCatalogHistory(t *testing.T) {
 	ctx := context.Background()
 
 	_, err := env.MetaDB.ExecContext(ctx, `
-		INSERT INTO ducklake_schema VALUES (99101, 'schema-historical-2', 1, 3, 'archive_2', 'archive_2/', 1);
-		INSERT INTO ducklake_table VALUES (99102, 'table-historical-2', 2, 4, 0, 'users_v2', 'users_v2/', 1);
-		INSERT INTO ducklake_column VALUES (99103, 2, 5, 1, 99, 'legacy_name_2', 'varchar', NULL, NULL, 1, NULL);
+		INSERT INTO ducklake_schema (schema_id, schema_uuid, begin_snapshot, end_snapshot, schema_name, path, path_is_relative)
+		VALUES (99101, 'schema-historical-2', 1, 3, 'archive_2', 'archive_2/', 1);
+		INSERT INTO ducklake_table (table_id, table_uuid, begin_snapshot, end_snapshot, schema_id, table_name, path, path_is_relative)
+		VALUES (99102, 'table-historical-2', 2, 4, 0, 'users_v2', 'users_v2/', 1);
+		INSERT INTO ducklake_column (
+			column_id, begin_snapshot, end_snapshot, table_id, column_order, column_name, column_type,
+			initial_default, default_value, nulls_allowed, parent_column, default_value_type, default_value_dialect
+		) VALUES (99103, 2, 5, 1, 99, 'legacy_name_2', 'varchar', '', 'NULL', 1, NULL, 'literal', 'duckdb');
 	`)
 	require.NoError(t, err)
 

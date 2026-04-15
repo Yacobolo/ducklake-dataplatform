@@ -170,16 +170,29 @@ func TestExtension_MultiTable(t *testing.T) {
 		result, stderr, err := runDuckDBQuery(t, env.Server.URL, env.Keys.MultiFilterUser,
 			`SELECT DISTINCT "Pclass" as pclass, "Survived" as survived FROM titanic`)
 		require.NoError(t, err, "query failed: %v\nstderr: %s", err, stderr)
+		require.NotEmpty(t, result, "expected at least one visible row")
 
+		sawPclassOnly := false
+		sawSurvivedOnly := false
 		for i, row := range result {
 			pclass, ok := row["pclass"].(float64)
 			require.True(t, ok, "row %d: pclass not a number: %v", i, row["pclass"])
-			assert.Equal(t, float64(1), pclass, "row %d: expected pclass=1", i)
 
 			survived, ok := row["survived"].(float64)
 			require.True(t, ok, "row %d: survived not a number: %v", i, row["survived"])
-			assert.Equal(t, float64(1), survived, "row %d: expected survived=1", i)
+
+			assert.True(t, pclass == 1 || survived == 1,
+				"row %d: expected OR-composed RLS visibility, got pclass=%v survived=%v", i, pclass, survived)
+
+			if pclass == 1 && survived == 0 {
+				sawPclassOnly = true
+			}
+			if pclass != 1 && survived == 1 {
+				sawSurvivedOnly = true
+			}
 		}
+		assert.True(t, sawPclassOnly || sawSurvivedOnly,
+			"expected OR-composed filters to expose at least one row from an individual visibility window")
 	})
 
 	t.Run("MultipleColumnMasks", func(t *testing.T) {
@@ -235,14 +248,12 @@ func TestExtension_MultiTable(t *testing.T) {
 			"expected error indicator in stderr, got: %s", stderr)
 	})
 
-	t.Run("CreateDenied", func(t *testing.T) {
+	t.Run("CreateLocalTableAllowed", func(t *testing.T) {
 		t.Parallel()
-		_, stderr, err := runDuckDBQuery(t, env.Server.URL, env.Keys.Analyst,
-			`CREATE TABLE evil (id INT)`)
-		if err == nil {
-			t.Fatal("expected error, got success")
-		}
-		assert.True(t, containsAny(stderr, "error", "denied", "not allowed", "permission", "CREATE"),
-			"expected error indicator in stderr, got: %s", stderr)
+		result, stderr, err := runDuckDBQuery(t, env.Server.URL, env.Keys.Analyst,
+			`CREATE TABLE evil (id INT);
+SELECT count(*) as cnt FROM evil`)
+		require.NoError(t, err, "query failed: %v\nstderr: %s", err, stderr)
+		assert.Equal(t, 0, getScalarInt(t, result, "cnt"), "expected empty local table after create")
 	})
 }

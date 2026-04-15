@@ -218,6 +218,19 @@ func collectTableRefsFromExpr(e Expr, seen map[string]bool, refs *[]TableRefName
 		for _, arg := range expr.Args {
 			collectTableRefsFromExpr(arg, seen, refs)
 		}
+		collectTableRefsFromExpr(expr.Filter, seen, refs)
+		if expr.Window != nil {
+			for _, partition := range expr.Window.PartitionBy {
+				collectTableRefsFromExpr(partition, seen, refs)
+			}
+			for _, orderBy := range expr.Window.OrderBy {
+				collectTableRefsFromExpr(orderBy.Expr, seen, refs)
+			}
+			if expr.Window.Frame != nil {
+				collectTableRefsFromExpr(expr.Window.Frame.Start.Offset, seen, refs)
+				collectTableRefsFromExpr(expr.Window.Frame.End.Offset, seen, refs)
+			}
+		}
 	case *CaseExpr:
 		collectTableRefsFromExpr(expr.Operand, seen, refs)
 		for _, w := range expr.Whens {
@@ -240,15 +253,41 @@ func collectTableRefsFromExpr(e Expr, seen map[string]bool, refs *[]TableRefName
 	case *LikeExpr:
 		collectTableRefsFromExpr(expr.Expr, seen, refs)
 		collectTableRefsFromExpr(expr.Pattern, seen, refs)
+		collectTableRefsFromExpr(expr.Escape, seen, refs)
+	case *GlobExpr:
+		collectTableRefsFromExpr(expr.Expr, seen, refs)
+		collectTableRefsFromExpr(expr.Pattern, seen, refs)
+	case *SimilarToExpr:
+		collectTableRefsFromExpr(expr.Expr, seen, refs)
+		collectTableRefsFromExpr(expr.Pattern, seen, refs)
+	case *ExtractExpr:
+		collectTableRefsFromExpr(expr.Expr, seen, refs)
 	case *IsDistinctExpr:
 		collectTableRefsFromExpr(expr.Left, seen, refs)
 		collectTableRefsFromExpr(expr.Right, seen, refs)
 	case *CollateExpr:
 		collectTableRefsFromExpr(expr.Expr, seen, refs)
+	case *StructLiteral:
+		for _, field := range expr.Fields {
+			collectTableRefsFromExpr(field.Value, seen, refs)
+		}
+	case *ListLiteral:
+		for _, element := range expr.Elements {
+			collectTableRefsFromExpr(element, seen, refs)
+		}
 	case *MapLiteral:
 		for _, entry := range expr.Entries {
 			collectTableRefsFromExpr(entry.Value, seen, refs)
 		}
+	case *IndexExpr:
+		collectTableRefsFromExpr(expr.Expr, seen, refs)
+		collectTableRefsFromExpr(expr.Index, seen, refs)
+		collectTableRefsFromExpr(expr.Start, seen, refs)
+		collectTableRefsFromExpr(expr.Stop, seen, refs)
+	case *LambdaExpr:
+		collectTableRefsFromExpr(expr.Body, seen, refs)
+	case *ColumnsExpr:
+		collectTableRefsFromExpr(expr.Pattern, seen, refs)
 	case *ListComprehension:
 		collectTableRefsFromExpr(expr.Expr, seen, refs)
 		collectTableRefsFromExpr(expr.List, seen, refs)
@@ -788,6 +827,29 @@ func dangerousFuncInExpr(e Expr, blocklist map[string]bool) (string, bool) {
 				return name, true
 			}
 		}
+		if name, found := dangerousFuncInExpr(expr.Filter, blocklist); found {
+			return name, true
+		}
+		if expr.Window != nil {
+			for _, partition := range expr.Window.PartitionBy {
+				if name, found := dangerousFuncInExpr(partition, blocklist); found {
+					return name, true
+				}
+			}
+			for _, orderBy := range expr.Window.OrderBy {
+				if name, found := dangerousFuncInExpr(orderBy.Expr, blocklist); found {
+					return name, true
+				}
+			}
+			if expr.Window.Frame != nil {
+				if name, found := dangerousFuncInExpr(expr.Window.Frame.Start.Offset, blocklist); found {
+					return name, true
+				}
+				if name, found := dangerousFuncInExpr(expr.Window.Frame.End.Offset, blocklist); found {
+					return name, true
+				}
+			}
+		}
 	case *SubqueryExpr:
 		return dangerousFuncInSelect(expr.Select, blocklist)
 	case *ExistsExpr:
@@ -846,7 +908,22 @@ func dangerousFuncInExpr(e Expr, blocklist map[string]bool) (string, bool) {
 		if name, found := dangerousFuncInExpr(expr.Expr, blocklist); found {
 			return name, true
 		}
+		if name, found := dangerousFuncInExpr(expr.Escape, blocklist); found {
+			return name, true
+		}
 		return dangerousFuncInExpr(expr.Pattern, blocklist)
+	case *GlobExpr:
+		if name, found := dangerousFuncInExpr(expr.Expr, blocklist); found {
+			return name, true
+		}
+		return dangerousFuncInExpr(expr.Pattern, blocklist)
+	case *SimilarToExpr:
+		if name, found := dangerousFuncInExpr(expr.Expr, blocklist); found {
+			return name, true
+		}
+		return dangerousFuncInExpr(expr.Pattern, blocklist)
+	case *ExtractExpr:
+		return dangerousFuncInExpr(expr.Expr, blocklist)
 	case *IsDistinctExpr:
 		if name, found := dangerousFuncInExpr(expr.Left, blocklist); found {
 			return name, true
@@ -854,12 +931,39 @@ func dangerousFuncInExpr(e Expr, blocklist map[string]bool) (string, bool) {
 		return dangerousFuncInExpr(expr.Right, blocklist)
 	case *CollateExpr:
 		return dangerousFuncInExpr(expr.Expr, blocklist)
+	case *StructLiteral:
+		for _, field := range expr.Fields {
+			if name, found := dangerousFuncInExpr(field.Value, blocklist); found {
+				return name, true
+			}
+		}
+	case *ListLiteral:
+		for _, element := range expr.Elements {
+			if name, found := dangerousFuncInExpr(element, blocklist); found {
+				return name, true
+			}
+		}
 	case *MapLiteral:
 		for _, e := range expr.Entries {
 			if name, found := dangerousFuncInExpr(e.Value, blocklist); found {
 				return name, true
 			}
 		}
+	case *IndexExpr:
+		if name, found := dangerousFuncInExpr(expr.Expr, blocklist); found {
+			return name, true
+		}
+		if name, found := dangerousFuncInExpr(expr.Index, blocklist); found {
+			return name, true
+		}
+		if name, found := dangerousFuncInExpr(expr.Start, blocklist); found {
+			return name, true
+		}
+		return dangerousFuncInExpr(expr.Stop, blocklist)
+	case *LambdaExpr:
+		return dangerousFuncInExpr(expr.Body, blocklist)
+	case *ColumnsExpr:
+		return dangerousFuncInExpr(expr.Pattern, blocklist)
 	case *ListComprehension:
 		if name, found := dangerousFuncInExpr(expr.Expr, blocklist); found {
 			return name, true

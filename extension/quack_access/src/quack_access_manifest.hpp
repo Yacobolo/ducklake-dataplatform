@@ -16,7 +16,7 @@ struct ManifestColumn {
 	std::string type;
 };
 
-/// Parsed manifest from the Go API /v1/manifest endpoint.
+/// Parsed manifest from the Go API manifest endpoint.
 struct TableManifest {
 	std::string table;
 	std::string schema;
@@ -38,6 +38,7 @@ public:
 	static std::shared_ptr<TableManifest> GetOrFetch(
 		const std::string &api_url,
 		const std::string &api_key,
+		const std::string &catalog_name,
 		const std::string &schema_name,
 		const std::string &table_name,
 		std::string &out_error
@@ -59,11 +60,12 @@ private:
 	static std::string CacheKey(
 		const std::string &api_url,
 		const std::string &api_key,
+		const std::string &catalog,
 		const std::string &schema,
 		const std::string &table
 	) {
 		auto key_hash = std::hash<std::string>{}(api_key);
-		return api_url + "|" + std::to_string(key_hash) + "|" + schema + "." + table;
+		return api_url + "|" + std::to_string(key_hash) + "|" + catalog + "." + schema + "." + table;
 	}
 };
 

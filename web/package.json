@@ -23,7 +23,7 @@
     "tailwindcss": "^4.1.13"
   },
   "dependencies": {
-    "@duckdb/duckdb-wasm": "^1.30.0",
+    "@duckdb/duckdb-wasm": "^1.32.0",
     "@lit-labs/virtualizer": "^2.1.1",
     "@primer/primitives": "11.4.0",
     "@xyflow/react": "^12.9.3",
