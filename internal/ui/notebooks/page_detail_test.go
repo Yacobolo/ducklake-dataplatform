@@ -4,8 +4,8 @@ import (
 	"bytes"
 	"testing"
 
-	"duck-demo/internal/domain"
-	"duck-demo/internal/service/query"
+	"github.com/Yacobolo/quackstack/internal/domain"
+	"github.com/Yacobolo/quackstack/internal/service/query"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

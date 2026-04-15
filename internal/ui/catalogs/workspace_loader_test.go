@@ -11,10 +11,10 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"duck-demo/internal/domain"
-	"duck-demo/internal/service/catalog"
-	"duck-demo/internal/testutil"
-	"duck-demo/internal/ui/core"
+	"github.com/Yacobolo/quackstack/internal/domain"
+	"github.com/Yacobolo/quackstack/internal/service/catalog"
+	"github.com/Yacobolo/quackstack/internal/testutil"
+	"github.com/Yacobolo/quackstack/internal/ui/core"
 )
 
 type testCatalogRepoFactory struct {
