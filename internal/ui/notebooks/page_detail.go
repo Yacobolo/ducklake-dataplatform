@@ -291,37 +291,73 @@ func notebookDetailPage(d notebookDetailPageData) Node {
 		),
 	)
 
-	workspaceNode := core.WorkspaceLayout(
-		"min-h-0",
-		core.WorkspaceAside(
-			"notebook-"+d.NotebookID,
-			"notebook-aside",
-			[]core.WorkspaceAsideTab{
-				{ID: "outline", Label: "Outline", Icon: "list-tree", Count: strconv.Itoa(len(d.Cells)), Content: outlinePanel},
-				{ID: "explorer", Label: "Explorer", Icon: "database", Content: explorerPanel},
-				{ID: "runs", Label: "Runs", Icon: "workflow", Count: strconv.Itoa(len(d.Jobs)), Content: notebookJobsAside(d.Jobs)},
-			},
-			"outline",
-		),
-		Div(
-			Class("min-w-0"),
-			toolbarNode,
-			notebookComputeCard(d),
-			notebookShareCard(d),
-			notebookPromoteCard(d),
-			Div(Class("grid min-w-0 gap-0"), Attr("data-notebook-selected-catalog", d.SelectedCatalog), Attr("data-notebook-selected-schema", d.SelectedSchema), Attr("data-reorder-url", d.ReorderURL), Group(cellNodes)),
-		),
-	)
-
-	return core.AppPage(
+	return core.ApplicationPage(
 		"Notebook: "+d.Name,
 		"explore",
 		d.Principal,
-		data.Signals(map[string]any{"q": ""}),
-		workspaceNode,
-		Script(Src(core.UIScriptHref("sql-editor.js"))),
-		Script(Src(core.UIScriptHref("notebook.js"))),
+		core.ApplicationLayoutSlots{
+			CenterAttributes: []Node{
+				data.Signals(map[string]any{"q": ""}),
+			},
+			SecondaryAside: core.WorkspaceAside(
+				"notebook-"+d.NotebookID,
+				"notebook-aside workspace-aside-plain h-full",
+				[]core.WorkspaceAsideTab{
+					{ID: "outline", Label: "Outline", Icon: "list-tree", Count: strconv.Itoa(len(d.Cells)), Content: outlinePanel},
+					{ID: "explorer", Label: "Explorer", Icon: "database", Content: explorerPanel},
+					{ID: "runs", Label: "Runs", Icon: "workflow", Count: strconv.Itoa(len(d.Jobs)), Content: notebookJobsAside(d.Jobs)},
+				},
+				"outline",
+			),
+			Main: Group([]Node{
+				core.ApplicationMainContentSection(
+					"Notebook: "+d.Name,
+					"flex min-h-0 w-full flex-1 flex-col gap-4",
+					Section(
+						Class("flex min-w-0 flex-col gap-4 py-1"),
+						toolbarNode,
+						notebookComputeCard(d),
+						notebookShareCard(d),
+						notebookPromoteCard(d),
+						Div(Class("grid min-w-0 gap-0"), Attr("data-notebook-selected-catalog", d.SelectedCatalog), Attr("data-notebook-selected-schema", d.SelectedSchema), Attr("data-reorder-url", d.ReorderURL), Group(cellNodes)),
+					),
+				),
+				Script(Src(core.UIScriptHref("sql-editor.js"))),
+				Script(Src(core.UIScriptHref("notebook.js"))),
+			}),
+			Footer: notebookWorkspaceFooter(d),
+		},
 	)
+}
+
+func notebookWorkspaceFooter(d notebookDetailPageData) Node {
+	scope := strings.TrimSpace(d.SelectedCatalog)
+	if strings.TrimSpace(d.SelectedSchema) != "" {
+		if scope != "" {
+			scope += " / "
+		}
+		scope += d.SelectedSchema
+	}
+	if scope == "" {
+		scope = "No catalog selected"
+	}
+
+	rightLabel := fmt.Sprintf("%d cells / %d jobs", len(d.Cells), len(d.Jobs))
+	if len(d.Cells) == 1 && len(d.Jobs) == 1 {
+		rightLabel = "1 cell / 1 job"
+	} else if len(d.Cells) == 1 {
+		rightLabel = fmt.Sprintf("1 cell / %d jobs", len(d.Jobs))
+	} else if len(d.Jobs) == 1 {
+		rightLabel = fmt.Sprintf("%d cells / 1 job", len(d.Cells))
+	}
+
+	return Group([]Node{
+		Div(Class("flex min-w-0 items-center gap-3"),
+			Span(Class("font-semibold tracking-[0.12em] text-[var(--fgColor-default)]"), Text("NOTEBOOK")),
+			Span(Class("truncate"), Text(scope)),
+		),
+		Span(Class("shrink-0 font-medium"), Text(rightLabel)),
+	})
 }
 
 func notebookShareCard(d notebookDetailPageData) Node {
