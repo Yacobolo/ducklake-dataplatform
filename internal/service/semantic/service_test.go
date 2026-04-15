@@ -56,26 +56,35 @@ func setupSemanticService(t *testing.T) *Service {
 	return svc
 }
 
+const testWorkspaceID = "analytics"
+
+func mustSemanticModelID(t *testing.T, svc *Service, ctx context.Context, name string) string {
+	t.Helper()
+	model, err := svc.GetSemanticModelByName(ctx, testWorkspaceID, name)
+	require.NoError(t, err)
+	return model.ID
+}
+
 func TestService_CreateAndListSemanticModelResources(t *testing.T) {
 	svc := setupSemanticService(t)
 	ctx := context.Background()
 
 	created, err := svc.CreateSemanticModel(ctx, "admin", domain.CreateSemanticModelRequest{
-		ProjectName:          "analytics",
+		WorkspaceID:          testWorkspaceID,
 		Name:                 "sales",
 		Description:          "Sales semantics",
-		BaseRelationRef:         "analytics.fct_sales",
+		BaseRelationRef:      "analytics.fct_sales",
 		DefaultTimeDimension: "order_date",
 		Tags:                 []string{"core"},
 	})
 	require.NoError(t, err)
 	require.NotEmpty(t, created.ID)
 
-	metrics, err := svc.ListMetrics(ctx, "analytics", "sales")
+	metrics, err := svc.ListMetrics(ctx, testWorkspaceID, mustSemanticModelID(t, svc, ctx, "sales"))
 	require.NoError(t, err)
 	require.Empty(t, metrics)
 
-	metric, err := svc.CreateMetric(ctx, "admin", "analytics", "sales", domain.CreateSemanticMetricRequest{
+	metric, err := svc.CreateMetric(ctx, "admin", testWorkspaceID, mustSemanticModelID(t, svc, ctx, "sales"), domain.CreateSemanticMetricRequest{
 		SemanticModelID:    "ignored-by-service",
 		Name:               "total_revenue",
 		Description:        "Total revenue",
@@ -87,12 +96,12 @@ func TestService_CreateAndListSemanticModelResources(t *testing.T) {
 	require.NoError(t, err)
 	require.NotEmpty(t, metric.ID)
 
-	metrics, err = svc.ListMetrics(ctx, "analytics", "sales")
+	metrics, err = svc.ListMetrics(ctx, testWorkspaceID, mustSemanticModelID(t, svc, ctx, "sales"))
 	require.NoError(t, err)
 	require.Len(t, metrics, 1)
 	assert.Equal(t, "total_revenue", metrics[0].Name)
 
-	preAgg, err := svc.CreatePreAggregation(ctx, "admin", "analytics", "sales", domain.CreateSemanticPreAggregationRequest{
+	preAgg, err := svc.CreatePreAggregation(ctx, "admin", testWorkspaceID, mustSemanticModelID(t, svc, ctx, "sales"), domain.CreateSemanticPreAggregationRequest{
 		SemanticModelID: "ignored-by-service",
 		Name:            "daily_summary",
 		MetricSet:       []string{"total_revenue"},
@@ -104,7 +113,7 @@ func TestService_CreateAndListSemanticModelResources(t *testing.T) {
 	require.NoError(t, err)
 	require.NotEmpty(t, preAgg.ID)
 
-	preAggs, err := svc.ListPreAggregations(ctx, "analytics", "sales")
+	preAggs, err := svc.ListPreAggregations(ctx, testWorkspaceID, mustSemanticModelID(t, svc, ctx, "sales"))
 	require.NoError(t, err)
 	require.Len(t, preAggs, 1)
 	assert.Equal(t, "daily_summary", preAggs[0].Name)
@@ -115,20 +124,20 @@ func TestService_ExplainAndRunMetricQuery(t *testing.T) {
 	ctx := context.Background()
 
 	_, err := svc.CreateSemanticModel(ctx, "admin", domain.CreateSemanticModelRequest{
-		ProjectName:  "analytics",
-		Name:         "sales",
+		WorkspaceID:     testWorkspaceID,
+		Name:            "sales",
 		BaseRelationRef: "analytics.fct_sales",
 	})
 	require.NoError(t, err)
 
 	_, err = svc.CreateSemanticModel(ctx, "admin", domain.CreateSemanticModelRequest{
-		ProjectName:  "analytics",
-		Name:         "customers",
+		WorkspaceID:     testWorkspaceID,
+		Name:            "customers",
 		BaseRelationRef: "analytics.dim_customers",
 	})
 	require.NoError(t, err)
 
-	_, err = svc.CreateMetric(ctx, "admin", "analytics", "sales", domain.CreateSemanticMetricRequest{
+	_, err = svc.CreateMetric(ctx, "admin", testWorkspaceID, mustSemanticModelID(t, svc, ctx, "sales"), domain.CreateSemanticMetricRequest{
 		SemanticModelID: "placeholder",
 		Name:            "total_revenue",
 		MetricType:      domain.MetricTypeSum,
@@ -137,7 +146,7 @@ func TestService_ExplainAndRunMetricQuery(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	models, _, err := svc.ListSemanticModels(ctx, ptr("analytics"), domain.PageRequest{MaxResults: 100})
+	models, _, err := svc.ListSemanticModels(ctx, testWorkspaceID, domain.PageRequest{MaxResults: 100})
 	require.NoError(t, err)
 	modelIDs := map[string]string{}
 	for _, m := range models {
@@ -155,7 +164,7 @@ func TestService_ExplainAndRunMetricQuery(t *testing.T) {
 	require.NoError(t, err)
 
 	plan, err := svc.ExplainMetricQuery(ctx, MetricQueryRequest{
-		ProjectName:       "analytics",
+		WorkspaceID:       testWorkspaceID,
 		SemanticModelName: "sales",
 		Metrics:           []string{"total_revenue"},
 		Dimensions:        []string{"customers.region"},
@@ -167,7 +176,7 @@ func TestService_ExplainAndRunMetricQuery(t *testing.T) {
 	fake := &fakeQueryExecutor{}
 	svc.SetQueryExecutor(fake)
 	run, err := svc.RunMetricQuery(ctx, "alice", MetricQueryRequest{
-		ProjectName:       "analytics",
+		WorkspaceID:       testWorkspaceID,
 		SemanticModelName: "sales",
 		Metrics:           []string{"total_revenue"},
 		Dimensions:        []string{"customers.region"},
@@ -182,14 +191,14 @@ func TestService_MaterializePreAggregation_RebuildsTargetWithoutSelfReference(t 
 	ctx := context.Background()
 
 	_, err := svc.CreateSemanticModel(ctx, "admin", domain.CreateSemanticModelRequest{
-		ProjectName:          "analytics",
+		WorkspaceID:          testWorkspaceID,
 		Name:                 "sales",
-		BaseRelationRef:         "analytics.fct_sales",
+		BaseRelationRef:      "analytics.fct_sales",
 		DefaultTimeDimension: "sales.order_date",
 	})
 	require.NoError(t, err)
 
-	_, err = svc.CreateMetric(ctx, "admin", "analytics", "sales", domain.CreateSemanticMetricRequest{
+	_, err = svc.CreateMetric(ctx, "admin", testWorkspaceID, mustSemanticModelID(t, svc, ctx, "sales"), domain.CreateSemanticMetricRequest{
 		SemanticModelID: "placeholder",
 		Name:            "total_revenue",
 		MetricType:      domain.MetricTypeSum,
@@ -198,7 +207,7 @@ func TestService_MaterializePreAggregation_RebuildsTargetWithoutSelfReference(t 
 	})
 	require.NoError(t, err)
 
-	preAgg, err := svc.CreatePreAggregation(ctx, "admin", "analytics", "sales", domain.CreateSemanticPreAggregationRequest{
+	preAgg, err := svc.CreatePreAggregation(ctx, "admin", testWorkspaceID, mustSemanticModelID(t, svc, ctx, "sales"), domain.CreateSemanticPreAggregationRequest{
 		SemanticModelID: "placeholder",
 		Name:            "daily_summary",
 		MetricSet:       []string{"total_revenue"},
@@ -228,14 +237,14 @@ func TestService_ExplainMetricQuery_AmbiguousJoinPath(t *testing.T) {
 
 	for _, name := range []string{"sales", "path_a", "path_b", "regions"} {
 		_, err := svc.CreateSemanticModel(ctx, "admin", domain.CreateSemanticModelRequest{
-			ProjectName:  "analytics",
-			Name:         name,
+			WorkspaceID:     testWorkspaceID,
+			Name:            name,
 			BaseRelationRef: "analytics." + name,
 		})
 		require.NoError(t, err)
 	}
 
-	_, err := svc.CreateMetric(ctx, "admin", "analytics", "sales", domain.CreateSemanticMetricRequest{
+	_, err := svc.CreateMetric(ctx, "admin", testWorkspaceID, mustSemanticModelID(t, svc, ctx, "sales"), domain.CreateSemanticMetricRequest{
 		SemanticModelID: "placeholder",
 		Name:            "total_revenue",
 		MetricType:      domain.MetricTypeSum,
@@ -244,7 +253,7 @@ func TestService_ExplainMetricQuery_AmbiguousJoinPath(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	models, _, err := svc.ListSemanticModels(ctx, ptr("analytics"), domain.PageRequest{MaxResults: 100})
+	models, _, err := svc.ListSemanticModels(ctx, testWorkspaceID, domain.PageRequest{MaxResults: 100})
 	require.NoError(t, err)
 	ids := map[string]string{}
 	for _, m := range models {
@@ -288,7 +297,7 @@ func TestService_ExplainMetricQuery_AmbiguousJoinPath(t *testing.T) {
 	require.NoError(t, err)
 
 	_, err = svc.ExplainMetricQuery(ctx, MetricQueryRequest{
-		ProjectName:       "analytics",
+		WorkspaceID:       testWorkspaceID,
 		SemanticModelName: "sales",
 		Metrics:           []string{"total_revenue"},
 		Dimensions:        []string{"regions.name"},
@@ -302,13 +311,13 @@ func TestService_ExplainMetricQuery_RejectsDangerousSQLFragments(t *testing.T) {
 	ctx := context.Background()
 
 	_, err := svc.CreateSemanticModel(ctx, "admin", domain.CreateSemanticModelRequest{
-		ProjectName:  "analytics",
-		Name:         "sales",
+		WorkspaceID:     testWorkspaceID,
+		Name:            "sales",
 		BaseRelationRef: "analytics.fct_sales",
 	})
 	require.NoError(t, err)
 
-	_, err = svc.CreateMetric(ctx, "admin", "analytics", "sales", domain.CreateSemanticMetricRequest{
+	_, err = svc.CreateMetric(ctx, "admin", testWorkspaceID, mustSemanticModelID(t, svc, ctx, "sales"), domain.CreateSemanticMetricRequest{
 		SemanticModelID: "placeholder",
 		Name:            "total_revenue",
 		MetricType:      domain.MetricTypeSum,
@@ -318,7 +327,7 @@ func TestService_ExplainMetricQuery_RejectsDangerousSQLFragments(t *testing.T) {
 	require.NoError(t, err)
 
 	_, err = svc.ExplainMetricQuery(ctx, MetricQueryRequest{
-		ProjectName:       "analytics",
+		WorkspaceID:       testWorkspaceID,
 		SemanticModelName: "sales",
 		Metrics:           []string{"total_revenue"},
 		Filters:           []string{"1=1; DROP TABLE sales"},
@@ -326,7 +335,7 @@ func TestService_ExplainMetricQuery_RejectsDangerousSQLFragments(t *testing.T) {
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "must not contain semicolons")
 
-	_, err = svc.CreateMetric(ctx, "admin", "analytics", "sales", domain.CreateSemanticMetricRequest{
+	_, err = svc.CreateMetric(ctx, "admin", testWorkspaceID, mustSemanticModelID(t, svc, ctx, "sales"), domain.CreateSemanticMetricRequest{
 		SemanticModelID: "placeholder",
 		Name:            "external_read",
 		MetricType:      domain.MetricTypeSum,
@@ -336,7 +345,7 @@ func TestService_ExplainMetricQuery_RejectsDangerousSQLFragments(t *testing.T) {
 	require.NoError(t, err)
 
 	_, err = svc.ExplainMetricQuery(ctx, MetricQueryRequest{
-		ProjectName:       "analytics",
+		WorkspaceID:       testWorkspaceID,
 		SemanticModelName: "sales",
 		Metrics:           []string{"external_read"},
 	})
@@ -349,13 +358,13 @@ func TestService_ExplainMetricQuery_FilterSQLApplied(t *testing.T) {
 	ctx := context.Background()
 
 	_, err := svc.CreateSemanticModel(ctx, "admin", domain.CreateSemanticModelRequest{
-		ProjectName:  "analytics",
-		Name:         "sales",
+		WorkspaceID:     testWorkspaceID,
+		Name:            "sales",
 		BaseRelationRef: "analytics.fct_sales",
 	})
 	require.NoError(t, err)
 
-	_, err = svc.CreateMetric(ctx, "admin", "analytics", "sales", domain.CreateSemanticMetricRequest{
+	_, err = svc.CreateMetric(ctx, "admin", testWorkspaceID, mustSemanticModelID(t, svc, ctx, "sales"), domain.CreateSemanticMetricRequest{
 		SemanticModelID: "placeholder",
 		Name:            "high_value_revenue",
 		MetricType:      domain.MetricTypeSum,
@@ -366,7 +375,7 @@ func TestService_ExplainMetricQuery_FilterSQLApplied(t *testing.T) {
 	require.NoError(t, err)
 
 	plan, err := svc.ExplainMetricQuery(ctx, MetricQueryRequest{
-		ProjectName:       "analytics",
+		WorkspaceID:       testWorkspaceID,
 		SemanticModelName: "sales",
 		Metrics:           []string{"high_value_revenue"},
 	})
@@ -379,13 +388,13 @@ func TestService_RunMetricQuery_ReturnsPreAggregationReadinessError(t *testing.T
 	ctx := context.Background()
 
 	_, err := svc.CreateSemanticModel(ctx, "admin", domain.CreateSemanticModelRequest{
-		ProjectName:  "analytics",
-		Name:         "sales",
+		WorkspaceID:     testWorkspaceID,
+		Name:            "sales",
 		BaseRelationRef: "analytics.fct_sales",
 	})
 	require.NoError(t, err)
 
-	_, err = svc.CreateMetric(ctx, "admin", "analytics", "sales", domain.CreateSemanticMetricRequest{
+	_, err = svc.CreateMetric(ctx, "admin", testWorkspaceID, mustSemanticModelID(t, svc, ctx, "sales"), domain.CreateSemanticMetricRequest{
 		SemanticModelID: "placeholder",
 		Name:            "total_revenue",
 		MetricType:      domain.MetricTypeSum,
@@ -394,7 +403,7 @@ func TestService_RunMetricQuery_ReturnsPreAggregationReadinessError(t *testing.T
 	})
 	require.NoError(t, err)
 
-	_, err = svc.CreatePreAggregation(ctx, "admin", "analytics", "sales", domain.CreateSemanticPreAggregationRequest{
+	_, err = svc.CreatePreAggregation(ctx, "admin", testWorkspaceID, mustSemanticModelID(t, svc, ctx, "sales"), domain.CreateSemanticPreAggregationRequest{
 		SemanticModelID: "ignored-by-service",
 		Name:            "revenue_daily",
 		MetricSet:       []string{"total_revenue"},
@@ -407,7 +416,7 @@ func TestService_RunMetricQuery_ReturnsPreAggregationReadinessError(t *testing.T
 	})
 
 	_, err = svc.RunMetricQuery(ctx, "alice", MetricQueryRequest{
-		ProjectName:       "analytics",
+		WorkspaceID:       testWorkspaceID,
 		SemanticModelName: "sales",
 		Metrics:           []string{"total_revenue"},
 	})
@@ -423,15 +432,15 @@ func TestService_RunMetricQuery_ReturnsTransformationModelReadinessError(t *test
 	ctx := context.Background()
 
 	_, err := svc.CreateSemanticModel(ctx, "admin", domain.CreateSemanticModelRequest{
-		ProjectName:  "analytics",
-		Name:         "customer_revenue",
+		WorkspaceID:     testWorkspaceID,
+		Name:            "customer_revenue",
 		BaseRelationRef: "fct_customer_revenue",
 	})
 	require.NoError(t, err)
 
 	modelRepo := svc.modelRepo
 	_, err = modelRepo.Create(ctx, &domain.Model{
-		ProjectName:     "analytics",
+		WorkspaceID:     testWorkspaceID,
 		Name:            "fct_customer_revenue",
 		SQL:             "select 1 as revenue",
 		Materialization: domain.MaterializationView,
@@ -439,7 +448,7 @@ func TestService_RunMetricQuery_ReturnsTransformationModelReadinessError(t *test
 	})
 	require.NoError(t, err)
 
-	_, err = svc.CreateMetric(ctx, "admin", "analytics", "customer_revenue", domain.CreateSemanticMetricRequest{
+	_, err = svc.CreateMetric(ctx, "admin", testWorkspaceID, mustSemanticModelID(t, svc, ctx, "customer_revenue"), domain.CreateSemanticMetricRequest{
 		SemanticModelID: "placeholder",
 		Name:            "total_revenue",
 		MetricType:      domain.MetricTypeSum,
@@ -453,7 +462,7 @@ func TestService_RunMetricQuery_ReturnsTransformationModelReadinessError(t *test
 	})
 
 	_, err = svc.RunMetricQuery(ctx, "alice", MetricQueryRequest{
-		ProjectName:       "analytics",
+		WorkspaceID:       testWorkspaceID,
 		SemanticModelName: "customer_revenue",
 		Metrics:           []string{"total_revenue"},
 	})
@@ -469,7 +478,7 @@ func TestService_ExplainMetricQuery_UnsafeJoinUsesBaseUniqueKey(t *testing.T) {
 	ctx := context.Background()
 
 	_, err := modelRepo.Create(ctx, &domain.Model{
-		ProjectName:     "analytics",
+		WorkspaceID:     testWorkspaceID,
 		Name:            "sales",
 		SQL:             "select 1 as sale_id, 42 as amount, 7 as customer_id",
 		Materialization: domain.MaterializationView,
@@ -479,20 +488,20 @@ func TestService_ExplainMetricQuery_UnsafeJoinUsesBaseUniqueKey(t *testing.T) {
 	require.NoError(t, err)
 
 	_, err = svc.CreateSemanticModel(ctx, "admin", domain.CreateSemanticModelRequest{
-		ProjectName:  "analytics",
-		Name:         "sales",
+		WorkspaceID:     testWorkspaceID,
+		Name:            "sales",
 		BaseRelationRef: "analytics.sales",
 	})
 	require.NoError(t, err)
 
 	_, err = svc.CreateSemanticModel(ctx, "admin", domain.CreateSemanticModelRequest{
-		ProjectName:  "analytics",
-		Name:         "sales_tags",
+		WorkspaceID:     testWorkspaceID,
+		Name:            "sales_tags",
 		BaseRelationRef: "analytics.sales_tags",
 	})
 	require.NoError(t, err)
 
-	_, err = svc.CreateMetric(ctx, "admin", "analytics", "sales", domain.CreateSemanticMetricRequest{
+	_, err = svc.CreateMetric(ctx, "admin", testWorkspaceID, mustSemanticModelID(t, svc, ctx, "sales"), domain.CreateSemanticMetricRequest{
 		SemanticModelID: "placeholder",
 		Name:            "total_revenue",
 		MetricType:      domain.MetricTypeSum,
@@ -501,7 +510,7 @@ func TestService_ExplainMetricQuery_UnsafeJoinUsesBaseUniqueKey(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	models, _, err := svc.ListSemanticModels(ctx, ptr("analytics"), domain.PageRequest{MaxResults: 100})
+	models, _, err := svc.ListSemanticModels(ctx, testWorkspaceID, domain.PageRequest{MaxResults: 100})
 	require.NoError(t, err)
 	modelIDs := map[string]string{}
 	for _, m := range models {
@@ -518,7 +527,7 @@ func TestService_ExplainMetricQuery_UnsafeJoinUsesBaseUniqueKey(t *testing.T) {
 	require.NoError(t, err)
 
 	plan, err := svc.ExplainMetricQuery(ctx, MetricQueryRequest{
-		ProjectName:       "analytics",
+		WorkspaceID:       testWorkspaceID,
 		SemanticModelName: "sales",
 		Metrics:           []string{"total_revenue"},
 		Dimensions:        []string{"sales_tags.tag_name"},
@@ -535,7 +544,7 @@ func TestService_ExplainMetricQuery_UnsafeJoinSupportsCountDistinct(t *testing.T
 	ctx := context.Background()
 
 	_, err := modelRepo.Create(ctx, &domain.Model{
-		ProjectName:     "analytics",
+		WorkspaceID:     testWorkspaceID,
 		Name:            "sales",
 		SQL:             "select 1 as sale_id, 42 as amount, 7 as customer_id",
 		Materialization: domain.MaterializationView,
@@ -545,20 +554,20 @@ func TestService_ExplainMetricQuery_UnsafeJoinSupportsCountDistinct(t *testing.T
 	require.NoError(t, err)
 
 	_, err = svc.CreateSemanticModel(ctx, "admin", domain.CreateSemanticModelRequest{
-		ProjectName:  "analytics",
-		Name:         "sales",
+		WorkspaceID:     testWorkspaceID,
+		Name:            "sales",
 		BaseRelationRef: "analytics.sales",
 	})
 	require.NoError(t, err)
 
 	_, err = svc.CreateSemanticModel(ctx, "admin", domain.CreateSemanticModelRequest{
-		ProjectName:  "analytics",
-		Name:         "sales_tags",
+		WorkspaceID:     testWorkspaceID,
+		Name:            "sales_tags",
 		BaseRelationRef: "analytics.sales_tags",
 	})
 	require.NoError(t, err)
 
-	_, err = svc.CreateMetric(ctx, "admin", "analytics", "sales", domain.CreateSemanticMetricRequest{
+	_, err = svc.CreateMetric(ctx, "admin", testWorkspaceID, mustSemanticModelID(t, svc, ctx, "sales"), domain.CreateSemanticMetricRequest{
 		SemanticModelID: "placeholder",
 		Name:            "distinct_customers",
 		MetricType:      domain.MetricTypeCountDistinct,
@@ -567,7 +576,7 @@ func TestService_ExplainMetricQuery_UnsafeJoinSupportsCountDistinct(t *testing.T
 	})
 	require.NoError(t, err)
 
-	models, _, err := svc.ListSemanticModels(ctx, ptr("analytics"), domain.PageRequest{MaxResults: 100})
+	models, _, err := svc.ListSemanticModels(ctx, testWorkspaceID, domain.PageRequest{MaxResults: 100})
 	require.NoError(t, err)
 	modelIDs := map[string]string{}
 	for _, m := range models {
@@ -584,7 +593,7 @@ func TestService_ExplainMetricQuery_UnsafeJoinSupportsCountDistinct(t *testing.T
 	require.NoError(t, err)
 
 	plan, err := svc.ExplainMetricQuery(ctx, MetricQueryRequest{
-		ProjectName:       "analytics",
+		WorkspaceID:       testWorkspaceID,
 		SemanticModelName: "sales",
 		Metrics:           []string{"distinct_customers"},
 		Dimensions:        []string{"sales_tags.tag_name"},
@@ -599,7 +608,7 @@ func TestService_ExplainMetricQuery_UnsafeJoinSupportsRatio(t *testing.T) {
 	ctx := context.Background()
 
 	_, err := modelRepo.Create(ctx, &domain.Model{
-		ProjectName:     "analytics",
+		WorkspaceID:     testWorkspaceID,
 		Name:            "sales",
 		SQL:             "select 1 as sale_id, 42 as amount, 7 as customer_id",
 		Materialization: domain.MaterializationView,
@@ -609,20 +618,20 @@ func TestService_ExplainMetricQuery_UnsafeJoinSupportsRatio(t *testing.T) {
 	require.NoError(t, err)
 
 	_, err = svc.CreateSemanticModel(ctx, "admin", domain.CreateSemanticModelRequest{
-		ProjectName:  "analytics",
-		Name:         "sales",
+		WorkspaceID:     testWorkspaceID,
+		Name:            "sales",
 		BaseRelationRef: "analytics.sales",
 	})
 	require.NoError(t, err)
 
 	_, err = svc.CreateSemanticModel(ctx, "admin", domain.CreateSemanticModelRequest{
-		ProjectName:  "analytics",
-		Name:         "sales_tags",
+		WorkspaceID:     testWorkspaceID,
+		Name:            "sales_tags",
 		BaseRelationRef: "analytics.sales_tags",
 	})
 	require.NoError(t, err)
 
-	_, err = svc.CreateMetric(ctx, "admin", "analytics", "sales", domain.CreateSemanticMetricRequest{
+	_, err = svc.CreateMetric(ctx, "admin", testWorkspaceID, mustSemanticModelID(t, svc, ctx, "sales"), domain.CreateSemanticMetricRequest{
 		SemanticModelID: "placeholder",
 		Name:            "revenue_per_customer",
 		MetricType:      domain.MetricTypeRatio,
@@ -631,7 +640,7 @@ func TestService_ExplainMetricQuery_UnsafeJoinSupportsRatio(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	models, _, err := svc.ListSemanticModels(ctx, ptr("analytics"), domain.PageRequest{MaxResults: 100})
+	models, _, err := svc.ListSemanticModels(ctx, testWorkspaceID, domain.PageRequest{MaxResults: 100})
 	require.NoError(t, err)
 	modelIDs := map[string]string{}
 	for _, m := range models {
@@ -648,7 +657,7 @@ func TestService_ExplainMetricQuery_UnsafeJoinSupportsRatio(t *testing.T) {
 	require.NoError(t, err)
 
 	plan, err := svc.ExplainMetricQuery(ctx, MetricQueryRequest{
-		ProjectName:       "analytics",
+		WorkspaceID:       testWorkspaceID,
 		SemanticModelName: "sales",
 		Metrics:           []string{"revenue_per_customer"},
 		Dimensions:        []string{"sales_tags.tag_name"},
@@ -664,7 +673,7 @@ func TestService_ExplainMetricQuery_UnsafeJoinSupportsDerivedArithmetic(t *testi
 	ctx := context.Background()
 
 	_, err := modelRepo.Create(ctx, &domain.Model{
-		ProjectName:     "analytics",
+		WorkspaceID:     testWorkspaceID,
 		Name:            "sales",
 		SQL:             "select 1 as sale_id, 42 as amount, 7 as customer_id, 2 as discount_amount",
 		Materialization: domain.MaterializationView,
@@ -674,20 +683,20 @@ func TestService_ExplainMetricQuery_UnsafeJoinSupportsDerivedArithmetic(t *testi
 	require.NoError(t, err)
 
 	_, err = svc.CreateSemanticModel(ctx, "admin", domain.CreateSemanticModelRequest{
-		ProjectName:  "analytics",
-		Name:         "sales",
+		WorkspaceID:     testWorkspaceID,
+		Name:            "sales",
 		BaseRelationRef: "analytics.sales",
 	})
 	require.NoError(t, err)
 
 	_, err = svc.CreateSemanticModel(ctx, "admin", domain.CreateSemanticModelRequest{
-		ProjectName:  "analytics",
-		Name:         "sales_tags",
+		WorkspaceID:     testWorkspaceID,
+		Name:            "sales_tags",
 		BaseRelationRef: "analytics.sales_tags",
 	})
 	require.NoError(t, err)
 
-	_, err = svc.CreateMetric(ctx, "admin", "analytics", "sales", domain.CreateSemanticMetricRequest{
+	_, err = svc.CreateMetric(ctx, "admin", testWorkspaceID, mustSemanticModelID(t, svc, ctx, "sales"), domain.CreateSemanticMetricRequest{
 		SemanticModelID: "placeholder",
 		Name:            "net_revenue_per_customer",
 		MetricType:      domain.MetricTypeRatio,
@@ -696,7 +705,7 @@ func TestService_ExplainMetricQuery_UnsafeJoinSupportsDerivedArithmetic(t *testi
 	})
 	require.NoError(t, err)
 
-	models, _, err := svc.ListSemanticModels(ctx, ptr("analytics"), domain.PageRequest{MaxResults: 100})
+	models, _, err := svc.ListSemanticModels(ctx, testWorkspaceID, domain.PageRequest{MaxResults: 100})
 	require.NoError(t, err)
 	modelIDs := map[string]string{}
 	for _, m := range models {
@@ -713,7 +722,7 @@ func TestService_ExplainMetricQuery_UnsafeJoinSupportsDerivedArithmetic(t *testi
 	require.NoError(t, err)
 
 	plan, err := svc.ExplainMetricQuery(ctx, MetricQueryRequest{
-		ProjectName:       "analytics",
+		WorkspaceID:       testWorkspaceID,
 		SemanticModelName: "sales",
 		Metrics:           []string{"net_revenue_per_customer"},
 		Dimensions:        []string{"sales_tags.tag_name"},
@@ -730,7 +739,7 @@ func TestService_ExplainMetricQuery_UnsafeJoinSupportsScalarWrappers(t *testing.
 	ctx := context.Background()
 
 	_, err := modelRepo.Create(ctx, &domain.Model{
-		ProjectName:     "analytics",
+		WorkspaceID:     testWorkspaceID,
 		Name:            "sales",
 		SQL:             "select 1 as sale_id, 42 as amount, 7 as customer_id, 2 as discount_amount",
 		Materialization: domain.MaterializationView,
@@ -740,20 +749,20 @@ func TestService_ExplainMetricQuery_UnsafeJoinSupportsScalarWrappers(t *testing.
 	require.NoError(t, err)
 
 	_, err = svc.CreateSemanticModel(ctx, "admin", domain.CreateSemanticModelRequest{
-		ProjectName:  "analytics",
-		Name:         "sales",
+		WorkspaceID:     testWorkspaceID,
+		Name:            "sales",
 		BaseRelationRef: "analytics.sales",
 	})
 	require.NoError(t, err)
 
 	_, err = svc.CreateSemanticModel(ctx, "admin", domain.CreateSemanticModelRequest{
-		ProjectName:  "analytics",
-		Name:         "sales_tags",
+		WorkspaceID:     testWorkspaceID,
+		Name:            "sales_tags",
 		BaseRelationRef: "analytics.sales_tags",
 	})
 	require.NoError(t, err)
 
-	_, err = svc.CreateMetric(ctx, "admin", "analytics", "sales", domain.CreateSemanticMetricRequest{
+	_, err = svc.CreateMetric(ctx, "admin", testWorkspaceID, mustSemanticModelID(t, svc, ctx, "sales"), domain.CreateSemanticMetricRequest{
 		SemanticModelID: "placeholder",
 		Name:            "rounded_revenue_per_customer",
 		MetricType:      domain.MetricTypeRatio,
@@ -762,7 +771,7 @@ func TestService_ExplainMetricQuery_UnsafeJoinSupportsScalarWrappers(t *testing.
 	})
 	require.NoError(t, err)
 
-	models, _, err := svc.ListSemanticModels(ctx, ptr("analytics"), domain.PageRequest{MaxResults: 100})
+	models, _, err := svc.ListSemanticModels(ctx, testWorkspaceID, domain.PageRequest{MaxResults: 100})
 	require.NoError(t, err)
 	modelIDs := map[string]string{}
 	for _, m := range models {
@@ -779,7 +788,7 @@ func TestService_ExplainMetricQuery_UnsafeJoinSupportsScalarWrappers(t *testing.
 	require.NoError(t, err)
 
 	plan, err := svc.ExplainMetricQuery(ctx, MetricQueryRequest{
-		ProjectName:       "analytics",
+		WorkspaceID:       testWorkspaceID,
 		SemanticModelName: "sales",
 		Metrics:           []string{"rounded_revenue_per_customer"},
 		Dimensions:        []string{"sales_tags.tag_name"},
@@ -788,10 +797,6 @@ func TestService_ExplainMetricQuery_UnsafeJoinSupportsScalarWrappers(t *testing.
 	assert.Contains(t, plan.GeneratedSQL, `ROUND((COALESCE(`)
 	assert.Contains(t, plan.GeneratedSQL, `COUNT(DISTINCT "__metric_rounded_revenue_per_customer_arg_0_rhs_distinct")`)
 	assert.Contains(t, plan.GeneratedSQL, `, 2) AS "rounded_revenue_per_customer"`)
-}
-
-func ptr(s string) *string {
-	return &s
 }
 
 type failingQueryExecutor struct {

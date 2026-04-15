@@ -5,8 +5,8 @@ import (
 	"sort"
 	"strings"
 
-	"duck-demo/internal/domain"
-	"duck-demo/internal/ui/core"
+	"github.com/Yacobolo/quackstack/internal/domain"
+	"github.com/Yacobolo/quackstack/internal/ui/core"
 
 	"github.com/go-chi/chi/v5"
 )
@@ -112,11 +112,6 @@ func (h *Handler) ProjectsDetail(w http.ResponseWriter, r *http.Request) {
 		renderServiceError(w, err)
 		return
 	}
-	semanticRows, semanticTotal, err := h.deps.Semantic.ListSemanticModels(r.Context(), ptrString(project.Name), domain.PageRequest{MaxResults: domain.MaxMaxResults})
-	if err != nil {
-		renderServiceError(w, err)
-		return
-	}
 	environments, environmentTotal, err := h.deps.Project.ListEnvironmentsForProject(r.Context(), cp.Name, cp.IsAdmin, project.ID, domain.PageRequest{MaxResults: domain.MaxMaxResults})
 	if err != nil {
 		renderServiceError(w, err)
@@ -151,18 +146,6 @@ func (h *Handler) ProjectsDetail(w http.ResponseWriter, r *http.Request) {
 			Meta1:  item.MacroType,
 			Meta2:  valueOrDash(item.Visibility),
 			Detail: formatTime(item.UpdatedAt),
-		})
-	}
-
-	semanticItems := make([]projectAssetRowData, 0, len(semanticRows))
-	for i := range semanticRows {
-		item := semanticRows[i]
-		semanticItems = append(semanticItems, projectAssetRowData{
-			Name:   item.Name,
-			URL:    "/ui/semantic/models/" + item.ID,
-			Meta1:  valueOrDash(item.BaseModelRef),
-			Meta2:  formatTime(item.UpdatedAt),
-			Detail: valueOrDash(item.DefaultTimeDimension),
 		})
 	}
 
@@ -221,19 +204,15 @@ func (h *Handler) ProjectsDetail(w http.ResponseWriter, r *http.Request) {
 		ActiveTab:         tab,
 		ModelsURL:         modelsListURL(project.Name),
 		MacrosURL:         macrosListURL(project.Name),
-		SemanticURL:       semanticListURL(project.Name),
 		NewModelURL:       newModelURL(project.Name),
 		NewMacroURL:       newMacroURL(project.Name),
-		NewSemanticURL:    newSemanticURL(project.Name),
 		NewEnvironmentURL: projectEnvironmentNewURL(project.ID),
 		ModelCount:        modelTotal,
 		MacroCount:        macroTotal,
-		SemanticCount:     semanticTotal,
 		EnvironmentCount:  environmentTotal,
 		BuildCount:        buildTotal,
 		Models:            modelItems,
 		Macros:            macroItems,
-		SemanticModels:    semanticItems,
 		Environments:      environmentItems,
 		Builds:            buildItems,
 	}))

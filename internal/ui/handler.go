@@ -35,7 +35,6 @@ import (
 	"github.com/Yacobolo/quackstack/internal/ui/security"
 	"github.com/Yacobolo/quackstack/internal/ui/semantic"
 	"github.com/Yacobolo/quackstack/internal/ui/storage"
-	"github.com/Yacobolo/quackstack/internal/ui/core"
 )
 
 type PrincipalResolver = core.PrincipalResolver

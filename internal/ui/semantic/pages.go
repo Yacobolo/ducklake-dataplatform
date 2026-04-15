@@ -1,7 +1,6 @@
 package semantic
 
 import (
-	"net/url"
 	"strconv"
 	"strings"
 

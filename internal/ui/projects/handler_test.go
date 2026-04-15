@@ -9,13 +9,12 @@ import (
 	"strings"
 	"testing"
 
-	"duck-demo/internal/domain"
-	macrosvc "duck-demo/internal/service/macro"
-	modelsvc "duck-demo/internal/service/model"
-	projectsvc "duck-demo/internal/service/project"
-	"duck-demo/internal/service/semantic"
-	workspacesvc "duck-demo/internal/service/workspace"
-	"duck-demo/internal/ui/core"
+	"github.com/Yacobolo/quackstack/internal/domain"
+	macrosvc "github.com/Yacobolo/quackstack/internal/service/macro"
+	modelsvc "github.com/Yacobolo/quackstack/internal/service/model"
+	projectsvc "github.com/Yacobolo/quackstack/internal/service/project"
+	workspacesvc "github.com/Yacobolo/quackstack/internal/service/workspace"
+	"github.com/Yacobolo/quackstack/internal/ui/core"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/stretchr/testify/assert"
@@ -476,13 +475,6 @@ func TestProjectsRoutes_RenderListAndDetail(t *testing.T) {
 	require.Equal(t, http.StatusOK, macrosRec.Code)
 	assert.Contains(t, macrosRec.Body.String(), "safe_sum")
 
-	semanticReq := httptest.NewRequest(http.MethodGet, "/projects/"+fixture.ProjectID+"?tab=semantic", nil)
-	semanticReq = semanticReq.WithContext(domain.WithPrincipal(semanticReq.Context(), domain.ContextPrincipal{Name: "alice"}))
-	semanticRec := httptest.NewRecorder()
-	router.ServeHTTP(semanticRec, semanticReq)
-	require.Equal(t, http.StatusOK, semanticRec.Code)
-	assert.Contains(t, semanticRec.Body.String(), "orders_semantic")
-
 	buildsReq := httptest.NewRequest(http.MethodGet, "/projects/"+fixture.ProjectID+"?tab=builds", nil)
 	buildsReq = buildsReq.WithContext(domain.WithPrincipal(buildsReq.Context(), domain.ContextPrincipal{Name: "alice"}))
 	buildsRec := httptest.NewRecorder()
@@ -677,7 +669,6 @@ func setupProjectsHandler(t *testing.T) projectsHandlerFixture {
 	buildRepo := newFakeBuildRepo()
 	modelRepo := newFakeModelRepo()
 	macroRepo := newFakeMacroRepo()
-	semanticRepo := newFakeSemanticModelRepo()
 	audit := testAuditRepo{}
 
 	workspaceSvc := workspacesvc.NewService(workspaceRepo, nil, projectRepo, environmentRepo, nil, audit)
@@ -691,8 +682,6 @@ func setupProjectsHandler(t *testing.T) projectsHandlerFixture {
 		Audit:        audit,
 	})
 	macroService := macrosvc.NewService(macroRepo, audit)
-	semanticService := semantic.NewService(semanticRepo, nil, nil, nil)
-
 	ctx := domain.WithPrincipal(context.Background(), domain.ContextPrincipal{Name: "alice", IsAdmin: true})
 	workspace, err := workspaceSvc.CreateWorkspace(ctx, "alice", true, domain.CreateWorkspaceRequest{
 		Name:           "Team workspace",
@@ -734,13 +723,6 @@ func setupProjectsHandler(t *testing.T) projectsHandlerFixture {
 	})
 	require.NoError(t, err)
 
-	_, err = semanticService.CreateSemanticModel(ctx, "alice", domain.CreateSemanticModelRequest{
-		ProjectName:  "analytics",
-		Name:         "orders_semantic",
-		BaseModelRef: "analytics.orders",
-	})
-	require.NoError(t, err)
-
 	computeEndpoint := "warehouse-dev"
 	deferToEnvironment := "shared-dev"
 	environment, err := projectSvc.CreateEnvironmentForProject(ctx, "alice", true, project.ID, domain.CreateEnvironmentRequest{
@@ -779,7 +761,6 @@ func setupProjectsHandler(t *testing.T) projectsHandlerFixture {
 		Project:   projectSvc,
 		Model:     modelService,
 		Macro:     macroService,
-		Semantic:  semanticService,
 	}
 	return projectsHandlerFixture{
 		Handler:         New(deps),

@@ -9,8 +9,8 @@ import (
 	"strings"
 	"time"
 
-	"duck-demo/internal/domain"
-	"duck-demo/internal/ui/core"
+	"github.com/Yacobolo/quackstack/internal/domain"
+	"github.com/Yacobolo/quackstack/internal/ui/core"
 )
 
 func pageFromRequest(r *http.Request, defaultPageSize int) domain.PageRequest {
@@ -171,20 +171,12 @@ func macrosListURL(projectName string) string {
 	return "/ui/macros?project=" + url.QueryEscape(projectName)
 }
 
-func semanticListURL(projectName string) string {
-	return "/ui/semantic/models?project=" + url.QueryEscape(projectName)
-}
-
 func newModelURL(projectName string) string {
 	return "/ui/models/new?project=" + url.QueryEscape(projectName)
 }
 
 func newMacroURL(projectName string) string {
 	return "/ui/macros/new?project=" + url.QueryEscape(projectName)
-}
-
-func newSemanticURL(projectName string) string {
-	return "/ui/semantic/models/new?project=" + url.QueryEscape(projectName)
 }
 
 func projectDetailURL(projectID string) string {
@@ -270,14 +262,13 @@ func projectTab(baseURL, tab string) string {
 const (
 	projectTabModels       = "models"
 	projectTabMacros       = "macros"
-	projectTabSemantic     = "semantic"
 	projectTabEnvironments = "environments"
 	projectTabBuilds       = "builds"
 )
 
 func normalizedProjectTab(v string) string {
 	switch strings.TrimSpace(v) {
-	case projectTabMacros, projectTabSemantic, projectTabEnvironments, projectTabBuilds:
+	case projectTabMacros, projectTabEnvironments, projectTabBuilds:
 		return strings.TrimSpace(v)
 	default:
 		return projectTabModels

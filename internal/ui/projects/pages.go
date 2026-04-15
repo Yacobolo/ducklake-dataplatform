@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strconv"
 
-	"duck-demo/internal/domain"
-	"duck-demo/internal/ui/core"
+	"github.com/Yacobolo/quackstack/internal/domain"
+	"github.com/Yacobolo/quackstack/internal/ui/core"
 
 	. "maragu.dev/gomponents"
 	. "maragu.dev/gomponents/html"
@@ -62,19 +62,15 @@ type projectHubPageData struct {
 	ActiveTab         string
 	ModelsURL         string
 	MacrosURL         string
-	SemanticURL       string
 	NewModelURL       string
 	NewMacroURL       string
-	NewSemanticURL    string
 	NewEnvironmentURL string
 	ModelCount        int64
 	MacroCount        int64
-	SemanticCount     int64
 	EnvironmentCount  int64
 	BuildCount        int64
 	Models            []projectAssetRowData
 	Macros            []projectAssetRowData
-	SemanticModels    []projectAssetRowData
 	Environments      []projectEnvironmentRowData
 	Builds            []projectBuildRowData
 }
@@ -121,7 +117,7 @@ func projectsListPage(principal domain.ContextPrincipal, rows []projectListRowDa
 					Div(Class("grid gap-3"),
 						core.Kicker("Build"),
 						H1(Class("m-0 text-3xl font-semibold tracking-tight"), Text("Projects")),
-						P(Class("m-0 max-w-3xl text-sm leading-6 text-[var(--fgColor-muted)]"), Text("Projects are the authoring package boundary for models, macros, semantic models, environments, and builds.")),
+						P(Class("m-0 max-w-3xl text-sm leading-6 text-[var(--fgColor-muted)]"), Text("Projects are the authoring package boundary for models, macros, environments, and builds.")),
 					),
 				),
 			),
@@ -141,8 +137,6 @@ func projectHubPage(d projectHubPageData) Node {
 	switch d.ActiveTab {
 	case projectTabMacros:
 		content = projectMacrosContent(d)
-	case projectTabSemantic:
-		content = projectSemanticContent(d)
 	case projectTabEnvironments:
 		content = projectEnvironmentsContent(d)
 	case projectTabBuilds:
@@ -169,12 +163,6 @@ func projectModelsContent(d projectHubPageData) Node {
 func projectMacrosContent(d projectHubPageData) Node {
 	return Div(Class("grid gap-8"),
 		projectAssetSection("macro", "Macros", "All macros scoped to this project.", d.Macros, d.MacrosURL, d.NewMacroURL, d.MacroCount, "No macros in this project yet.", "New macro"),
-	)
-}
-
-func projectSemanticContent(d projectHubPageData) Node {
-	return Div(Class("grid gap-8"),
-		projectAssetSection("semantic-model", "Semantic models", "All semantic models associated with this project.", d.SemanticModels, d.SemanticURL, d.NewSemanticURL, d.SemanticCount, "No semantic models in this project yet.", "New semantic model"),
 	)
 }
 
@@ -362,7 +350,6 @@ func projectTabs(d projectHubPageData) Node {
 	tabs := []Node{
 		projectTabLink(projectTab(baseURL, projectTabModels), d.ActiveTab == projectTabModels, "model", "Models", d.ModelCount),
 		projectTabLink(projectTab(baseURL, projectTabMacros), d.ActiveTab == projectTabMacros, "macro", "Macros", d.MacroCount),
-		projectTabLink(projectTab(baseURL, projectTabSemantic), d.ActiveTab == projectTabSemantic, "semantic-model", "Semantic", d.SemanticCount),
 		projectTabLink(projectTab(baseURL, projectTabEnvironments), d.ActiveTab == projectTabEnvironments, "environment", "Environments", d.EnvironmentCount),
 		projectTabLink(projectTab(baseURL, projectTabBuilds), d.ActiveTab == projectTabBuilds, "build", "Builds", d.BuildCount),
 	}
