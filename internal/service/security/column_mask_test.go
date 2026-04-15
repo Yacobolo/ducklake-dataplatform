@@ -138,6 +138,27 @@ func TestColumnMaskService_Create_EmptyMaskExpression(t *testing.T) {
 	assert.ErrorAs(t, err, &validation)
 }
 
+func TestColumnMaskService_Create_AllowsDuckDB15Expressions(t *testing.T) {
+	repo := &mockColumnMaskRepo{
+		CreateFn: func(_ context.Context, m *domain.ColumnMask) (*domain.ColumnMask, error) {
+			m.ID = "cm-15"
+			return m, nil
+		},
+	}
+	audit := &testutil.MockAuditRepo{}
+	svc := NewColumnMaskService(repo, audit)
+
+	result, err := svc.Create(adminCtx(), domain.CreateColumnMaskRequest{
+		Name:           "mask-tags",
+		TableID:        "t-1",
+		ColumnName:     "tags",
+		MaskExpression: "list_transform(tags, lambda x: '***')",
+	})
+	require.NoError(t, err)
+	assert.Equal(t, "cm-15", result.ID)
+	assert.True(t, audit.HasAction("CREATE_COLUMN_MASK"))
+}
+
 func TestColumnMaskService_Delete_AdminAllowed(t *testing.T) {
 	called := false
 	repo := &mockColumnMaskRepo{

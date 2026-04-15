@@ -7,8 +7,9 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 cd "$SCRIPT_DIR"
 
-# DuckDB version to target (v1.4.4 LTS — latest stable)
-DUCKDB_VERSION="v1.4.4"
+# DuckDB version to target for this extension build.
+DUCKDB_VERSION="v1.5.2"
+EXTENSION_CI_TOOLS_REF="v1.5.1"
 
 echo "=== quack_access extension setup ==="
 
@@ -20,10 +21,10 @@ else
     echo "DuckDB already present, skipping clone."
 fi
 
-# 2. Clone extension-ci-tools (pinned to same DuckDB version)
+# 2. Clone extension-ci-tools (latest available ref on the DuckDB 1.5.x line)
 if [ ! -d "extension-ci-tools" ]; then
-    echo "Cloning extension-ci-tools ${DUCKDB_VERSION}..."
-    git clone --depth 1 --branch "$DUCKDB_VERSION" https://github.com/duckdb/extension-ci-tools.git
+    echo "Cloning extension-ci-tools ${EXTENSION_CI_TOOLS_REF}..."
+    git clone --depth 1 --branch "$EXTENSION_CI_TOOLS_REF" https://github.com/duckdb/extension-ci-tools.git
 else
     echo "extension-ci-tools already present, skipping clone."
 fi

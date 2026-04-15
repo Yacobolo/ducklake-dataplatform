@@ -1,10 +1,10 @@
 {
   "home-hero.js": "home-hero.d8a9bcdd13.js",
-  "sql-editor.js": "sql-editor.490e760aee.js",
-  "notebook.js": "notebook.fed9c4af54.js",
+  "sql-editor.js": "sql-editor.721ab363f2.js",
+  "notebook.js": "notebook.b22c43739c.js",
   "dashboard.js": "dashboard.4c76400b8b.js",
   "explore.js": "explore.e609ec0cab.js",
   "datastar-inspector.js": "datastar-inspector.50d55cb509.js",
-  "semantic-model-flow.js": "semantic-model-flow.e983caa38a.js",
+  "semantic-model-flow.js": "semantic-model-flow.99f42847e9.js",
   "datastar.js": "datastar.c9c8b99715.js"
 }

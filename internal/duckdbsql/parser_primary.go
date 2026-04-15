@@ -59,6 +59,9 @@ func (p *Parser) parsePrimary() Expr {
 		return p.parseExistsExpr(false)
 
 	case TOKEN_IDENT:
+		if strings.EqualFold(p.token.Literal, "lambda") && p.checkPeek(TOKEN_IDENT) {
+			return p.parsePythonLambdaExpr()
+		}
 		return p.parseIdentifierExpr()
 
 	case TOKEN_LPAREN:
@@ -122,6 +125,29 @@ func (p *Parser) parsePrimary() Expr {
 		p.nextToken()
 		return nil
 	}
+}
+
+func (p *Parser) parsePythonLambdaExpr() Expr {
+	p.nextToken() // consume lambda
+
+	lambda := &LambdaExpr{}
+	for {
+		if !p.check(TOKEN_IDENT) {
+			p.addError("expected lambda parameter")
+			return lambda
+		}
+
+		lambda.Params = append(lambda.Params, p.token.Literal)
+		p.nextToken()
+
+		if !p.match(TOKEN_COMMA) {
+			break
+		}
+	}
+
+	p.expect(TOKEN_COLON)
+	lambda.Body = p.parseExpression()
+	return lambda
 }
 
 // parseIdentifierExpr parses an identifier (column ref or function call).

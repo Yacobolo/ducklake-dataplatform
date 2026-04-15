@@ -1599,6 +1599,10 @@ func validateRowFilters(
 			}
 			if f.FilterSQL == "" {
 				addErr(errs, fpath, "filter_sql is required")
+			} else {
+				if _, err := duckdbsql.ParseExpr(f.FilterSQL); err != nil {
+					addErr(errs, fpath, "filter_sql must be valid SQL expression: %v", err)
+				}
 			}
 			if f.Name != "" {
 				if filterSeen[f.Name] {

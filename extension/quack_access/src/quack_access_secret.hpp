@@ -10,6 +10,7 @@ class ExtensionLoader;
 struct QuackAccessSecretData {
 	string api_url;
 	string api_key;
+	string catalog = "main";
 };
 
 /// Registers the "quack_access" secret type and its "config" provider.
@@ -17,7 +18,8 @@ struct QuackAccessSecretData {
 ///   CREATE SECRET my_platform (
 ///       TYPE quack_access,
 ///       API_URL 'https://api.example.com/v1',
-///       API_KEY 'key_abc123'
+///       API_KEY 'key_abc123',
+///       CATALOG 'main'
 ///   );
 class QuackAccessSecret {
 public:

@@ -11,6 +11,27 @@ using json = nlohmann::json;
 
 namespace duckdb {
 
+static std::string UrlEncode(const std::string &value) {
+	std::ostringstream encoded;
+	encoded << std::hex << std::uppercase;
+	for (auto ch : value) {
+		auto uch = static_cast<unsigned char>(ch);
+		if (std::isalnum(uch) || ch == '-' || ch == '_' || ch == '.' || ch == '~') {
+			encoded << ch;
+			continue;
+		}
+		encoded << '%' << std::setw(2) << std::setfill('0') << static_cast<int>(uch);
+	}
+	return encoded.str();
+}
+
+static std::string ToLower(std::string value) {
+	for (auto &ch : value) {
+		ch = static_cast<char>(std::tolower(static_cast<unsigned char>(ch)));
+	}
+	return value;
+}
+
 // Static member definitions
 std::mutex ManifestCache::cache_mutex_;
 std::unordered_map<std::string, std::shared_ptr<TableManifest>> ManifestCache::cache_;
@@ -68,11 +89,12 @@ static bool ParseRFC3339(const std::string &value, std::chrono::system_clock::ti
 std::shared_ptr<TableManifest> ManifestCache::GetOrFetch(
 	const std::string &api_url,
 	const std::string &api_key,
+	const std::string &catalog_name,
 	const std::string &schema_name,
 	const std::string &table_name,
 	std::string &out_error
 ) {
-	auto key = CacheKey(api_url, api_key, schema_name, table_name);
+	auto key = CacheKey(api_url, api_key, catalog_name, schema_name, table_name);
 	auto now = std::chrono::system_clock::now();
 
 	// Check cache under lock
@@ -92,13 +114,12 @@ std::shared_ptr<TableManifest> ManifestCache::GetOrFetch(
 	}
 
 	// Cache miss — fetch from API
-	std::string manifest_url = api_url + "/manifest";
+	std::string manifest_url = api_url + "/catalogs/" + UrlEncode(catalog_name) +
+	                           "/schemas/" + UrlEncode(schema_name) +
+	                           "/tables/" + UrlEncode(table_name) +
+	                           "/manifest";
 
-	json request_body;
-	request_body["table"] = table_name;
-	request_body["schema"] = schema_name;
-
-	auto response = QuackAccessHttp::PostJson(manifest_url, api_key, request_body.dump());
+	auto response = QuackAccessHttp::GetJson(manifest_url, api_key);
 
 	if (!response.error.empty()) {
 		out_error = "cannot reach API server: " + response.error;
@@ -220,7 +241,7 @@ std::shared_ptr<TableManifest> ManifestCache::ParseManifest(
 		if (j.contains("column_masks") && j["column_masks"].is_object()) {
 			for (auto &item : j["column_masks"].items()) {
 				if (item.value().is_string()) {
-					manifest->column_masks[item.key()] = item.value().get<std::string>();
+					manifest->column_masks[ToLower(item.key())] = item.value().get<std::string>();
 				}
 			}
 		}

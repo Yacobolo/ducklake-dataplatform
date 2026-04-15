@@ -17,6 +17,8 @@ static unique_ptr<BaseSecret> CreateQuackAccessSecret(ClientContext &context, Cr
 			// Mark API key as redacted so it won't show in duckdb_secrets()
 			secret->redact_keys.insert("api_key");
 			secret->secret_map["api_key"] = entry.second.ToString();
+		} else if (lower_key == "catalog") {
+			secret->secret_map["catalog"] = entry.second.ToString();
 		} else {
 			throw InvalidInputException("Unknown quack_access secret option: '%s'", entry.first);
 		}
@@ -45,6 +47,7 @@ void QuackAccessSecret::Register(ExtensionLoader &loader) {
 	CreateSecretFunction create_func = {TYPE_NAME, "config", CreateQuackAccessSecret};
 	create_func.named_parameters["api_url"] = LogicalType::VARCHAR;
 	create_func.named_parameters["api_key"] = LogicalType::VARCHAR;
+	create_func.named_parameters["catalog"] = LogicalType::VARCHAR;
 	loader.RegisterFunction(create_func);
 }
 
@@ -69,6 +72,10 @@ unique_ptr<QuackAccessSecretData> QuackAccessSecret::GetSecret(ClientContext &co
 	auto api_key_it = kv_secret.secret_map.find("api_key");
 	if (api_key_it != kv_secret.secret_map.end()) {
 		data->api_key = api_key_it->second.ToString();
+	}
+	auto catalog_it = kv_secret.secret_map.find("catalog");
+	if (catalog_it != kv_secret.secret_map.end()) {
+		data->catalog = catalog_it->second.ToString();
 	}
 
 	return data;

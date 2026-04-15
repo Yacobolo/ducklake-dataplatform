@@ -17,6 +17,14 @@ struct HttpResponse {
 /// Uses cpp-httplib (vendored) with OpenSSL for HTTPS support.
 class QuackAccessHttp {
 public:
+	/// GET JSON from the given URL with API key header.
+	/// timeout_ms defaults to 10 seconds.
+	static HttpResponse GetJson(
+		const std::string &url,
+		const std::string &api_key,
+		int timeout_ms = 10000
+	);
+
 	/// POST JSON to the given URL with API key header.
 	/// timeout_ms defaults to 10 seconds.
 	static HttpResponse PostJson(

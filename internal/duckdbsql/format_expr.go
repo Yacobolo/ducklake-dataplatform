@@ -479,16 +479,11 @@ func (f *formatter) formatColumnsExpr(ce *ColumnsExpr) {
 }
 
 func (f *formatter) formatLambdaExpr(lambda *LambdaExpr) {
-	if len(lambda.Params) == 1 {
-		f.writeIdent(lambda.Params[0])
-	} else {
-		f.write("(")
-		f.commaSep(len(lambda.Params), func(i int) {
-			f.writeIdent(lambda.Params[i])
-		})
-		f.write(")")
-	}
-	f.write(" -> ")
+	f.write("lambda ")
+	f.commaSep(len(lambda.Params), func(i int) {
+		f.write(lambda.Params[i])
+	})
+	f.write(": ")
 	f.formatExpr(lambda.Body)
 }
 

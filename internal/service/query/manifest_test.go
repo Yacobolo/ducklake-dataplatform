@@ -499,6 +499,68 @@ func TestManifestService_GetManifest(t *testing.T) {
 	}
 }
 
+func TestManifestService_GetManifest_FallsBackToInjectedPresignerWithoutCredentialRepos(t *testing.T) {
+	t.Parallel()
+
+	auth := &testutil.MockAuthService{
+		LookupTableIDFn: func(_ context.Context, _ string) (string, string, bool, error) {
+			return "42", "10", false, nil
+		},
+		CheckPrivilegeFn: func(_ context.Context, _, _, _, _ string) (bool, error) {
+			return true, nil
+		},
+		GetEffectiveRowFiltersFn: func(_ context.Context, _, _ string) ([]string, error) {
+			return nil, nil
+		},
+		GetEffectiveColumnMasksFn: func(_ context.Context, _, _ string) (map[string]string, error) {
+			return nil, nil
+		},
+	}
+	intro := &testutil.MockIntrospectionRepo{
+		ListColumnsFn: func(_ context.Context, _ string, _ domain.PageRequest) ([]domain.Column, int64, error) {
+			return []domain.Column{{Name: "id", Type: "INTEGER"}}, 1, nil
+		},
+	}
+	msFactory := &mockMetastoreQuerierFactory{
+		ForCatalogFn: func(_ context.Context, _ string) (domain.MetastoreQuerier, error) {
+			return &mockMetastoreQuerier{
+				ReadDataPathFn: func(_ context.Context) (string, error) {
+					return "/tmp/lake_data/", nil
+				},
+				ReadSchemaPathFn: func(_ context.Context, _ string) (string, error) {
+					return "main/", nil
+				},
+				ListDataFilesFn: func(_ context.Context, _ string) ([]string, []bool, error) {
+					return []string{"events.parquet"}, []bool{true}, nil
+				},
+			}, nil
+		},
+	}
+	presigner := &mockPresigner{
+		PresignGetObjectFn: func(_ context.Context, path string, _ time.Duration) (string, error) {
+			return "file://" + path, nil
+		},
+	}
+
+	introFactory := &mockIntrospectionRepoFactory{
+		ForCatalogFn: func(_ context.Context, _ string) (domain.IntrospectionRepository, error) {
+			return intro, nil
+		},
+		ForDefaultFn: func(_ context.Context) (domain.IntrospectionRepository, error) {
+			return intro, nil
+		},
+		DefaultCatalogNameFn: func(_ context.Context) (string, error) {
+			return "lake", nil
+		},
+	}
+
+	svc := NewManifestService(msFactory, auth, presigner, introFactory, &testutil.MockAuditRepo{}, nil, nil)
+	result, err := svc.GetManifest(context.Background(), "alice", "lake", "main", "events")
+	require.NoError(t, err)
+	require.Len(t, result.Files, 1)
+	assert.Equal(t, "file:///tmp/lake_data/events.parquet", result.Files[0])
+}
+
 func TestManifestService_GetManifest_UsesDefaultCatalogFactories(t *testing.T) {
 	t.Parallel()
 

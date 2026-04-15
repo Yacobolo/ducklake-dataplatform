@@ -22,7 +22,7 @@ import (
 	"sort"
 	"strings"
 
-	_ "github.com/marcboeker/go-duckdb"
+	_ "github.com/duckdb/duckdb-go/v2"
 )
 
 var (
@@ -169,12 +169,18 @@ func extractTypes(ctx context.Context, db *sql.DB) ([]string, error) {
 	defer func() { _ = rows.Close() }()
 
 	var types []string
+	seen := map[string]bool{}
 	for rows.Next() {
 		var t string
 		if err := rows.Scan(&t); err != nil {
 			return nil, fmt.Errorf("scan type: %w", err)
 		}
-		types = append(types, strings.ToUpper(t))
+		normalized := strings.ToUpper(t)
+		if seen[normalized] {
+			continue
+		}
+		seen[normalized] = true
+		types = append(types, normalized)
 	}
 	return types, rows.Err()
 }
