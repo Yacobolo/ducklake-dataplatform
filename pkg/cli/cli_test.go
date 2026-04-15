@@ -600,10 +600,10 @@ func TestCLI_CommandTree(t *testing.T) {
 	expectedCommands := []string{
 		"catalog", "security", "query", "compute", "storage",
 		"assets", "notebooks", "governance", "audit",
-		"lineage", "ingestion",
-		"version", "config", "auth",
+		"lineage", "ingestion", "bootstrap", "project", "server",
+		"version", "auth",
 		"plan", "apply", "export", "validate",
-		"commands", "api", "find", "describe",
+		"commands", "api", "discover", "docs", "find", "describe",
 		"completion",
 	}
 
@@ -754,7 +754,7 @@ func TestCLI_NotebooksCreateUsesSavedProfileToken(t *testing.T) {
 
 	rootCmd := newRootCmd()
 	rootCmd.SetArgs([]string{
-		"notebooks", "notebooks", "create",
+		"notebooks", "create",
 		"--name", "daily",
 		"--description", "Daily checks",
 	})
@@ -824,7 +824,7 @@ func TestCLI_ModelCommandsRejectMalformedConfigJSON(t *testing.T) {
 	}{
 		{
 			name: "models create",
-			args: []string{"models", "models", "create", "--project-name", "cfg-proj", "--name", "cfg-model", "--sql", "SELECT 1", "--config", "{target_catalog:main}"},
+			args: []string{"models", "create", "--project-name", "cfg-proj", "--name", "cfg-model", "--sql", "SELECT 1", "--config", "{target_catalog:main}"},
 		},
 		{
 			name: "models tests create",
@@ -832,7 +832,7 @@ func TestCLI_ModelCommandsRejectMalformedConfigJSON(t *testing.T) {
 		},
 		{
 			name: "models update",
-			args: []string{"models", "models", "update", "cfg-proj", "cfg-model", "--config", "{owner:ops}"},
+			args: []string{"models", "update", "cfg-proj", "cfg-model", "--config", "{owner:ops}"},
 		},
 	}
 
@@ -1196,7 +1196,7 @@ func TestCLI_ModelsCreateRequiresNameOrJSON(t *testing.T) {
 	rootCmd := newTestRootCmd(t, srv)
 	rootCmd.SetArgs([]string{
 		"--host", srv.URL,
-		"models", "models", "create",
+		"models", "create",
 	})
 
 	err := rootCmd.Execute()

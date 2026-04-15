@@ -11,29 +11,47 @@ import (
 )
 
 var (
-	version = "dev"
-	commit  = "none"
+	version   = "dev"
+	commit    = "none"
+	branch    = "unknown"
+	tag       = "unknown"
+	buildTime = "unknown"
+)
+
+const (
+	groupAuth       = "auth"
+	groupLifecycle  = "lifecycle"
+	groupExplore    = "explore"
+	groupBootstrap  = "bootstrap"
+	groupServer     = "server"
+	groupAPI        = "api"
+	groupPlatform   = "platform"
 )
 
 // Execute runs the CLI.
 func Execute() int {
 	rootCmd := newRootCmd()
 	if err := rootCmd.Execute(); err != nil {
-		output, _ := rootCmd.PersistentFlags().GetString("output")
+		output := getOutputFormat(rootCmd)
+		cliErr, _ := err.(*CLIError)
 		if output == "json" {
-			errObj := map[string]interface{}{
-				"error": err.Error(),
+			if cliErr != nil && cliErr.JSONPayload != nil {
+				_ = apiruntime.PrintJSON(os.Stdout, cliErr.JSONPayload)
+			} else {
+				errObj := map[string]interface{}{
+					"error": err.Error(),
+				}
+				var apiErr *apiruntime.APIError
+				if errors.As(err, &apiErr) {
+					errObj["http_status"] = apiErr.HTTPStatus
+					errObj["code"] = apiErr.Code
+				}
+				_ = apiruntime.PrintJSON(os.Stdout, errObj)
 			}
-			var apiErr *apiruntime.APIError
-			if errors.As(err, &apiErr) {
-				errObj["http_status"] = apiErr.HTTPStatus
-				errObj["code"] = apiErr.Code
-			}
-			_ = apiruntime.PrintJSON(os.Stdout, errObj)
-		} else {
+		} else if err.Error() != "" {
 			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 		}
-		return 1
+		return exitCodeForError(err)
 	}
 	return 0
 }
@@ -46,6 +64,10 @@ func newRootCmd() *cobra.Command {
 		output                   string
 		profile                  string
 		quiet                    bool
+		debug                    bool
+		traceHTTP                bool
+		logFormat                string
+		logFile                  string
 		quackAccessExtensionPath string
 
 		apiKeyPriority int
@@ -109,9 +131,9 @@ func newRootCmd() *cobra.Command {
 			}
 			if !cmd.Flags().Changed("output") {
 				if v := os.Getenv("QUACK_OUTPUT"); v != "" {
-					output = v
+					output = normalizeOutputFormat(v)
 				} else if p.Output != "" {
-					output = p.Output
+					output = normalizeOutputFormat(p.Output)
 				}
 			}
 			if !cmd.Flags().Changed("quack-access-extension-path") {
@@ -137,9 +159,13 @@ func newRootCmd() *cobra.Command {
 	rootCmd.PersistentFlags().StringVar(&host, "host", "http://localhost:8080", "API host URL")
 	rootCmd.PersistentFlags().StringVar(&apiKey, "api-key", "", "API key for authentication")
 	rootCmd.PersistentFlags().StringVar(&token, "token", "", "JWT token for authentication")
-	rootCmd.PersistentFlags().StringVarP(&output, "output", "o", "table", "Output format (table, json, csv)")
+	rootCmd.PersistentFlags().StringVarP(&output, "output", "o", "text", "Output format (text, json)")
 	rootCmd.PersistentFlags().StringVarP(&profile, "profile", "p", "", "Config profile to use")
 	rootCmd.PersistentFlags().BoolVarP(&quiet, "quiet", "q", false, "Only output resource identifiers")
+	rootCmd.PersistentFlags().BoolVar(&debug, "debug", false, "Enable debug logging")
+	rootCmd.PersistentFlags().BoolVar(&traceHTTP, "trace-http", false, "Log HTTP requests and responses")
+	rootCmd.PersistentFlags().StringVar(&logFormat, "log-format", "text", "Log format (text, json)")
+	rootCmd.PersistentFlags().StringVar(&logFile, "log-file", "", "Write logs to a file instead of stderr")
 	rootCmd.PersistentFlags().StringVar(&quackAccessExtensionPath, "quack-access-extension-path", "", "Path to quack_access.duckdb_extension for local BYOC execution")
 
 	// Create client using a lazy initializer
@@ -153,6 +179,9 @@ func newRootCmd() *cobra.Command {
 				return err
 			}
 		}
+		if generatedCommandsErr != nil {
+			return fmt.Errorf("build generated commands: %w", generatedCommandsErr)
+		}
 		// Propagate resolved output to pflag so getOutputFormat() sees config values.
 		if output != "" {
 			_ = cmd.Root().PersistentFlags().Set("output", output)
@@ -160,6 +189,9 @@ func newRootCmd() *cobra.Command {
 		// Validate output format
 		if err := validateOutputFormat(output); err != nil {
 			return err
+		}
+		if logFormat != "text" && logFormat != "json" {
+			return fmt.Errorf("unsupported log format %q: use 'text' or 'json'", logFormat)
 		}
 		if yesFlag := cmd.Flags().Lookup("yes"); yesFlag != nil {
 			yes, _ := cmd.Flags().GetBool("yes")
@@ -171,46 +203,79 @@ func newRootCmd() *cobra.Command {
 		client.BaseURL = host
 		client.APIKey = apiKey
 		client.Token = token
+		client.Debug = debug
+		client.TraceHTTP = traceHTTP
+		client.LogFormat = logFormat
+		client.LogFile = logFile
 		return nil
 	}
+
+	rootCmd.AddGroup(
+		&cobra.Group{ID: groupAuth, Title: "Authentication"},
+		&cobra.Group{ID: groupLifecycle, Title: "Platform Lifecycle"},
+		&cobra.Group{ID: groupExplore, Title: "Exploration"},
+		&cobra.Group{ID: groupBootstrap, Title: "Bootstrap"},
+		&cobra.Group{ID: groupServer, Title: "Server/Admin"},
+		&cobra.Group{ID: groupAPI, Title: "API And Tooling"},
+		&cobra.Group{ID: groupPlatform, Title: "Platform Resources"},
+	)
 
 	// Add runtime-generated API commands
 	addRuntimeGeneratedCommands(rootCmd, client)
 
 	// Add hand-written commands
-	rootCmd.AddCommand(newVersionCmd())
-	rootCmd.AddCommand(newConfigCmd())
-	rootCmd.AddCommand(newAuthCmd(client))
-	rootCmd.AddCommand(newInitCmd(client))
+	addGroupedCommand(rootCmd, newVersionCmd(), groupAPI)
+	addGroupedCommand(rootCmd, newAuthCmd(client), groupAuth)
+	addGroupedCommand(rootCmd, newBootstrapCmd(client), groupBootstrap)
+	addGroupedCommand(rootCmd, newProjectCmd(), groupLifecycle)
+	addGroupedCommand(rootCmd, newServerCmd(), groupServer)
 
 	// Declarative configuration commands
-	rootCmd.AddCommand(newPlanCmd(client))
-	rootCmd.AddCommand(newApplyCmd(client))
-	rootCmd.AddCommand(newExportCmd(client))
-	rootCmd.AddCommand(newValidateCmd(client))
-	rootCmd.AddCommand(newDeclarativeCmd())
+	addGroupedCommand(rootCmd, newPlanCmd(client), groupLifecycle)
+	addGroupedCommand(rootCmd, newApplyCmd(client), groupLifecycle)
+	addGroupedCommand(rootCmd, newExportCmd(client), groupLifecycle)
+	addGroupedCommand(rootCmd, newValidateCmd(client), groupLifecycle)
 
 	// Agent discovery commands
-	rootCmd.AddCommand(newCommandsCmd())
-	rootCmd.AddCommand(newAPICmd(client))
-	rootCmd.AddCommand(newDiscoverCmd())
-	rootCmd.AddCommand(newDocsCmd())
-	rootCmd.AddCommand(newFindCmd(client))
-	rootCmd.AddCommand(newDescribeCmd(client))
+	addGroupedCommand(rootCmd, newCommandsCmd(), groupExplore)
+	addGroupedCommand(rootCmd, newAPICmd(client), groupAPI)
+	addGroupedCommand(rootCmd, newDiscoverCmd(), groupExplore)
+	addGroupedCommand(rootCmd, newDocsCmd(), groupExplore)
+	addGroupedCommand(rootCmd, newFindCmd(client), groupExplore)
+	addGroupedCommand(rootCmd, newDescribeCmd(client), groupExplore)
 
 	// Shell completions
-	rootCmd.AddCommand(newCompletionCmd())
+	addGroupedCommand(rootCmd, newCompletionCmd(), groupAPI)
 
 	return rootCmd
 }
 
+func addGroupedCommand(rootCmd *cobra.Command, cmd *cobra.Command, groupID string) {
+	cmd.GroupID = groupID
+	rootCmd.AddCommand(cmd)
+}
+
 func newCompletionCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "completion [bash|zsh|fish|powershell]",
-		Short: "Generate shell completion scripts",
-		Args:  cobra.ExactArgs(1),
-		RunE: func(cmd *cobra.Command, args []string) error {
-			switch args[0] {
+		Use:   "completion",
+		Short: "Generate or install shell completion scripts",
+	}
+	cmd.AddCommand(newCompletionShellCmd("bash"))
+	cmd.AddCommand(newCompletionShellCmd("zsh"))
+	cmd.AddCommand(newCompletionShellCmd("fish"))
+	cmd.AddCommand(newCompletionShellCmd("powershell"))
+	cmd.AddCommand(newCompletionInstallCmd())
+	cmd.AddCommand(newCompletionStatusCmd())
+	cmd.AddCommand(newCompletionUninstallCmd())
+	return cmd
+}
+
+func newCompletionShellCmd(shell string) *cobra.Command {
+	return &cobra.Command{
+		Use:   shell,
+		Short: "Generate " + shell + " completion scripts",
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			switch shell {
 			case "bash":
 				return cmd.Root().GenBashCompletion(os.Stdout)
 			case "zsh":
@@ -220,9 +285,8 @@ func newCompletionCmd() *cobra.Command {
 			case "powershell":
 				return cmd.Root().GenPowerShellCompletionWithDesc(os.Stdout)
 			default:
-				return fmt.Errorf("unsupported shell: %s", args[0])
+				return fmt.Errorf("unsupported shell: %s", shell)
 			}
 		},
 	}
-	return cmd
 }

@@ -10,12 +10,10 @@ import (
 type OutputFormat = cobraruntime.OutputFormat
 
 const (
-	// OutputTable renders human-friendly columnar output.
-	OutputTable = cobraruntime.OutputTable
+	// OutputText renders human-friendly output such as tables and details.
+	OutputText = cobraruntime.OutputText
 	// OutputJSON renders machine-readable JSON output.
 	OutputJSON = cobraruntime.OutputJSON
-	// OutputCSV renders comma-separated tabular output.
-	OutputCSV = cobraruntime.OutputCSV
 )
 
 // GetTerminalWidth returns the terminal width or a default.

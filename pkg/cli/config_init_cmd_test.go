@@ -41,7 +41,7 @@ func TestConfigInitCommand_WritesFile(t *testing.T) {
 	outPath := filepath.Join(dir, ".env.generated")
 
 	rootCmd := newTestRootCmd(t, srv)
-	rootCmd.SetArgs([]string{"--host", srv.URL, "config", "init", "--mode", "hybrid", "--env", "production", "--output", outPath})
+	rootCmd.SetArgs([]string{"--host", srv.URL, "server", "env", "init", "--mode", "hybrid", "--env", "production", "--output", outPath})
 	require.NoError(t, rootCmd.Execute())
 
 	b, err := os.ReadFile(outPath)
@@ -62,7 +62,7 @@ func TestConfigInitCommand_RequiresForceToOverwrite(t *testing.T) {
 	require.NoError(t, os.WriteFile(outPath, []byte("existing"), 0o600))
 
 	rootCmd := newTestRootCmd(t, srv)
-	rootCmd.SetArgs([]string{"--host", srv.URL, "config", "init", "--output", outPath})
+	rootCmd.SetArgs([]string{"--host", srv.URL, "server", "env", "init", "--output", outPath})
 	err := rootCmd.Execute()
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "already exists")

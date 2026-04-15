@@ -1,7 +1,6 @@
 package cli
 
 import (
-	"encoding/csv"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -356,18 +355,6 @@ func printQueryResultBody(cmd *cobra.Command, respBody []byte) error {
 			return fmt.Errorf("parse JSON: %w", err)
 		}
 		return apiruntime.PrintJSON(os.Stdout, pretty)
-	case apiruntime.OutputCSV:
-		w := csv.NewWriter(os.Stdout)
-		_ = w.Write(columnNames)
-		for _, row := range rows {
-			record := make([]string, len(columnNames))
-			for i, name := range columnNames {
-				record[i] = apiruntime.FormatValue(row[name])
-			}
-			_ = w.Write(record)
-		}
-		w.Flush()
-		return w.Error()
 	default:
 		tableRows := make([][]string, len(rows))
 		for i, row := range rows {

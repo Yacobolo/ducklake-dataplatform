@@ -25,7 +25,7 @@ func TestAPI_ListAll(t *testing.T) {
 	output := old()
 	require.NoError(t, err)
 
-	var endpoints []gen.APIGenEndpoint
+	var endpoints []gen.ReferenceOperation
 	require.NoError(t, json.Unmarshal([]byte(output), &endpoints))
 	assert.Greater(t, len(endpoints), 50, "should have many API endpoints")
 }
@@ -42,7 +42,7 @@ func TestAPI_Search(t *testing.T) {
 	output := old()
 	require.NoError(t, err)
 
-	var endpoints []gen.APIGenEndpoint
+	var endpoints []gen.ReferenceOperation
 	require.NoError(t, json.Unmarshal([]byte(output), &endpoints))
 	assert.NotEmpty(t, endpoints, "should find schema-related endpoints")
 }
@@ -59,11 +59,11 @@ func TestAPI_Describe(t *testing.T) {
 	output := old()
 	require.NoError(t, err)
 
-	var ep gen.APIGenEndpoint
-	require.NoError(t, json.Unmarshal([]byte(output), &ep))
-	assert.Equal(t, "listSchemas", ep.OperationID)
-	assert.Equal(t, "GET", ep.Method)
-	assert.NotEmpty(t, ep.Path)
+	var payload map[string]any
+	require.NoError(t, json.Unmarshal([]byte(output), &payload))
+	assert.Equal(t, "listSchemas", payload["operation_id"])
+	assert.Equal(t, "GET", payload["method"])
+	assert.NotEmpty(t, payload["path"])
 }
 
 func TestAPI_Describe_NotFound(t *testing.T) {
@@ -90,7 +90,7 @@ func TestAPI_ListByTag(t *testing.T) {
 	output := old()
 	require.NoError(t, err)
 
-	var endpoints []gen.APIGenEndpoint
+	var endpoints []gen.ReferenceOperation
 	require.NoError(t, json.Unmarshal([]byte(output), &endpoints))
 	assert.NotEmpty(t, endpoints, "should find Identity-tagged endpoints")
 	for _, ep := range endpoints {
@@ -117,7 +117,7 @@ func TestAPI_ListByTag_CaseInsensitive(t *testing.T) {
 	output := old()
 	require.NoError(t, err)
 
-	var endpoints []gen.APIGenEndpoint
+	var endpoints []gen.ReferenceOperation
 	require.NoError(t, json.Unmarshal([]byte(output), &endpoints))
 	assert.NotEmpty(t, endpoints, "case-insensitive tag filter should match Identity")
 }
@@ -135,7 +135,7 @@ func TestAPI_Search_NoMatches(t *testing.T) {
 	require.NoError(t, err)
 
 	// Should be valid JSON with null or empty array
-	var endpoints []gen.APIGenEndpoint
+	var endpoints []gen.ReferenceOperation
 	err = json.Unmarshal([]byte(output), &endpoints)
 	require.NoError(t, err)
 	assert.Empty(t, endpoints, "nonsense query should return no matches")

@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestAuthTokenCmd(t *testing.T) {
+func TestAuthDevTokenCmd(t *testing.T) {
 	tests := []struct {
 		name       string
 		args       []string
@@ -56,7 +56,7 @@ func TestAuthTokenCmd(t *testing.T) {
 			dir := t.TempDir()
 			t.Setenv("HOME", dir)
 
-			cmd := newAuthTokenCmd()
+			cmd := newAuthDevTokenCmd()
 			cmd.SetArgs(tt.args)
 
 			err := cmd.Execute()
@@ -105,7 +105,7 @@ func TestAuthTokenCmd(t *testing.T) {
 	}
 }
 
-func TestAuthTokenCmd_SaveToExistingProfile(t *testing.T) {
+func TestAuthDevTokenCmd_SaveToExistingProfile(t *testing.T) {
 	dir := t.TempDir()
 	t.Setenv("HOME", dir)
 
@@ -123,7 +123,7 @@ func TestAuthTokenCmd_SaveToExistingProfile(t *testing.T) {
 	require.NoError(t, err)
 
 	// Generate a token — should save to the "dev" profile
-	cmd := newAuthTokenCmd()
+	cmd := newAuthDevTokenCmd()
 	cmd.SetArgs([]string{"--principal", "admin_user", "--secret", "my-secret"})
 	err = cmd.Execute()
 	require.NoError(t, err)
@@ -147,7 +147,7 @@ func TestAuthTokenCmd_SaveToExistingProfile(t *testing.T) {
 	assert.Equal(t, "admin_user", claims["sub"])
 }
 
-func TestCLI_AuthLocalLoginCommand(t *testing.T) {
+func TestCLI_AuthLoginCommand(t *testing.T) {
 	rec := &requestRecorder{}
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		rec.record(r)
@@ -157,7 +157,7 @@ func TestCLI_AuthLocalLoginCommand(t *testing.T) {
 	defer srv.Close()
 
 	rootCmd := newTestRootCmd(t, srv)
-	rootCmd.SetArgs([]string{"--host", srv.URL, "auth", "local-login", "--username", "admin", "--password", "super-secure-password"})
+	rootCmd.SetArgs([]string{"--host", srv.URL, "auth", "login", "--username", "admin", "--password", "super-secure-password"})
 	require.NoError(t, rootCmd.Execute())
 
 	captured := rec.last()
@@ -173,7 +173,7 @@ func TestCLI_AuthLocalLoginCommand(t *testing.T) {
 	assert.Equal(t, "local-token", cfg.Profiles[cfg.CurrentProfile].Token)
 }
 
-func TestCLI_AuthLocalLogin_PersistsSelectedProfileAndHost(t *testing.T) {
+func TestCLI_AuthLogin_PersistsSelectedProfileAndHost(t *testing.T) {
 	rec := &requestRecorder{}
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		rec.record(r)
@@ -193,7 +193,7 @@ func TestCLI_AuthLocalLogin_PersistsSelectedProfileAndHost(t *testing.T) {
 	}))
 
 	rootCmd := newRootCmd()
-	rootCmd.SetArgs([]string{"--host", srv.URL, "--profile", "staging", "auth", "local-login", "--username", "admin", "--password", "super-secure-password"})
+	rootCmd.SetArgs([]string{"--host", srv.URL, "--profile", "staging", "auth", "login", "--username", "admin", "--password", "super-secure-password"})
 	require.NoError(t, rootCmd.Execute())
 
 	cfg, err := LoadUserConfig()

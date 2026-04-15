@@ -1,8 +1,6 @@
 package cli
 
 import (
-	"fmt"
-
 	"github.com/spf13/cobra"
 
 	cobraruntime "github.com/Yacobolo/quackstack/pkg/apigen/runtime/cobra"
@@ -10,13 +8,15 @@ import (
 	"github.com/Yacobolo/quackstack/pkg/cli/gen"
 )
 
+var generatedCommandsErr error
+
 func addRuntimeGeneratedCommands(rootCmd *cobra.Command, client *apiruntime.Client) {
 	if err := cobraruntime.AddGeneratedCommands(rootCmd, client, generatedRuntimeEndpoints(allAPIEndpoints())); err != nil {
-		panic(fmt.Errorf("build generated commands: %w", err))
+		generatedCommandsErr = err
 	}
 }
 
-func generatedRuntimeEndpoints(endpoints []gen.APIGenEndpoint) []cobraruntime.Endpoint {
+func generatedRuntimeEndpoints(endpoints []gen.ReferenceOperation) []cobraruntime.Endpoint {
 	converted := make([]cobraruntime.Endpoint, 0, len(endpoints))
 	for _, endpoint := range endpoints {
 		params := make([]cobraruntime.Param, 0, len(endpoint.Parameters))

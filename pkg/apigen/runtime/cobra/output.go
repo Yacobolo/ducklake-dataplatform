@@ -14,12 +14,10 @@ import (
 type OutputFormat string
 
 const (
-	// OutputTable renders human-friendly columnar output.
-	OutputTable OutputFormat = "table"
+	// OutputText renders human-friendly output such as tables and details.
+	OutputText OutputFormat = "text"
 	// OutputJSON renders machine-readable JSON output.
 	OutputJSON OutputFormat = "json"
-	// OutputCSV renders comma-separated tabular output.
-	OutputCSV OutputFormat = "csv"
 )
 
 // GetTerminalWidth returns the terminal width or a default.

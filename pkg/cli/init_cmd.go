@@ -113,7 +113,7 @@ func newInitPlanCmd(client *apiruntime.Client) *cobra.Command {
 	opts := defaultInitOptions()
 	cmd := &cobra.Command{
 		Use:   "plan",
-		Short: "Show what init would create",
+		Short: "Show what the medallion bootstrap would create",
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			resolved, err := resolveInitOptions(opts)
 			if err != nil {
@@ -167,7 +167,7 @@ func newInitApplyCmd(client *apiruntime.Client) *cobra.Command {
 			if getOutputFormat(cmd) == "json" {
 				return apiruntime.PrintJSON(os.Stdout, map[string]string{"status": "ok"})
 			}
-			_, _ = fmt.Fprintln(os.Stdout, "init apply completed")
+			_, _ = fmt.Fprintln(os.Stdout, "bootstrap apply completed")
 			return nil
 		},
 	}
@@ -203,7 +203,7 @@ func newInitDestroyCmd(client *apiruntime.Client) *cobra.Command {
 			if getOutputFormat(cmd) == "json" {
 				return apiruntime.PrintJSON(os.Stdout, map[string]string{"status": "ok"})
 			}
-			_, _ = fmt.Fprintln(os.Stdout, "init destroy completed")
+			_, _ = fmt.Fprintln(os.Stdout, "bootstrap destroy completed")
 			return nil
 		},
 	}
@@ -240,11 +240,11 @@ func newInitVerifyCmd(client *apiruntime.Client) *cobra.Command {
 			}
 
 			if missing == 0 {
-				_, _ = fmt.Fprintln(os.Stdout, "init verify: all opinionated bootstrap resources are present")
+				_, _ = fmt.Fprintln(os.Stdout, "bootstrap verify: all opinionated medallion resources are present")
 				return nil
 			}
 			printPlan(plan)
-			return fmt.Errorf("init verify: %d resources missing; run 'quack init apply'", missing)
+			return fmt.Errorf("bootstrap verify: %d resources missing; run 'quack bootstrap medallion apply'", missing)
 		},
 	}
 	bindInitFlags(cmd, &opts)

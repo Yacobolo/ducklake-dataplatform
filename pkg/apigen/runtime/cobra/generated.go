@@ -43,7 +43,7 @@ func AddGeneratedCommands(rootCmd *spcobra.Command, client *Client, endpoints []
 			if !ok {
 				node = &spcobra.Command{
 					Use:   segment,
-					Short: "Manage " + segment,
+					Short: generatedGroupDescription(nodePath),
 					RunE: func(cmd *spcobra.Command, args []string) error {
 						if len(args) == 0 {
 							return cmd.Help()
@@ -51,6 +51,9 @@ func AddGeneratedCommands(rootCmd *spcobra.Command, client *Client, endpoints []
 						_ = cmd.Help()
 						return fmt.Errorf("unknown subcommand %q", args[0])
 					},
+				}
+				if i == 0 {
+					node.GroupID = generatedRootGroupID(segment)
 				}
 				parent.AddCommand(node)
 				groups[nodePath] = node
@@ -81,7 +84,7 @@ func buildGeneratedCommandSpecsFromEndpoints(endpoints []Endpoint) ([]generatedC
 		if endpoint.CLICommand == "" {
 			continue
 		}
-		commandPath := strings.Fields(endpoint.CLICommand)
+		commandPath := normalizeCommandPath(strings.Fields(endpoint.CLICommand))
 		if len(commandPath) == 1 && parentRoots[commandPath[0]] {
 			commandPath = append(commandPath, "execute")
 		}
@@ -651,10 +654,89 @@ func readRawJSONInput(jsonInput string) (interface{}, error) {
 
 func outputFormat(cmd *spcobra.Command) OutputFormat {
 	value, _ := cmd.Root().PersistentFlags().GetString("output")
-	return OutputFormat(value)
+	switch strings.TrimSpace(strings.ToLower(value)) {
+	case "", "text", "table", "csv":
+		return OutputText
+	default:
+		return OutputFormat(value)
+	}
 }
 
 func quietMode(cmd *spcobra.Command) bool {
 	value, _ := cmd.Root().PersistentFlags().GetBool("quiet")
 	return value
+}
+
+func normalizeCommandPath(parts []string) []string {
+	if len(parts) == 0 {
+		return nil
+	}
+	normalized := make([]string, 0, len(parts))
+	for _, part := range parts {
+		part = strings.TrimSpace(part)
+		if part == "" {
+			continue
+		}
+		if len(normalized) > 0 && normalized[len(normalized)-1] == part {
+			continue
+		}
+		normalized = append(normalized, part)
+	}
+	return normalized
+}
+
+func generatedGroupDescription(nodePath string) string {
+	if description, ok := generatedGroupDescriptions[nodePath]; ok {
+		return description
+	}
+	if parts := strings.Fields(nodePath); len(parts) > 0 {
+		return "Manage " + parts[len(parts)-1]
+	}
+	return "Manage resources"
+}
+
+func generatedRootGroupID(segment string) string {
+	if groupID, ok := generatedRootGroupIDs[segment]; ok {
+		return groupID
+	}
+	return "platform"
+}
+
+var generatedRootGroupIDs = map[string]string{
+	"catalog":    "platform",
+	"assets":     "platform",
+	"audit":      "server",
+	"compute":    "platform",
+	"dashboards": "platform",
+	"governance": "platform",
+	"ingestion":  "platform",
+	"lineage":    "explore",
+	"me":         "explore",
+	"models":     "platform",
+	"notebooks":  "platform",
+	"pipelines":  "platform",
+	"query":      "platform",
+	"security":   "server",
+	"semantic":   "platform",
+	"storage":    "platform",
+}
+
+var generatedGroupDescriptions = map[string]string{
+	"catalog":               "Manage catalogs, schemas, tables, and registrations",
+	"assets":                "Manage assets, runs, materializations, and freshness",
+	"audit":                 "Inspect audit entries and platform activity",
+	"compute":               "Manage compute endpoints, assignments, and health",
+	"dashboards":            "Manage dashboards and widgets",
+	"governance":            "Manage governance resources such as tags and policies",
+	"ingestion":             "Manage ingestion jobs and commits",
+	"lineage":               "Inspect lineage relationships and impact",
+	"me":                    "Inspect personal saved and recent resources",
+	"models":                "Manage models, macros, tests, and related resources",
+	"notebooks":             "Manage notebooks, sessions, and jobs",
+	"pipelines":             "Manage pipelines and their runs",
+	"query":                 "Run queries and inspect query history",
+	"security":              "Manage principals, groups, grants, and API keys",
+	"semantic":              "Manage semantic models, metrics, and relationships",
+	"storage":               "Manage storage credentials and locations",
+	"catalog registrations": "Manage registered catalogs and defaults",
 }

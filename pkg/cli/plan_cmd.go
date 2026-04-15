@@ -3,6 +3,7 @@ package cli
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/spf13/cobra"
 
@@ -42,11 +43,15 @@ func newPlanCmd(client *apiruntime.Client) *cobra.Command {
 
 			// 2. Validate the desired state.
 			if validationErrs := declarative.Validate(desired); len(validationErrs) > 0 {
-				fmt.Fprintf(os.Stderr, "Configuration has %d validation error(s):\n", len(validationErrs))
+				errMsgs := make([]string, 0, len(validationErrs))
 				for _, ve := range validationErrs {
-					fmt.Fprintf(os.Stderr, "  - %s\n", ve.Error())
+					errMsgs = append(errMsgs, ve.Error())
 				}
-				os.Exit(1)
+				return &CLIError{
+					Code:        1,
+					Message:     fmt.Sprintf("configuration has %d validation error(s): %s", len(validationErrs), strings.Join(errMsgs, "; ")),
+					JSONPayload: map[string]any{"valid": false, "errors": errMsgs},
+				}
 			}
 
 			// 3. Read current state from server.
@@ -76,9 +81,12 @@ func newPlanCmd(client *apiruntime.Client) *cobra.Command {
 
 			switch planExitCode(plan) {
 			case 1:
-				os.Exit(1)
+				return &CLIError{
+					Code:        1,
+					JSONPayload: map[string]any{"status": "error", "errors": planErrorMessages(plan)},
+				}
 			case 2:
-				os.Exit(2)
+				return &CLIError{Code: 2}
 			}
 
 			return nil
