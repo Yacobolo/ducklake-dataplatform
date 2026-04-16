@@ -13,6 +13,42 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestCLI_AuthProfilesList_JSONMasksSecrets(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("HOME", dir)
+	t.Setenv("QUACK_CONFIG_FILE", filepath.Join(dir, "quack.yaml"))
+
+	require.NoError(t, SaveUserConfig(&UserConfig{
+		CurrentProfile: "default",
+		Profiles: map[string]Profile{
+			"default": {
+				Host:   "http://localhost:8080",
+				Token:  "super-secret-token",
+				APIKey: "super-secret-key",
+			},
+		},
+	}))
+
+	rootCmd := newRootCmd()
+	rootCmd.SetArgs([]string{"--output", "json", "auth", "profiles", "list"})
+
+	restore := captureStdout(t)
+	err := rootCmd.Execute()
+	output := restore()
+	require.NoError(t, err)
+
+	var payload struct {
+		CurrentProfile string             `json:"CurrentProfile"`
+		Profiles       map[string]Profile `json:"Profiles"`
+	}
+	require.NoError(t, json.Unmarshal([]byte(output), &payload))
+	require.Contains(t, payload.Profiles, "default")
+	assert.Equal(t, "supe****oken", payload.Profiles["default"].Token)
+	assert.Equal(t, "supe****-key", payload.Profiles["default"].APIKey)
+	assert.NotContains(t, output, "super-secret-token")
+	assert.NotContains(t, output, "super-secret-key")
+}
+
 func TestAuthDevTokenCmd(t *testing.T) {
 	tests := []struct {
 		name       string

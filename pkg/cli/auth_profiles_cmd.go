@@ -56,7 +56,7 @@ func newAuthProfilesListCmd() *cobra.Command {
 				cfg = &UserConfig{Profiles: map[string]Profile{}}
 			}
 			if getOutputFormat(cmd) == "json" {
-				return apiruntime.PrintJSON(os.Stdout, cfg)
+				return apiruntime.PrintJSON(os.Stdout, maskConfig(cfg))
 			}
 			return printConfigTable(cmd, cfg)
 		},
