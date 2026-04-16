@@ -180,6 +180,89 @@ func TestBootstrap_SeedsQueryableReadOnlySampleData(t *testing.T) {
 	assert.True(t, chartTypes[domain.VisualChartScatter])
 	assert.True(t, hasTable)
 
+	workspaceRepo := repository.NewWorkspaceRepo(writeDB)
+	projectRepo := repository.NewProjectRepo(writeDB)
+	environmentRepo := repository.NewEnvironmentRepo(writeDB)
+	dependencyRepo := repository.NewProjectDependencyRepo(writeDB)
+	sourceRepo := repository.NewSourceDefinitionRepo(writeDB)
+	seedRepo := repository.NewSeedRepo(writeDB)
+	modelRepo := repository.NewModelRepo(writeDB)
+	macroRepo := repository.NewMacroRepo(writeDB)
+
+	workspace, err := workspaceRepo.GetPersonalByPrincipal(ctx, sampleDashboardOwner)
+	require.NoError(t, err)
+
+	project, err := projectRepo.GetByName(ctx, sampleAuthoringProjectName)
+	require.NoError(t, err)
+	assert.Equal(t, workspace.ID, project.WorkspaceID)
+	assert.Equal(t, domain.ProjectKindPersonal, project.Kind)
+
+	libraryProject, err := projectRepo.GetByName(ctx, sampleAuthoringLibraryProjectName)
+	require.NoError(t, err)
+	assert.Equal(t, domain.ProjectKindLibrary, libraryProject.Kind)
+
+	require.NotNil(t, workspace.DefaultProjectID)
+	assert.Equal(t, project.ID, *workspace.DefaultProjectID)
+
+	devEnvironment, err := environmentRepo.GetByName(ctx, project.ID, sampleAuthoringDevEnvironmentName)
+	require.NoError(t, err)
+	assert.Equal(t, domain.EnvironmentKindDevelopment, devEnvironment.Kind)
+	assert.Equal(t, "memory", devEnvironment.TargetCatalog)
+	assert.Equal(t, "analytics", devEnvironment.TargetSchema)
+	assert.Equal(t, map[string]string{"window_days": "30"}, devEnvironment.Variables)
+
+	prodEnvironment, err := environmentRepo.GetByName(ctx, project.ID, sampleAuthoringProdEnvironmentName)
+	require.NoError(t, err)
+	assert.Equal(t, domain.EnvironmentKindProduction, prodEnvironment.Kind)
+	require.NotNil(t, prodEnvironment.DeferToEnvironment)
+	assert.Equal(t, sampleAuthoringDevEnvironmentName, *prodEnvironment.DeferToEnvironment)
+	assert.Equal(t, map[string]string{"window_days": "90"}, prodEnvironment.Variables)
+
+	require.NotNil(t, workspace.DefaultEnvironmentID)
+	assert.Equal(t, devEnvironment.ID, *workspace.DefaultEnvironmentID)
+
+	deps, err := dependencyRepo.ListByProject(ctx, project.ID)
+	require.NoError(t, err)
+	require.Len(t, deps, 1)
+	assert.Equal(t, sampleAuthoringLibraryProjectName, deps[0].DependencyProject)
+
+	rawTrips, err := sourceRepo.GetByName(ctx, sampleAuthoringProjectName, "raw", "trips")
+	require.NoError(t, err)
+	assert.Equal(t, "sample_data.nyc_taxi.trips", rawTrips.RelationRef)
+	require.NotNil(t, rawTrips.Freshness)
+	assert.EqualValues(t, 86400, rawTrips.Freshness.MaxLagSeconds)
+
+	seed, err := seedRepo.GetByName(ctx, sampleAuthoringProjectName, "zone_priority_overrides")
+	require.NoError(t, err)
+	assert.Equal(t, "csv", seed.Format)
+	assert.Contains(t, seed.InputRef, "zone_priority_overrides.csv")
+	assert.Equal(t, map[string]string{
+		"zone":          "VARCHAR",
+		"priority_tier": "VARCHAR",
+	}, seed.ColumnTypes)
+
+	stagingModel, err := modelRepo.GetByName(ctx, sampleAuthoringProjectName, "stg_trips")
+	require.NoError(t, err)
+	assert.Equal(t, domain.MaterializationView, stagingModel.Materialization)
+	assert.Contains(t, stagingModel.SQL, "{{ source('raw', 'trips') }}")
+	assert.Contains(t, stagingModel.SQL, sampleRevenueBandMacroName)
+
+	martModel, err := modelRepo.GetByName(ctx, sampleAuthoringProjectName, "fct_zone_revenue")
+	require.NoError(t, err)
+	assert.Equal(t, domain.MaterializationTable, martModel.Materialization)
+	assert.Contains(t, martModel.SQL, "{{ ref('zone_priority_overrides') }}")
+	assert.Contains(t, martModel.SQL, sampleSafeDivideMacroName)
+
+	revenueMacro, err := macroRepo.GetByName(ctx, sampleRevenueBandMacroName)
+	require.NoError(t, err)
+	assert.Equal(t, sampleAuthoringLibraryProjectName, revenueMacro.ProjectName)
+	assert.Equal(t, domain.MacroVisibilityProject, revenueMacro.Visibility)
+
+	safeDivideMacro, err := macroRepo.GetByName(ctx, sampleSafeDivideMacroName)
+	require.NoError(t, err)
+	assert.Equal(t, sampleAuthoringProjectName, safeDivideMacro.ProjectName)
+	assert.Equal(t, domain.MacroVisibilityProject, safeDivideMacro.Visibility)
+
 	blockedRows, err := secureEngine.Query(ctx, principal.Name, `INSERT INTO sample_data.nyc_taxi.zones VALUES (999, 'Nowhere', 'Blocked', 'Boro')`)
 	if blockedRows != nil {
 		require.NoError(t, blockedRows.Err())
