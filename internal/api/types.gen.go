@@ -2637,15 +2637,17 @@ type SavedResource struct {
 }
 
 type SchemaDetail struct {
-	CatalogName string          `json:"catalog_name"`
-	Comment     *string         `json:"comment,omitempty"`
-	CreatedAt   *string         `json:"created_at,omitempty"`
-	Name        string          `json:"name"`
-	Owner       *string         `json:"owner,omitempty"`
-	Properties  *map[string]any `json:"properties,omitempty"`
-	SchemaId    string          `json:"schema_id"`
-	Tags        *[]Tag          `json:"tags,omitempty"`
-	UpdatedAt   *string         `json:"updated_at,omitempty"`
+	CatalogName   string          `json:"catalog_name"`
+	Comment       *string         `json:"comment,omitempty"`
+	CreatedAt     *string         `json:"created_at,omitempty"`
+	Name          string          `json:"name"`
+	Owner         *string         `json:"owner,omitempty"`
+	Properties    *map[string]any `json:"properties,omitempty"`
+	ReadOnly      *bool           `json:"read_only,omitempty"`
+	SchemaId      string          `json:"schema_id"`
+	SystemManaged *bool           `json:"system_managed,omitempty"`
+	Tags          *[]Tag          `json:"tags,omitempty"`
+	UpdatedAt     *string         `json:"updated_at,omitempty"`
 }
 
 type SearchResult struct {
@@ -2835,19 +2837,21 @@ type SubmitQueryResponse struct {
 }
 
 type TableDetail struct {
-	CatalogName string           `json:"catalog_name"`
-	Columns     *[]ColumnDetail  `json:"columns,omitempty"`
-	Comment     *string          `json:"comment,omitempty"`
-	CreatedAt   *string          `json:"created_at,omitempty"`
-	Name        string           `json:"name"`
-	Owner       *string          `json:"owner,omitempty"`
-	Properties  *map[string]any  `json:"properties,omitempty"`
-	SchemaName  string           `json:"schema_name"`
-	Statistics  *TableStatistics `json:"statistics,omitempty"`
-	TableId     string           `json:"table_id"`
-	TableType   *string          `json:"table_type,omitempty"`
-	Tags        *[]Tag           `json:"tags,omitempty"`
-	UpdatedAt   *string          `json:"updated_at,omitempty"`
+	CatalogName   string           `json:"catalog_name"`
+	Columns       *[]ColumnDetail  `json:"columns,omitempty"`
+	Comment       *string          `json:"comment,omitempty"`
+	CreatedAt     *string          `json:"created_at,omitempty"`
+	Name          string           `json:"name"`
+	Owner         *string          `json:"owner,omitempty"`
+	Properties    *map[string]any  `json:"properties,omitempty"`
+	ReadOnly      *bool            `json:"read_only,omitempty"`
+	SchemaName    string           `json:"schema_name"`
+	Statistics    *TableStatistics `json:"statistics,omitempty"`
+	SystemManaged *bool            `json:"system_managed,omitempty"`
+	TableId       string           `json:"table_id"`
+	TableType     *string          `json:"table_type,omitempty"`
+	Tags          *[]Tag           `json:"tags,omitempty"`
+	UpdatedAt     *string          `json:"updated_at,omitempty"`
 }
 
 type TableStatistics struct {

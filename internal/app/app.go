@@ -167,6 +167,10 @@ func New(ctx context.Context, deps Deps) (*App, error) {
 	queryHistoryRepo := repository.NewQueryHistoryRepo(deps.ReadDB)
 	searchRepo := repository.NewSearchRepo(deps.ReadDB, deps.ReadDB)
 
+	if err := engine.AttachSystemCatalog(ctx, deps.DuckDB, cfg.MetaDBPath); err != nil {
+		return nil, fmt.Errorf("attach system catalog: %w", err)
+	}
+
 	// === 5. Compute resolver (needs endpoint repo, principal repo, group repo) ===
 	localExec := compute.NewLocalExecutor(deps.DuckDB)
 	remoteCache := compute.NewRemoteCacheWithOptions(deps.DuckDB, compute.RemoteExecutorOptions{
@@ -247,6 +251,13 @@ func New(ctx context.Context, deps Deps) (*App, error) {
 			return nil, err
 		}
 		return repo.GetSchemaByName(ctx, schemaName)
+	})
+	authSvc.SetDefaultCatalogNameLookup(func(ctx context.Context) (string, error) {
+		reg, err := catalogRegRepo.GetDefault(ctx)
+		if err != nil {
+			return "", err
+		}
+		return reg.Name, nil
 	})
 	authSvc.SetDefaultCatalogTableByIDLookup(func(ctx context.Context, tableID string) (*domain.Table, error) {
 		repo, err := introspectionFactory.ForDefault(ctx)

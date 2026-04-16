@@ -80,7 +80,7 @@ func TestHTTP_TagCRUD(t *testing.T) {
 				fmt.Sprintf("%s/v1/tags/%s/assignments", env.Server.URL, tagID),
 				env.Keys.Admin, map[string]interface{}{
 					"securable_type": "table",
-					"securable_id":   "1",
+					"securable_id":   env.TitanicTableID,
 				})
 			require.Equal(t, 201, resp.StatusCode)
 
@@ -88,7 +88,7 @@ func TestHTTP_TagCRUD(t *testing.T) {
 			decodeJSON(t, resp, &result)
 			assert.Equal(t, tagID, result["tag_id"])
 			assert.Equal(t, "table", result["securable_type"])
-			assert.Equal(t, "1", result["securable_id"])
+			assert.Equal(t, env.TitanicTableID, result["securable_id"])
 			assignmentID = result["id"].(string)
 		}},
 
@@ -97,7 +97,7 @@ func TestHTTP_TagCRUD(t *testing.T) {
 				fmt.Sprintf("%s/v1/tags/%s/assignments", env.Server.URL, tagID),
 				env.Keys.Admin, map[string]interface{}{
 					"securable_type": "table",
-					"securable_id":   "1",
+					"securable_id":   env.TitanicTableID,
 					"column_name":    "Name",
 				})
 			require.Equal(t, 201, resp.StatusCode)
@@ -115,7 +115,7 @@ func TestHTTP_TagCRUD(t *testing.T) {
 				fmt.Sprintf("%s/v1/tags/%s/assignments", env.Server.URL, tagID),
 				env.Keys.Admin, map[string]interface{}{
 					"securable_type": "table",
-					"securable_id":   "1",
+					"securable_id":   env.TitanicTableID,
 					"column_name":    "Name",
 				})
 			defer resp.Body.Close() //nolint:errcheck

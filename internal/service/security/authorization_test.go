@@ -125,6 +125,10 @@ func TestAdminBypassesAllChecks(t *testing.T) {
 	if !ok {
 		t.Error("admin should bypass all privilege checks")
 	}
+
+	ok, err = cat.CheckPrivilege(ctx, "admin", SecurableTable, domain.SyntheticCatalogTableID("lake", domain.SystemSchemaObjectID("_ducklake"), domain.SystemTableObjectID("_ducklake", "ducklake_table")), PrivSelect)
+	require.NoError(t, err)
+	assert.True(t, ok)
 }
 
 func TestUserWithNoGrantsDenied(t *testing.T) {
@@ -144,6 +148,10 @@ func TestUserWithNoGrantsDenied(t *testing.T) {
 	if ok {
 		t.Error("user with no grants should be denied")
 	}
+
+	ok, err = cat.CheckPrivilege(ctx, "nobody", SecurableTable, domain.SyntheticCatalogTableID("lake", domain.SystemSchemaObjectID("_ducklake"), domain.SystemTableObjectID("_ducklake", "ducklake_table")), PrivSelect)
+	require.NoError(t, err)
+	assert.False(t, ok)
 }
 
 func TestDirectTableGrant(t *testing.T) {
@@ -594,6 +602,28 @@ func TestLookupTableID_DefaultCatalogSchemaQualified(t *testing.T) {
 	assert.False(t, isExternal)
 }
 
+func TestLookupTableID_DefaultCatalogSchemaQualifiedSystemTable(t *testing.T) {
+	cat, _, ctx := setupTestService(t)
+
+	cat.SetDefaultCatalogTableLookup(func(_ context.Context, schemaName, tableName string) (*domain.TableDetail, error) {
+		require.Equal(t, domain.AppSystemSchemaName, schemaName)
+		require.Equal(t, "principals", tableName)
+		return &domain.TableDetail{
+			TableID:   domain.SystemTableObjectID(schemaName, tableName),
+			TableType: domain.TableTypeSystem,
+		}, nil
+	})
+	cat.SetDefaultCatalogNameLookup(func(_ context.Context) (string, error) {
+		return "lake", nil
+	})
+
+	tableID, schemaID, isExternal, err := cat.LookupTableID(ctx, "system.principals")
+	require.NoError(t, err)
+	assert.Equal(t, domain.SyntheticCatalogTableID("lake", domain.SystemSchemaObjectID(domain.AppSystemSchemaName), domain.SystemTableObjectID(domain.AppSystemSchemaName, "principals")), tableID)
+	assert.Equal(t, domain.SyntheticCatalogSchemaID("lake", domain.SystemSchemaObjectID(domain.AppSystemSchemaName)), schemaID)
+	assert.False(t, isExternal)
+}
+
 func TestLookupTableID_AmbiguousUnqualified(t *testing.T) {
 	db, _ := internaldb.OpenTestSQLite(t)
 
@@ -851,6 +881,28 @@ func TestGetTableColumnNames_CatalogQualifiedTableUsesCatalogLookup(t *testing.T
 	names, err := svc.GetTableColumnNames(context.Background(), domain.SyntheticCatalogTableID("demo", "11", "22"))
 	require.NoError(t, err)
 	require.Equal(t, []string{"id", "email", "region"}, names)
+}
+
+func TestGetTableColumnNames_DefaultSystemTableUsesDefaultLookup(t *testing.T) {
+	t.Parallel()
+
+	svc := NewAuthorizationService(nil, nil, nil, nil, nil, &testutil.MockIntrospectionRepo{}, nil)
+	svc.SetDefaultCatalogTableLookup(func(_ context.Context, schemaName, tableName string) (*domain.TableDetail, error) {
+		require.Equal(t, domain.AppSystemSchemaName, schemaName)
+		require.Equal(t, "principals", tableName)
+		return &domain.TableDetail{
+			TableID:   domain.SystemTableObjectID(schemaName, tableName),
+			TableType: domain.TableTypeSystem,
+			Columns: []domain.ColumnDetail{
+				{Name: "id"},
+				{Name: "name"},
+			},
+		}, nil
+	})
+
+	names, err := svc.GetTableColumnNames(context.Background(), domain.SystemTableObjectID(domain.AppSystemSchemaName, "principals"))
+	require.NoError(t, err)
+	require.Equal(t, []string{"id", "name"}, names)
 }
 
 func TestLookupTableID_ViewSchemaQualified(t *testing.T) {

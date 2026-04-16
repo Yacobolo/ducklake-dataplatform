@@ -62,7 +62,7 @@ func (r *CatalogRepo) GetSchema(ctx context.Context, name string) (*domain.Schem
 		`SELECT schema_id, schema_name FROM ducklake_schema WHERE schema_name = ? AND end_snapshot IS NULL`, name).
 		Scan(&schemaID, &s.Name)
 	if errors.Is(err, sql.ErrNoRows) {
-		return nil, domain.ErrNotFound("schema %q not found", name)
+		return r.getSystemSchema(ctx, name)
 	}
 	if err != nil {
 		return nil, err
@@ -79,15 +79,8 @@ func (r *CatalogRepo) GetSchema(ctx context.Context, name string) (*domain.Schem
 // ListSchemas returns a paginated list of schemas.
 // NOTE: ducklake_schema is not managed by sqlc.
 func (r *CatalogRepo) ListSchemas(ctx context.Context, page domain.PageRequest) ([]domain.SchemaDetail, int64, error) {
-	var total int64
-	if err := r.metaDB.QueryRowContext(ctx,
-		`SELECT COUNT(*) FROM ducklake_schema WHERE end_snapshot IS NULL`).Scan(&total); err != nil {
-		return nil, 0, err
-	}
-
 	rows, err := r.metaDB.QueryContext(ctx,
-		`SELECT schema_id, schema_name FROM ducklake_schema WHERE end_snapshot IS NULL ORDER BY schema_name LIMIT ? OFFSET ?`,
-		page.Limit(), page.Offset())
+		`SELECT schema_id, schema_name FROM ducklake_schema WHERE end_snapshot IS NULL ORDER BY schema_name`)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -107,8 +100,28 @@ func (r *CatalogRepo) ListSchemas(ctx context.Context, page domain.PageRequest) 
 	if err := rows.Err(); err != nil {
 		return nil, 0, err
 	}
+	systems, err := r.listSystemSchemas(ctx)
+	if err != nil {
+		return nil, 0, err
+	}
+	schemas = mergeSchemas(schemas, systems)
+	total := int64(len(schemas))
+	if total == 0 {
+		return nil, 0, nil
+	}
+	offset := page.Offset()
+	if offset >= len(schemas) {
+		return []domain.SchemaDetail{}, total, nil
+	}
+	end := offset + page.Limit()
+	if end > len(schemas) {
+		end = len(schemas)
+	}
+	schemas = schemas[offset:end]
 	for i := range schemas {
-		r.enrichSchemaMetadata(ctx, &schemas[i])
+		if !domain.IsSystemSchemaObjectID(schemas[i].SchemaID) {
+			r.enrichSchemaMetadata(ctx, &schemas[i])
+		}
 	}
 	return schemas, total, nil
 }

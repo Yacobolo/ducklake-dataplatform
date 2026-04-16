@@ -41,7 +41,7 @@ func TestHTTP_GrantRevoke(t *testing.T) {
 				"principal_id":   userID,
 				"principal_type": "user",
 				"securable_type": "table",
-				"securable_id":   "1", // titanic table
+				"securable_id":   env.TitanicTableID,
 				"privilege":      "SELECT",
 			}
 			resp := doRequest(t, "POST", env.Server.URL+"/v1/grants", env.Keys.Admin, body)
@@ -77,8 +77,8 @@ func TestHTTP_GrantRevoke(t *testing.T) {
 			assert.GreaterOrEqual(t, len(data), 1)
 		}},
 		{"list_by_securable", func(t *testing.T) {
-			url := fmt.Sprintf("%s/v1/grants?securable_type=table&securable_id=1",
-				env.Server.URL)
+			url := fmt.Sprintf("%s/v1/grants?securable_type=table&securable_id=%s",
+				env.Server.URL, env.TitanicTableID)
 			resp := doRequest(t, "GET", url, env.Keys.Admin, nil)
 			require.Equal(t, 200, resp.StatusCode)
 

@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"log/slog"
 	"testing"
 
@@ -13,6 +14,7 @@ import (
 
 	internaldb "github.com/Yacobolo/quackstack/internal/db"
 	"github.com/Yacobolo/quackstack/internal/db/dbstore"
+	"github.com/Yacobolo/quackstack/internal/ddl"
 	"github.com/Yacobolo/quackstack/internal/domain"
 )
 
@@ -47,9 +49,50 @@ func setupCatalogRepoWithDuckDB(t *testing.T) *CatalogRepo {
 	duckDB, err := sql.Open("duckdb", "")
 	require.NoError(t, err)
 	t.Cleanup(func() { _ = duckDB.Close() })
+	_, err = duckDB.ExecContext(context.Background(), `INSTALL sqlite; LOAD sqlite;`)
+	require.NoError(t, err)
 
 	q := dbstore.New(writeDB)
 	return NewCatalogRepo(writeDB, writeDB, q, duckDB, "lake", nil, slog.Default())
+}
+
+func attachDuckDBCatalogForTests(t *testing.T, repo *CatalogRepo) {
+	t.Helper()
+
+	_, err := repo.duckDB.ExecContext(context.Background(), `ATTACH ':memory:' AS lake`)
+	require.NoError(t, err)
+}
+
+func attachAppSystemCatalogForTests(t *testing.T, repo *CatalogRepo) {
+	t.Helper()
+
+	rows, err := repo.controlDB.QueryContext(context.Background(), `PRAGMA database_list`)
+	require.NoError(t, err)
+	defer rows.Close() //nolint:errcheck
+
+	var sqlitePath string
+	for rows.Next() {
+		var (
+			seq  int
+			name string
+			file string
+		)
+		require.NoError(t, rows.Scan(&seq, &name, &file))
+		if name == "main" {
+			sqlitePath = file
+			break
+		}
+	}
+	require.NoError(t, rows.Err())
+	require.NotEmpty(t, sqlitePath)
+
+	attachSQL := fmt.Sprintf(
+		"ATTACH %s AS %s (TYPE sqlite, READ_ONLY)",
+		ddl.QuoteLiteral(sqlitePath),
+		ddl.QuoteIdentifier("__quack_system"),
+	)
+	_, err = repo.duckDB.ExecContext(context.Background(), attachSQL)
+	require.NoError(t, err)
 }
 
 // createCatalogDuckLakeTables creates the full ducklake_* tables that

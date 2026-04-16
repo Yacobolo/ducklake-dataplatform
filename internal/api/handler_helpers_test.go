@@ -237,6 +237,10 @@ func TestHelpers_schemaDetailToAPI(t *testing.T) {
 	assert.Equal(t, helpersFixedTime.UTC().Format(time.RFC3339), *result.CreatedAt)
 	require.NotNil(t, result.UpdatedAt)
 	assert.Equal(t, helpersFixedTime.UTC().Format(time.RFC3339), *result.UpdatedAt)
+	require.NotNil(t, result.SystemManaged)
+	assert.False(t, *result.SystemManaged)
+	require.NotNil(t, result.ReadOnly)
+	assert.False(t, *result.ReadOnly)
 }
 
 func TestHelpers_tableDetailToAPI(t *testing.T) {
@@ -265,6 +269,26 @@ func TestHelpers_tableDetailToAPI(t *testing.T) {
 	require.NotNil(t, result.Columns)
 	require.Len(t, *result.Columns, 1)
 	assert.Equal(t, "id", (*result.Columns)[0].Name)
+	require.NotNil(t, result.SystemManaged)
+	assert.False(t, *result.SystemManaged)
+	require.NotNil(t, result.ReadOnly)
+	assert.False(t, *result.ReadOnly)
+}
+
+func TestHelpers_systemTableDetailToAPI(t *testing.T) {
+	t.Parallel()
+	td := domain.TableDetail{
+		TableID: "t-2", Name: "principals", SchemaName: "system",
+		CatalogName: "default", TableType: domain.TableTypeSystem,
+		Properties: map[string]string{"system_table": "true", "read_only": "true"},
+	}
+
+	result := tableDetailToAPI(td)
+
+	require.NotNil(t, result.SystemManaged)
+	assert.True(t, *result.SystemManaged)
+	require.NotNil(t, result.ReadOnly)
+	assert.True(t, *result.ReadOnly)
 }
 
 func TestHelpers_columnDetailToAPI(t *testing.T) {

@@ -58,7 +58,7 @@ func TestWorkflow_RBAC_FullCycle(t *testing.T) {
 				"principal_id":   groupID,
 				"principal_type": "group",
 				"securable_type": "table",
-				"securable_id":   "1", // titanic
+				"securable_id":   env.TitanicTableID,
 				"privilege":      "SELECT",
 			}
 			resp := doRequest(t, "POST", env.Server.URL+"/v1/grants", env.Keys.Admin, body)
@@ -205,7 +205,7 @@ func TestWorkflow_RLS_Lifecycle(t *testing.T) {
 	steps := []step{
 		{"create_filter", func(t *testing.T) {
 			body := map[string]interface{}{
-				"table_id":    "1",
+				"table_id":    env.TitanicTableID,
 				"name":        "survivors-only",
 				"filter_sql":  `"Survived" = 1`,
 				"description": "survivors only",
@@ -228,7 +228,7 @@ func TestWorkflow_RLS_Lifecycle(t *testing.T) {
 			_ = resp.Body.Close()
 		}},
 		{"list_filters_shows_new", func(t *testing.T) {
-			resp := doRequest(t, "GET", env.Server.URL+"/v1/row-filters?table_id=1", env.Keys.Admin, nil)
+			resp := doRequest(t, "GET", env.Server.URL+"/v1/row-filters?table_id="+env.TitanicTableID, env.Keys.Admin, nil)
 			require.Equal(t, 200, resp.StatusCode)
 
 			var result map[string]interface{}
@@ -282,7 +282,7 @@ func TestWorkflow_ColumnMask_Lifecycle(t *testing.T) {
 	steps := []step{
 		{"create_mask", func(t *testing.T) {
 			body := map[string]interface{}{
-				"table_id":        "1",
+				"table_id":        env.TitanicTableID,
 				"name":            "fare-mask",
 				"column_name":     "Fare",
 				"mask_expression": "0.0",
@@ -318,7 +318,7 @@ func TestWorkflow_ColumnMask_Lifecycle(t *testing.T) {
 			_ = resp.Body.Close()
 		}},
 		{"list_masks_shows_new", func(t *testing.T) {
-			resp := doRequest(t, "GET", env.Server.URL+"/v1/column-masks?table_id=1", env.Keys.Admin, nil)
+			resp := doRequest(t, "GET", env.Server.URL+"/v1/column-masks?table_id="+env.TitanicTableID, env.Keys.Admin, nil)
 			require.Equal(t, 200, resp.StatusCode)
 
 			var result map[string]interface{}

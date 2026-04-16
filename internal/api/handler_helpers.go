@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math"
 	"reflect"
+	"strings"
 	"time"
 
 	"github.com/Yacobolo/quackstack/internal/domain"
@@ -149,16 +150,20 @@ func schemaDetailToAPI(s domain.SchemaDetail) SchemaDetail {
 	for i, t := range s.Tags {
 		tags[i] = tagToAPI(t)
 	}
+	readOnly := isReadOnlyProperties(s.Properties)
+	systemManaged := isSystemManagedSchemaProperties(s.Properties)
 	return SchemaDetail{
-		SchemaId:    s.SchemaID,
-		Name:        s.Name,
-		CatalogName: s.CatalogName,
-		Comment:     &s.Comment,
-		Tags:        &tags,
-		Owner:       &s.Owner,
-		Properties:  stringMapToAnyMap(s.Properties),
-		CreatedAt:   formatTimePtr(&s.CreatedAt),
-		UpdatedAt:   formatTimePtr(&s.UpdatedAt),
+		SchemaId:      s.SchemaID,
+		Name:          s.Name,
+		CatalogName:   s.CatalogName,
+		Comment:       &s.Comment,
+		Tags:          &tags,
+		Owner:         &s.Owner,
+		Properties:    stringMapToAnyMap(s.Properties),
+		SystemManaged: &systemManaged,
+		ReadOnly:      &readOnly,
+		CreatedAt:     formatTimePtr(&s.CreatedAt),
+		UpdatedAt:     formatTimePtr(&s.UpdatedAt),
 	}
 }
 
@@ -171,22 +176,38 @@ func tableDetailToAPI(t domain.TableDetail) TableDetail {
 	for i, tg := range t.Tags {
 		tags[i] = tagToAPI(tg)
 	}
+	readOnly := isReadOnlyProperties(t.Properties)
+	systemManaged := strings.EqualFold(strings.TrimSpace(t.TableType), domain.TableTypeSystem) || isSystemManagedTableProperties(t.Properties)
 	td := TableDetail{
-		TableId:     t.TableID,
-		Name:        t.Name,
-		SchemaName:  t.SchemaName,
-		CatalogName: t.CatalogName,
-		TableType:   &t.TableType,
-		Columns:     &cols,
-		Comment:     &t.Comment,
-		Properties:  stringMapToAnyMap(t.Properties),
-		Owner:       &t.Owner,
-		Tags:        &tags,
-		Statistics:  tableStatisticsPtr(t.Statistics),
-		CreatedAt:   formatTimePtr(&t.CreatedAt),
-		UpdatedAt:   formatTimePtr(&t.UpdatedAt),
+		TableId:       t.TableID,
+		Name:          t.Name,
+		SchemaName:    t.SchemaName,
+		CatalogName:   t.CatalogName,
+		TableType:     &t.TableType,
+		Columns:       &cols,
+		Comment:       &t.Comment,
+		Properties:    stringMapToAnyMap(t.Properties),
+		SystemManaged: &systemManaged,
+		ReadOnly:      &readOnly,
+		Owner:         &t.Owner,
+		Tags:          &tags,
+		Statistics:    tableStatisticsPtr(t.Statistics),
+		CreatedAt:     formatTimePtr(&t.CreatedAt),
+		UpdatedAt:     formatTimePtr(&t.UpdatedAt),
 	}
 	return td
+}
+
+func isReadOnlyProperties(props map[string]string) bool {
+	return strings.EqualFold(strings.TrimSpace(props["read_only"]), "true")
+}
+
+func isSystemManagedSchemaProperties(props map[string]string) bool {
+	return strings.EqualFold(strings.TrimSpace(props["system_schema"]), "true")
+}
+
+func isSystemManagedTableProperties(props map[string]string) bool {
+	return strings.EqualFold(strings.TrimSpace(props["system_table"]), "true")
 }
 
 func columnDetailToAPI(c domain.ColumnDetail) ColumnDetail {
