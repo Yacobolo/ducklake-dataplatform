@@ -3,6 +3,7 @@ package cli
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/spf13/cobra"
 
@@ -14,6 +15,7 @@ func newValidateCmd(_ *apiruntime.Client) *cobra.Command {
 	var (
 		configDir          string
 		allowUnknownFields bool
+		loadFlags          declarativeLoadFlags
 	)
 
 	cmd := &cobra.Command{
@@ -22,9 +24,11 @@ func newValidateCmd(_ *apiruntime.Client) *cobra.Command {
 		Long:  "Reads declarative CUE configuration and checks it for errors without contacting the server.",
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			// 1. Load desired state from the CUE config tree.
-			desired, err := declarative.LoadDirectoryWithOptions(configDir, declarative.LoadOptions{
-				AllowUnknownFields: allowUnknownFields,
-			})
+			loadOptions, err := loadFlags.loadOptions(allowUnknownFields)
+			if err != nil {
+				return err
+			}
+			desired, err := declarative.LoadDirectoryWithOptions(configDir, loadOptions)
 			if err != nil {
 				return fmt.Errorf("load config: %w", err)
 			}
@@ -32,24 +36,15 @@ func newValidateCmd(_ *apiruntime.Client) *cobra.Command {
 			// 2. Validate the desired state.
 			validationErrs := declarative.Validate(desired)
 			if len(validationErrs) > 0 {
-				if getOutputFormat(cmd) == "json" {
-					errMsgs := make([]string, len(validationErrs))
-					for i, ve := range validationErrs {
-						errMsgs[i] = ve.Error()
-					}
-					if err := apiruntime.PrintJSON(os.Stdout, map[string]interface{}{
-						"valid":  false,
-						"errors": errMsgs,
-					}); err != nil {
-						return err
-					}
-					os.Exit(1)
+				errMsgs := make([]string, len(validationErrs))
+				for i, ve := range validationErrs {
+					errMsgs[i] = ve.Error()
 				}
-				fmt.Fprintf(os.Stderr, "Configuration has %d validation error(s):\n", len(validationErrs))
-				for _, ve := range validationErrs {
-					fmt.Fprintf(os.Stderr, "  - %s\n", ve.Error())
+				return &CLIError{
+					Code:        1,
+					Message:     fmt.Sprintf("configuration has %d validation error(s): %s", len(validationErrs), strings.Join(errMsgs, "; ")),
+					JSONPayload: map[string]interface{}{"valid": false, "errors": errMsgs},
 				}
-				os.Exit(1)
 			}
 
 			if getOutputFormat(cmd) == "json" {
@@ -64,6 +59,7 @@ func newValidateCmd(_ *apiruntime.Client) *cobra.Command {
 
 	cmd.Flags().StringVar(&configDir, "config-dir", "./quackstack-config", "Path to the CUE configuration module")
 	cmd.Flags().BoolVar(&allowUnknownFields, "allow-unknown-fields", false, "Deprecated no-op retained for compatibility with existing CLI wiring")
+	addDeclarativeLoadFlags(cmd, &loadFlags)
 
 	return cmd
 }

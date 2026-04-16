@@ -25,7 +25,7 @@ func TestAPI_ListAll(t *testing.T) {
 	output := old()
 	require.NoError(t, err)
 
-	var endpoints []gen.APIGenEndpoint
+	var endpoints []gen.ReferenceOperation
 	require.NoError(t, json.Unmarshal([]byte(output), &endpoints))
 	assert.Greater(t, len(endpoints), 50, "should have many API endpoints")
 }
@@ -42,7 +42,7 @@ func TestAPI_Search(t *testing.T) {
 	output := old()
 	require.NoError(t, err)
 
-	var endpoints []gen.APIGenEndpoint
+	var endpoints []gen.ReferenceOperation
 	require.NoError(t, json.Unmarshal([]byte(output), &endpoints))
 	assert.NotEmpty(t, endpoints, "should find schema-related endpoints")
 }
@@ -59,11 +59,11 @@ func TestAPI_Describe(t *testing.T) {
 	output := old()
 	require.NoError(t, err)
 
-	var ep gen.APIGenEndpoint
-	require.NoError(t, json.Unmarshal([]byte(output), &ep))
-	assert.Equal(t, "listSchemas", ep.OperationID)
-	assert.Equal(t, "GET", ep.Method)
-	assert.NotEmpty(t, ep.Path)
+	var payload map[string]any
+	require.NoError(t, json.Unmarshal([]byte(output), &payload))
+	assert.Equal(t, "listSchemas", payload["operation_id"])
+	assert.Equal(t, "GET", payload["method"])
+	assert.NotEmpty(t, payload["path"])
 }
 
 func TestAPI_Describe_NotFound(t *testing.T) {
@@ -90,7 +90,7 @@ func TestAPI_ListByTag(t *testing.T) {
 	output := old()
 	require.NoError(t, err)
 
-	var endpoints []gen.APIGenEndpoint
+	var endpoints []gen.ReferenceOperation
 	require.NoError(t, json.Unmarshal([]byte(output), &endpoints))
 	assert.NotEmpty(t, endpoints, "should find Identity-tagged endpoints")
 	for _, ep := range endpoints {
@@ -117,7 +117,7 @@ func TestAPI_ListByTag_CaseInsensitive(t *testing.T) {
 	output := old()
 	require.NoError(t, err)
 
-	var endpoints []gen.APIGenEndpoint
+	var endpoints []gen.ReferenceOperation
 	require.NoError(t, json.Unmarshal([]byte(output), &endpoints))
 	assert.NotEmpty(t, endpoints, "case-insensitive tag filter should match Identity")
 }
@@ -135,230 +135,39 @@ func TestAPI_Search_NoMatches(t *testing.T) {
 	require.NoError(t, err)
 
 	// Should be valid JSON with null or empty array
-	var endpoints []gen.APIGenEndpoint
+	var endpoints []gen.ReferenceOperation
 	err = json.Unmarshal([]byte(output), &endpoints)
 	require.NoError(t, err)
 	assert.Empty(t, endpoints, "nonsense query should return no matches")
 }
 
-func TestAPI_Curl(t *testing.T) {
+func TestAPI_Help_DoesNotExposeCurl(t *testing.T) {
 	dir := t.TempDir()
 	t.Setenv("HOME", dir)
 
 	rootCmd := newRootCmd()
-	rootCmd.SetArgs([]string{"--output", "json", "api", "curl", "listSchemas", "--param", "catalog_name=main"})
+	rootCmd.SetArgs([]string{"api", "--help"})
 
-	old := captureStdout(t)
+	restore := captureStdout(t)
 	err := rootCmd.Execute()
-	output := old()
+	output := restore()
 	require.NoError(t, err)
 
-	var result map[string]string
-	require.NoError(t, json.Unmarshal([]byte(output), &result))
-	assert.Contains(t, result["curl"], "curl")
-	assert.Contains(t, result["curl"], "GET")
+	assert.NotContains(t, output, "\n  curl")
+	assert.Contains(t, output, "\n  get")
+	assert.Contains(t, output, "\n  post")
 }
 
-func TestAPI_Curl_WithTokenAuth(t *testing.T) {
+func TestAPI_RawMethod_NotFound(t *testing.T) {
 	dir := t.TempDir()
 	t.Setenv("HOME", dir)
 
 	rootCmd := newRootCmd()
-	rootCmd.SetArgs([]string{
-		"--output", "json",
-		"--token", "my-secret-token",
-		"api", "curl", "listSchemas",
-		"--param", "catalog_name=main",
-	})
-
-	old := captureStdout(t)
-	err := rootCmd.Execute()
-	output := old()
-	require.NoError(t, err)
-
-	var result map[string]string
-	require.NoError(t, json.Unmarshal([]byte(output), &result))
-	assert.Contains(t, result["curl"], "Authorization: Bearer my-secret-token",
-		"curl should include Bearer token auth header")
-}
-
-func TestAPI_Curl_WithAPIKeyAuth(t *testing.T) {
-	dir := t.TempDir()
-	t.Setenv("HOME", dir)
-
-	rootCmd := newRootCmd()
-	rootCmd.SetArgs([]string{
-		"--output", "json",
-		"--api-key", "my-api-key",
-		"api", "curl", "listSchemas",
-		"--param", "catalog_name=main",
-	})
-
-	old := captureStdout(t)
-	err := rootCmd.Execute()
-	output := old()
-	require.NoError(t, err)
-
-	var result map[string]string
-	require.NoError(t, json.Unmarshal([]byte(output), &result))
-	assert.Contains(t, result["curl"], "X-API-Key: my-api-key",
-		"curl should include X-API-Key auth header")
-}
-
-func TestAPI_Curl_EmbedsObjectBodyFieldsAsJSON(t *testing.T) {
-	dir := t.TempDir()
-	t.Setenv("HOME", dir)
-
-	rootCmd := newRootCmd()
-	rootCmd.SetArgs([]string{
-		"--output", "json",
-		"--token", "my-secret-token",
-		"api", "curl", "createDashboardWidget",
-		"--param", "dashboard_id=dash-1",
-		"--param", "name=Top Vendors",
-		"--param", `layout={"x":0,"y":0,"w":6,"h":4}`,
-		"--param", `source={"kind":"sql_query","sql_query":{"sql":"select 1"}}`,
-		"--param", `visual_spec={"kind":"chart","chart_type":"bar"}`,
-	})
-
-	old := captureStdout(t)
-	err := rootCmd.Execute()
-	output := old()
-	require.NoError(t, err)
-
-	var result map[string]string
-	require.NoError(t, json.Unmarshal([]byte(output), &result))
-	assert.Contains(t, result["curl"], `"layout":{"x":0,"y":0,"w":6,"h":4}`)
-	assert.Contains(t, result["curl"], `"source":{"kind":"sql_query"`)
-	assert.Contains(t, result["curl"], `"visual_spec":{"kind":"chart","chart_type":"bar"}`)
-	assert.NotContains(t, result["curl"], `"layout":"{`)
-}
-
-func TestAPI_Curl_ProfileTokenOverriddenByExplicitAPIKey(t *testing.T) {
-	dir := t.TempDir()
-	t.Setenv("HOME", dir)
-
-	require.NoError(t, SaveUserConfig(&UserConfig{
-		CurrentProfile: "default",
-		Profiles: map[string]Profile{
-			"default": {
-				Host:  "http://localhost:8080",
-				Token: "stale-profile-token",
-			},
-		},
-	}))
-
-	rootCmd := newRootCmd()
-	rootCmd.SetArgs([]string{
-		"--output", "json",
-		"--api-key", "fresh-api-key",
-		"api", "curl", "listSchemas",
-		"--param", "catalog_name=main",
-	})
-
-	old := captureStdout(t)
-	err := rootCmd.Execute()
-	output := old()
-	require.NoError(t, err)
-
-	var result map[string]string
-	require.NoError(t, json.Unmarshal([]byte(output), &result))
-	assert.Contains(t, result["curl"], "X-API-Key: fresh-api-key")
-	assert.NotContains(t, result["curl"], "Authorization: Bearer stale-profile-token")
-}
-
-func TestAPI_Curl_WithBodyParams(t *testing.T) {
-	// createSchema has path param catalog_name and body fields (name, comment, etc.)
-	dir := t.TempDir()
-	t.Setenv("HOME", dir)
-
-	rootCmd := newRootCmd()
-	rootCmd.SetArgs([]string{
-		"--output", "json",
-		"api", "curl", "createSchema",
-		"--param", "catalog_name=main",
-		"--param", "name=analytics",
-		"--param", "comment=test schema",
-	})
-
-	old := captureStdout(t)
-	err := rootCmd.Execute()
-	output := old()
-	require.NoError(t, err)
-
-	var result map[string]string
-	require.NoError(t, json.Unmarshal([]byte(output), &result))
-	curl := result["curl"]
-	assert.Contains(t, curl, "POST", "createSchema is a POST endpoint")
-	assert.Contains(t, curl, "/main/", "path param should be substituted")
-	assert.Contains(t, curl, "Content-Type: application/json", "body should set content type")
-	assert.Contains(t, curl, "-d", "should include body data")
-	assert.Contains(t, curl, "name", "body should contain name field")
-}
-
-func TestAPI_Curl_TypedBodyParams(t *testing.T) {
-	dir := t.TempDir()
-	t.Setenv("HOME", dir)
-
-	rootCmd := newRootCmd()
-	rootCmd.SetArgs([]string{
-		"--output", "json",
-		"api", "curl", "createPipeline",
-		"--param", "name=nightly",
-		"--param", "concurrency_limit=3",
-		"--param", "is_paused=false",
-	})
-
-	old := captureStdout(t)
-	err := rootCmd.Execute()
-	output := old()
-	require.NoError(t, err)
-
-	var result map[string]string
-	require.NoError(t, json.Unmarshal([]byte(output), &result))
-	curl := result["curl"]
-	assert.Contains(t, curl, `"concurrency_limit":3`)
-	assert.Contains(t, curl, `"is_paused":false`)
-	assert.NotContains(t, curl, `"concurrency_limit":"3"`)
-	assert.NotContains(t, curl, `"is_paused":"false"`)
-}
-
-func TestAPI_Curl_WithQueryParams(t *testing.T) {
-	// listQueryHistory has multiple query params
-	dir := t.TempDir()
-	t.Setenv("HOME", dir)
-
-	rootCmd := newRootCmd()
-	rootCmd.SetArgs([]string{
-		"--output", "json",
-		"api", "curl", "listQueryHistory",
-		"--param", "principal_name=admin",
-		"--param", "status=completed",
-	})
-
-	old := captureStdout(t)
-	err := rootCmd.Execute()
-	output := old()
-	require.NoError(t, err)
-
-	var result map[string]string
-	require.NoError(t, json.Unmarshal([]byte(output), &result))
-	curl := result["curl"]
-	assert.Contains(t, curl, "principal_name=admin", "curl URL should contain query param")
-	assert.Contains(t, curl, "status=completed", "curl URL should contain query param")
-	assert.Contains(t, curl, "?", "curl URL should have query string separator")
-}
-
-func TestAPI_Curl_NotFound(t *testing.T) {
-	dir := t.TempDir()
-	t.Setenv("HOME", dir)
-
-	rootCmd := newRootCmd()
-	rootCmd.SetArgs([]string{"api", "curl", "nonExistentOperation"})
+	rootCmd.SetArgs([]string{"api", "post"})
 
 	err := rootCmd.Execute()
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "not found")
+	assert.Contains(t, err.Error(), "accepts 1 arg(s)")
 }
 
 func TestAPI_Describe_TableOutput(t *testing.T) {

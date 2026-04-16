@@ -772,6 +772,23 @@ type DesiredState struct {
 	Models             []ModelResource
 	SemanticModels     []SemanticModelResource
 	Macros             []MacroResource
+	Resolution         *LoadResolution
+}
+
+// LoadResolution captures transient loader context such as target selection
+// and applied variable overrides.
+type LoadResolution struct {
+	RequestedTarget string            `json:"requested_target,omitempty"`
+	TargetName      string            `json:"target_name,omitempty"`
+	TargetRef       string            `json:"target_ref,omitempty"`
+	Workspace       string            `json:"workspace,omitempty"`
+	Project         string            `json:"project,omitempty"`
+	Environment     string            `json:"environment,omitempty"`
+	Kind            string            `json:"kind,omitempty"`
+	TargetCatalog   string            `json:"target_catalog,omitempty"`
+	TargetSchema    string            `json:"target_schema,omitempty"`
+	ComputeEndpoint string            `json:"compute_endpoint,omitempty"`
+	Variables       map[string]string `json:"variables,omitempty"`
 }
 
 // WorkspaceResource is a workspace with its resolved name.

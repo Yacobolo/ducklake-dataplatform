@@ -29,6 +29,7 @@ package api
 		path:         "/me/recent-resources"
 		summary:      "List recent resources"
 		description:  "Lists the authenticated principal's recent UUID-backed resources for personalized navigation."
+		cli:          "me recent-resources list"
 		returns:      "PaginatedRecentResources"
 		error_family: "mutating"
 		params:       #paginationParameters
@@ -40,6 +41,7 @@ package api
 		path:         "/me/saved-resources"
 		summary:      "List saved resources"
 		description:  "Lists the authenticated principal's saved UUID-backed resources."
+		cli:          "me saved-resources list"
 		returns:      "PaginatedSavedResources"
 		error_family: "mutating"
 		params:       #paginationParameters
@@ -51,6 +53,7 @@ package api
 		path:             "/me/saved-resources"
 		summary:          "Save resource"
 		description:      "Saves a UUID-backed resource for the authenticated principal."
+		cli:              "me saved-resources create"
 		returns:          "SavedResource"
 		success_status:   201
 		error_family:     "mutating"
@@ -64,6 +67,7 @@ package api
 		path:         "/me/saved-resources/{resource_type}/{resource_key}"
 		summary:      "Delete saved resource"
 		description:  "Removes a saved resource for the authenticated principal."
+		cli:          "me saved-resources delete"
 		error_family: "mutating"
 		params:       #savedResourcePathParameters
 	},

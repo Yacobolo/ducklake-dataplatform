@@ -2,7 +2,7 @@ package domain
 
 // SearchResult represents a single catalog search result.
 type SearchResult struct {
-	Type       string // "schema", "table", "column"
+	Type       string // "schema", "table", "view", "column"
 	Name       string
 	SchemaName *string
 	TableName  *string

@@ -8,6 +8,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"os"
 	"strings"
 	"time"
 )
@@ -18,6 +19,10 @@ type Client struct {
 	APIKey     string
 	Token      string
 	HTTPClient *http.Client
+	Debug      bool
+	TraceHTTP  bool
+	LogFormat  string
+	LogFile    string
 }
 
 // APIError is a structured API failure returned by CheckError.
@@ -80,7 +85,46 @@ func (c *Client) Do(method, path string, query url.Values, body any) (*http.Resp
 	if err != nil {
 		return nil, fmt.Errorf("execute request: %w", err)
 	}
+	c.logRequest(req, resp, body)
 	return resp, nil
+}
+
+func (c *Client) logRequest(req *http.Request, resp *http.Response, body any) {
+	if !c.Debug && !c.TraceHTTP {
+		return
+	}
+
+	writer := io.Writer(os.Stderr)
+	if strings.TrimSpace(c.LogFile) != "" {
+		f, err := os.OpenFile(c.LogFile, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o600)
+		if err == nil {
+			writer = f
+			defer func() {
+				_ = f.Close()
+			}()
+		}
+	}
+
+	if strings.EqualFold(strings.TrimSpace(c.LogFormat), "json") {
+		entry := map[string]any{
+			"method":      req.Method,
+			"url":         req.URL.String(),
+			"status_code": resp.StatusCode,
+		}
+		if c.TraceHTTP && body != nil {
+			entry["request_body"] = body
+		}
+		_ = json.NewEncoder(writer).Encode(entry)
+		return
+	}
+
+	_, _ = fmt.Fprintf(writer, "[quack] %s %s -> %d\n", req.Method, req.URL.String(), resp.StatusCode)
+	if c.TraceHTTP && body != nil {
+		payload, _ := json.Marshal(body)
+		if len(payload) > 0 {
+			_, _ = fmt.Fprintf(writer, "[quack] body %s\n", string(payload))
+		}
+	}
 }
 
 // CheckError returns a structured error for non-2xx responses.

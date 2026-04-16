@@ -152,6 +152,7 @@ package api
 		op:           "getAssetFreshness"
 		path:         "/assets/{asset_key}/freshness"
 		summary:      "Get asset freshness"
+		cli:          "assets freshness get"
 		returns:      "AssetFreshnessStatus"
 		error_family: "resource"
 		params:       #assetPathParameters
@@ -162,6 +163,7 @@ package api
 		op:           "explainAssetFreshness"
 		path:         "/assets/{asset_key}/freshness/explanation"
 		summary:      "Explain asset freshness"
+		cli:          "assets freshness explain"
 		returns:      "AssetFreshnessExplanation"
 		error_family: "resource"
 		params:       #assetPathParameters
@@ -172,6 +174,7 @@ package api
 		op:           "listAssetFreshnessRequirements"
 		path:         "/assets/{asset_key}/freshness/requirements"
 		summary:      "List asset freshness requirements"
+		cli:          "assets freshness requirements"
 		returns:      "AssetFreshnessRequirementsResponse"
 		error_family: "resource"
 		params:       #assetPathParameters
@@ -182,6 +185,7 @@ package api
 		op:           "listAssetFreshnessBlockers"
 		path:         "/assets/{asset_key}/freshness/blockers"
 		summary:      "List asset freshness blockers"
+		cli:          "assets freshness blockers"
 		returns:      "AssetFreshnessBlockersResponse"
 		error_family: "resource"
 		params:       #assetPathParameters
@@ -192,6 +196,7 @@ package api
 		op:             "reconcileAssetFreshness"
 		path:           "/assets/{asset_key}/freshness-reconciliations"
 		summary:        "Reconcile asset freshness"
+		cli:            "assets freshness reconcile"
 		returns:        "AssetFreshnessReconcileResponse"
 		success_status: 202
 		error_family:   "resource"

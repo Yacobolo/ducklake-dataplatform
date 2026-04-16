@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -15,17 +16,21 @@ import (
 func newAuthCmd(client *apiruntime.Client) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "auth",
-		Short: "Authentication helpers",
+		Short: "Authenticate and manage CLI profiles",
 	}
 
-	cmd.AddCommand(newAuthTokenCmd())
-	cmd.AddCommand(newAuthLocalLoginCmd(client))
+	cmd.AddCommand(newAuthDevTokenCmd())
+	cmd.AddCommand(newAuthLoginCmd(client))
+	cmd.AddCommand(newAuthDescribeCmd(client))
+	cmd.AddCommand(newAuthWhoAmICmd(client))
+	cmd.AddCommand(newAuthEnvCmd())
+	cmd.AddCommand(newAuthProfilesCmd())
 	cmd.AddCommand(newAuthBootstrapCmd(client))
 	cmd.AddCommand(newAuthProviderCmd(client))
 	return cmd
 }
 
-func newAuthTokenCmd() *cobra.Command {
+func newAuthDevTokenCmd() *cobra.Command {
 	var (
 		principal string
 		secret    string
@@ -34,9 +39,9 @@ func newAuthTokenCmd() *cobra.Command {
 	)
 
 	cmd := &cobra.Command{
-		Use:   "token",
-		Short: "Generate a dev-mode JWT token and save it to the active profile",
-		Long:  "Generate an HS256 JWT token for development and testing. The token is saved to the active profile automatically.",
+		Use:   "dev-token",
+		Short: "Generate a development-only JWT token and save it to the active profile",
+		Long:  "Generate an HS256 JWT token for development and testing only. The token is saved to the active profile automatically.",
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			now := time.Now()
 			claims := jwt.MapClaims{
@@ -75,14 +80,25 @@ func newAuthTokenCmd() *cobra.Command {
 	return cmd
 }
 
-func newAuthLocalLoginCmd(client *apiruntime.Client) *cobra.Command {
+func newAuthLoginCmd(client *apiruntime.Client) *cobra.Command {
 	var username string
 	var password string
 
 	cmd := &cobra.Command{
-		Use:   "local-login",
-		Short: "Login with local username/password",
+		Use:   "login",
+		Short: "Login and save a token to the selected profile",
 		RunE: func(cmd *cobra.Command, _ []string) error {
+			if strings.TrimSpace(username) == "" && apiruntime.IsStdinTTY() {
+				_, _ = fmt.Fprint(os.Stderr, "Username: ")
+				_, _ = fmt.Fscanln(os.Stdin, &username)
+			}
+			if strings.TrimSpace(password) == "" && apiruntime.IsStdinTTY() {
+				_, _ = fmt.Fprint(os.Stderr, "Password: ")
+				_, _ = fmt.Fscanln(os.Stdin, &password)
+			}
+			if strings.TrimSpace(username) == "" || strings.TrimSpace(password) == "" {
+				return fmt.Errorf("both username and password are required")
+			}
 			resp, err := client.Do("POST", "/auth/local/login", nil, map[string]string{
 				"username": username,
 				"password": password,
@@ -111,15 +127,13 @@ func newAuthLocalLoginCmd(client *apiruntime.Client) *cobra.Command {
 			if getOutputFormat(cmd) == "json" {
 				return apiruntime.PrintJSON(os.Stdout, payload)
 			}
-			_, _ = fmt.Fprintln(os.Stdout, "local login succeeded; token saved to active profile")
+			_, _ = fmt.Fprintln(os.Stdout, "login succeeded; token saved to active profile")
 			return nil
 		},
 	}
 
 	cmd.Flags().StringVar(&username, "username", "", "Local username")
 	cmd.Flags().StringVar(&password, "password", "", "Local password")
-	_ = cmd.MarkFlagRequired("username")
-	_ = cmd.MarkFlagRequired("password")
 	return cmd
 }
 

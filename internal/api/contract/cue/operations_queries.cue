@@ -177,7 +177,7 @@ package api
 		path:         "/queries/history"
 		summary:      "List query history"
 		description:  "Lists recorded query execution history and supports filtering by principal, decision status, and time window."
-		cli:          "observability query-history list"
+		cli:          "query history list"
 		returns:      "PaginatedQueryHistoryEntries"
 		error_family: "guarded_read"
 		params:       #queryHistoryParameters

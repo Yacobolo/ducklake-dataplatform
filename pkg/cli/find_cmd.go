@@ -6,6 +6,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -23,7 +24,7 @@ func newFindCmd(client *apiruntime.Client) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "find <query>",
 		Short: "Search the data catalog for schemas, tables, and columns",
-		Long: `Search across all catalog objects (schemas, tables, columns) by name, comment, tag, or property.
+		Long: `Search across all catalog objects (schemas, tables, views, columns) by name, comment, tag, or property.
 This is designed as the agent's "grep" for the data catalog.`,
 		Example: `  # Search for anything matching "revenue"
   quack find "revenue"
@@ -42,7 +43,7 @@ This is designed as the agent's "grep" for the data catalog.`,
 		},
 	}
 
-	cmd.Flags().StringVarP(&objectType, "type", "t", "", "Filter by object type: schema, table, column")
+	cmd.Flags().StringVarP(&objectType, "type", "t", "", "Filter by object type: schema, table, view, column")
 	cmd.PersistentFlags().StringVar(&catalog, "catalog", "", "Scope search to a specific catalog")
 	cmd.PersistentFlags().Int64Var(&maxResults, "max-results", 100, "Maximum number of results")
 
@@ -82,73 +83,37 @@ func newFindColumnsCmd(client *apiruntime.Client, catalog *string, maxResults *i
 }
 
 func runFind(cmd *cobra.Command, client *apiruntime.Client, query, objectType, catalog string, maxResults int64) error {
-	// Strip glob wildcards for the API query — we filter client-side
-	apiQuery := strings.ReplaceAll(query, "*", "")
-	if apiQuery == "" {
-		apiQuery = query
-	}
-
-	q := url.Values{}
-	q.Set("query", apiQuery)
-	if objectType != "" {
-		q.Set("type", objectType)
-	}
-	if catalog != "" {
-		q.Set("catalog", catalog)
-	}
-	q.Set("max_results", fmt.Sprintf("%d", maxResults))
-
-	resp, err := client.Do("GET", "/catalogs/search", q, nil)
+	results, nextPageToken, err := collectFindResults(client, query, objectType, catalog, maxResults)
 	if err != nil {
 		return err
 	}
-	if err := apiruntime.CheckError(resp); err != nil {
-		return err
-	}
 
-	respBody, err := apiruntime.ReadBody(resp)
-	if err != nil {
-		return fmt.Errorf("read response: %w", err)
-	}
-
-	var data struct {
-		Data []struct {
-			Type       string  `json:"type"`
-			Name       string  `json:"name"`
-			SchemaName *string `json:"schema_name"`
-			TableName  *string `json:"table_name"`
-			Comment    *string `json:"comment"`
-			MatchField string  `json:"match_field"`
-		} `json:"data"`
-		NextPageToken string `json:"next_page_token"`
-	}
-	if err := json.Unmarshal(respBody, &data); err != nil {
-		return fmt.Errorf("parse response: %w", err)
-	}
-
-	// Client-side glob filtering if the query contains wildcards
 	if strings.Contains(query, "*") {
 		pattern := strings.ToLower(query)
-		var filtered = data.Data[:0]
-		for _, item := range data.Data {
+		filtered := results[:0]
+		for _, item := range results {
 			matched, _ := filepath.Match(pattern, strings.ToLower(item.Name))
 			if matched {
 				filtered = append(filtered, item)
 			}
 		}
-		data.Data = filtered
+		results = filtered
 	}
 
-	// Output
+	if maxResults > 0 && int64(len(results)) > maxResults {
+		results = results[:maxResults]
+	}
+
 	if getOutputFormat(cmd) == "json" {
-		// Use filtered data.Data so glob filtering is reflected in JSON output
-		return apiruntime.PrintJSON(os.Stdout, data)
+		return apiruntime.PrintJSON(os.Stdout, map[string]any{
+			"data":            results,
+			"next_page_token": nextPageToken,
+		})
 	}
 
-	// Table output
 	columns := []string{"type", "name", "schema", "match"}
-	rows := make([][]string, 0, len(data.Data))
-	for _, item := range data.Data {
+	rows := make([][]string, 0, len(results))
+	for _, item := range results {
 		schema := ""
 		if item.SchemaName != nil {
 			schema = *item.SchemaName
@@ -161,4 +126,242 @@ func runFind(cmd *cobra.Command, client *apiruntime.Client, query, objectType, c
 	}
 	apiruntime.PrintTable(os.Stdout, columns, rows)
 	return nil
+}
+
+type findResult struct {
+	Type       string  `json:"type"`
+	Name       string  `json:"name"`
+	SchemaName *string `json:"schema_name,omitempty"`
+	TableName  *string `json:"table_name,omitempty"`
+	Comment    *string `json:"comment,omitempty"`
+	MatchField string  `json:"match_field"`
+}
+
+func collectFindResults(client *apiruntime.Client, query, objectType, catalog string, maxResults int64) ([]findResult, string, error) {
+	// Strip glob wildcards for the API query — we filter client-side
+	apiQuery := strings.ReplaceAll(query, "*", "")
+	if apiQuery == "" {
+		apiQuery = query
+	}
+
+	results := make([]findResult, 0)
+	nextPageToken := ""
+
+	if objectType == "" || objectType == "schema" || objectType == "table" || objectType == "column" {
+		q := url.Values{}
+		q.Set("query", apiQuery)
+		if objectType != "" {
+			q.Set("type", objectType)
+		}
+		if catalog != "" {
+			q.Set("catalog", catalog)
+		}
+		q.Set("max_results", fmt.Sprintf("%d", maxResults))
+
+		resp, err := client.Do("GET", "/catalogs/search", q, nil)
+		if err != nil {
+			return nil, "", err
+		}
+		if err := apiruntime.CheckError(resp); err != nil {
+			return nil, "", err
+		}
+
+		respBody, err := apiruntime.ReadBody(resp)
+		if err != nil {
+			return nil, "", fmt.Errorf("read response: %w", err)
+		}
+
+		var data struct {
+			Data          []findResult `json:"data"`
+			NextPageToken string       `json:"next_page_token"`
+		}
+		if err := json.Unmarshal(respBody, &data); err != nil {
+			return nil, "", fmt.Errorf("parse response: %w", err)
+		}
+		results = append(results, data.Data...)
+		nextPageToken = data.NextPageToken
+	}
+
+	if objectType == "view" || (objectType == "" && strings.TrimSpace(catalog) != "") {
+		viewResults, err := findViews(client, query, catalog, maxResults)
+		if err != nil {
+			return nil, "", err
+		}
+		results = append(results, viewResults...)
+	}
+
+	sort.SliceStable(results, func(i, j int) bool {
+		if results[i].Type != results[j].Type {
+			return results[i].Type < results[j].Type
+		}
+		leftSchema := ""
+		if results[i].SchemaName != nil {
+			leftSchema = *results[i].SchemaName
+		}
+		rightSchema := ""
+		if results[j].SchemaName != nil {
+			rightSchema = *results[j].SchemaName
+		}
+		if leftSchema != rightSchema {
+			return leftSchema < rightSchema
+		}
+		return results[i].Name < results[j].Name
+	})
+
+	return results, nextPageToken, nil
+}
+
+func findViews(client *apiruntime.Client, query, catalog string, maxResults int64) ([]findResult, error) {
+	catalogNames, err := findCatalogNames(client, catalog)
+	if err != nil {
+		return nil, err
+	}
+
+	needle := strings.ToLower(strings.TrimSpace(strings.ReplaceAll(query, "*", "")))
+	results := make([]findResult, 0)
+	for _, catalogName := range catalogNames {
+		schemaNames, err := listSchemaNames(client, catalogName)
+		if err != nil {
+			return nil, err
+		}
+		for _, schemaName := range schemaNames {
+			views, err := listViews(client, catalogName, schemaName)
+			if err != nil {
+				return nil, err
+			}
+			for _, view := range views {
+				matchField, ok := matchesViewQuery(view, needle)
+				if !ok {
+					continue
+				}
+				schemaNameCopy := schemaName
+				results = append(results, findResult{
+					Type:       "view",
+					Name:       view.Name,
+					SchemaName: &schemaNameCopy,
+					Comment:    view.Comment,
+					MatchField: matchField,
+				})
+				if maxResults > 0 && int64(len(results)) >= maxResults {
+					return results, nil
+				}
+			}
+		}
+	}
+	return results, nil
+}
+
+func findCatalogNames(client *apiruntime.Client, catalog string) ([]string, error) {
+	if strings.TrimSpace(catalog) != "" {
+		return []string{catalog}, nil
+	}
+
+	resp, err := client.Do("GET", "/catalogs", nil, nil)
+	if err != nil {
+		return nil, err
+	}
+	if err := apiruntime.CheckError(resp); err != nil {
+		return nil, err
+	}
+	respBody, err := apiruntime.ReadBody(resp)
+	if err != nil {
+		return nil, fmt.Errorf("read catalogs response: %w", err)
+	}
+
+	var payload struct {
+		Catalogs []struct {
+			Name string `json:"name"`
+		} `json:"catalogs"`
+		Data []struct {
+			Name string `json:"name"`
+		} `json:"data"`
+	}
+	if err := json.Unmarshal(respBody, &payload); err != nil {
+		return nil, fmt.Errorf("parse catalogs response: %w", err)
+	}
+
+	names := make([]string, 0, len(payload.Catalogs)+len(payload.Data))
+	for _, item := range payload.Catalogs {
+		if item.Name != "" {
+			names = append(names, item.Name)
+		}
+	}
+	for _, item := range payload.Data {
+		if item.Name != "" {
+			names = append(names, item.Name)
+		}
+	}
+	return names, nil
+}
+
+func listSchemaNames(client *apiruntime.Client, catalogName string) ([]string, error) {
+	resp, err := client.Do("GET", "/catalogs/"+url.PathEscape(catalogName)+"/schemas", nil, nil)
+	if err != nil {
+		return nil, err
+	}
+	if err := apiruntime.CheckError(resp); err != nil {
+		return nil, err
+	}
+	respBody, err := apiruntime.ReadBody(resp)
+	if err != nil {
+		return nil, fmt.Errorf("read schemas response: %w", err)
+	}
+
+	var payload struct {
+		Data []struct {
+			Name string `json:"name"`
+		} `json:"data"`
+	}
+	if err := json.Unmarshal(respBody, &payload); err != nil {
+		return nil, fmt.Errorf("parse schemas response: %w", err)
+	}
+
+	names := make([]string, 0, len(payload.Data))
+	for _, item := range payload.Data {
+		if item.Name != "" {
+			names = append(names, item.Name)
+		}
+	}
+	return names, nil
+}
+
+type viewSearchItem struct {
+	Name    string  `json:"name"`
+	Comment *string `json:"comment"`
+}
+
+func listViews(client *apiruntime.Client, catalogName, schemaName string) ([]viewSearchItem, error) {
+	path := "/catalogs/" + url.PathEscape(catalogName) + "/schemas/" + url.PathEscape(schemaName) + "/views"
+	resp, err := client.Do("GET", path, nil, nil)
+	if err != nil {
+		return nil, err
+	}
+	if err := apiruntime.CheckError(resp); err != nil {
+		return nil, err
+	}
+	respBody, err := apiruntime.ReadBody(resp)
+	if err != nil {
+		return nil, fmt.Errorf("read views response: %w", err)
+	}
+
+	var payload struct {
+		Data []viewSearchItem `json:"data"`
+	}
+	if err := json.Unmarshal(respBody, &payload); err != nil {
+		return nil, fmt.Errorf("parse views response: %w", err)
+	}
+	return payload.Data, nil
+}
+
+func matchesViewQuery(view viewSearchItem, query string) (string, bool) {
+	if query == "" {
+		return "name", true
+	}
+	if strings.Contains(strings.ToLower(view.Name), query) {
+		return "name", true
+	}
+	if view.Comment != nil && strings.Contains(strings.ToLower(*view.Comment), query) {
+		return "comment", true
+	}
+	return "", false
 }

@@ -48,7 +48,7 @@ func TestDeclarativeInitCommand_WritesMinimalScaffold(t *testing.T) {
 
 	rootCmd := newRootCmd()
 	rootCmd.SetArgs([]string{
-		"declarative", "init",
+		"project", "init",
 		"--template", "minimal",
 		"--name", "sales",
 		"--workspace", "main",
@@ -75,7 +75,7 @@ func TestDeclarativeInitCommand_WritesAnalyticsScaffold(t *testing.T) {
 
 	rootCmd := newRootCmd()
 	rootCmd.SetArgs([]string{
-		"declarative", "init",
+		"project", "init",
 		"--template", "analytics",
 		"--name", "revenue",
 		"--workspace", "studio",
@@ -101,7 +101,7 @@ func TestDeclarativeInitCommand_RequiresForceToOverwrite(t *testing.T) {
 
 	rootCmd := newRootCmd()
 	rootCmd.SetArgs([]string{
-		"declarative", "init",
+		"project", "init",
 		"--name", "sales",
 		"--workspace", "main",
 		"--owner", "alice",
@@ -127,7 +127,7 @@ func TestDeclarativeInitCommand_JSONOutput(t *testing.T) {
 
 	rootCmd.SetArgs([]string{
 		"--output", "json",
-		"declarative", "init",
+		"project", "init",
 		"--template", "minimal",
 		"--name", "sales",
 		"--workspace", "main",

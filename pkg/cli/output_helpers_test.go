@@ -13,8 +13,9 @@ func TestValidateOutputFormat(t *testing.T) {
 		wantErr bool
 	}{
 		{name: "empty ok", output: "", wantErr: false},
-		{name: "table ok", output: "table", wantErr: false},
+		{name: "text ok", output: "text", wantErr: false},
 		{name: "json ok", output: "json", wantErr: false},
+		{name: "table rejected", output: "table", wantErr: true},
 		{name: "yaml rejected", output: "yaml", wantErr: true},
 	}
 

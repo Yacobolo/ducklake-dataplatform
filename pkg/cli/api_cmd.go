@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-	"strconv"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -17,66 +16,99 @@ import (
 	"github.com/Yacobolo/quackstack/pkg/cli/gen"
 )
 
-func jsonLiteralForField(fieldType, raw string) (string, error) {
-	switch strings.ToLower(fieldType) {
-	case "bool", "boolean":
-		value, err := strconv.ParseBool(raw)
-		if err != nil {
-			return "", fmt.Errorf("parse boolean value %q: %w", raw, err)
-		}
-		encoded, err := json.Marshal(value)
-		if err != nil {
-			return "", err
-		}
-		return string(encoded), nil
-	case "int", "int32", "int64", "integer":
-		value, err := strconv.ParseInt(raw, 10, 64)
-		if err != nil {
-			return "", fmt.Errorf("parse integer value %q: %w", raw, err)
-		}
-		encoded, err := json.Marshal(value)
-		if err != nil {
-			return "", err
-		}
-		return string(encoded), nil
-	case "float", "float32", "float64", "number":
-		value, err := strconv.ParseFloat(raw, 64)
-		if err != nil {
-			return "", fmt.Errorf("parse numeric value %q: %w", raw, err)
-		}
-		encoded, err := json.Marshal(value)
-		if err != nil {
-			return "", err
-		}
-		return string(encoded), nil
-	case "array", "object":
-		if !json.Valid([]byte(raw)) {
-			return "", fmt.Errorf("%s values must be valid JSON", fieldType)
-		}
-		return raw, nil
-	default:
-		encoded, err := json.Marshal(raw)
-		if err != nil {
-			return "", err
-		}
-		return string(encoded), nil
-	}
-}
-
 func newAPICmd(client *apiruntime.Client) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "api",
-		Short: "Explore the platform API endpoints",
-		Long: `Introspect the HTTP API surface. Discover endpoints, view parameters,
-and generate curl commands. Designed as the agent's "ripgrep" for the API.`,
+		Short: "Inspect and call the platform API",
+		Long: `Inspect the HTTP API surface and perform raw API requests.
+Use the introspection commands to understand the contract, and the verb
+commands as an escape hatch when no dedicated UX exists yet.`,
 	}
 
 	cmd.AddCommand(newAPIListCmd())
 	cmd.AddCommand(newAPISearchCmd())
 	cmd.AddCommand(newAPIDescribeCmd())
-	cmd.AddCommand(newAPICurlCmd())
 	cmd.AddCommand(newAPISpecCmd(client))
+	cmd.AddCommand(newAPIRawMethodCmd(client, http.MethodGet))
+	cmd.AddCommand(newAPIRawMethodCmd(client, http.MethodHead))
+	cmd.AddCommand(newAPIRawMethodCmd(client, http.MethodPost))
+	cmd.AddCommand(newAPIRawMethodCmd(client, http.MethodPut))
+	cmd.AddCommand(newAPIRawMethodCmd(client, http.MethodPatch))
+	cmd.AddCommand(newAPIRawMethodCmd(client, http.MethodDelete))
 
+	return cmd
+}
+
+func newAPIRawMethodCmd(client *apiruntime.Client, method string) *cobra.Command {
+	var jsonInput string
+
+	cmd := &cobra.Command{
+		Use:   strings.ToLower(method) + " <path>",
+		Short: "Perform " + method + " request",
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			path, query, err := normalizeRawAPIPath(args[0])
+			if err != nil {
+				return err
+			}
+
+			var body any
+			if strings.TrimSpace(jsonInput) != "" {
+				body, err = readRawJSONInput(jsonInput)
+				if err != nil {
+					return err
+				}
+			}
+
+			resp, err := client.Do(method, path, query, body)
+			if err != nil {
+				return err
+			}
+			if err := apiruntime.CheckError(resp); err != nil {
+				return err
+			}
+
+			if method == http.MethodHead || resp.StatusCode == http.StatusNoContent {
+				if getOutputFormat(cmd) == "json" {
+					return apiruntime.PrintJSON(os.Stdout, map[string]any{"status": "ok", "http_status": resp.StatusCode})
+				}
+				_, _ = fmt.Fprintf(os.Stdout, "HTTP %d\n", resp.StatusCode)
+				return nil
+			}
+
+			bodyBytes, err := apiruntime.ReadBody(resp)
+			if err != nil {
+				return fmt.Errorf("read response: %w", err)
+			}
+			if len(bodyBytes) == 0 {
+				if getOutputFormat(cmd) == "json" {
+					return apiruntime.PrintJSON(os.Stdout, map[string]any{"status": "ok", "http_status": resp.StatusCode})
+				}
+				_, _ = fmt.Fprintf(os.Stdout, "HTTP %d\n", resp.StatusCode)
+				return nil
+			}
+
+			var pretty any
+			if json.Unmarshal(bodyBytes, &pretty) == nil {
+				if getOutputFormat(cmd) == "json" {
+					return apiruntime.PrintJSON(os.Stdout, pretty)
+				}
+				if object, ok := pretty.(map[string]any); ok {
+					apiruntime.PrintDetail(os.Stdout, object)
+					return nil
+				}
+				return apiruntime.PrintJSON(os.Stdout, pretty)
+			}
+
+			if getOutputFormat(cmd) == "json" {
+				return apiruntime.PrintJSON(os.Stdout, map[string]string{"body": string(bodyBytes)})
+			}
+			_, _ = fmt.Fprintln(os.Stdout, string(bodyBytes))
+			return nil
+		},
+	}
+
+	cmd.Flags().StringVar(&jsonInput, "json", "", "Inline JSON string, @path/to/file.json, or - for stdin")
 	return cmd
 }
 
@@ -95,7 +127,7 @@ func newAPIListCmd() *cobra.Command {
 
 			if tag != "" {
 				lowerTag := strings.ToLower(tag)
-				var filtered []gen.APIGenEndpoint
+				var filtered []gen.ReferenceOperation
 				for _, ep := range endpoints {
 					for _, t := range ep.Tags {
 						if strings.ToLower(t) == lowerTag {
@@ -135,7 +167,7 @@ func newAPISearchCmd() *cobra.Command {
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			query := strings.ToLower(args[0])
-			var matches []gen.APIGenEndpoint
+			var matches []gen.ReferenceOperation
 
 			for _, ep := range allAPIEndpoints() {
 				// Search across path, summary, description, operation ID, and parameter names
@@ -177,7 +209,7 @@ func newAPIDescribeCmd() *cobra.Command {
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			opID := args[0]
-			var found *gen.APIGenEndpoint
+			var found *gen.ReferenceOperation
 			endpoints := allAPIEndpoints()
 			for i := range endpoints {
 				if endpoints[i].OperationID == opID {
@@ -272,122 +304,6 @@ func newAPIDescribeCmd() *cobra.Command {
 	}
 }
 
-func newAPICurlCmd() *cobra.Command {
-	var params []string
-
-	cmd := &cobra.Command{
-		Use:   "curl <operation-id>",
-		Short: "Generate a curl command for an API endpoint",
-		Long:  "Generates a ready-to-use curl command using the current authentication configuration.",
-		Example: `  quack api curl createSchema --param catalog_name=main --param name=analytics
-  quack api curl listSchemas --param catalog_name=main`,
-		Args: cobra.ExactArgs(1),
-		RunE: func(cmd *cobra.Command, args []string) error {
-			opID := args[0]
-			var found *gen.APIGenEndpoint
-			endpoints := allAPIEndpoints()
-			for i := range endpoints {
-				if endpoints[i].OperationID == opID {
-					found = &endpoints[i]
-					break
-				}
-			}
-			if found == nil {
-				return fmt.Errorf("operation %q not found", opID)
-			}
-
-			// Parse --param flags into a map
-			paramMap := map[string]string{}
-			for _, p := range params {
-				parts := strings.SplitN(p, "=", 2)
-				if len(parts) == 2 {
-					paramMap[parts[0]] = parts[1]
-				}
-			}
-
-			// Build URL with path parameter substitution
-			host, _ := cmd.Root().PersistentFlags().GetString("host")
-			path := found.Path
-			for _, p := range found.Parameters {
-				if p.In == "path" {
-					if v, ok := paramMap[p.Name]; ok {
-						path = strings.ReplaceAll(path, "{"+p.Name+"}", url.PathEscape(v))
-						delete(paramMap, p.Name)
-					}
-				}
-			}
-
-			// Build query string from remaining query params
-			var queryParts []string
-			for _, p := range found.Parameters {
-				if p.In == "query" {
-					if v, ok := paramMap[p.Name]; ok {
-						queryParts = append(queryParts, url.QueryEscape(p.Name)+"="+url.QueryEscape(v))
-						delete(paramMap, p.Name)
-					}
-				}
-			}
-
-			fullURL := host + "/v1" + path
-			if len(queryParts) > 0 {
-				fullURL += "?" + strings.Join(queryParts, "&")
-			}
-
-			// Build curl command
-			var curlParts []string
-			curlParts = append(curlParts, "curl")
-			curlParts = append(curlParts, "-X", found.Method)
-			curlParts = append(curlParts, fmt.Sprintf("'%s'", fullURL))
-
-			// Auth
-			token, _ := cmd.Root().PersistentFlags().GetString("token")
-			apiKey, _ := cmd.Root().PersistentFlags().GetString("api-key")
-			if token != "" {
-				curlParts = append(curlParts, "-H", fmt.Sprintf("'Authorization: Bearer %s'", token))
-			} else if apiKey != "" {
-				curlParts = append(curlParts, "-H", fmt.Sprintf("'X-API-Key: %s'", apiKey))
-			}
-
-			// Body from remaining params
-			if len(found.BodyFields) > 0 && len(paramMap) > 0 {
-				curlParts = append(curlParts, "-H", "'Content-Type: application/json'")
-				bodyParts := make([]string, 0, len(paramMap))
-				fieldByName := make(map[string]gen.APIGenField, len(found.BodyFields))
-				for _, field := range found.BodyFields {
-					fieldByName[field.Name] = field
-				}
-				for k, v := range paramMap {
-					field, ok := fieldByName[k]
-					if !ok {
-						continue
-					}
-					literal, err := jsonLiteralForField(field.Type, v)
-					if err != nil {
-						return err
-					}
-					bodyParts = append(bodyParts, fmt.Sprintf("%q:%s", k, literal))
-				}
-				curlParts = append(curlParts, "-d", fmt.Sprintf("'{%s}'", strings.Join(bodyParts, ",")))
-			}
-
-			result := strings.Join(curlParts, " \\\n  ")
-
-			if getOutputFormat(cmd) == "json" {
-				return apiruntime.PrintJSON(os.Stdout, map[string]string{
-					"curl": result,
-				})
-			}
-
-			_, _ = fmt.Fprintln(os.Stdout, result)
-			return nil
-		},
-	}
-
-	cmd.Flags().StringArrayVar(&params, "param", nil, "Parameter values (key=value, repeatable)")
-
-	return cmd
-}
-
 func newAPISpecCmd(client *apiruntime.Client) *cobra.Command {
 	var (
 		format string
@@ -429,85 +345,17 @@ func newAPISpecCmd(client *apiruntime.Client) *cobra.Command {
 	return cmd
 }
 
-func allAPIEndpoints() []gen.APIGenEndpoint {
-	combined := make([]gen.APIGenEndpoint, 0, len(gen.APIGeneratedEndpoints))
-	seen := make(map[string]struct{}, len(gen.APIGeneratedEndpoints))
-	for _, generated := range gen.APIGeneratedEndpoints {
+func allAPIEndpoints() []gen.ReferenceOperation {
+	combined := make([]gen.ReferenceOperation, 0, len(gen.CLIReferenceIndex.Operations))
+	seen := make(map[string]struct{}, len(gen.CLIReferenceIndex.Operations))
+	for _, generated := range gen.CLIReferenceIndex.Operations {
 		if _, ok := seen[generated.OperationID]; ok {
 			continue
 		}
 		seen[generated.OperationID] = struct{}{}
-		combined = append(combined, applyEndpointOverrides(generated))
+		combined = append(combined, generated)
 	}
 	return combined
-}
-
-func applyEndpointOverrides(endpoint gen.APIGenEndpoint) gen.APIGenEndpoint {
-	switch endpoint.OperationID {
-	case "listAuditLogs":
-		endpoint.CLICommand = "audit entries list"
-	case "listCatalogs":
-		endpoint.CLICommand = "catalog registrations list"
-	case "registerCatalog":
-		endpoint.CLICommand = "catalog registrations create"
-	case "deleteCatalogRegistration":
-		endpoint.CLICommand = "catalog registrations delete"
-	case "getCatalog":
-		endpoint.CLICommand = "catalog registrations get"
-	case "updateCatalogRegistration":
-		endpoint.CLICommand = "catalog registrations update"
-	case "setDefaultCatalog":
-		endpoint.CLICommand = "catalog registrations set-default"
-	case "getMetastoreSummary":
-		endpoint.CLICommand = "catalog metastore summary"
-	case "createManifest":
-		endpoint.CLICommand = "catalog tables manifest get"
-	case "searchCatalog":
-		endpoint.CLICommand = "catalog search"
-	case "listDashboards":
-		endpoint.CLICommand = "dashboards list"
-	case "createDashboard":
-		endpoint.CLICommand = "dashboards create"
-	case "getDashboard":
-		endpoint.CLICommand = "dashboards get"
-	case "getRenderedDashboard":
-		endpoint.CLICommand = "dashboards get-rendered"
-	case "updateDashboard":
-		endpoint.CLICommand = "dashboards update"
-	case "deleteDashboard":
-		endpoint.CLICommand = "dashboards delete"
-	case "createDashboardWidget":
-		endpoint.CLICommand = "dashboards widgets create"
-	case "updateDashboardWidget":
-		endpoint.CLICommand = "dashboards widgets update"
-	case "deleteDashboardWidget":
-		endpoint.CLICommand = "dashboards widgets delete"
-	case "getAssetFreshness":
-		endpoint.CLICommand = "assets freshness get"
-	case "explainAssetFreshness":
-		endpoint.CLICommand = "assets freshness explain"
-	case "listAssetFreshnessRequirements":
-		endpoint.CLICommand = "assets freshness requirements"
-	case "listAssetFreshnessBlockers":
-		endpoint.CLICommand = "assets freshness blockers"
-	case "reconcileAssetFreshness":
-		endpoint.CLICommand = "assets freshness reconcile"
-	case "listQueryHistory":
-		endpoint.CLICommand = "query history list"
-	case "listRecentResources":
-		endpoint.CLICommand = "me recent-resources list"
-	case "listSavedResources":
-		endpoint.CLICommand = "me saved-resources list"
-	case "createSavedResource":
-		endpoint.CLICommand = "me saved-resources create"
-	case "deleteSavedResource":
-		endpoint.CLICommand = "me saved-resources delete"
-	case "createTagAssignment":
-		endpoint.CLICommand = "governance tags assignments create"
-	case "deleteTagAssignment":
-		endpoint.CLICommand = "governance tags assignments delete"
-	}
-	return endpoint
 }
 
 func apiContentTypes(operationID string) []string {
@@ -553,4 +401,48 @@ func loadAPISpecBytes(client *apiruntime.Client, source string) ([]byte, error) 
 	default:
 		return nil, fmt.Errorf("unsupported spec source %q", source)
 	}
+}
+
+func normalizeRawAPIPath(input string) (string, url.Values, error) {
+	trimmed := strings.TrimSpace(input)
+	if trimmed == "" {
+		return "", nil, fmt.Errorf("path is required")
+	}
+	if !strings.HasPrefix(trimmed, "/") {
+		trimmed = "/" + trimmed
+	}
+	if strings.HasPrefix(trimmed, "/v1/") {
+		trimmed = strings.TrimPrefix(trimmed, "/v1")
+	}
+	parsed, err := url.Parse(trimmed)
+	if err != nil {
+		return "", nil, fmt.Errorf("parse path %q: %w", input, err)
+	}
+	return parsed.Path, parsed.Query(), nil
+}
+
+func readRawJSONInput(jsonInput string) (any, error) {
+	var raw any
+	jsonData := jsonInput
+
+	switch {
+	case jsonInput == "-":
+		data, err := os.ReadFile("/dev/stdin")
+		if err != nil {
+			return nil, fmt.Errorf("read stdin: %w", err)
+		}
+		jsonData = string(data)
+	case strings.HasPrefix(jsonInput, "@"):
+		data, err := os.ReadFile(jsonInput[1:])
+		if err != nil {
+			return nil, fmt.Errorf("read file: %w", err)
+		}
+		jsonData = string(data)
+	}
+
+	if err := json.Unmarshal([]byte(jsonData), &raw); err != nil {
+		return nil, fmt.Errorf("parse JSON input: %w", err)
+	}
+
+	return raw, nil
 }

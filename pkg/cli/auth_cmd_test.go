@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -11,7 +13,43 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestAuthTokenCmd(t *testing.T) {
+func TestCLI_AuthProfilesList_JSONMasksSecrets(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("HOME", dir)
+	t.Setenv("QUACK_CONFIG_FILE", filepath.Join(dir, "quack.yaml"))
+
+	require.NoError(t, SaveUserConfig(&UserConfig{
+		CurrentProfile: "default",
+		Profiles: map[string]Profile{
+			"default": {
+				Host:   "http://localhost:8080",
+				Token:  "super-secret-token",
+				APIKey: "super-secret-key",
+			},
+		},
+	}))
+
+	rootCmd := newRootCmd()
+	rootCmd.SetArgs([]string{"--output", "json", "auth", "profiles", "list"})
+
+	restore := captureStdout(t)
+	err := rootCmd.Execute()
+	output := restore()
+	require.NoError(t, err)
+
+	var payload struct {
+		CurrentProfile string             `json:"CurrentProfile"`
+		Profiles       map[string]Profile `json:"Profiles"`
+	}
+	require.NoError(t, json.Unmarshal([]byte(output), &payload))
+	require.Contains(t, payload.Profiles, "default")
+	assert.Equal(t, "supe****oken", payload.Profiles["default"].Token)
+	assert.Equal(t, "supe****-key", payload.Profiles["default"].APIKey)
+	assert.NotContains(t, output, "super-secret-token")
+	assert.NotContains(t, output, "super-secret-key")
+}
+
+func TestAuthDevTokenCmd(t *testing.T) {
 	tests := []struct {
 		name       string
 		args       []string
@@ -56,7 +94,7 @@ func TestAuthTokenCmd(t *testing.T) {
 			dir := t.TempDir()
 			t.Setenv("HOME", dir)
 
-			cmd := newAuthTokenCmd()
+			cmd := newAuthDevTokenCmd()
 			cmd.SetArgs(tt.args)
 
 			err := cmd.Execute()
@@ -105,7 +143,7 @@ func TestAuthTokenCmd(t *testing.T) {
 	}
 }
 
-func TestAuthTokenCmd_SaveToExistingProfile(t *testing.T) {
+func TestAuthDevTokenCmd_SaveToExistingProfile(t *testing.T) {
 	dir := t.TempDir()
 	t.Setenv("HOME", dir)
 
@@ -123,7 +161,7 @@ func TestAuthTokenCmd_SaveToExistingProfile(t *testing.T) {
 	require.NoError(t, err)
 
 	// Generate a token — should save to the "dev" profile
-	cmd := newAuthTokenCmd()
+	cmd := newAuthDevTokenCmd()
 	cmd.SetArgs([]string{"--principal", "admin_user", "--secret", "my-secret"})
 	err = cmd.Execute()
 	require.NoError(t, err)
@@ -147,7 +185,7 @@ func TestAuthTokenCmd_SaveToExistingProfile(t *testing.T) {
 	assert.Equal(t, "admin_user", claims["sub"])
 }
 
-func TestCLI_AuthLocalLoginCommand(t *testing.T) {
+func TestCLI_AuthLoginCommand(t *testing.T) {
 	rec := &requestRecorder{}
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		rec.record(r)
@@ -157,7 +195,7 @@ func TestCLI_AuthLocalLoginCommand(t *testing.T) {
 	defer srv.Close()
 
 	rootCmd := newTestRootCmd(t, srv)
-	rootCmd.SetArgs([]string{"--host", srv.URL, "auth", "local-login", "--username", "admin", "--password", "super-secure-password"})
+	rootCmd.SetArgs([]string{"--host", srv.URL, "auth", "login", "--username", "admin", "--password", "super-secure-password"})
 	require.NoError(t, rootCmd.Execute())
 
 	captured := rec.last()
@@ -173,7 +211,7 @@ func TestCLI_AuthLocalLoginCommand(t *testing.T) {
 	assert.Equal(t, "local-token", cfg.Profiles[cfg.CurrentProfile].Token)
 }
 
-func TestCLI_AuthLocalLogin_PersistsSelectedProfileAndHost(t *testing.T) {
+func TestCLI_AuthLogin_PersistsSelectedProfileAndHost(t *testing.T) {
 	rec := &requestRecorder{}
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		rec.record(r)
@@ -193,7 +231,7 @@ func TestCLI_AuthLocalLogin_PersistsSelectedProfileAndHost(t *testing.T) {
 	}))
 
 	rootCmd := newRootCmd()
-	rootCmd.SetArgs([]string{"--host", srv.URL, "--profile", "staging", "auth", "local-login", "--username", "admin", "--password", "super-secure-password"})
+	rootCmd.SetArgs([]string{"--host", srv.URL, "--profile", "staging", "auth", "login", "--username", "admin", "--password", "super-secure-password"})
 	require.NoError(t, rootCmd.Execute())
 
 	cfg, err := LoadUserConfig()
@@ -314,4 +352,123 @@ func TestCLI_AuthProviderOIDCCommands(t *testing.T) {
 		require.NoError(t, json.Unmarshal([]byte(captured.Body), &body))
 		assert.Equal(t, false, body["enabled"])
 	})
+}
+
+func TestCLI_AuthWhoAmI_ReportsPrincipalAndSession(t *testing.T) {
+	rec := &requestRecorder{}
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		rec.record(r)
+		w.Header().Set("Content-Type", "application/json")
+		if r.URL.Path == "/v1/catalogs" {
+			_, _ = w.Write([]byte(`{"data":[]}`))
+			return
+		}
+		http.NotFound(w, r)
+	}))
+	defer srv.Close()
+
+	dir := t.TempDir()
+	t.Setenv("HOME", dir)
+
+	rootCmd := newRootCmd()
+	rootCmd.SetArgs([]string{
+		"--output", "json",
+		"--host", srv.URL,
+		"auth", "dev-token",
+		"--principal", "alice",
+		"--secret", "test-secret",
+	})
+	require.NoError(t, rootCmd.Execute())
+
+	rootCmd = newRootCmd()
+	rootCmd.SetArgs([]string{"--output", "json", "--host", srv.URL, "auth", "whoami"})
+	restore := captureStdout(t)
+	err := rootCmd.Execute()
+	output := restore()
+	require.NoError(t, err)
+
+	var payload map[string]any
+	require.NoError(t, json.Unmarshal([]byte(output), &payload))
+	assert.Equal(t, "alice", payload["principal"])
+	assert.Equal(t, "token-subject", payload["principal_source"])
+	assert.Equal(t, true, payload["session_valid"])
+	assert.Equal(t, "token", payload["auth_type"])
+}
+
+func TestCLI_AuthWhoAmI_DegradesOnValidationFailure(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusUnauthorized)
+		_, _ = w.Write([]byte(`{"code":401,"message":"unauthorized"}`))
+	}))
+	defer srv.Close()
+
+	dir := t.TempDir()
+	t.Setenv("HOME", dir)
+
+	rootCmd := newRootCmd()
+	rootCmd.SetArgs([]string{
+		"--host", srv.URL,
+		"auth", "dev-token",
+		"--principal", "alice",
+		"--secret", "test-secret",
+	})
+	require.NoError(t, rootCmd.Execute())
+
+	rootCmd = newRootCmd()
+	rootCmd.SetArgs([]string{"--output", "json", "--host", srv.URL, "auth", "whoami"})
+	restore := captureStdout(t)
+	err := rootCmd.Execute()
+	output := restore()
+	require.NoError(t, err)
+
+	var payload map[string]any
+	require.NoError(t, json.Unmarshal([]byte(output), &payload))
+	assert.Equal(t, false, payload["session_valid"])
+	assert.Contains(t, payload["validation_error"], "401")
+	assert.Equal(t, "alice", payload["principal"])
+}
+
+func TestCLI_AuthProfilesValidate_UsesConfigFileOverride(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"data":[]}`))
+	}))
+	defer srv.Close()
+
+	configDir := t.TempDir()
+	configPath := filepath.Join(configDir, "custom-config.yaml")
+	t.Setenv("QUACK_CONFIG_FILE", configPath)
+	t.Setenv("HOME", t.TempDir())
+
+	cfg := &UserConfig{
+		CurrentProfile: "custom",
+		Profiles: map[string]Profile{
+			"custom": {
+				Host:  srv.URL,
+				Token: "token-123",
+			},
+		},
+	}
+	require.NoError(t, SaveUserConfig(cfg))
+	_, err := os.Stat(configPath)
+	require.NoError(t, err)
+
+	rootCmd := newRootCmd()
+	rootCmd.SetArgs([]string{"--output", "json", "auth", "profiles", "validate"})
+	restore := captureStdout(t)
+	err = rootCmd.Execute()
+	output := restore()
+	require.NoError(t, err)
+
+	var payload map[string]any
+	require.NoError(t, json.Unmarshal([]byte(output), &payload))
+	assert.Equal(t, configPath, payload["config_path"])
+	profiles, ok := payload["profiles"].([]any)
+	require.True(t, ok)
+	require.Len(t, profiles, 1)
+	profile, ok := profiles[0].(map[string]any)
+	require.True(t, ok)
+	assert.Equal(t, "custom", profile["name"])
+	assert.Equal(t, true, profile["valid"])
 }

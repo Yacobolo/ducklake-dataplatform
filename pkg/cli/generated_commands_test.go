@@ -16,7 +16,7 @@ func TestBuildGeneratedCommandSpecsFromEndpoints_DetectsDuplicateCommands(t *tes
 	t.Helper()
 
 	root := &cobra.Command{Use: "quack"}
-	err := cobraruntime.AddGeneratedCommands(root, nil, generatedRuntimeEndpoints([]gen.APIGenEndpoint{
+	err := cobraruntime.AddGeneratedCommands(root, nil, generatedRuntimeEndpoints([]gen.ReferenceOperation{
 		{OperationID: "listSchemas", CLICommand: "catalog schemas list", Path: "/catalogs/{catalog_name}/schemas"},
 		{OperationID: "listTables", CLICommand: "catalog schemas list", Path: "/catalogs/{catalog_name}/schemas/{schema_name}/tables"},
 	}))
@@ -31,7 +31,7 @@ func TestBuildGeneratedCommandSpecsFromEndpoints_PromotesSingleSegmentRoots(t *t
 	t.Helper()
 
 	root := &cobra.Command{Use: "quack"}
-	err := cobraruntime.AddGeneratedCommands(root, nil, generatedRuntimeEndpoints([]gen.APIGenEndpoint{
+	err := cobraruntime.AddGeneratedCommands(root, nil, generatedRuntimeEndpoints([]gen.ReferenceOperation{
 		{OperationID: "executeQuery", CLICommand: "query", Path: "/query-executions"},
 		{OperationID: "submitQuery", CLICommand: "query submit", Path: "/queries"},
 	}))

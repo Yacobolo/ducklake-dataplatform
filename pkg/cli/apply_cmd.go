@@ -18,6 +18,7 @@ func newApplyCmd(client *apiruntime.Client) *cobra.Command {
 		autoApprove        bool
 		noColor            bool
 		allowUnknownFields bool
+		loadFlags          declarativeLoadFlags
 	)
 
 	cmd := &cobra.Command{
@@ -28,31 +29,26 @@ func newApplyCmd(client *apiruntime.Client) *cobra.Command {
 			isJSON := getOutputFormat(cmd) == "json"
 
 			// 1. Load desired state from the CUE config tree.
-			desired, err := declarative.LoadDirectoryWithOptions(configDir, declarative.LoadOptions{
-				AllowUnknownFields: allowUnknownFields,
-			})
+			loadOptions, err := loadFlags.loadOptions(allowUnknownFields)
+			if err != nil {
+				return err
+			}
+			desired, err := declarative.LoadDirectoryWithOptions(configDir, loadOptions)
 			if err != nil {
 				return fmt.Errorf("load config: %w", err)
 			}
 
 			// 2. Validate the desired state.
 			if validationErrs := declarative.Validate(desired); len(validationErrs) > 0 {
-				if isJSON {
-					errMsgs := make([]string, len(validationErrs))
-					for i, ve := range validationErrs {
-						errMsgs[i] = ve.Error()
-					}
-					_ = apiruntime.PrintJSON(os.Stdout, map[string]interface{}{
-						"status": "error",
-						"errors": errMsgs,
-					})
-					os.Exit(1)
+				errMsgs := make([]string, len(validationErrs))
+				for i, ve := range validationErrs {
+					errMsgs[i] = ve.Error()
 				}
-				fmt.Fprintf(os.Stderr, "Configuration has %d validation error(s):\n", len(validationErrs))
-				for _, ve := range validationErrs {
-					fmt.Fprintf(os.Stderr, "  - %s\n", ve.Error())
+				return &CLIError{
+					Code:        1,
+					Message:     fmt.Sprintf("configuration has %d validation error(s): %s", len(validationErrs), strings.Join(errMsgs, "; ")),
+					JSONPayload: map[string]interface{}{"status": "error", "errors": errMsgs},
 				}
-				os.Exit(1)
 			}
 
 			// 3. Read current state from server.
@@ -84,17 +80,14 @@ func newApplyCmd(client *apiruntime.Client) *cobra.Command {
 			}
 
 			if len(plan.Errors) > 0 {
-				if isJSON {
-					if err := apiruntime.PrintJSON(os.Stdout, map[string]interface{}{
-						"status": "error",
-						"errors": planErrorMessages(plan),
-					}); err != nil {
-						return err
-					}
-				} else {
+				payload := map[string]interface{}{
+					"status": "error",
+					"errors": planErrorMessages(plan),
+				}
+				if !isJSON {
 					declarative.FormatText(os.Stdout, plan, noColor)
 				}
-				os.Exit(1)
+				return &CLIError{Code: 1, JSONPayload: payload}
 			}
 
 			// 5. Show the plan (text mode only).
@@ -203,7 +196,10 @@ func newApplyCmd(client *apiruntime.Client) *cobra.Command {
 				_, _ = fmt.Fprintf(os.Stdout, "\nApply complete: %d succeeded, %d failed.\n", succeeded, failed)
 			}
 			if failed > 0 {
-				os.Exit(1)
+				return &CLIError{
+					Code:        1,
+					JSONPayload: map[string]interface{}{"status": "partial", "changes": true, "succeeded": succeeded, "failed": failed, "actions": results},
+				}
 			}
 
 			return nil
@@ -214,6 +210,7 @@ func newApplyCmd(client *apiruntime.Client) *cobra.Command {
 	cmd.Flags().BoolVar(&autoApprove, "auto-approve", false, "Skip interactive confirmation prompt")
 	cmd.Flags().BoolVar(&noColor, "no-color", false, "Disable colored output")
 	cmd.Flags().BoolVar(&allowUnknownFields, "allow-unknown-fields", false, "Deprecated no-op retained for compatibility with existing CLI wiring")
+	addDeclarativeLoadFlags(cmd, &loadFlags)
 
 	return cmd
 }

@@ -131,7 +131,7 @@ tasks:
           done
           curl --silent --show-error "${host}/v1/healthz" >/dev/null
 
-          "${quack_bin}" config set-profile --name "${profile}" --host "${host}" >/dev/null
+          "${quack_bin}" auth profiles save --name "${profile}" --host "${host}" >/dev/null
 
           echo "Bootstrapping local admin profile ${profile}"
           "${quack_bin}" --host "${host}" --profile "${profile}" auth bootstrap complete \
@@ -363,7 +363,18 @@ tasks:
     desc: Build the CLI binary
     deps: [docs:generate]
     cmds:
-      - go build -ldflags "-X main.version={{.GIT_TAG}}" -o bin/quack ./cmd/cli
+      - |
+        git_tag="$(git describe --tags --always --dirty 2>/dev/null || echo dev)"
+        git_commit="$(git rev-parse --short HEAD 2>/dev/null || echo none)"
+        git_branch="$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo unknown)"
+        build_time="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+        go build -ldflags "\
+          -X github.com/Yacobolo/quackstack/pkg/cli.version=${git_tag} \
+          -X github.com/Yacobolo/quackstack/pkg/cli.commit=${git_commit} \
+          -X github.com/Yacobolo/quackstack/pkg/cli.branch=${git_branch} \
+          -X github.com/Yacobolo/quackstack/pkg/cli.tag=${git_tag} \
+          -X github.com/Yacobolo/quackstack/pkg/cli.buildTime=${build_time}" \
+          -o bin/quack ./cmd/cli
 
   build-agent:
     desc: Build the compute agent binary

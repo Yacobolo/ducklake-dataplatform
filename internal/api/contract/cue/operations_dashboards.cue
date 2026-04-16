@@ -59,6 +59,7 @@ package api
 		op:           "listDashboards"
 		path:         "/dashboards"
 		summary:      "List dashboards"
+		cli:          "dashboards list"
 		returns:      "PaginatedDashboards"
 		error_family: "standard"
 		params:       #listDashboardParameters
@@ -69,6 +70,7 @@ package api
 		op:             "createDashboard"
 		path:           "/dashboards"
 		summary:        "Create dashboard"
+		cli:            "dashboards create"
 		returns:        "Dashboard"
 		success_status: 201
 		error_family:   "mutating"
@@ -81,6 +83,7 @@ package api
 		op:           "getDashboard"
 		path:         "/dashboards/{dashboard_id}"
 		summary:      "Get dashboard"
+		cli:          "dashboards get"
 		returns:      "DashboardDetail"
 		error_family: "resource"
 		params:       #dashboardPathParameters
@@ -91,6 +94,7 @@ package api
 		op:           "getRenderedDashboard"
 		path:         "/dashboards/{dashboard_id}/rendered"
 		summary:      "Get rendered dashboard"
+		cli:          "dashboards get-rendered"
 		returns:      "ResolvedDashboardDetail"
 		error_family: "resource"
 		params:       #renderedDashboardParameters
@@ -101,6 +105,7 @@ package api
 		op:           "updateDashboard"
 		path:         "/dashboards/{dashboard_id}"
 		summary:      "Update dashboard"
+		cli:          "dashboards update"
 		returns:      "Dashboard"
 		error_family: "mutating"
 		params:       #dashboardPathParameters
@@ -113,6 +118,7 @@ package api
 		op:           "deleteDashboard"
 		path:         "/dashboards/{dashboard_id}"
 		summary:      "Delete dashboard"
+		cli:          "dashboards delete"
 		error_family: "mutating"
 		params:       #dashboardPathParameters
 	},
@@ -132,6 +138,7 @@ package api
 		op:             "createDashboardWidget"
 		path:           "/dashboards/{dashboard_id}/widgets"
 		summary:        "Create dashboard widget"
+		cli:            "dashboards widgets create"
 		returns:        "DashboardWidget"
 		success_status: 201
 		error_family:   "mutating"
@@ -155,6 +162,7 @@ package api
 		op:           "updateDashboardWidget"
 		path:         "/dashboards/{dashboard_id}/widgets/{widget_id}"
 		summary:      "Update dashboard widget"
+		cli:          "dashboards widgets update"
 		returns:      "DashboardWidget"
 		error_family: "mutating"
 		params:       #dashboardWidgetPathParameters
@@ -167,6 +175,7 @@ package api
 		op:           "deleteDashboardWidget"
 		path:         "/dashboards/{dashboard_id}/widgets/{widget_id}"
 		summary:      "Delete dashboard widget"
+		cli:          "dashboards widgets delete"
 		error_family: "mutating"
 		params:       #dashboardWidgetPathParameters
 	},

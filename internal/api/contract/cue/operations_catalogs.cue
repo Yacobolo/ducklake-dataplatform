@@ -231,7 +231,7 @@ package api
 		op:           "searchCatalog"
 		path:         #catalogsPath + "/search"
 		summary:      "Search catalog"
-		cli:          "governance search"
+		cli:          "catalog search"
 		returns:      "PaginatedSearchResults"
 		error_family: "standard"
 		params:       #searchCatalogParameters
@@ -242,7 +242,7 @@ package api
 		op:              "registerCatalog"
 		path:            #catalogsPath
 		summary:         "Register catalog"
-		cli:             "catalog register"
+		cli:             "catalog registrations create"
 		returns:         "CatalogRegistration"
 		success_status:  201
 		error_family:    "mutating"
@@ -256,7 +256,7 @@ package api
 		path:         #catalogsPath
 		summary:      "List catalog registrations"
 		description:  "Lists registered catalogs and returns a paginated catalog registration view for management clients."
-		cli:          "catalog list-registrations"
+		cli:          "catalog registrations list"
 		returns:      "CatalogRegistrationList"
 		error_family: "guarded_read"
 		params:       #listCatalogsParameters
@@ -269,7 +269,7 @@ package api
 		op:           "getCatalog"
 		path:         #catalogsPath + "/{catalog_name}"
 		summary:      "Get catalog"
-		cli:          "catalog info"
+		cli:          "catalog registrations get"
 		returns:      "CatalogRegistration"
 		error_family: "resource"
 		params:       #catalogPathParameters
@@ -280,7 +280,7 @@ package api
 		op:              "updateCatalogRegistration"
 		path:            #catalogsPath + "/{catalog_name}"
 		summary:         "Update catalog registration"
-		cli:             "catalog update-registration"
+		cli:             "catalog registrations update"
 		returns:         "CatalogRegistration"
 		error_family:    "resource"
 		params:          #catalogPathParameters
@@ -293,7 +293,7 @@ package api
 		op:           "deleteCatalogRegistration"
 		path:         #catalogsPath + "/{catalog_name}"
 		summary:      "Delete catalog registration"
-		cli:          "catalog delete-registration"
+		cli:          "catalog registrations delete"
 		error_family: "resource"
 		params:       #catalogPathParameters
 	},
@@ -303,7 +303,7 @@ package api
 		op:              "setDefaultCatalog"
 		path:            #catalogsPath + "/{catalog_name}/default"
 		summary:         "Set default catalog"
-		cli:             "catalog set-default"
+		cli:             "catalog registrations set-default"
 		returns:         "CatalogRegistration"
 		error_family:    "mutating"
 		params:          #catalogPathParameters
@@ -316,7 +316,7 @@ package api
 		op:           "getMetastoreSummary"
 		path:         #catalogsPath + "/{catalog_name}/metastore/summary"
 		summary:      "Get metastore summary"
-		cli:          "observability metastore summary"
+		cli:          "catalog metastore summary"
 		returns:      "MetastoreSummary"
 		error_family: "resource"
 		params:       #catalogPathParameters
@@ -516,7 +516,7 @@ package api
 		op:           "createManifest"
 		path:         #catalogsPath + "/{catalog_name}/schemas/{schema_name}/tables/{table_name}/manifest"
 		summary:      "Get table manifest"
-		cli:          "manifest create"
+		cli:          "catalog tables manifest get"
 		returns:      "ManifestResponse"
 		error_family: "resource"
 		params:       #catalogSchemaTablePathParameters

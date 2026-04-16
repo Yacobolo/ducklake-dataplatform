@@ -3,6 +3,7 @@ package cli
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/spf13/cobra"
 
@@ -16,6 +17,7 @@ func newPlanCmd(client *apiruntime.Client) *cobra.Command {
 		output             string
 		noColor            bool
 		allowUnknownFields bool
+		loadFlags          declarativeLoadFlags
 	)
 
 	cmd := &cobra.Command{
@@ -33,20 +35,26 @@ func newPlanCmd(client *apiruntime.Client) *cobra.Command {
 			}
 
 			// 1. Load desired state from the CUE config tree.
-			desired, err := declarative.LoadDirectoryWithOptions(configDir, declarative.LoadOptions{
-				AllowUnknownFields: allowUnknownFields,
-			})
+			loadOptions, err := loadFlags.loadOptions(allowUnknownFields)
+			if err != nil {
+				return err
+			}
+			desired, err := declarative.LoadDirectoryWithOptions(configDir, loadOptions)
 			if err != nil {
 				return fmt.Errorf("load config: %w", err)
 			}
 
 			// 2. Validate the desired state.
 			if validationErrs := declarative.Validate(desired); len(validationErrs) > 0 {
-				fmt.Fprintf(os.Stderr, "Configuration has %d validation error(s):\n", len(validationErrs))
+				errMsgs := make([]string, 0, len(validationErrs))
 				for _, ve := range validationErrs {
-					fmt.Fprintf(os.Stderr, "  - %s\n", ve.Error())
+					errMsgs = append(errMsgs, ve.Error())
 				}
-				os.Exit(1)
+				return &CLIError{
+					Code:        1,
+					Message:     fmt.Sprintf("configuration has %d validation error(s): %s", len(validationErrs), strings.Join(errMsgs, "; ")),
+					JSONPayload: map[string]any{"valid": false, "errors": errMsgs},
+				}
 			}
 
 			// 3. Read current state from server.
@@ -76,9 +84,12 @@ func newPlanCmd(client *apiruntime.Client) *cobra.Command {
 
 			switch planExitCode(plan) {
 			case 1:
-				os.Exit(1)
+				return &CLIError{
+					Code:        1,
+					JSONPayload: map[string]any{"status": "error", "errors": planErrorMessages(plan)},
+				}
 			case 2:
-				os.Exit(2)
+				return &CLIError{Code: 2}
 			}
 
 			return nil
@@ -89,6 +100,7 @@ func newPlanCmd(client *apiruntime.Client) *cobra.Command {
 	cmd.Flags().StringVarP(&output, "output", "o", "text", "Output format (text, json)")
 	cmd.Flags().BoolVar(&noColor, "no-color", false, "Disable colored output")
 	cmd.Flags().BoolVar(&allowUnknownFields, "allow-unknown-fields", false, "Deprecated no-op retained for compatibility with existing CLI wiring")
+	addDeclarativeLoadFlags(cmd, &loadFlags)
 
 	return cmd
 }
