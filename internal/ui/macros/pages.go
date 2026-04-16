@@ -1,6 +1,7 @@
 package macros
 
 import (
+	"net/url"
 	"strconv"
 	"strings"
 
@@ -14,6 +15,7 @@ import (
 type macrosListRowData struct {
 	Name       string
 	URL        string
+	Project    string
 	Type       string
 	Visibility string
 	Status     string
@@ -29,6 +31,7 @@ type macroRevisionRowData struct {
 type macroDetailPageData struct {
 	Principal     domain.ContextPrincipal
 	Name          string
+	Project       string
 	Type          string
 	Visibility    string
 	Status        string
@@ -65,7 +68,7 @@ type macroImpactPageData struct {
 	Rows      []macroImpactRowData
 }
 
-func macrosListPage(principal domain.ContextPrincipal, rows []macrosListRowData, page domain.PageRequest, total int64) Node {
+func macrosListPage(principal domain.ContextPrincipal, rows []macrosListRowData, page domain.PageRequest, total int64, projectName string) Node {
 	table := Node(P(Class("text-xs text-[var(--fgColor-muted)]"), Text("No macros yet.")))
 	if len(rows) > 0 {
 		tableRows := make([]Node, 0, len(rows))
@@ -76,6 +79,7 @@ func macrosListPage(principal domain.ContextPrincipal, rows []macrosListRowData,
 					core.IconChip("braces", "bg-[var(--display-orange-scale-0)] text-[var(--display-orange-scale-6)]"),
 					A(Href(row.URL), Class("font-mono text-[13px] font-semibold text-[var(--fgColor-accent)] no-underline visited:text-[var(--fgColor-accent)] hover:text-[var(--fgColor-accent)] hover:underline active:text-[var(--fgColor-accent)]"), Text(row.Name)),
 				),
+				Td(core.TableMetaText(emptyDash(row.Project))),
 				Td(statusPill(row.Type, "accent")),
 				Td(core.TableMetaText(row.Visibility)),
 				Td(statusPill(row.Status, "neutral")),
@@ -83,18 +87,28 @@ func macrosListPage(principal domain.ContextPrincipal, rows []macrosListRowData,
 		}
 		table = core.TableContainer("",
 			core.DataTable("",
-				THead(Tr(Th(Scope("col"), Text("Name")), Th(Scope("col"), Text("Type")), Th(Scope("col"), Text("Visibility")), Th(Scope("col"), Text("Status")))),
+				THead(Tr(Th(Scope("col"), Text("Name")), Th(Scope("col"), Text("Project")), Th(Scope("col"), Text("Type")), Th(Scope("col"), Text("Visibility")), Th(Scope("col"), Text("Status")))),
 				TBody(Group(tableRows)),
 			),
 		)
 	}
+	title := "Macros"
+	description := "Create and manage reusable SQL and transformation helpers."
+	basePath := "/ui/macros"
+	newHref := "/ui/macros/new"
+	if strings.TrimSpace(projectName) != "" {
+		title = "Macros: " + projectName
+		description = "Project-scoped macros for " + projectName + "."
+		basePath = "/ui/macros?project=" + url.QueryEscape(projectName)
+		newHref = "/ui/macros/new?project=" + url.QueryEscape(projectName)
+	}
 
 	return core.AppPage("Macros", "macros", principal,
 		core.ListPageLayout(
-			core.ListPageHeader("Macros", "Create and manage reusable SQL and transformation helpers.", core.PrimaryLink("/ui/macros/new", "", Text("New macro"))),
+			core.ListPageHeader(title, description, core.PrimaryLink(newHref, "", Text("New macro"))),
 			core.ListPageBody(
 				table,
-				core.ListPagination("/ui/macros", page, total),
+				core.ListPagination(basePath, page, total),
 			),
 		),
 	)
@@ -134,6 +148,7 @@ func macroDetailPage(d macroDetailPageData) Node {
 				core.DetailHeroMeta(
 					core.BadgeRow(statusPill(d.Type, "accent"), statusPill(d.Status, "neutral")),
 					core.DetailSummaryList([][2]string{
+						{"Project", emptyDash(d.Project)},
 						{"Visibility", d.Visibility},
 						{"Owner", emptyDash(d.Owner)},
 					}),
@@ -172,10 +187,12 @@ func macroDetailPage(d macroDetailPageData) Node {
 	)
 }
 
-func macrosNewPage(principal domain.ContextPrincipal, csrfFieldProvider func() Node) Node {
+func macrosNewPage(principal domain.ContextPrincipal, initialProject string, csrfFieldProvider func() Node) Node {
 	return macroFormPage(principal, "New Macro", "/ui/macros", csrfFieldProvider,
 		Label(Text("Name")),
 		core.InputControl("", Name("name"), Required()),
+		Label(Text("Project")),
+		core.InputControl("", Name("project_name"), Value(initialProject)),
 		Label(Text("Type")),
 		core.SelectControl("", Name("macro_type"),
 			Option(Value("SCALAR"), Text("SCALAR")),
@@ -198,6 +215,8 @@ func macrosNewPage(principal domain.ContextPrincipal, csrfFieldProvider func() N
 
 func macrosEditPage(principal domain.ContextPrincipal, macroName string, macro *domain.Macro, csrfFieldProvider func() Node) Node {
 	return macroFormPage(principal, "Edit Macro", "/ui/macros/"+macroName+"/update", csrfFieldProvider,
+		Label(Text("Project")),
+		core.InputControl("", Name("project_name"), Value(macro.ProjectName)),
 		Label(Text("Description")),
 		core.TextareaControl("min-h-24", Name("description"), Text(macro.Description)),
 		Label(Text("Visibility")),

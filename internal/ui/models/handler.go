@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/go-chi/chi/v5"
 
@@ -46,7 +47,7 @@ func (h *Handler) ModelsList(w http.ResponseWriter, r *http.Request) {
 		DisplayName:  "Models",
 		Section:      "Build",
 	})
-	core.RenderHTML(w, http.StatusOK, modelsListPage(core.PrincipalFromContext(r.Context()), rows, pageReq, total))
+	core.RenderHTML(w, http.StatusOK, modelsListPage(core.PrincipalFromContext(r.Context()), rows, pageReq, total, projectName))
 }
 
 func (h *Handler) ModelsDAG(w http.ResponseWriter, r *http.Request) {
@@ -270,7 +271,7 @@ func (h *Handler) ModelsDetail(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) ModelsNew(w http.ResponseWriter, r *http.Request) {
-	core.RenderHTML(w, http.StatusOK, modelsNewPage(core.PrincipalFromContext(r.Context()), h.deps.CSRFFieldProvider(r)))
+	core.RenderHTML(w, http.StatusOK, modelsNewPage(core.PrincipalFromContext(r.Context()), strings.TrimSpace(r.URL.Query().Get("project")), h.deps.CSRFFieldProvider(r)))
 }
 
 func (h *Handler) ModelsCreate(w http.ResponseWriter, r *http.Request) {

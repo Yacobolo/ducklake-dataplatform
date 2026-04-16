@@ -99,6 +99,49 @@ func FieldLabel(text string) Node {
 	return Label(Class("mb-1 block text-xs font-semibold text-[var(--fgColor-muted)]"), Text(text))
 }
 
+func ViewField(label string, value Node) Node {
+	return Div(
+		Class("flex min-w-0 flex-col gap-1.5 py-3 sm:py-0"),
+		Dt(Class(ViewFieldLabelClass()), Text(label)),
+		Dd(Class("m-0 min-w-0"), value),
+	)
+}
+
+func ViewFieldText(text string) Node {
+	return P(
+		Class(ViewFieldValueClass()),
+		Text(text),
+	)
+}
+
+func ViewFieldMutedText(text string) Node {
+	return P(
+		Class(ViewFieldMutedValueClass()),
+		Text(text),
+	)
+}
+
+func ViewFieldCode(text string) Node {
+	return Code(
+		Class(ViewFieldCodeClass()),
+		Text(text),
+	)
+}
+
+func ViewFieldMono(text string) Node {
+	return Code(
+		Class(ViewFieldMonoValueClass()),
+		Text(text),
+	)
+}
+
+func ViewFieldIdentifier(text string) Node {
+	return Span(
+		Class(ViewFieldIdentifierClass()),
+		Text(text),
+	)
+}
+
 func InputControl(extraClass string, nodes ...Node) Node {
 	base := []Node{Class(formControlClass(extraClass))}
 	return Input(append(base, nodes...)...)
@@ -171,10 +214,18 @@ func ResourceKindIcon(kind string) string {
 		return "package-open"
 	case "runtime-asset":
 		return "git-fork"
+	case "project":
+		return "folder-git-2"
 	case "model":
 		return "boxes"
+	case "macro":
+		return "braces"
 	case "semantic-model":
 		return "waypoints"
+	case "environment":
+		return "server"
+	case "build":
+		return "package-open"
 	case "pipeline":
 		return "workflow"
 	case "compute-endpoint":
@@ -195,16 +246,49 @@ func ResourceKindIconWrapClass(kind string) string {
 		return base + " bg-[var(--display-orange-scale-0)] text-[var(--display-orange-scale-6)]"
 	case "runtime-asset":
 		return base + " bg-[var(--display-gray-scale-0)] text-[var(--display-gray-scale-7)]"
+	case "project":
+		return base + " bg-[var(--display-indigo-scale-0)] text-[var(--display-indigo-scale-6)]"
 	case "model":
 		return base + " bg-[var(--display-green-scale-0)] text-[var(--display-green-scale-6)]"
+	case "macro":
+		return base + " bg-[var(--display-orange-scale-0)] text-[var(--display-orange-scale-6)]"
 	case "semantic-model":
 		return base + " bg-[var(--display-indigo-scale-0)] text-[var(--display-indigo-scale-6)]"
+	case "environment":
+		return base + " bg-[var(--display-teal-scale-0)] text-[var(--display-teal-scale-6)]"
+	case "build":
+		return base + " bg-[var(--display-plum-scale-0)] text-[var(--display-plum-scale-6)]"
 	case "pipeline":
 		return base + " bg-[var(--display-teal-scale-0)] text-[var(--display-teal-scale-6)]"
 	case "compute-endpoint":
 		return base + " bg-[var(--display-red-scale-0)] text-[var(--display-red-scale-6)]"
 	default:
 		return base + " bg-[var(--bgColor-muted)] text-[var(--fgColor-muted)]"
+	}
+}
+
+func ResourceKindAccentTextClass(kind string) string {
+	switch kind {
+	case "notebook":
+		return "text-[var(--display-blue-scale-6)]"
+	case "dashboard", "build":
+		return "text-[var(--display-plum-scale-6)]"
+	case "product", "macro":
+		return "text-[var(--display-orange-scale-6)]"
+	case "runtime-asset":
+		return "text-[var(--display-gray-scale-7)]"
+	case "project", "semantic-model":
+		return "text-[var(--display-indigo-scale-6)]"
+	case "model":
+		return "text-[var(--display-green-scale-6)]"
+	case "environment":
+		return "text-[var(--display-teal-scale-6)]"
+	case "compute-endpoint":
+		return "text-[var(--display-red-scale-6)]"
+	case "pipeline":
+		return "text-[var(--display-teal-scale-6)]"
+	default:
+		return "text-[var(--fgColor-default)]"
 	}
 }
 
@@ -468,6 +552,22 @@ func MetricCard(label, value, hint string) Node {
 	)
 }
 
+func ResourceMetricCard(kind, label, value string) Node {
+	accentClass := ResourceKindAccentTextClass(kind)
+	return Div(
+		Class("grid gap-2 rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] px-3 py-3"),
+		Div(
+			Class("flex items-center justify-between gap-3"),
+			Span(
+				Class(ClassNames("inline-flex min-w-0 items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.08em]", accentClass)),
+				Icon(ResourceKindIcon(kind), Class("h-3.5 w-3.5 shrink-0"), Attr("style", "stroke-width:1.9")),
+				Span(Class("truncate"), Text(label)),
+			),
+			P(Class(ClassNames("m-0 text-2xl font-semibold leading-none", accentClass)), Text(value)),
+		),
+	)
+}
+
 func MetaItem(label, value string) Node {
 	return Div(
 		Class("grid gap-1 border-b border-[var(--borderColor-default)] pb-2 last:border-b-0 last:pb-0"),
@@ -687,12 +787,25 @@ func ListPagination(basePath string, page domain.PageRequest, total int64) Node 
 }
 
 func listPageURL(basePath string, limit int, token string) string {
-	q := url.Values{}
+	parsed, err := url.Parse(basePath)
+	if err != nil {
+		q := url.Values{}
+		q.Set("max_results", fmt.Sprintf("%d", limit))
+		if token != "" {
+			q.Set("page_token", token)
+		}
+		return basePath + "?" + q.Encode()
+	}
+
+	q := parsed.Query()
 	q.Set("max_results", fmt.Sprintf("%d", limit))
 	if token != "" {
 		q.Set("page_token", token)
+	} else {
+		q.Del("page_token")
 	}
-	return basePath + "?" + q.Encode()
+	parsed.RawQuery = q.Encode()
+	return parsed.String()
 }
 
 func FormPageLayout(kicker, title, description string, nodes ...Node) Node {

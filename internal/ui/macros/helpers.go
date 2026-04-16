@@ -100,6 +100,10 @@ func principalName(r *http.Request) string {
 	return p.Name
 }
 
+func ptrString(v string) *string {
+	return &v
+}
+
 func formatTime(ts time.Time) string {
 	if ts.IsZero() {
 		return "-"

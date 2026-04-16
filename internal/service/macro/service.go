@@ -4,6 +4,7 @@ package macro
 import (
 	"context"
 	"sort"
+	"strings"
 
 	"github.com/Yacobolo/quackstack/internal/domain"
 )
@@ -66,6 +67,37 @@ func (s *Service) Get(ctx context.Context, name string) (*domain.Macro, error) {
 // List returns a paginated list of macros.
 func (s *Service) List(ctx context.Context, page domain.PageRequest) ([]domain.Macro, int64, error) {
 	return s.macros.List(ctx, page)
+}
+
+// ListFiltered returns a paginated list of macros, optionally scoped to a project.
+func (s *Service) ListFiltered(ctx context.Context, projectName *string, page domain.PageRequest) ([]domain.Macro, int64, error) {
+	if projectName == nil || strings.TrimSpace(*projectName) == "" {
+		return s.macros.List(ctx, page)
+	}
+
+	all, err := s.macros.ListAll(ctx)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	filtered := make([]domain.Macro, 0, len(all))
+	want := strings.TrimSpace(*projectName)
+	for _, item := range all {
+		if strings.TrimSpace(item.ProjectName) == want {
+			filtered = append(filtered, item)
+		}
+	}
+
+	total := int64(len(filtered))
+	start := page.Offset()
+	if start >= len(filtered) {
+		return []domain.Macro{}, total, nil
+	}
+	end := start + page.Limit()
+	if end > len(filtered) {
+		end = len(filtered)
+	}
+	return filtered[start:end], total, nil
 }
 
 // Update updates a macro.
