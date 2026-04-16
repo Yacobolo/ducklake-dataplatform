@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"log/slog"
 	"testing"
 
@@ -13,8 +14,8 @@ import (
 
 	internaldb "github.com/Yacobolo/quackstack/internal/db"
 	"github.com/Yacobolo/quackstack/internal/db/dbstore"
+	"github.com/Yacobolo/quackstack/internal/ddl"
 	"github.com/Yacobolo/quackstack/internal/domain"
-	"github.com/Yacobolo/quackstack/internal/engine"
 )
 
 // ---------------------------------------------------------------------------
@@ -84,7 +85,14 @@ func attachAppSystemCatalogForTests(t *testing.T, repo *CatalogRepo) {
 	}
 	require.NoError(t, rows.Err())
 	require.NotEmpty(t, sqlitePath)
-	require.NoError(t, engine.AttachSystemCatalog(context.Background(), repo.duckDB, sqlitePath))
+
+	attachSQL := fmt.Sprintf(
+		"ATTACH %s AS %s (TYPE sqlite, READ_ONLY)",
+		ddl.QuoteLiteral(sqlitePath),
+		ddl.QuoteIdentifier("__quack_system"),
+	)
+	_, err = repo.duckDB.ExecContext(context.Background(), attachSQL)
+	require.NoError(t, err)
 }
 
 // createCatalogDuckLakeTables creates the full ducklake_* tables that

@@ -31,7 +31,7 @@ func TestHTTP_RowFilterCRUD(t *testing.T) {
 	steps := []step{
 		{"create", func(t *testing.T) {
 			body := map[string]interface{}{
-				"table_id":    "1",
+				"table_id":    env.TitanicTableID,
 				"name":        "age-over-30",
 				"filter_sql":  `"Age" > 30`,
 				"description": "age filter",
@@ -48,7 +48,7 @@ func TestHTTP_RowFilterCRUD(t *testing.T) {
 			assert.Equal(t, "age filter", result["description"])
 		}},
 		{"list_for_table", func(t *testing.T) {
-			resp := doRequest(t, "GET", env.Server.URL+"/v1/row-filters?table_id=1", env.Keys.Admin, nil)
+			resp := doRequest(t, "GET", env.Server.URL+"/v1/row-filters?table_id="+env.TitanicTableID, env.Keys.Admin, nil)
 			require.Equal(t, 200, resp.StatusCode)
 
 			var result map[string]interface{}
@@ -81,7 +81,7 @@ func TestHTTP_RowFilterCRUD(t *testing.T) {
 			_ = resp.Body.Close()
 		}},
 		{"list_after_delete", func(t *testing.T) {
-			resp := doRequest(t, "GET", env.Server.URL+"/v1/row-filters?table_id=1", env.Keys.Admin, nil)
+			resp := doRequest(t, "GET", env.Server.URL+"/v1/row-filters?table_id="+env.TitanicTableID, env.Keys.Admin, nil)
 			require.Equal(t, 200, resp.StatusCode)
 
 			var result map[string]interface{}
@@ -110,7 +110,7 @@ func TestHTTP_RowFilterMultiple(t *testing.T) {
 	// Create two filters
 	for i, sql := range []string{`"Survived" = 1`, `"Sex" = 'female'`} {
 		body := map[string]interface{}{
-			"table_id":    "1",
+			"table_id":    env.TitanicTableID,
 			"name":        fmt.Sprintf("filter-%d", i),
 			"filter_sql":  sql,
 			"description": fmt.Sprintf("filter %d", i),
@@ -121,7 +121,7 @@ func TestHTTP_RowFilterMultiple(t *testing.T) {
 	}
 
 	// List all filters for the table
-	resp := doRequest(t, "GET", env.Server.URL+"/v1/row-filters?table_id=1", env.Keys.Admin, nil)
+	resp := doRequest(t, "GET", env.Server.URL+"/v1/row-filters?table_id="+env.TitanicTableID, env.Keys.Admin, nil)
 	require.Equal(t, 200, resp.StatusCode)
 
 	var result map[string]interface{}

@@ -773,7 +773,7 @@ func TestHTTP_TagsInTableResponse(t *testing.T) {
 				fmt.Sprintf("%s/v1/tags/%s/assignments", env.Server.URL, tagID),
 				env.Keys.Admin, map[string]interface{}{
 					"securable_type": "table",
-					"securable_id":   "1", // table_id=1 for "titanic"
+					"securable_id":   env.TitanicTableID,
 				})
 			require.Equal(t, 201, resp.StatusCode)
 			_ = resp.Body.Close()

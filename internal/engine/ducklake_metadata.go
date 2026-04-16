@@ -72,6 +72,7 @@ func AttachDuckLakeMetadataSchema(ctx context.Context, db *sql.DB, reg domain.Ca
 		if err := tableRows.Scan(&tableName); err != nil {
 			return fmt.Errorf("scan ducklake metadata table for %q: %w", reg.Name, err)
 		}
+		//nolint:gosec // identifiers are quoted with ddl.QuoteIdentifier before execution.
 		createViewSQL := fmt.Sprintf(
 			"CREATE OR REPLACE VIEW %s.%s.%s AS SELECT * FROM %s.%s.%s",
 			ddl.QuoteIdentifier(reg.Name),

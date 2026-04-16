@@ -224,12 +224,11 @@ func escapeDuckDBString(value string) string {
 
 func rejectUnsupportedSystemSchemaQuery(sqlQuery string) error {
 	refs, err := sqlrewrite.ExtractTableRefs(sqlQuery)
-	if err != nil {
-		return nil
-	}
-	for _, ref := range refs {
-		if strings.EqualFold(strings.TrimSpace(ref.Schema), "system") {
-			return fmt.Errorf("system.* queries are only supported through the server-backed API/CLI path right now; rerun without BYOC_LOCAL")
+	if err == nil {
+		for _, ref := range refs {
+			if strings.EqualFold(strings.TrimSpace(ref.Schema), "system") {
+				return fmt.Errorf("system.* queries are only supported through the server-backed API/CLI path right now; rerun without BYOC_LOCAL")
+			}
 		}
 	}
 	return nil

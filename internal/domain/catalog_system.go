@@ -16,7 +16,7 @@ const (
 
 // DuckLakeMetadataSchemaName returns the reserved per-catalog schema that
 // exposes a DuckLake catalog's internal metadata tables.
-func DuckLakeMetadataSchemaName(catalogName string) string {
+func DuckLakeMetadataSchemaName(_ string) string {
 	return "_ducklake"
 }
 

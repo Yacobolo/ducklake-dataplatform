@@ -32,7 +32,7 @@ func TestHTTP_ColumnMaskCRUD(t *testing.T) {
 	steps := []step{
 		{"create", func(t *testing.T) {
 			body := map[string]interface{}{
-				"table_id":        "1",
+				"table_id":        env.TitanicTableID,
 				"name":            "mask-ticket",
 				"column_name":     "Ticket",
 				"mask_expression": "'REDACTED'",
@@ -49,7 +49,7 @@ func TestHTTP_ColumnMaskCRUD(t *testing.T) {
 			assert.Equal(t, "'REDACTED'", result["mask_expression"])
 		}},
 		{"list_for_table", func(t *testing.T) {
-			resp := doRequest(t, "GET", env.Server.URL+"/v1/column-masks?table_id=1", env.Keys.Admin, nil)
+			resp := doRequest(t, "GET", env.Server.URL+"/v1/column-masks?table_id="+env.TitanicTableID, env.Keys.Admin, nil)
 			require.Equal(t, 200, resp.StatusCode)
 
 			var result map[string]interface{}
@@ -101,7 +101,7 @@ func TestHTTP_ColumnMaskCRUD(t *testing.T) {
 			_ = resp.Body.Close()
 		}},
 		{"list_after_delete", func(t *testing.T) {
-			resp := doRequest(t, "GET", env.Server.URL+"/v1/column-masks?table_id=1", env.Keys.Admin, nil)
+			resp := doRequest(t, "GET", env.Server.URL+"/v1/column-masks?table_id="+env.TitanicTableID, env.Keys.Admin, nil)
 			require.Equal(t, 200, resp.StatusCode)
 
 			var result map[string]interface{}

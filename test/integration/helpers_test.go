@@ -384,7 +384,7 @@ func seedDuckLakeTableMetadata(t *testing.T, metaPath string, requestedDataPath 
 	if _, err := duckDB.ExecContext(ctx, attachSQL); err != nil {
 		t.Fatalf("attach ducklake metastore for seeding: %v", err)
 	}
-	if _, err := duckDB.ExecContext(ctx, fmt.Sprintf(`ATTACH '%s' AS %s (TYPE sqlite, READ_ONLY)`, metaPath, metadataCatalogAlias)); err != nil {
+	if _, err := duckDB.ExecContext(ctx, fmt.Sprintf(`ATTACH '%s' AS %s (TYPE sqlite)`, metaPath, metadataCatalogAlias)); err != nil {
 		t.Fatalf("attach sqlite metastore for seeding: %v", err)
 	}
 	if _, err := duckDB.ExecContext(ctx, "USE lake"); err != nil {
@@ -437,17 +437,17 @@ func seedDuckLakeTableMetadata(t *testing.T, metaPath string, requestedDataPath 
 			t.Fatalf("next ducklake data_file_id for %s: %v", spec.TableName, err)
 		}
 		if _, err := duckDB.ExecContext(ctx, fmt.Sprintf(`
-			INSERT INTO lake.%s.ducklake_data_file (
+			INSERT INTO %s.main.ducklake_data_file (
 				data_file_id, table_id, begin_snapshot, end_snapshot, file_order,
 				path, path_is_relative, file_format, record_count, file_size_bytes,
 				footer_size, row_id_start, partition_id, encryption_key, mapping_id, partial_max
 			) VALUES (?, ?, ?, NULL, NULL, ?, 1, 'parquet', ?, ?, ?, 0, NULL, NULL, NULL, NULL)
-		`, metadataSchema), nextDataFileID, tableID, latestSnapshotID, spec.DataFileName, spec.RecordCount, spec.FileSizeBytes, spec.FooterSize); err != nil {
+		`, metadataCatalogAlias), nextDataFileID, tableID, latestSnapshotID, spec.DataFileName, spec.RecordCount, spec.FileSizeBytes, spec.FooterSize); err != nil {
 			t.Fatalf("insert ducklake data file for %s: %v", spec.TableName, err)
 		}
 	}
 
-	if _, err := duckDB.ExecContext(ctx, fmt.Sprintf(`UPDATE lake.%s.ducklake_metadata SET value = ? WHERE key = 'data_path'`, metadataSchema), requestedDataPath); err != nil {
+	if _, err := duckDB.ExecContext(ctx, fmt.Sprintf(`UPDATE %s.main.ducklake_metadata SET value = ? WHERE key = 'data_path'`, metadataCatalogAlias), requestedDataPath); err != nil {
 		t.Fatalf("set ducklake data_path: %v", err)
 	}
 	if err := duckDB.Close(); err != nil {
@@ -515,6 +515,10 @@ func seedRBAC(t *testing.T, db *sql.DB) apiKeys {
 	t.Helper()
 
 	q := dbstore.New(db)
+	titanicTableID := maybeLookupDuckLakeTableID(t, db, "titanic")
+	if titanicTableID == "" {
+		titanicTableID = "1"
+	}
 
 	// --- Principals ---
 	adminUser, err := q.CreatePrincipal(ctx, dbstore.CreatePrincipalParams{
@@ -596,7 +600,7 @@ func seedRBAC(t *testing.T, db *sql.DB) apiKeys {
 	}
 	if _, err := q.GrantPrivilege(ctx, dbstore.GrantPrivilegeParams{
 		ID: uuid.New().String(), PrincipalID: analystsGroup.ID, PrincipalType: "group",
-		SecurableType: "table", SecurableID: "1", Privilege: "SELECT",
+		SecurableType: "table", SecurableID: titanicTableID, Privilege: "SELECT",
 	}); err != nil {
 		t.Fatalf("grant analysts SELECT: %v", err)
 	}
@@ -610,15 +614,15 @@ func seedRBAC(t *testing.T, db *sql.DB) apiKeys {
 	}
 	if _, err := q.GrantPrivilege(ctx, dbstore.GrantPrivilegeParams{
 		ID: uuid.New().String(), PrincipalID: researchersGroup.ID, PrincipalType: "group",
-		SecurableType: "table", SecurableID: "1", Privilege: "SELECT",
+		SecurableType: "table", SecurableID: titanicTableID, Privilege: "SELECT",
 	}); err != nil {
 		t.Fatalf("grant researchers SELECT: %v", err)
 	}
 
 	// --- Row Filters ---
-	// analysts: "Pclass" = 1 on titanic (table_id=1)
+	// analysts: "Pclass" = 1 on titanic.
 	filter, err := q.CreateRowFilter(ctx, dbstore.CreateRowFilterParams{
-		ID: uuid.New().String(), TableID: "1", FilterSql: `"Pclass" = 1`,
+		ID: uuid.New().String(), TableID: titanicTableID, FilterSql: `"Pclass" = 1`,
 	})
 	if err != nil {
 		t.Fatalf("create row filter: %v", err)
@@ -630,9 +634,9 @@ func seedRBAC(t *testing.T, db *sql.DB) apiKeys {
 	}
 
 	// --- Column Masks ---
-	// Name → '***' on titanic (table_id=1)
+	// Name → '***' on titanic.
 	nameMask, err := q.CreateColumnMask(ctx, dbstore.CreateColumnMaskParams{
-		ID: uuid.New().String(), TableID: "1", ColumnName: "Name", MaskExpression: `'***'`,
+		ID: uuid.New().String(), TableID: titanicTableID, ColumnName: "Name", MaskExpression: `'***'`,
 	})
 	if err != nil {
 		t.Fatalf("create column mask: %v", err)
@@ -1221,6 +1225,46 @@ func containsAny(s string, subs ...string) bool {
 	return false
 }
 
+func lookupDuckLakeTableID(t *testing.T, db *sql.DB, tableName string) string {
+	t.Helper()
+
+	var tableID string
+	err := db.QueryRowContext(
+		context.Background(),
+		`SELECT CAST(table_id AS TEXT)
+		 FROM ducklake_table
+		 WHERE table_name = ? AND end_snapshot IS NULL
+		 ORDER BY table_id DESC
+		 LIMIT 1`,
+		tableName,
+	).Scan(&tableID)
+	require.NoError(t, err, "lookup ducklake table_id for %s", tableName)
+	return tableID
+}
+
+func maybeLookupDuckLakeTableID(t *testing.T, db *sql.DB, tableName string) string {
+	t.Helper()
+
+	var tableID string
+	err := db.QueryRowContext(
+		context.Background(),
+		`SELECT CAST(table_id AS TEXT)
+		 FROM ducklake_table
+		 WHERE table_name = ? AND end_snapshot IS NULL
+		 ORDER BY table_id DESC
+		 LIMIT 1`,
+		tableName,
+	).Scan(&tableID)
+	if err == nil {
+		return tableID
+	}
+	if err == sql.ErrNoRows || containsAny(err.Error(), "no such table", "does not exist") {
+		return ""
+	}
+	require.NoError(t, err, "lookup ducklake table_id for %s", tableName)
+	return tableID
+}
+
 // titanicColumns lists the expected column names in the titanic dataset.
 var titanicColumns = []string{
 	"PassengerId", "Survived", "Pclass", "Name", "Sex", "Age",
@@ -1286,6 +1330,8 @@ type httpTestEnv struct {
 	DuckDB         *sql.DB                          // nil unless WithDuckLake
 	ExtLocationSvc *storage.ExternalLocationService // nil unless WithStorageCredentials
 	Reconciler     *orchestration.Reconciler
+	TitanicTableID string
+	DeptTableID    string
 }
 
 type integrationNoopAssetStepper struct{}
@@ -1862,6 +1908,8 @@ func setupHTTPServer(t *testing.T, opts httpTestOpts) *httpTestEnv {
 		DuckDB:         duckDB,
 		ExtLocationSvc: extLocationSvc,
 		Reconciler:     reconciler,
+		TitanicTableID: maybeLookupDuckLakeTableID(t, metaDB, "titanic"),
+		DeptTableID:    maybeLookupDuckLakeTableID(t, metaDB, "departments"),
 	}
 }
 
@@ -2156,6 +2204,14 @@ func seedMultiTableRBAC(t *testing.T, db *sql.DB) multiTableKeys {
 	t.Helper()
 	base := seedRBAC(t, db)
 	q := dbstore.New(db)
+	titanicTableID := maybeLookupDuckLakeTableID(t, db, "titanic")
+	if titanicTableID == "" {
+		titanicTableID = "1"
+	}
+	deptTableID := maybeLookupDuckLakeTableID(t, db, "departments")
+	if deptTableID == "" {
+		deptTableID = "2"
+	}
 
 	// --- dept_viewer: SELECT on departments only ---
 	deptViewer, err := q.CreatePrincipal(ctx, dbstore.CreatePrincipalParams{
@@ -2173,7 +2229,7 @@ func seedMultiTableRBAC(t *testing.T, db *sql.DB) multiTableKeys {
 	}); err != nil {
 		t.Fatalf("add dept_viewer to group: %v", err)
 	}
-	// USAGE on schema + SELECT on departments (table_id=2) only
+	// USAGE on schema + SELECT on departments only.
 	if _, err := q.GrantPrivilege(ctx, dbstore.GrantPrivilegeParams{
 		ID: uuid.New().String(), PrincipalID: deptViewerGroup.ID, PrincipalType: "group",
 		SecurableType: "schema", SecurableID: "0", Privilege: "USAGE",
@@ -2182,7 +2238,7 @@ func seedMultiTableRBAC(t *testing.T, db *sql.DB) multiTableKeys {
 	}
 	if _, err := q.GrantPrivilege(ctx, dbstore.GrantPrivilegeParams{
 		ID: uuid.New().String(), PrincipalID: deptViewerGroup.ID, PrincipalType: "group",
-		SecurableType: "table", SecurableID: "2", Privilege: "SELECT",
+		SecurableType: "table", SecurableID: deptTableID, Privilege: "SELECT",
 	}); err != nil {
 		t.Fatalf("grant dept_viewers SELECT on departments: %v", err)
 	}
@@ -2212,19 +2268,19 @@ func seedMultiTableRBAC(t *testing.T, db *sql.DB) multiTableKeys {
 	// SELECT on both tables
 	if _, err := q.GrantPrivilege(ctx, dbstore.GrantPrivilegeParams{
 		ID: uuid.New().String(), PrincipalID: usGroup.ID, PrincipalType: "group",
-		SecurableType: "table", SecurableID: "1", Privilege: "SELECT",
+		SecurableType: "table", SecurableID: titanicTableID, Privilege: "SELECT",
 	}); err != nil {
 		t.Fatalf("grant us_only SELECT titanic: %v", err)
 	}
 	if _, err := q.GrantPrivilege(ctx, dbstore.GrantPrivilegeParams{
 		ID: uuid.New().String(), PrincipalID: usGroup.ID, PrincipalType: "group",
-		SecurableType: "table", SecurableID: "2", Privilege: "SELECT",
+		SecurableType: "table", SecurableID: deptTableID, Privilege: "SELECT",
 	}); err != nil {
 		t.Fatalf("grant us_only SELECT departments: %v", err)
 	}
-	// RLS: region = 'US' on departments (table_id=2)
+	// RLS: region = 'US' on departments.
 	deptFilter, err := q.CreateRowFilter(ctx, dbstore.CreateRowFilterParams{
-		ID: uuid.New().String(), TableID: "2", FilterSql: `"region" = 'US'`,
+		ID: uuid.New().String(), TableID: deptTableID, FilterSql: `"region" = 'US'`,
 	})
 	if err != nil {
 		t.Fatalf("create dept region filter: %v", err)
@@ -2234,9 +2290,9 @@ func seedMultiTableRBAC(t *testing.T, db *sql.DB) multiTableKeys {
 	}); err != nil {
 		t.Fatalf("bind dept filter to us_only: %v", err)
 	}
-	// RLS: "Embarked" = 'S' on titanic (table_id=1)
+	// RLS: "Embarked" = 'S' on titanic.
 	titanicFilter, err := q.CreateRowFilter(ctx, dbstore.CreateRowFilterParams{
-		ID: uuid.New().String(), TableID: "1", FilterSql: `"Embarked" = 'S'`,
+		ID: uuid.New().String(), TableID: titanicTableID, FilterSql: `"Embarked" = 'S'`,
 	})
 	if err != nil {
 		t.Fatalf("create titanic embarked filter: %v", err)
@@ -2271,19 +2327,19 @@ func seedMultiTableRBAC(t *testing.T, db *sql.DB) multiTableKeys {
 	}
 	if _, err := q.GrantPrivilege(ctx, dbstore.GrantPrivilegeParams{
 		ID: uuid.New().String(), PrincipalID: maskedGroup.ID, PrincipalType: "group",
-		SecurableType: "table", SecurableID: "1", Privilege: "SELECT",
+		SecurableType: "table", SecurableID: titanicTableID, Privilege: "SELECT",
 	}); err != nil {
 		t.Fatalf("grant masked_viewers SELECT titanic: %v", err)
 	}
 	if _, err := q.GrantPrivilege(ctx, dbstore.GrantPrivilegeParams{
 		ID: uuid.New().String(), PrincipalID: maskedGroup.ID, PrincipalType: "group",
-		SecurableType: "table", SecurableID: "2", Privilege: "SELECT",
+		SecurableType: "table", SecurableID: deptTableID, Privilege: "SELECT",
 	}); err != nil {
 		t.Fatalf("grant masked_viewers SELECT departments: %v", err)
 	}
 	// Column mask: Fare → ROUND("Fare"/10)*10 on titanic
 	fareMask, err := q.CreateColumnMask(ctx, dbstore.CreateColumnMaskParams{
-		ID: uuid.New().String(), TableID: "1", ColumnName: "Fare", MaskExpression: `ROUND("Fare"/10)*10`,
+		ID: uuid.New().String(), TableID: titanicTableID, ColumnName: "Fare", MaskExpression: `ROUND("Fare"/10)*10`,
 	})
 	if err != nil {
 		t.Fatalf("create fare mask: %v", err)
@@ -2296,7 +2352,7 @@ func seedMultiTableRBAC(t *testing.T, db *sql.DB) multiTableKeys {
 	}
 	// Reuse the existing titanic Name mask created by seedRBAC and bind it for this group too.
 	var nameMaskForMaskedID string
-	if err := db.QueryRowContext(ctx, `SELECT id FROM column_masks WHERE table_id = ? AND column_name = ?`, "1", "Name").Scan(&nameMaskForMaskedID); err != nil {
+	if err := db.QueryRowContext(ctx, `SELECT id FROM column_masks WHERE table_id = ? AND column_name = ?`, titanicTableID, "Name").Scan(&nameMaskForMaskedID); err != nil {
 		t.Fatalf("lookup existing name mask for masked_viewers: %v", err)
 	}
 	if err := q.BindColumnMask(ctx, dbstore.BindColumnMaskParams{
@@ -2307,7 +2363,7 @@ func seedMultiTableRBAC(t *testing.T, db *sql.DB) multiTableKeys {
 	}
 	// Column mask: avg_salary → 0 on departments
 	salaryMask, err := q.CreateColumnMask(ctx, dbstore.CreateColumnMaskParams{
-		ID: uuid.New().String(), TableID: "2", ColumnName: "avg_salary", MaskExpression: `0`,
+		ID: uuid.New().String(), TableID: deptTableID, ColumnName: "avg_salary", MaskExpression: `0`,
 	})
 	if err != nil {
 		t.Fatalf("create salary mask: %v", err)
@@ -2343,13 +2399,13 @@ func seedMultiTableRBAC(t *testing.T, db *sql.DB) multiTableKeys {
 	}
 	if _, err := q.GrantPrivilege(ctx, dbstore.GrantPrivilegeParams{
 		ID: uuid.New().String(), PrincipalID: multiFilterGroup.ID, PrincipalType: "group",
-		SecurableType: "table", SecurableID: "1", Privilege: "SELECT",
+		SecurableType: "table", SecurableID: titanicTableID, Privilege: "SELECT",
 	}); err != nil {
 		t.Fatalf("grant multi_filter SELECT titanic: %v", err)
 	}
 	// Two RLS filters on titanic
 	pclassFilter, err := q.CreateRowFilter(ctx, dbstore.CreateRowFilterParams{
-		ID: uuid.New().String(), TableID: "1", FilterSql: `"Pclass" = 1`,
+		ID: uuid.New().String(), TableID: titanicTableID, FilterSql: `"Pclass" = 1`,
 	})
 	if err != nil {
 		t.Fatalf("create pclass filter: %v", err)
@@ -2360,7 +2416,7 @@ func seedMultiTableRBAC(t *testing.T, db *sql.DB) multiTableKeys {
 		t.Fatalf("bind pclass filter to multi_filter: %v", err)
 	}
 	survivedFilter, err := q.CreateRowFilter(ctx, dbstore.CreateRowFilterParams{
-		ID: uuid.New().String(), TableID: "1", FilterSql: `"Survived" = 1`,
+		ID: uuid.New().String(), TableID: titanicTableID, FilterSql: `"Survived" = 1`,
 	})
 	if err != nil {
 		t.Fatalf("create survived filter: %v", err)

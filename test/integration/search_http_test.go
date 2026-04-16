@@ -198,7 +198,7 @@ func TestHTTP_SearchByTag(t *testing.T) {
 				fmt.Sprintf("%s/v1/tags/%s/assignments", env.Server.URL, tagID),
 				env.Keys.Admin, map[string]interface{}{
 					"securable_type": "table",
-					"securable_id":   "1", // titanic table_id
+					"securable_id":   env.TitanicTableID,
 				})
 			require.Equal(t, 201, resp.StatusCode)
 			_ = resp.Body.Close()

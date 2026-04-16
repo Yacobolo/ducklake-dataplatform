@@ -248,7 +248,7 @@ func TestCatalogRepo_ListTables(t *testing.T) {
 
 		tables, total, err := repo.ListTables(ctx, domain.AppSystemSchemaName, domain.PageRequest{MaxResults: domain.MaxMaxResults})
 		require.NoError(t, err)
-		assert.Greater(t, total, int64(0))
+		assert.Positive(t, total)
 
 		var found *domain.TableDetail
 		for i := range tables {
