@@ -32,7 +32,8 @@ func Execute() int {
 	rootCmd := newRootCmd()
 	if err := rootCmd.Execute(); err != nil {
 		output := getOutputFormat(rootCmd)
-		cliErr, _ := err.(*CLIError)
+		var cliErr *CLIError
+		errors.As(err, &cliErr)
 		if output == "json" {
 			if cliErr != nil && cliErr.JSONPayload != nil {
 				_ = apiruntime.PrintJSON(os.Stdout, cliErr.JSONPayload)
@@ -178,8 +179,8 @@ func newRootCmd() *cobra.Command {
 				return err
 			}
 		}
-		if generatedCommandsErr != nil {
-			return fmt.Errorf("build generated commands: %w", generatedCommandsErr)
+		if errGeneratedCommands != nil {
+			return fmt.Errorf("build generated commands: %w", errGeneratedCommands)
 		}
 		// Propagate resolved output to pflag so getOutputFormat() sees config values.
 		if output != "" {

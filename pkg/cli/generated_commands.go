@@ -8,11 +8,11 @@ import (
 	"github.com/Yacobolo/quackstack/pkg/cli/gen"
 )
 
-var generatedCommandsErr error
+var errGeneratedCommands error
 
 func addRuntimeGeneratedCommands(rootCmd *cobra.Command, client *apiruntime.Client) {
 	if err := cobraruntime.AddGeneratedCommands(rootCmd, client, generatedRuntimeEndpoints(allAPIEndpoints())); err != nil {
-		generatedCommandsErr = err
+		errGeneratedCommands = err
 	}
 }
 

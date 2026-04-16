@@ -102,9 +102,6 @@ func newAuthProfilesShowCmd() *cobra.Command {
 			if getOutputFormat(cmd) == "json" {
 				return apiruntime.PrintJSON(os.Stdout, payload)
 			}
-			if !reveal {
-				profile = maskConfig(&UserConfig{CurrentProfile: name, Profiles: map[string]Profile{name: profile}}).Profiles[name]
-			}
 			data, err := yaml.Marshal(payload)
 			if err != nil {
 				return fmt.Errorf("marshal profile: %w", err)

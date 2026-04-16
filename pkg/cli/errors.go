@@ -1,7 +1,10 @@
 package cli
 
+import "errors"
+
 // CLIError carries an explicit process exit code and optional JSON payload.
 // The root executor is responsible for rendering it exactly once.
+//nolint:revive // exported name is intentional for callers outside this package
 type CLIError struct {
 	Code        int
 	Message     string
@@ -16,7 +19,8 @@ func (e *CLIError) Error() string {
 }
 
 func exitCodeForError(err error) int {
-	if cliErr, ok := err.(*CLIError); ok && cliErr != nil && cliErr.Code > 0 {
+	var cliErr *CLIError
+	if errors.As(err, &cliErr) && cliErr != nil && cliErr.Code > 0 {
 		return cliErr.Code
 	}
 	return 1

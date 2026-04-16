@@ -6,7 +6,6 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
-	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -146,5 +145,5 @@ func TestCompletionLifecycle(t *testing.T) {
 	content, err = os.ReadFile(rcPath)
 	require.NoError(t, err)
 	assert.NotContains(t, string(content), completionMarkerStart)
-	assert.False(t, strings.Contains(string(content), "quack completion bash"))
+	assert.NotContains(t, string(content), "quack completion bash")
 }

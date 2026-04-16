@@ -30,10 +30,11 @@ func newCompletionInstallCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			if err := os.MkdirAll(filepath.Dir(target), 0o755); err != nil {
+			if err := os.MkdirAll(filepath.Dir(target), 0o700); err != nil {
 				return fmt.Errorf("create completion directory: %w", err)
 			}
 
+			//nolint:gosec // target is constrained to a known shell rc path under the user's home directory
 			existing, err := os.ReadFile(target)
 			if err != nil && !os.IsNotExist(err) {
 				return fmt.Errorf("read %s: %w", target, err)
@@ -43,13 +44,17 @@ func newCompletionInstallCmd() *cobra.Command {
 			}
 
 			block := "\n" + completionMarkerStart + "\n" + completionSnippet(resolvedShell) + "\n" + completionMarkerEnd + "\n"
+			//nolint:gosec // target is constrained to a known shell rc path under the user's home directory
 			f, err := os.OpenFile(target, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o600)
 			if err != nil {
 				return fmt.Errorf("open %s: %w", target, err)
 			}
-			defer f.Close()
 			if _, err := f.WriteString(block); err != nil {
+				_ = f.Close()
 				return fmt.Errorf("write %s: %w", target, err)
+			}
+			if err := f.Close(); err != nil {
+				return fmt.Errorf("close %s: %w", target, err)
 			}
 
 			return printCompletionStatus(cmd, resolvedShell, target, "installed")
@@ -75,6 +80,7 @@ func newCompletionStatusCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
+			//nolint:gosec // target is constrained to a known shell rc path under the user's home directory
 			existing, err := os.ReadFile(target)
 			if err != nil && !os.IsNotExist(err) {
 				return fmt.Errorf("read %s: %w", target, err)
@@ -106,6 +112,7 @@ func newCompletionUninstallCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
+			//nolint:gosec // target is constrained to a known shell rc path under the user's home directory
 			existing, err := os.ReadFile(target)
 			if err != nil {
 				if os.IsNotExist(err) {

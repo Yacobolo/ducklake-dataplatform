@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-	"strconv"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -16,52 +15,6 @@ import (
 	"github.com/Yacobolo/quackstack/pkg/cli/apiruntime"
 	"github.com/Yacobolo/quackstack/pkg/cli/gen"
 )
-
-func jsonLiteralForField(fieldType, raw string) (string, error) {
-	switch strings.ToLower(fieldType) {
-	case "bool", "boolean":
-		value, err := strconv.ParseBool(raw)
-		if err != nil {
-			return "", fmt.Errorf("parse boolean value %q: %w", raw, err)
-		}
-		encoded, err := json.Marshal(value)
-		if err != nil {
-			return "", err
-		}
-		return string(encoded), nil
-	case "int", "int32", "int64", "integer":
-		value, err := strconv.ParseInt(raw, 10, 64)
-		if err != nil {
-			return "", fmt.Errorf("parse integer value %q: %w", raw, err)
-		}
-		encoded, err := json.Marshal(value)
-		if err != nil {
-			return "", err
-		}
-		return string(encoded), nil
-	case "float", "float32", "float64", "number":
-		value, err := strconv.ParseFloat(raw, 64)
-		if err != nil {
-			return "", fmt.Errorf("parse numeric value %q: %w", raw, err)
-		}
-		encoded, err := json.Marshal(value)
-		if err != nil {
-			return "", err
-		}
-		return string(encoded), nil
-	case "array", "object":
-		if !json.Valid([]byte(raw)) {
-			return "", fmt.Errorf("%s values must be valid JSON", fieldType)
-		}
-		return raw, nil
-	default:
-		encoded, err := json.Marshal(raw)
-		if err != nil {
-			return "", err
-		}
-		return string(encoded), nil
-	}
-}
 
 func newAPICmd(client *apiruntime.Client) *cobra.Command {
 	cmd := &cobra.Command{

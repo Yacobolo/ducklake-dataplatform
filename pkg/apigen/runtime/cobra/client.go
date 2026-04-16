@@ -98,8 +98,10 @@ func (c *Client) logRequest(req *http.Request, resp *http.Response, body any) {
 	if strings.TrimSpace(c.LogFile) != "" {
 		f, err := os.OpenFile(c.LogFile, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o600)
 		if err == nil {
-			defer f.Close()
 			writer = f
+			defer func() {
+				_ = f.Close()
+			}()
 		}
 	}
 

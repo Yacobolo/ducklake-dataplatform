@@ -54,7 +54,7 @@ platform: projects: core: {
 	require.NoError(t, json.Unmarshal([]byte(output), &payload))
 	counts, ok := payload["counts"].(map[string]any)
 	require.True(t, ok)
-	assert.Equal(t, float64(1), counts["projects"])
+	assert.InDelta(t, 1, counts["projects"], 0)
 	target, ok := payload["target"].(map[string]any)
 	require.True(t, ok)
 	assert.Equal(t, "personal/core/dev", target["target_ref"])
