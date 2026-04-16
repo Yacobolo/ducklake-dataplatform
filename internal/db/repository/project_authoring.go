@@ -95,6 +95,8 @@ const projectDependencySelectSQL = `
 
 func scanProjectDependency(scanner projectRowScanner) (*domain.ProjectDependency, error) {
 	var item domain.ProjectDependency
+	var createdAtRaw string
+	var updatedAtRaw string
 	if err := scanner.Scan(
 		&item.ID,
 		&item.ProjectID,
@@ -103,11 +105,13 @@ func scanProjectDependency(scanner projectRowScanner) (*domain.ProjectDependency
 		&item.DependencyKind,
 		&item.Position,
 		&item.CreatedBy,
-		&item.CreatedAt,
-		&item.UpdatedAt,
+		&createdAtRaw,
+		&updatedAtRaw,
 	); err != nil {
 		return nil, mapDBError(err)
 	}
+	item.CreatedAt = parseSQLiteTimestamp(createdAtRaw)
+	item.UpdatedAt = parseSQLiteTimestamp(updatedAtRaw)
 	return &item, nil
 }
 
@@ -246,6 +250,8 @@ const sourceDefinitionSelectSQL = `
 func scanSourceDefinition(scanner projectRowScanner) (*domain.SourceDefinition, error) {
 	var item domain.SourceDefinition
 	var freshnessJSON string
+	var createdAtRaw string
+	var updatedAtRaw string
 	if err := scanner.Scan(
 		&item.ID,
 		&item.ProjectName,
@@ -255,11 +261,13 @@ func scanSourceDefinition(scanner projectRowScanner) (*domain.SourceDefinition, 
 		&item.Description,
 		&freshnessJSON,
 		&item.CreatedBy,
-		&item.CreatedAt,
-		&item.UpdatedAt,
+		&createdAtRaw,
+		&updatedAtRaw,
 	); err != nil {
 		return nil, mapDBError(err)
 	}
+	item.CreatedAt = parseSQLiteTimestamp(createdAtRaw)
+	item.UpdatedAt = parseSQLiteTimestamp(updatedAtRaw)
 	freshness, err := unmarshalSourceFreshness(freshnessJSON)
 	if err != nil {
 		return nil, err
@@ -424,6 +432,8 @@ func scanSeed(scanner projectRowScanner) (*domain.Seed, error) {
 	var hasHeader int
 	var columnTypesJSON string
 	var tagsJSON string
+	var createdAtRaw string
+	var updatedAtRaw string
 	if err := scanner.Scan(
 		&item.ID,
 		&item.ProjectName,
@@ -436,11 +446,13 @@ func scanSeed(scanner projectRowScanner) (*domain.Seed, error) {
 		&columnTypesJSON,
 		&tagsJSON,
 		&item.CreatedBy,
-		&item.CreatedAt,
-		&item.UpdatedAt,
+		&createdAtRaw,
+		&updatedAtRaw,
 	); err != nil {
 		return nil, mapDBError(err)
 	}
+	item.CreatedAt = parseSQLiteTimestamp(createdAtRaw)
+	item.UpdatedAt = parseSQLiteTimestamp(updatedAtRaw)
 	item.HasHeader = hasHeader != 0
 	columnTypes, err := unmarshalStringMap(columnTypesJSON)
 	if err != nil {
