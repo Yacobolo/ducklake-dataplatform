@@ -26797,6 +26797,7 @@ paths:
                 message: validation failed
       tags:
         - Pipelines
+      x-cli-command: pipelines jobs get
     patch:
       operationId: updatePipelineJob
       summary: Update pipeline job
@@ -26914,6 +26915,7 @@ paths:
               notebook_id: example
               retry_count: 1
               timeout_seconds: 1
+      x-cli-command: pipelines jobs update
   /pipelines/{pipeline_name}/runs:
     get:
       operationId: listPipelineRuns

@@ -157,6 +157,13 @@ func run() error {
 		logger.Info("sample data bootstrap disabled")
 	}
 
+	if application.PipelineScheduler != nil {
+		if err := application.PipelineScheduler.Start(ctx); err != nil {
+			return fmt.Errorf("start pipeline scheduler: %w", err)
+		}
+		defer application.PipelineScheduler.Stop()
+	}
+
 	if application.Reconciler != nil {
 		reconcilerStop := make(chan struct{})
 		go func() {

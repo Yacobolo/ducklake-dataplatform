@@ -20,12 +20,14 @@ func main() {
 
 func run() error {
 	if len(os.Args) < 2 {
-		return fmt.Errorf("usage: devseed prepare [flags]")
+		return fmt.Errorf("usage: devseed <prepare|seed-pipelines> [flags]")
 	}
 
 	switch os.Args[1] {
 	case "prepare":
 		return runPrepare(os.Args[2:])
+	case "seed-pipelines":
+		return runSeedPipelines(os.Args[2:])
 	default:
 		return fmt.Errorf("unknown command %q", os.Args[1])
 	}
@@ -68,6 +70,47 @@ func runPrepare(args []string) error {
 	fmt.Printf("sample_data_dir=%s\n", prepared.SampleDataDir)
 	for name, path := range prepared.DatasetPaths {
 		fmt.Printf("dataset_%s=%s\n", name, path)
+	}
+	return nil
+}
+
+func runSeedPipelines(args []string) error {
+	fs := flag.NewFlagSet("seed-pipelines", flag.ContinueOnError)
+	host := fs.String("host", "", "Base API host override (defaults to the saved profile host)")
+	profile := fs.String("profile", "", "Saved CLI auth profile to use")
+	notebookOwner := fs.String("notebook-owner", "dev_admin", "Owner of the seeded notebook")
+	notebookName := fs.String("notebook-name", "nyc_taxi_explore", "Seeded notebook name to attach to the demo pipeline")
+	pipelineName := fs.String("pipeline-name", "nyc_taxi_demo", "Seeded pipeline name")
+	pipelineDescription := fs.String("pipeline-description", "Seeded demo pipeline for the NYC taxi dev workspace", "Seeded pipeline description")
+	jobName := fs.String("job-name", "run_nyc_taxi_explore", "Seeded pipeline job name")
+	trigger := fs.Bool("trigger", true, "Trigger the seeded pipeline once when it has no runs yet")
+	fs.SetOutput(os.Stderr)
+	if err := fs.Parse(args); err != nil {
+		return err
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
+	defer cancel()
+
+	seeded, err := devseed.SeedPipelines(ctx, devseed.SeedPipelinesOptions{
+		Host:                *host,
+		Profile:             *profile,
+		NotebookOwner:       *notebookOwner,
+		NotebookName:        *notebookName,
+		PipelineName:        *pipelineName,
+		PipelineDescription: *pipelineDescription,
+		JobName:             *jobName,
+		TriggerRun:          *trigger,
+	})
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("seeded_notebook_id=%s\n", seeded.NotebookID)
+	fmt.Printf("seeded_pipeline_id=%s\n", seeded.PipelineID)
+	fmt.Printf("seeded_job_id=%s\n", seeded.JobID)
+	if seeded.RunID != "" {
+		fmt.Printf("seeded_run_id=%s\n", seeded.RunID)
 	}
 	return nil
 }

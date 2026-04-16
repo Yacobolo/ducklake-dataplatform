@@ -138,6 +138,7 @@ package api
 		op:           "getPipelineJob"
 		path:         "/pipelines/{pipeline_name}/jobs/{job_id}"
 		summary:      "Get pipeline job"
+		cli:          "pipelines jobs get"
 		returns:      "PipelineJob"
 		error_family: "resource"
 		params:       #pipelineJobPathParameters
@@ -148,6 +149,7 @@ package api
 		op:           "updatePipelineJob"
 		path:         "/pipelines/{pipeline_name}/jobs/{job_id}"
 		summary:      "Update pipeline job"
+		cli:          "pipelines jobs update"
 		returns:      "PipelineJob"
 		error_family: "mutating"
 		params:       #pipelineJobPathParameters

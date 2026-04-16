@@ -685,6 +685,26 @@ func TestPipelineService_TriggerRun(t *testing.T) {
 			if tt.setupPipe != nil {
 				tt.setupPipe(pipeRepo)
 			}
+			runStatus := domain.PipelineRunStatusPending
+			runRepo.CountActiveRunsFn = func(ctx context.Context, pipelineID string) (int64, error) {
+				return 0, nil
+			}
+			runRepo.CreateRunFn = func(ctx context.Context, run *domain.PipelineRun) (*domain.PipelineRun, error) {
+				return run, nil
+			}
+			runRepo.CreateJobRunFn = func(ctx context.Context, jr *domain.PipelineJobRun) (*domain.PipelineJobRun, error) {
+				return jr, nil
+			}
+			runRepo.GetRunByIDFn = func(ctx context.Context, id string) (*domain.PipelineRun, error) {
+				return &domain.PipelineRun{ID: id, PipelineID: "p1", Status: runStatus}, nil
+			}
+			runRepo.ListJobRunsByRunFn = func(ctx context.Context, runID string) ([]domain.PipelineJobRun, error) {
+				return nil, nil
+			}
+			runRepo.UpdateRunFinishedFn = func(ctx context.Context, id string, status string, errMsg *string) error {
+				runStatus = status
+				return nil
+			}
 
 			svc := newTestService(pipeRepo, runRepo, auditRepo, nbProvider)
 
@@ -724,7 +744,29 @@ func TestPipelineService_TriggerRun_ClonesParams(t *testing.T) {
 			return []domain.PipelineJob{{ID: "j1", PipelineID: pipelineID, Name: "extract"}}, nil
 		},
 	}
-	svc := newTestService(pipeRepo, &testutil.MockPipelineRunRepo{}, &testutil.MockAuditRepo{}, &testutil.MockNotebookProvider{})
+	runStatus := domain.PipelineRunStatusPending
+	runRepo := &testutil.MockPipelineRunRepo{
+		CountActiveRunsFn: func(ctx context.Context, pipelineID string) (int64, error) {
+			return 0, nil
+		},
+		CreateRunFn: func(ctx context.Context, run *domain.PipelineRun) (*domain.PipelineRun, error) {
+			return run, nil
+		},
+		CreateJobRunFn: func(ctx context.Context, jr *domain.PipelineJobRun) (*domain.PipelineJobRun, error) {
+			return jr, nil
+		},
+		GetRunByIDFn: func(ctx context.Context, id string) (*domain.PipelineRun, error) {
+			return &domain.PipelineRun{ID: id, PipelineID: "p1", Status: runStatus}, nil
+		},
+		ListJobRunsByRunFn: func(ctx context.Context, runID string) ([]domain.PipelineJobRun, error) {
+			return nil, nil
+		},
+		UpdateRunFinishedFn: func(ctx context.Context, id string, status string, errMsg *string) error {
+			runStatus = status
+			return nil
+		},
+	}
+	svc := newTestService(pipeRepo, runRepo, &testutil.MockAuditRepo{}, &testutil.MockNotebookProvider{})
 
 	inputParams := map[string]string{"date": "2026-01-01"}
 	run, err := svc.TriggerRun(context.Background(), "alice", "etl-daily", inputParams, domain.TriggerTypeManual)
@@ -733,6 +775,32 @@ func TestPipelineService_TriggerRun_ClonesParams(t *testing.T) {
 
 	inputParams["date"] = "2026-01-02"
 	assert.Equal(t, "2026-01-01", run.Parameters["date"])
+}
+
+func TestPipelineService_TriggerRun_RespectsConcurrencyLimit(t *testing.T) {
+	pipeRepo := &testutil.MockPipelineRepo{
+		GetPipelineByNameFn: func(ctx context.Context, name string) (*domain.Pipeline, error) {
+			return &domain.Pipeline{ID: "p1", Name: name, ConcurrencyLimit: 1}, nil
+		},
+		ListJobsByPipelineFn: func(ctx context.Context, pipelineID string) ([]domain.PipelineJob, error) {
+			return []domain.PipelineJob{{ID: "j1", PipelineID: pipelineID, Name: "extract"}}, nil
+		},
+	}
+	runRepo := &testutil.MockPipelineRunRepo{
+		CountActiveRunsFn: func(ctx context.Context, pipelineID string) (int64, error) {
+			return 1, nil
+		},
+	}
+
+	svc := newTestService(pipeRepo, runRepo, &testutil.MockAuditRepo{}, &testutil.MockNotebookProvider{})
+
+	run, err := svc.TriggerRun(context.Background(), "alice", "etl-daily", nil, domain.TriggerTypeManual)
+	require.Error(t, err)
+	require.Nil(t, run)
+
+	var conflictErr *domain.ConflictError
+	require.ErrorAs(t, err, &conflictErr)
+	assert.Contains(t, err.Error(), "concurrency_limit")
 }
 
 func TestPipelineService_SyncPipelinesToAssets_GetAssetUnexpectedError(t *testing.T) {

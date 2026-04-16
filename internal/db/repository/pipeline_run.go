@@ -33,7 +33,7 @@ func (r *PipelineRunRepo) CreateRun(ctx context.Context, run *domain.PipelineRun
 	}
 
 	row, err := r.q.CreatePipelineRun(ctx, dbstore.CreatePipelineRunParams{
-		ID:            newID(),
+		ID:            defaultString(run.ID, newID()),
 		PipelineID:    run.PipelineID,
 		Status:        run.Status,
 		TriggerType:   run.TriggerType,
@@ -138,7 +138,7 @@ func (r *PipelineRunRepo) CancelPendingRuns(ctx context.Context, pipelineID stri
 // CreateJobRun inserts a new pipeline job run.
 func (r *PipelineRunRepo) CreateJobRun(ctx context.Context, jr *domain.PipelineJobRun) (*domain.PipelineJobRun, error) {
 	row, err := r.q.CreatePipelineJobRun(ctx, dbstore.CreatePipelineJobRunParams{
-		ID:           newID(),
+		ID:           defaultString(jr.ID, newID()),
 		RunID:        jr.RunID,
 		JobID:        jr.JobID,
 		JobName:      jr.JobName,

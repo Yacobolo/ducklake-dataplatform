@@ -78,7 +78,7 @@ func (s *Scheduler) loadSchedules(ctx context.Context) error {
 
 		entryID, err := s.cron.AddFunc(schedule, func() {
 			ctx := context.Background()
-			_, triggerErr := s.svc.triggerAssets(ctx, domain.NewID(), createdBy, pipelineName, nil)
+			_, triggerErr := s.svc.TriggerRun(ctx, createdBy, pipelineName, nil, domain.TriggerTypeScheduled)
 			if triggerErr != nil {
 				s.logger.Warn("scheduled trigger failed",
 					"pipeline", pipelineName,

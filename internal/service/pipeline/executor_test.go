@@ -247,6 +247,9 @@ func TestExecuteJob_RetryInterruptedByCancellation(t *testing.T) {
 	engine := connEngine()
 
 	runRepo := &testutil.MockPipelineRunRepo{
+		UpdateJobRunStartedFn: func(ctx context.Context, id string) error {
+			return nil
+		},
 		UpdateJobRunFinishedFn: func(ctx context.Context, id string, status string, errMsg *string) error {
 			return nil
 		},
