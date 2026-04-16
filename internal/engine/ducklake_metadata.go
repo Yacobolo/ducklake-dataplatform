@@ -14,9 +14,13 @@ func duckLakeMetadataCatalogAlias(catalogName string) string {
 	return "__ducklake_meta_" + strings.TrimSpace(catalogName)
 }
 
+func legacyDuckLakeMetadataSchemaName(catalogName string) string {
+	return "__ducklake_metadata_" + strings.TrimSpace(catalogName)
+}
+
 // AttachDuckLakeMetadataSchema exposes a DuckLake catalog's metastore tables as
 // read-only views inside the attached catalog so they can be queried via
-// catalog-qualified SQL such as lake.__ducklake_metadata_lake.ducklake_schema.
+// catalog-qualified SQL such as lake._ducklake.ducklake_schema.
 func AttachDuckLakeMetadataSchema(ctx context.Context, db *sql.DB, reg domain.CatalogRegistration) error {
 	if strings.TrimSpace(reg.Name) == "" {
 		return fmt.Errorf("ducklake metadata schema requires a catalog name")
@@ -31,6 +35,16 @@ func AttachDuckLakeMetadataSchema(ctx context.Context, db *sql.DB, reg domain.Ca
 	}
 
 	metadataSchema := domain.DuckLakeMetadataSchemaName(reg.Name)
+	if legacySchema := legacyDuckLakeMetadataSchemaName(reg.Name); legacySchema != metadataSchema {
+		dropLegacySchemaSQL := fmt.Sprintf(
+			"DROP SCHEMA IF EXISTS %s.%s CASCADE",
+			ddl.QuoteIdentifier(reg.Name),
+			ddl.QuoteIdentifier(legacySchema),
+		)
+		if _, err := db.ExecContext(ctx, dropLegacySchemaSQL); err != nil {
+			return fmt.Errorf("drop legacy ducklake metadata schema %q: %w", legacySchema, err)
+		}
+	}
 	createSchemaSQL := fmt.Sprintf(
 		"CREATE SCHEMA IF NOT EXISTS %s.%s",
 		ddl.QuoteIdentifier(reg.Name),

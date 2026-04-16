@@ -126,7 +126,7 @@ func TestAdminBypassesAllChecks(t *testing.T) {
 		t.Error("admin should bypass all privilege checks")
 	}
 
-	ok, err = cat.CheckPrivilege(ctx, "admin", SecurableTable, domain.SyntheticCatalogTableID("lake", domain.SystemSchemaObjectID("__ducklake_metadata_lake"), domain.SystemTableObjectID("__ducklake_metadata_lake", "ducklake_table")), PrivSelect)
+	ok, err = cat.CheckPrivilege(ctx, "admin", SecurableTable, domain.SyntheticCatalogTableID("lake", domain.SystemSchemaObjectID("_ducklake"), domain.SystemTableObjectID("_ducklake", "ducklake_table")), PrivSelect)
 	require.NoError(t, err)
 	assert.True(t, ok)
 }
@@ -149,7 +149,7 @@ func TestUserWithNoGrantsDenied(t *testing.T) {
 		t.Error("user with no grants should be denied")
 	}
 
-	ok, err = cat.CheckPrivilege(ctx, "nobody", SecurableTable, domain.SyntheticCatalogTableID("lake", domain.SystemSchemaObjectID("__ducklake_metadata_lake"), domain.SystemTableObjectID("__ducklake_metadata_lake", "ducklake_table")), PrivSelect)
+	ok, err = cat.CheckPrivilege(ctx, "nobody", SecurableTable, domain.SyntheticCatalogTableID("lake", domain.SystemSchemaObjectID("_ducklake"), domain.SystemTableObjectID("_ducklake", "ducklake_table")), PrivSelect)
 	require.NoError(t, err)
 	assert.False(t, ok)
 }

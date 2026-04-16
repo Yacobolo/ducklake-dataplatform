@@ -360,7 +360,8 @@ func seedDuckLakeTableMetadata(t *testing.T, metaPath string, requestedDataPath 
 	t.Helper()
 
 	bootstrapDataPath := duckLakeBootstrapDataPath(t, requestedDataPath)
-	metadataSchema := "__ducklake_metadata_lake"
+	metadataSchema := "_ducklake"
+	metadataCatalogAlias := "__ducklake_meta_lake"
 
 	duckDB, err := sql.Open("duckdb", "")
 	if err != nil {
@@ -383,8 +384,23 @@ func seedDuckLakeTableMetadata(t *testing.T, metaPath string, requestedDataPath 
 	if _, err := duckDB.ExecContext(ctx, attachSQL); err != nil {
 		t.Fatalf("attach ducklake metastore for seeding: %v", err)
 	}
+	if _, err := duckDB.ExecContext(ctx, fmt.Sprintf(`ATTACH '%s' AS %s (TYPE sqlite, READ_ONLY)`, metaPath, metadataCatalogAlias)); err != nil {
+		t.Fatalf("attach sqlite metastore for seeding: %v", err)
+	}
 	if _, err := duckDB.ExecContext(ctx, "USE lake"); err != nil {
 		t.Fatalf("use seeded ducklake catalog: %v", err)
+	}
+	if _, err := duckDB.ExecContext(ctx, fmt.Sprintf(`CREATE SCHEMA IF NOT EXISTS lake.%s`, metadataSchema)); err != nil {
+		t.Fatalf("create ducklake metadata schema for seeding: %v", err)
+	}
+	for _, tableName := range []string{"ducklake_table", "ducklake_snapshot", "ducklake_data_file", "ducklake_metadata"} {
+		createViewSQL := fmt.Sprintf(
+			`CREATE OR REPLACE VIEW lake.%s.%s AS SELECT * FROM %s.main.%s`,
+			metadataSchema, tableName, metadataCatalogAlias, tableName,
+		)
+		if _, err := duckDB.ExecContext(ctx, createViewSQL); err != nil {
+			t.Fatalf("create ducklake metadata view %s: %v", tableName, err)
+		}
 	}
 
 	createTableSQL := fmt.Sprintf(`CREATE TABLE IF NOT EXISTS main.%s (%s)`, spec.TableName, spec.ColumnDDL)
@@ -420,18 +436,18 @@ func seedDuckLakeTableMetadata(t *testing.T, metaPath string, requestedDataPath 
 		if err := duckDB.QueryRowContext(ctx, fmt.Sprintf(`SELECT COALESCE(MAX(data_file_id), -1) + 1 FROM %s.ducklake_data_file`, metadataSchema)).Scan(&nextDataFileID); err != nil {
 			t.Fatalf("next ducklake data_file_id for %s: %v", spec.TableName, err)
 		}
-		if _, err := duckDB.ExecContext(ctx, `
-			INSERT INTO __ducklake_metadata_lake.ducklake_data_file (
+		if _, err := duckDB.ExecContext(ctx, fmt.Sprintf(`
+			INSERT INTO lake.%s.ducklake_data_file (
 				data_file_id, table_id, begin_snapshot, end_snapshot, file_order,
 				path, path_is_relative, file_format, record_count, file_size_bytes,
 				footer_size, row_id_start, partition_id, encryption_key, mapping_id, partial_max
 			) VALUES (?, ?, ?, NULL, NULL, ?, 1, 'parquet', ?, ?, ?, 0, NULL, NULL, NULL, NULL)
-		`, nextDataFileID, tableID, latestSnapshotID, spec.DataFileName, spec.RecordCount, spec.FileSizeBytes, spec.FooterSize); err != nil {
+		`, metadataSchema), nextDataFileID, tableID, latestSnapshotID, spec.DataFileName, spec.RecordCount, spec.FileSizeBytes, spec.FooterSize); err != nil {
 			t.Fatalf("insert ducklake data file for %s: %v", spec.TableName, err)
 		}
 	}
 
-	if _, err := duckDB.ExecContext(ctx, `UPDATE __ducklake_metadata_lake.ducklake_metadata SET value = ? WHERE key = 'data_path'`, requestedDataPath); err != nil {
+	if _, err := duckDB.ExecContext(ctx, fmt.Sprintf(`UPDATE lake.%s.ducklake_metadata SET value = ? WHERE key = 'data_path'`, metadataSchema), requestedDataPath); err != nil {
 		t.Fatalf("set ducklake data_path: %v", err)
 	}
 	if err := duckDB.Close(); err != nil {

@@ -14,10 +14,10 @@ const (
 	systemObjectIDPrefix = "__system__:"
 )
 
-// DuckLakeMetadataSchemaName returns the attached DuckDB schema that exposes a
-// catalog's internal DuckLake metadata tables.
+// DuckLakeMetadataSchemaName returns the reserved per-catalog schema that
+// exposes a DuckLake catalog's internal metadata tables.
 func DuckLakeMetadataSchemaName(catalogName string) string {
-	return "__ducklake_metadata_" + strings.TrimSpace(catalogName)
+	return "_ducklake"
 }
 
 // IsDuckLakeSystemSchema reports whether a schema name refers to the attached

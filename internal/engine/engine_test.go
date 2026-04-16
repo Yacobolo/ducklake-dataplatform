@@ -402,18 +402,31 @@ func TestAttachDuckLakeMetadataSchema_ExposesQueryableViews(t *testing.T) {
 	}
 	require.NoError(t, os.MkdirAll(reg.DataPath, 0o755))
 	require.NoError(t, engine.AttachDuckLake(ctx, db, reg.Name, reg.DSN, reg.DataPath))
+	_, err = db.ExecContext(ctx, `CREATE SCHEMA lake.__ducklake_metadata_lake`)
+	require.NoError(t, err)
+	_, err = db.ExecContext(ctx, `CREATE VIEW lake.__ducklake_metadata_lake.ducklake_schema AS SELECT 1 AS schema_id`)
+	require.NoError(t, err)
 	require.NoError(t, engine.AttachDuckLakeMetadataSchema(ctx, db, reg))
 
 	var schemaCount int
 	err = db.QueryRowContext(ctx,
 		`SELECT COUNT(*)
 		 FROM information_schema.schemata
-		 WHERE catalog_name = 'lake' AND schema_name = '__ducklake_metadata_lake'`,
+		 WHERE catalog_name = 'lake' AND schema_name = '_ducklake'`,
 	).Scan(&schemaCount)
 	require.NoError(t, err)
 	require.Equal(t, 1, schemaCount)
 
-	rows, err := db.QueryContext(ctx, `SELECT schema_name FROM lake.__ducklake_metadata_lake.ducklake_schema ORDER BY schema_name`)
+	var legacySchemaCount int
+	err = db.QueryRowContext(ctx,
+		`SELECT COUNT(*)
+		 FROM information_schema.schemata
+		 WHERE catalog_name = 'lake' AND schema_name = '__ducklake_metadata_lake'`,
+	).Scan(&legacySchemaCount)
+	require.NoError(t, err)
+	require.Equal(t, 0, legacySchemaCount)
+
+	rows, err := db.QueryContext(ctx, `SELECT schema_name FROM lake._ducklake.ducklake_schema ORDER BY schema_name`)
 	require.NoError(t, err)
 	defer rows.Close() //nolint:errcheck
 
@@ -425,7 +438,7 @@ func TestAttachDuckLakeMetadataSchema_ExposesQueryableViews(t *testing.T) {
 	}
 	require.NoError(t, rows.Err())
 	require.Contains(t, schemaNames, "main")
-	require.Contains(t, schemaNames, "__ducklake_metadata_lake")
+	require.Contains(t, schemaNames, "_ducklake")
 }
 
 func TestAccessToDeniedTableFails(t *testing.T) {
