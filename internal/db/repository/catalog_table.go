@@ -74,7 +74,7 @@ func (r *CatalogRepo) GetTable(ctx context.Context, schemaName, tableName string
 		`SELECT schema_id, path FROM ducklake_schema WHERE schema_name = ? AND end_snapshot IS NULL`, schemaName).
 		Scan(&schemaID, &schemaPath)
 	if errors.Is(err, sql.ErrNoRows) {
-		return nil, domain.ErrNotFound("schema %q not found", schemaName)
+		return r.getSystemTable(ctx, schemaName, tableName)
 	}
 	if err != nil {
 		return nil, err
@@ -89,6 +89,10 @@ func (r *CatalogRepo) GetTable(ctx context.Context, schemaName, tableName string
 		schemaID, tableName).
 		Scan(&tableID, &t.Name, &tablePath, &tablePathIsRelative)
 	if errors.Is(err, sql.ErrNoRows) {
+		if systemTable, systemErr := r.getSystemTable(ctx, schemaName, tableName); systemErr == nil {
+			return systemTable, nil
+		}
+
 		// Fall back to external tables
 		if r.extRepo != nil {
 			et, extErr := r.extRepo.GetByName(ctx, schemaName, tableName)
@@ -134,6 +138,23 @@ func (r *CatalogRepo) GetTable(ctx context.Context, schemaName, tableName string
 // ListTables returns a paginated list of tables in a schema.
 // NOTE: ducklake_schema and ducklake_table are not managed by sqlc.
 func (r *CatalogRepo) ListTables(ctx context.Context, schemaName string, page domain.PageRequest) ([]domain.TableDetail, int64, error) {
+	if domain.IsSystemSchema(r.catalogName, schemaName) {
+		tables, err := r.listSystemTables(ctx, schemaName)
+		if err != nil {
+			return nil, 0, err
+		}
+		total := int64(len(tables))
+		offset := page.Offset()
+		if offset >= len(tables) {
+			return []domain.TableDetail{}, total, nil
+		}
+		end := offset + page.Limit()
+		if end > len(tables) {
+			end = len(tables)
+		}
+		return tables[offset:end], total, nil
+	}
+
 	// First get the schema_id
 	schemaID, err := r.resolveSchemaID(ctx, schemaName)
 	if err != nil {
@@ -313,6 +334,18 @@ func (r *CatalogRepo) DeleteTable(ctx context.Context, schemaName, tableName str
 // ListColumns returns a paginated list of columns for a table.
 // NOTE: ducklake_schema, ducklake_table, ducklake_column are not managed by sqlc.
 func (r *CatalogRepo) ListColumns(ctx context.Context, schemaName, tableName string, page domain.PageRequest) ([]domain.ColumnDetail, int64, error) {
+	if domain.IsSystemSchema(r.catalogName, schemaName) {
+		columns, err := r.listSystemColumns(ctx, schemaName, tableName, page)
+		if err != nil {
+			return nil, 0, err
+		}
+		allColumns, err := r.listSystemColumns(ctx, schemaName, tableName, domain.PageRequest{MaxResults: domain.MaxMaxResults})
+		if err != nil {
+			return nil, 0, err
+		}
+		return columns, int64(len(allColumns)), nil
+	}
+
 	// First resolve schema_id
 	schemaID, err := r.resolveSchemaID(ctx, schemaName)
 	if err != nil {

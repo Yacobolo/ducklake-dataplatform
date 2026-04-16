@@ -95,6 +95,41 @@ func TestCatalogRepo_GetTable(t *testing.T) {
 		assert.Equal(t, "table comment", tbl.Comment)
 		assert.Equal(t, "bob", tbl.Owner)
 	})
+
+	t.Run("falls back to ducklake system table", func(t *testing.T) {
+		repo := setupCatalogRepoWithDuckDB(t)
+		attachDuckDBCatalogForTests(t, repo)
+		ctx := context.Background()
+
+		_, err := repo.duckDB.ExecContext(ctx, `CREATE SCHEMA lake.__ducklake_metadata_lake`)
+		require.NoError(t, err)
+		_, err = repo.duckDB.ExecContext(ctx, `CREATE TABLE lake.__ducklake_metadata_lake.ducklake_table(table_id INTEGER, table_name VARCHAR)`)
+		require.NoError(t, err)
+
+		tbl, err := repo.GetTable(ctx, "__ducklake_metadata_lake", "ducklake_table")
+		require.NoError(t, err)
+		assert.Equal(t, domain.TableTypeSystem, tbl.TableType)
+		assert.Equal(t, domain.SystemPrincipalName, tbl.Owner)
+		require.Len(t, tbl.Columns, 2)
+		assert.Equal(t, "table_id", tbl.Columns[0].Name)
+	})
+
+	t.Run("falls back to app system table", func(t *testing.T) {
+		repo := setupCatalogRepoWithDuckDB(t)
+		ctx := context.Background()
+
+		_, err := repo.controlDB.ExecContext(ctx, `CREATE TABLE app_system_lookup_test(id INTEGER, name TEXT NOT NULL)`)
+		require.NoError(t, err)
+		attachAppSystemCatalogForTests(t, repo)
+
+		tbl, err := repo.GetTable(ctx, domain.AppSystemSchemaName, "app_system_lookup_test")
+		require.NoError(t, err)
+		assert.Equal(t, domain.TableTypeSystem, tbl.TableType)
+		assert.Equal(t, domain.SystemPrincipalName, tbl.Owner)
+		require.Len(t, tbl.Columns, 2)
+		assert.Equal(t, "id", tbl.Columns[0].Name)
+		assert.Equal(t, "name", tbl.Columns[1].Name)
+	})
 }
 
 // ---------------------------------------------------------------------------
@@ -183,6 +218,49 @@ func TestCatalogRepo_ListTables(t *testing.T) {
 		assert.Equal(t, int64(0), total)
 		assert.Empty(t, tables)
 	})
+
+	t.Run("lists ducklake system tables", func(t *testing.T) {
+		repo := setupCatalogRepoWithDuckDB(t)
+		attachDuckDBCatalogForTests(t, repo)
+		ctx := context.Background()
+
+		_, err := repo.duckDB.ExecContext(ctx, `CREATE SCHEMA lake.__ducklake_metadata_lake`)
+		require.NoError(t, err)
+		_, err = repo.duckDB.ExecContext(ctx, `CREATE TABLE lake.__ducklake_metadata_lake.ducklake_table(table_id INTEGER)`)
+		require.NoError(t, err)
+		_, err = repo.duckDB.ExecContext(ctx, `CREATE TABLE lake.__ducklake_metadata_lake.ducklake_schema(schema_id INTEGER)`)
+		require.NoError(t, err)
+
+		tables, total, err := repo.ListTables(ctx, "__ducklake_metadata_lake", domain.PageRequest{})
+		require.NoError(t, err)
+		assert.Equal(t, int64(2), total)
+		require.Len(t, tables, 2)
+		assert.Equal(t, domain.TableTypeSystem, tables[0].TableType)
+	})
+
+	t.Run("lists app system tables", func(t *testing.T) {
+		repo := setupCatalogRepoWithDuckDB(t)
+		ctx := context.Background()
+
+		_, err := repo.controlDB.ExecContext(ctx, `CREATE TABLE app_system_list_test(id INTEGER)`)
+		require.NoError(t, err)
+		attachAppSystemCatalogForTests(t, repo)
+
+		tables, total, err := repo.ListTables(ctx, domain.AppSystemSchemaName, domain.PageRequest{MaxResults: domain.MaxMaxResults})
+		require.NoError(t, err)
+		assert.Greater(t, total, int64(0))
+
+		var found *domain.TableDetail
+		for i := range tables {
+			if tables[i].Name == "app_system_list_test" {
+				found = &tables[i]
+				break
+			}
+		}
+		require.NotNil(t, found)
+		assert.Equal(t, domain.TableTypeSystem, found.TableType)
+		assert.Equal(t, domain.AppSystemSchemaName, found.SchemaName)
+	})
 }
 
 // ---------------------------------------------------------------------------
@@ -245,6 +323,41 @@ func TestCatalogRepo_ListColumns(t *testing.T) {
 		require.Error(t, err)
 		var nf *domain.NotFoundError
 		assert.ErrorAs(t, err, &nf)
+	})
+
+	t.Run("lists columns for ducklake system table", func(t *testing.T) {
+		repo := setupCatalogRepoWithDuckDB(t)
+		attachDuckDBCatalogForTests(t, repo)
+		ctx := context.Background()
+
+		_, err := repo.duckDB.ExecContext(ctx, `CREATE SCHEMA lake.__ducklake_metadata_lake`)
+		require.NoError(t, err)
+		_, err = repo.duckDB.ExecContext(ctx, `CREATE TABLE lake.__ducklake_metadata_lake.ducklake_snapshot(snapshot_id BIGINT, created_at TIMESTAMP)`)
+		require.NoError(t, err)
+
+		cols, total, err := repo.ListColumns(ctx, "__ducklake_metadata_lake", "ducklake_snapshot", domain.PageRequest{})
+		require.NoError(t, err)
+		assert.Equal(t, int64(2), total)
+		require.Len(t, cols, 2)
+		assert.Equal(t, "snapshot_id", cols[0].Name)
+	})
+
+	t.Run("lists columns for app system table", func(t *testing.T) {
+		repo := setupCatalogRepoWithDuckDB(t)
+		ctx := context.Background()
+
+		_, err := repo.controlDB.ExecContext(ctx, `CREATE TABLE app_system_columns_test(id INTEGER NOT NULL, note TEXT)`)
+		require.NoError(t, err)
+		attachAppSystemCatalogForTests(t, repo)
+
+		cols, total, err := repo.ListColumns(ctx, domain.AppSystemSchemaName, "app_system_columns_test", domain.PageRequest{})
+		require.NoError(t, err)
+		assert.Equal(t, int64(2), total)
+		require.Len(t, cols, 2)
+		assert.Equal(t, "id", cols[0].Name)
+		assert.False(t, cols[0].Nullable)
+		assert.Equal(t, "note", cols[1].Name)
+		assert.True(t, cols[1].Nullable)
 	})
 }
 

@@ -15,24 +15,25 @@ const syntheticViewIDPrefix = "__view__:"
 // AuthorizationService provides permission checking using domain repository interfaces.
 // It implements the domain.AuthorizationService interface.
 type AuthorizationService struct {
-	principals             domain.PrincipalRepository
-	groups                 domain.GroupRepository
-	grants                 domain.GrantRepository
-	rowFilters             domain.RowFilterRepository
-	columnMasks            domain.ColumnMaskRepository
-	introspection          domain.IntrospectionRepository
-	extTableRepo           domain.ExternalTableRepository
-	viewRepo               domain.ViewRepository
-	lookupCatalogTable     func(ctx context.Context, catalogName, schemaName, tableName string) (*domain.TableDetail, error)
-	lookupCatalogColumns   func(ctx context.Context, catalogName, tableID string) ([]string, error)
-	lookupCatalogSchema    func(ctx context.Context, catalogName, schemaName string) (*domain.SchemaDetail, error)
-	lookupCatalogView      func(ctx context.Context, catalogName, schemaName, viewName string) (*domain.ViewDetail, error)
-	lookupDefaultTable     func(ctx context.Context, schemaName, tableName string) (*domain.TableDetail, error)
-	lookupDefaultView      func(ctx context.Context, schemaName, viewName string) (*domain.ViewDetail, error)
-	lookupDefaultTableByID func(ctx context.Context, tableID string) (*domain.Table, error)
-	lookupDefaultSchema    func(ctx context.Context, schemaName string) (*domain.Schema, error)
-	cacheMu                sync.RWMutex
-	privilegeCache         map[string]bool
+	principals               domain.PrincipalRepository
+	groups                   domain.GroupRepository
+	grants                   domain.GrantRepository
+	rowFilters               domain.RowFilterRepository
+	columnMasks              domain.ColumnMaskRepository
+	introspection            domain.IntrospectionRepository
+	extTableRepo             domain.ExternalTableRepository
+	viewRepo                 domain.ViewRepository
+	lookupCatalogTable       func(ctx context.Context, catalogName, schemaName, tableName string) (*domain.TableDetail, error)
+	lookupCatalogColumns     func(ctx context.Context, catalogName, tableID string) ([]string, error)
+	lookupCatalogSchema      func(ctx context.Context, catalogName, schemaName string) (*domain.SchemaDetail, error)
+	lookupCatalogView        func(ctx context.Context, catalogName, schemaName, viewName string) (*domain.ViewDetail, error)
+	lookupDefaultTable       func(ctx context.Context, schemaName, tableName string) (*domain.TableDetail, error)
+	lookupDefaultView        func(ctx context.Context, schemaName, viewName string) (*domain.ViewDetail, error)
+	lookupDefaultTableByID   func(ctx context.Context, tableID string) (*domain.Table, error)
+	lookupDefaultSchema      func(ctx context.Context, schemaName string) (*domain.Schema, error)
+	lookupDefaultCatalogName func(ctx context.Context) (string, error)
+	cacheMu                  sync.RWMutex
+	privilegeCache           map[string]bool
 }
 
 // NewAuthorizationService creates a new AuthorizationService backed by domain repositories.
@@ -106,6 +107,12 @@ func (s *AuthorizationService) SetDefaultCatalogSchemaLookup(lookup func(ctx con
 	s.lookupDefaultSchema = lookup
 }
 
+// SetDefaultCatalogNameLookup configures a callback that returns the current
+// default catalog name for two-part system table references.
+func (s *AuthorizationService) SetDefaultCatalogNameLookup(lookup func(ctx context.Context) (string, error)) {
+	s.lookupDefaultCatalogName = lookup
+}
+
 // SetDefaultCatalogTableByIDLookup configures table lookup by ID in the
 // default catalog for privilege inheritance checks.
 func (s *AuthorizationService) SetDefaultCatalogTableByIDLookup(lookup func(ctx context.Context, tableID string) (*domain.Table, error)) {
@@ -159,6 +166,10 @@ func (s *AuthorizationService) LookupTableID(ctx context.Context, tableName stri
 		tbl, lookupErr := s.lookupCatalogTable(ctx, catalogName, schemaName, bareTableName)
 		if lookupErr == nil {
 			isExternal := strings.EqualFold(tbl.TableType, domain.TableTypeExternal)
+			if strings.EqualFold(tbl.TableType, domain.TableTypeSystem) {
+				rawSchemaID := domain.SystemSchemaObjectID(schemaName)
+				return domain.SyntheticCatalogTableID(catalogName, rawSchemaID, domain.SystemTableObjectID(schemaName, bareTableName)), domain.SyntheticCatalogSchemaID(catalogName, rawSchemaID), false, nil
+			}
 
 			if s.lookupCatalogSchema != nil {
 				if schema, schemaErr := s.lookupCatalogSchema(ctx, catalogName, schemaName); schemaErr == nil {
@@ -206,6 +217,20 @@ func (s *AuthorizationService) LookupTableID(ctx context.Context, tableName stri
 		if s.lookupDefaultTable != nil {
 			tbl, defaultErr := s.lookupDefaultTable(ctx, schemaName, bareTableName)
 			if defaultErr == nil {
+				if strings.EqualFold(tbl.TableType, domain.TableTypeSystem) {
+					rawSchemaID := domain.SystemSchemaObjectID(schemaName)
+					rawTableID := domain.SystemTableObjectID(schemaName, bareTableName)
+					if s.lookupDefaultCatalogName != nil {
+						defaultCatalogName, catalogErr := s.lookupDefaultCatalogName(ctx)
+						if catalogErr != nil {
+							return "", "", false, fmt.Errorf("lookup default catalog for system table %q: %w", bareTableName, catalogErr)
+						}
+						if strings.TrimSpace(defaultCatalogName) != "" {
+							return domain.SyntheticCatalogTableID(defaultCatalogName, rawSchemaID, rawTableID), domain.SyntheticCatalogSchemaID(defaultCatalogName, rawSchemaID), false, nil
+						}
+					}
+					return rawTableID, rawSchemaID, false, nil
+				}
 				if sch, schErr := s.lookupSchemaByName(ctx, schemaName); schErr == nil {
 					return tbl.TableID, sch.ID, strings.EqualFold(tbl.TableType, domain.TableTypeExternal), nil
 				}
@@ -498,12 +523,19 @@ func (s *AuthorizationService) checkTablePrivilege(ctx context.Context, principa
 		schemaResolved bool
 	)
 
+	if domain.IsSystemTableObjectID(tableID) {
+		return false, nil
+	}
+
 	if parsedSchemaID, ok := schemaIDFromSyntheticViewID(tableID); ok {
 		schemaID = parsedSchemaID
 		schemaResolved = true
 	}
 	if !schemaResolved {
-		if catalogName, parsedRawSchemaID, _, ok := domain.ParseSyntheticCatalogTableID(tableID); ok {
+		if catalogName, parsedRawSchemaID, parsedRawTableID, ok := domain.ParseSyntheticCatalogTableID(tableID); ok {
+			if domain.IsSystemTableObjectID(parsedRawTableID) {
+				return false, nil
+			}
 			schemaID = domain.SyntheticCatalogSchemaID(catalogName, parsedRawSchemaID)
 			schemaResolved = true
 		}
@@ -617,6 +649,12 @@ func schemaIDFromSyntheticViewID(id string) (string, bool) {
 }
 
 func (s *AuthorizationService) checkSchemaPrivilege(ctx context.Context, principalID string, groupIDs []string, schemaID string, privilege string) (bool, error) {
+	if domain.IsSystemSchemaObjectID(schemaID) {
+		return false, nil
+	}
+	if _, parsedRawSchemaID, ok := domain.ParseSyntheticCatalogSchemaID(schemaID); ok && domain.IsSystemSchemaObjectID(parsedRawSchemaID) {
+		return false, nil
+	}
 	ok, err := s.hasGrant(ctx, principalID, groupIDs, domain.SecurableSchema, schemaID, privilege)
 	if err != nil || ok {
 		return ok, err
@@ -776,9 +814,40 @@ func (s *AuthorizationService) GetEffectiveColumnMasks(ctx context.Context, prin
 // GetTableColumnNames returns the ordered list of column names for a table.
 // This is used by the engine to expand SELECT * before applying column masks.
 func (s *AuthorizationService) GetTableColumnNames(ctx context.Context, tableID string) ([]string, error) {
+	if domain.IsSystemTableObjectID(tableID) && s.lookupDefaultTable != nil {
+		schemaName, tableName, parseOK := parseSystemTableObjectID(tableID)
+		if !parseOK {
+			return nil, fmt.Errorf("parse system table id %q", tableID)
+		}
+		tbl, err := s.lookupDefaultTable(ctx, schemaName, tableName)
+		if err != nil {
+			return nil, fmt.Errorf("lookup system table %s: %w", tableID, err)
+		}
+		names := make([]string, len(tbl.Columns))
+		for i := range tbl.Columns {
+			names[i] = tbl.Columns[i].Name
+		}
+		return names, nil
+	}
+
 	rawTableID := tableID
 	if catalogName, _, parsedRawTableID, ok := domain.ParseSyntheticCatalogTableID(tableID); ok {
 		rawTableID = parsedRawTableID
+		if domain.IsSystemTableObjectID(rawTableID) && s.lookupCatalogTable != nil {
+			schemaName, tableName, parseOK := parseSystemTableObjectID(rawTableID)
+			if !parseOK {
+				return nil, fmt.Errorf("parse system table id %q", tableID)
+			}
+			tbl, err := s.lookupCatalogTable(ctx, catalogName, schemaName, tableName)
+			if err != nil {
+				return nil, fmt.Errorf("lookup system table %s: %w", tableID, err)
+			}
+			names := make([]string, len(tbl.Columns))
+			for i := range tbl.Columns {
+				names[i] = tbl.Columns[i].Name
+			}
+			return names, nil
+		}
 		if s.lookupCatalogColumns != nil {
 			names, err := s.lookupCatalogColumns(ctx, catalogName, rawTableID)
 			if err != nil {
@@ -796,4 +865,16 @@ func (s *AuthorizationService) GetTableColumnNames(ctx context.Context, tableID 
 		names[i] = c.Name
 	}
 	return names, nil
+}
+
+func parseSystemTableObjectID(id string) (schemaName, tableName string, ok bool) {
+	if !domain.IsSystemTableObjectID(id) {
+		return "", "", false
+	}
+	rest := strings.TrimPrefix(strings.ToLower(strings.TrimSpace(id)), "__system__:")
+	parts := strings.SplitN(rest, ":", 2)
+	if len(parts) != 2 || parts[0] == "" || parts[1] == "" {
+		return "", "", false
+	}
+	return parts[0], parts[1], true
 }

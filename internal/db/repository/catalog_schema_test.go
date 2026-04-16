@@ -63,6 +63,33 @@ func TestCatalogRepo_GetSchema(t *testing.T) {
 		assert.Equal(t, "my comment", s.Comment)
 		assert.Equal(t, "alice", s.Owner)
 	})
+
+	t.Run("falls back to ducklake system schema", func(t *testing.T) {
+		repo := setupCatalogRepoWithDuckDB(t)
+		attachDuckDBCatalogForTests(t, repo)
+		ctx := context.Background()
+
+		_, err := repo.duckDB.ExecContext(ctx, `CREATE SCHEMA lake.__ducklake_metadata_lake`)
+		require.NoError(t, err)
+
+		s, err := repo.GetSchema(ctx, "__ducklake_metadata_lake")
+		require.NoError(t, err)
+		assert.Equal(t, "__ducklake_metadata_lake", s.Name)
+		assert.Equal(t, domain.SystemPrincipalName, s.Owner)
+		assert.Equal(t, "true", s.Properties["read_only"])
+	})
+
+	t.Run("falls back to app system schema", func(t *testing.T) {
+		repo := setupCatalogRepoWithDuckDB(t)
+		attachAppSystemCatalogForTests(t, repo)
+		ctx := context.Background()
+
+		s, err := repo.GetSchema(ctx, domain.AppSystemSchemaName)
+		require.NoError(t, err)
+		assert.Equal(t, domain.AppSystemSchemaName, s.Name)
+		assert.Equal(t, domain.SystemPrincipalName, s.Owner)
+		assert.Equal(t, "true", s.Properties["read_only"])
+	})
 }
 
 // ---------------------------------------------------------------------------
@@ -84,13 +111,14 @@ func TestCatalogRepo_ListSchemas(t *testing.T) {
 
 		schemas, total, err := repo.ListSchemas(ctx, domain.PageRequest{})
 		require.NoError(t, err)
-		assert.Equal(t, int64(3), total)
-		require.Len(t, schemas, 3)
+		assert.Equal(t, int64(4), total)
+		require.Len(t, schemas, 4)
 
 		// Results are ORDER BY schema_name.
 		assert.Equal(t, "alpha", schemas[0].Name)
 		assert.Equal(t, "beta", schemas[1].Name)
 		assert.Equal(t, "gamma", schemas[2].Name)
+		assert.Equal(t, domain.AppSystemSchemaName, schemas[3].Name)
 
 		for _, s := range schemas {
 			assert.Equal(t, "lake", s.CatalogName)
@@ -109,7 +137,7 @@ func TestCatalogRepo_ListSchemas(t *testing.T) {
 		// Page 1
 		schemas, total, err := repo.ListSchemas(ctx, domain.PageRequest{MaxResults: 2})
 		require.NoError(t, err)
-		assert.Equal(t, int64(3), total)
+		assert.Equal(t, int64(4), total)
 		require.Len(t, schemas, 2)
 		assert.Equal(t, "a", schemas[0].Name)
 		assert.Equal(t, "b", schemas[1].Name)
@@ -120,9 +148,10 @@ func TestCatalogRepo_ListSchemas(t *testing.T) {
 			PageToken:  domain.EncodePageToken(2),
 		})
 		require.NoError(t, err)
-		assert.Equal(t, int64(3), total)
-		require.Len(t, schemas, 1)
+		assert.Equal(t, int64(4), total)
+		require.Len(t, schemas, 2)
 		assert.Equal(t, "c", schemas[0].Name)
+		assert.Equal(t, domain.AppSystemSchemaName, schemas[1].Name)
 	})
 
 	t.Run("empty database", func(t *testing.T) {
@@ -131,8 +160,42 @@ func TestCatalogRepo_ListSchemas(t *testing.T) {
 
 		schemas, total, err := repo.ListSchemas(ctx, domain.PageRequest{})
 		require.NoError(t, err)
-		assert.Equal(t, int64(0), total)
-		assert.Nil(t, schemas)
+		assert.Equal(t, int64(1), total)
+		require.Len(t, schemas, 1)
+		assert.Equal(t, domain.AppSystemSchemaName, schemas[0].Name)
+	})
+
+	t.Run("includes ducklake system schema", func(t *testing.T) {
+		repo := setupCatalogRepoWithDuckDB(t)
+		attachDuckDBCatalogForTests(t, repo)
+		ctx := context.Background()
+
+		seedSchema(t, repo.metaDB, "main")
+		_, err := repo.duckDB.ExecContext(ctx, `CREATE SCHEMA lake.__ducklake_metadata_lake`)
+		require.NoError(t, err)
+
+		schemas, total, err := repo.ListSchemas(ctx, domain.PageRequest{})
+		require.NoError(t, err)
+		assert.Equal(t, int64(3), total)
+		require.Len(t, schemas, 3)
+		assert.Equal(t, "__ducklake_metadata_lake", schemas[0].Name)
+		assert.Equal(t, "main", schemas[1].Name)
+		assert.Equal(t, domain.AppSystemSchemaName, schemas[2].Name)
+	})
+
+	t.Run("includes app system schema", func(t *testing.T) {
+		repo := setupCatalogRepoWithDuckDB(t)
+		attachAppSystemCatalogForTests(t, repo)
+		ctx := context.Background()
+
+		seedSchema(t, repo.metaDB, "main")
+
+		schemas, total, err := repo.ListSchemas(ctx, domain.PageRequest{})
+		require.NoError(t, err)
+		assert.Equal(t, int64(2), total)
+		require.Len(t, schemas, 2)
+		assert.Equal(t, "main", schemas[0].Name)
+		assert.Equal(t, domain.AppSystemSchemaName, schemas[1].Name)
 	})
 }
 

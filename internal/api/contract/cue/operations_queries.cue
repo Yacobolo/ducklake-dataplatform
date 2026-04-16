@@ -102,7 +102,7 @@ package api
 		op:           "executeQuery"
 		path:         "/query-executions"
 		summary:      "Execute query"
-		description:  "Executes a SQL statement synchronously and returns the first page of results in the response body."
+		description:  "Executes a SQL statement synchronously and returns the first page of results in the response body. This is the primary API surface for querying catalog tables, including the reserved system.* schema that exposes control-plane tables for admins as read-only objects."
 		cli:          "query"
 		returns:      "QueryResult"
 		error_family: "mutating"
@@ -115,7 +115,7 @@ package api
 		op:             "submitQuery"
 		path:           "/queries"
 		summary:        "Submit query"
-		description:    "Submits a SQL query for asynchronous execution and returns a query job identifier for polling and result retrieval."
+		description:    "Submits a SQL query for asynchronous execution and returns a query job identifier for polling and result retrieval. Use this endpoint for longer-running SQL over catalog tables or the admin-only system.* schema."
 		cli:            "query submit"
 		returns:        "SubmitQueryResponse"
 		success_status: 202

@@ -403,6 +403,8 @@ schemas_catalog_compute: {
       catalog_id:      "cat_analytics"
       catalog_name:    "analytics"
       name:            "mart"
+      system_managed:  false
+      read_only:       false
       owner:           "team-analytics"
       comment:         "Business-ready modeled datasets."
       properties: {
@@ -417,6 +419,8 @@ schemas_catalog_compute: {
       catalog_name: #stringProperty,
       comment: #commentProperty,
       properties: #stringMapProperty,
+      system_managed: #boolProperty,
+      read_only: #boolProperty,
       tags: #arrayRefProperty & {#ref: "Tag"},
       owner: #ownerProperty,
       created_at: #createdAtProperty,
@@ -460,6 +464,8 @@ schemas_catalog_compute: {
       schema_name:    "mart"
       catalog_name:   "analytics"
       name:           "orders_daily"
+      system_managed: false
+      read_only:      false
       columns: [
         {
           name:     "order_date"
@@ -497,6 +503,8 @@ schemas_catalog_compute: {
       columns: #arrayRefProperty & {#ref: "ColumnDetail"},
       comment: #commentProperty,
       properties: #stringMapProperty,
+      system_managed: #boolProperty,
+      read_only: #boolProperty,
       tags: #arrayRefProperty & {#ref: "Tag"},
       owner: #ownerProperty,
       statistics: #refProperty & {#ref: "TableStatistics"},

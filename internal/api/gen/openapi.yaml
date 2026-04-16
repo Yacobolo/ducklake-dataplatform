@@ -4549,6 +4549,7 @@ paths:
     get:
       operationId: listSchemas
       summary: List schemas
+      description: Lists schemas for a catalog, including reserved read-only system schemas such as system when visible to the caller. The system schema exposes control-plane application tables and is admin-only.
       parameters:
         - name: catalog_name
           in: path
@@ -4588,7 +4589,9 @@ paths:
                     owner: team-analytics
                     properties:
                       purpose: gold layer
+                    read_only: false
                     schema_id: schema_mart
+                    system_managed: false
                     updated_at: "2026-04-13T08:00:00Z"
                 next_page_token: example
         '400':
@@ -4692,7 +4695,9 @@ paths:
                 owner: team-analytics
                 properties:
                   purpose: gold layer
+                read_only: false
                 schema_id: schema_mart
+                system_managed: false
                 updated_at: "2026-04-13T08:00:00Z"
         '400':
           description: The server could not understand the request due to invalid syntax.
@@ -4875,6 +4880,7 @@ paths:
     get:
       operationId: getSchema
       summary: Get schema
+      description: Returns schema metadata for a catalog schema. Reserved system schemas such as system are surfaced as read-only, system-managed objects.
       parameters:
         - name: catalog_name
           in: path
@@ -4904,7 +4910,9 @@ paths:
                 owner: team-analytics
                 properties:
                   purpose: gold layer
+                read_only: false
                 schema_id: schema_mart
+                system_managed: false
                 updated_at: "2026-04-13T08:00:00Z"
         '400':
           description: The server could not understand the request due to invalid syntax.
@@ -5013,7 +5021,9 @@ paths:
                 owner: team-analytics
                 properties:
                   purpose: gold layer
+                read_only: false
                 schema_id: schema_mart
+                system_managed: false
                 updated_at: "2026-04-13T08:00:00Z"
         '400':
           description: The server could not understand the request due to invalid syntax.
@@ -5099,6 +5109,7 @@ paths:
     get:
       operationId: listTables
       summary: List tables
+      description: Lists tables in a schema. For the reserved system schema, this returns admin-visible, read-only control-plane tables that can be queried through the normal SQL query APIs.
       parameters:
         - name: catalog_name
           in: path
@@ -5152,6 +5163,7 @@ paths:
                     created_at: "2026-03-01T08:00:00Z"
                     name: orders_daily
                     owner: team-analytics
+                    read_only: false
                     schema_id: schema_mart
                     schema_name: mart
                     statistics:
@@ -5160,6 +5172,7 @@ paths:
                       profiled_by: system:profiler
                       row_count: 365000
                       size_bytes: 104857600
+                    system_managed: false
                     table_id: tbl_orders_daily
                     updated_at: "2026-04-13T08:00:00Z"
                 next_page_token: example
@@ -5278,6 +5291,7 @@ paths:
                 created_at: "2026-03-01T08:00:00Z"
                 name: orders_daily
                 owner: team-analytics
+                read_only: false
                 schema_id: schema_mart
                 schema_name: mart
                 statistics:
@@ -5286,6 +5300,7 @@ paths:
                   profiled_by: system:profiler
                   row_count: 365000
                   size_bytes: 104857600
+                system_managed: false
                 table_id: tbl_orders_daily
                 updated_at: "2026-04-13T08:00:00Z"
         '400':
@@ -5470,6 +5485,7 @@ paths:
     get:
       operationId: getTable
       summary: Get table
+      description: Returns metadata for a table in the catalog. Tables in the reserved system schema are flagged as system-managed and read-only.
       parameters:
         - name: catalog_name
           in: path
@@ -5513,6 +5529,7 @@ paths:
                 created_at: "2026-03-01T08:00:00Z"
                 name: orders_daily
                 owner: team-analytics
+                read_only: false
                 schema_id: schema_mart
                 schema_name: mart
                 statistics:
@@ -5521,6 +5538,7 @@ paths:
                   profiled_by: system:profiler
                   row_count: 365000
                   size_bytes: 104857600
+                system_managed: false
                 table_id: tbl_orders_daily
                 updated_at: "2026-04-13T08:00:00Z"
         '400':
@@ -5644,6 +5662,7 @@ paths:
                 created_at: "2026-03-01T08:00:00Z"
                 name: orders_daily
                 owner: team-analytics
+                read_only: false
                 schema_id: schema_mart
                 schema_name: mart
                 statistics:
@@ -5652,6 +5671,7 @@ paths:
                   profiled_by: system:profiler
                   row_count: 365000
                   size_bytes: 104857600
+                system_managed: false
                 table_id: tbl_orders_daily
                 updated_at: "2026-04-13T08:00:00Z"
         '400':
@@ -5739,6 +5759,7 @@ paths:
     get:
       operationId: listTableColumns
       summary: List table columns
+      description: Lists columns for a table, including reserved read-only system tables when the caller has access.
       parameters:
         - name: catalog_name
           in: path
@@ -29770,7 +29791,7 @@ paths:
     post:
       operationId: submitQuery
       summary: Submit query
-      description: Submits a SQL query for asynchronous execution and returns a query job identifier for polling and result retrieval.
+      description: Submits a SQL query for asynchronous execution and returns a query job identifier for polling and result retrieval. Use this endpoint for longer-running SQL over catalog tables or the admin-only system.* schema.
       parameters: []
       responses:
         '202':
@@ -30393,7 +30414,7 @@ paths:
     post:
       operationId: executeQuery
       summary: Execute query
-      description: Executes a SQL statement synchronously and returns the first page of results in the response body.
+      description: Executes a SQL statement synchronously and returns the first page of results in the response body. This is the primary API surface for querying catalog tables, including the reserved system.* schema that exposes control-plane tables for admins as read-only objects.
       parameters: []
       responses:
         '200':
@@ -46484,7 +46505,9 @@ components:
               owner: team-analytics
               properties:
                 purpose: gold layer
+              read_only: false
               schema_id: schema_mart
+              system_managed: false
               updated_at: "2026-04-13T08:00:00Z"
         next_page_token:
           type: string
@@ -46499,7 +46522,9 @@ components:
             owner: team-analytics
             properties:
               purpose: gold layer
+            read_only: false
             schema_id: schema_mart
+            system_managed: false
             updated_at: "2026-04-13T08:00:00Z"
         next_page_token: example
     PaginatedSearchResults:
@@ -46634,6 +46659,7 @@ components:
               created_at: "2026-03-01T08:00:00Z"
               name: orders_daily
               owner: team-analytics
+              read_only: false
               schema_id: schema_mart
               schema_name: mart
               statistics:
@@ -46642,6 +46668,7 @@ components:
                 profiled_by: system:profiler
                 row_count: 365000
                 size_bytes: 104857600
+              system_managed: false
               table_id: tbl_orders_daily
               updated_at: "2026-04-13T08:00:00Z"
         next_page_token:
@@ -46665,6 +46692,7 @@ components:
             created_at: "2026-03-01T08:00:00Z"
             name: orders_daily
             owner: team-analytics
+            read_only: false
             schema_id: schema_mart
             schema_name: mart
             statistics:
@@ -46673,6 +46701,7 @@ components:
               profiled_by: system:profiler
               row_count: 365000
               size_bytes: 104857600
+            system_managed: false
             table_id: tbl_orders_daily
             updated_at: "2026-04-13T08:00:00Z"
         next_page_token: example
@@ -48883,6 +48912,12 @@ components:
             type: string
           example:
             key: example
+        system_managed:
+          type: boolean
+          example: true
+        read_only:
+          type: boolean
+          example: true
         tags:
           type: array
           items:
@@ -48913,7 +48948,9 @@ components:
         owner: team-analytics
         properties:
           purpose: gold layer
+        read_only: false
         schema_id: schema_mart
+        system_managed: false
         updated_at: "2026-04-13T08:00:00Z"
     SearchResult:
       type: object
@@ -49522,6 +49559,12 @@ components:
             type: string
           example:
             key: example
+        system_managed:
+          type: boolean
+          example: true
+        read_only:
+          type: boolean
+          example: true
         tags:
           type: array
           items:
@@ -49562,6 +49605,7 @@ components:
         created_at: "2026-03-01T08:00:00Z"
         name: orders_daily
         owner: team-analytics
+        read_only: false
         schema_id: schema_mart
         schema_name: mart
         statistics:
@@ -49570,6 +49614,7 @@ components:
           profiled_by: system:profiler
           row_count: 365000
           size_bytes: 104857600
+        system_managed: false
         table_id: tbl_orders_daily
         updated_at: "2026-04-13T08:00:00Z"
     TableStatistics:

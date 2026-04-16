@@ -17,6 +17,7 @@ import (
 	internaldb "github.com/Yacobolo/quackstack/internal/db"
 	dbstore "github.com/Yacobolo/quackstack/internal/db/dbstore"
 	"github.com/Yacobolo/quackstack/internal/db/repository"
+	"github.com/Yacobolo/quackstack/internal/domain"
 	"github.com/Yacobolo/quackstack/internal/engine"
 	"github.com/Yacobolo/quackstack/internal/service/security"
 )
@@ -186,6 +187,31 @@ func setupEngine(t *testing.T) *engine.SecureEngine {
 	return engine.NewSecureEngine(db, cat, nil, nil, slog.New(slog.DiscardHandler))
 }
 
+func sqliteMainPath(t *testing.T, db *sql.DB) string {
+	t.Helper()
+
+	rows, err := db.QueryContext(context.Background(), `PRAGMA database_list`)
+	require.NoError(t, err)
+	defer rows.Close() //nolint:errcheck
+
+	var path string
+	for rows.Next() {
+		var (
+			seq  int
+			name string
+			file string
+		)
+		require.NoError(t, rows.Scan(&seq, &name, &file))
+		if name == "main" {
+			path = file
+			break
+		}
+	}
+	require.NoError(t, rows.Err())
+	require.NotEmpty(t, path)
+	return path
+}
+
 func TestAdminSeesAllRows(t *testing.T) {
 	eng := setupEngine(t)
 	ctx := context.Background()
@@ -263,6 +289,100 @@ func TestNoAccessRoleDenied(t *testing.T) {
 		t.Error("expected access denied error for no_access user")
 	}
 	t.Logf("no_access error: %v", err)
+}
+
+func TestAdminCanQuerySystemSchema(t *testing.T) {
+	metaDB, _ := internaldb.OpenTestSQLite(t)
+	q := dbstore.New(metaDB)
+
+	_, err := q.CreatePrincipal(ctx, dbstore.CreatePrincipalParams{
+		ID: uuid.New().String(), Name: "admin", Type: "user", IsAdmin: 1,
+	})
+	require.NoError(t, err)
+
+	auth := security.NewAuthorizationService(
+		repository.NewPrincipalRepo(metaDB),
+		repository.NewGroupRepo(metaDB),
+		repository.NewGrantRepo(metaDB),
+		repository.NewRowFilterRepo(metaDB),
+		repository.NewColumnMaskRepo(metaDB),
+		repository.NewIntrospectionRepo(metaDB),
+		nil,
+	)
+	auth.SetDefaultCatalogTableLookup(func(_ context.Context, schemaName, tableName string) (*domain.TableDetail, error) {
+		require.Equal(t, domain.AppSystemSchemaName, schemaName)
+		require.Equal(t, "principals", tableName)
+		return &domain.TableDetail{
+			TableID:   domain.SystemTableObjectID(schemaName, tableName),
+			TableType: domain.TableTypeSystem,
+		}, nil
+	})
+	auth.SetDefaultCatalogNameLookup(func(_ context.Context) (string, error) {
+		return "lake", nil
+	})
+
+	db, err := sql.Open("duckdb", "")
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = db.Close() })
+
+	require.NoError(t, engine.InstallExtensions(ctx, db))
+	require.NoError(t, engine.AttachSystemCatalog(ctx, db, sqliteMainPath(t, metaDB)))
+
+	eng := engine.NewSecureEngine(db, auth, nil, nil, slog.New(slog.DiscardHandler))
+
+	rows, err := eng.Query(ctx, "admin", `SELECT name FROM system.principals WHERE name = 'admin'`)
+	require.NoError(t, err)
+	defer rows.Close() //nolint:errcheck
+
+	require.True(t, rows.Next())
+	var name string
+	require.NoError(t, rows.Scan(&name))
+	require.Equal(t, "admin", name)
+	require.NoError(t, rows.Err())
+}
+
+func TestAdminCannotMutateSystemSchema(t *testing.T) {
+	metaDB, _ := internaldb.OpenTestSQLite(t)
+	q := dbstore.New(metaDB)
+
+	_, err := q.CreatePrincipal(ctx, dbstore.CreatePrincipalParams{
+		ID: uuid.New().String(), Name: "admin", Type: "user", IsAdmin: 1,
+	})
+	require.NoError(t, err)
+
+	auth := security.NewAuthorizationService(
+		repository.NewPrincipalRepo(metaDB),
+		repository.NewGroupRepo(metaDB),
+		repository.NewGrantRepo(metaDB),
+		repository.NewRowFilterRepo(metaDB),
+		repository.NewColumnMaskRepo(metaDB),
+		repository.NewIntrospectionRepo(metaDB),
+		nil,
+	)
+	auth.SetDefaultCatalogTableLookup(func(_ context.Context, schemaName, tableName string) (*domain.TableDetail, error) {
+		require.Equal(t, domain.AppSystemSchemaName, schemaName)
+		require.Equal(t, "principals", tableName)
+		return &domain.TableDetail{
+			TableID:   domain.SystemTableObjectID(schemaName, tableName),
+			TableType: domain.TableTypeSystem,
+		}, nil
+	})
+	auth.SetDefaultCatalogNameLookup(func(_ context.Context) (string, error) {
+		return "lake", nil
+	})
+
+	db, err := sql.Open("duckdb", "")
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = db.Close() })
+
+	require.NoError(t, engine.InstallExtensions(ctx, db))
+	require.NoError(t, engine.AttachSystemCatalog(ctx, db, sqliteMainPath(t, metaDB)))
+
+	eng := engine.NewSecureEngine(db, auth, nil, nil, slog.New(slog.DiscardHandler))
+
+	err = queryAndClose(t, eng, "admin", `INSERT INTO system.principals (id, name, "type", is_admin) VALUES ('x', 'y', 'user', 0)`)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "read-only (SYSTEM)")
 }
 
 func TestAccessToDeniedTableFails(t *testing.T) {

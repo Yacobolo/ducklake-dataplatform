@@ -90,6 +90,7 @@ func (e *SecureEngine) rewriteQuery(ctx context.Context, principalName, sqlQuery
 
 	// 3. Check privileges + collect filters/masks for each table
 	rewritten := sqlQuery
+	rewriteAppSystemRefs := false
 	for _, tableRef := range tableRefs {
 		tableName := tableRef.Name
 		tablePath := formatTableRef(tableRef)
@@ -106,6 +107,13 @@ func (e *SecureEngine) rewriteQuery(ctx context.Context, principalName, sqlQuery
 		tableID, _, isExternal, err := e.catalog.LookupTableID(ctx, tablePath)
 		if err != nil {
 			return "", fmt.Errorf("catalog lookup for %q: %w", tablePath, err)
+		}
+
+		if isSystemTableID(tableID) {
+			rewriteAppSystemRefs = rewriteAppSystemRefs || domain.IsAppSystemSchema(tableRef.Schema)
+			if stmtType != sqlrewrite.StmtSelect {
+				return "", fmt.Errorf("access denied: table %q is read-only (SYSTEM)", tablePath)
+			}
 		}
 
 		// Block DML on external (read-only) tables
@@ -153,6 +161,13 @@ func (e *SecureEngine) rewriteQuery(ctx context.Context, principalName, sqlQuery
 					return "", fmt.Errorf("apply column masks: %w", err)
 				}
 			}
+		}
+	}
+
+	if rewriteAppSystemRefs {
+		rewritten, err = rewriteAppSystemTableRefs(rewritten)
+		if err != nil {
+			return "", fmt.Errorf("rewrite app system refs: %w", err)
 		}
 	}
 

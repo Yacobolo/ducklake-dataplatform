@@ -13,6 +13,7 @@ import (
 	// Register the embedded DuckDB driver used by CLI local BYOC execution.
 	_ "github.com/duckdb/duckdb-go/v2"
 
+	"github.com/Yacobolo/quackstack/internal/sqlrewrite"
 	"github.com/Yacobolo/quackstack/pkg/cli/apiruntime"
 )
 
@@ -148,6 +149,10 @@ func validateQuackAccessExtensionPath(path string) (string, error) {
 }
 
 func (embeddedDuckDBLocalExecutor) Execute(ctx context.Context, cfg localQueryConfig, sqlQuery string) (*localQueryResult, error) {
+	if err := rejectUnsupportedSystemSchemaQuery(sqlQuery); err != nil {
+		return nil, err
+	}
+
 	db, err := sql.Open("duckdb", "")
 	if err != nil {
 		return nil, fmt.Errorf("open embedded DuckDB: %w", err)
@@ -215,4 +220,17 @@ func (embeddedDuckDBLocalExecutor) Execute(ctx context.Context, cfg localQueryCo
 
 func escapeDuckDBString(value string) string {
 	return strings.ReplaceAll(value, "'", "''")
+}
+
+func rejectUnsupportedSystemSchemaQuery(sqlQuery string) error {
+	refs, err := sqlrewrite.ExtractTableRefs(sqlQuery)
+	if err != nil {
+		return nil
+	}
+	for _, ref := range refs {
+		if strings.EqualFold(strings.TrimSpace(ref.Schema), "system") {
+			return fmt.Errorf("system.* queries are only supported through the server-backed API/CLI path right now; rerun without BYOC_LOCAL")
+		}
+	}
+	return nil
 }

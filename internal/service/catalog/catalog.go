@@ -56,6 +56,20 @@ func ensureMutableCatalog(catalogName string) error {
 	return nil
 }
 
+func ensureMutableSchema(catalogName, schemaName string) error {
+	if domain.IsSystemSchema(catalogName, schemaName) {
+		return domain.ErrValidation("schema %q is read-only", schemaName)
+	}
+	return nil
+}
+
+func ensureMutableTable(tableName, tableType string) error {
+	if strings.EqualFold(tableType, domain.TableTypeSystem) {
+		return domain.ErrValidation("table %q is read-only", tableName)
+	}
+	return nil
+}
+
 func canonicalSchemaID(catalogName, schemaID string) string {
 	return domain.SyntheticCatalogSchemaID(catalogName, schemaID)
 }
@@ -218,6 +232,9 @@ func (s *CatalogService) UpdateSchema(ctx context.Context, catalogName string, p
 	if err := ensureMutableCatalog(catalogName); err != nil {
 		return nil, err
 	}
+	if err := ensureMutableSchema(catalogName, name); err != nil {
+		return nil, err
+	}
 	repo, err := s.repoFactory.ForCatalog(ctx, catalogName)
 	if err != nil {
 		return nil, err
@@ -250,6 +267,9 @@ func (s *CatalogService) UpdateSchema(ctx context.Context, catalogName string, p
 // DeleteSchema drops a schema, checking authorization.
 func (s *CatalogService) DeleteSchema(ctx context.Context, catalogName string, principal string, name string, force bool) error {
 	if err := ensureMutableCatalog(catalogName); err != nil {
+		return err
+	}
+	if err := ensureMutableSchema(catalogName, name); err != nil {
 		return err
 	}
 	repo, err := s.repoFactory.ForCatalog(ctx, catalogName)
@@ -305,6 +325,9 @@ func (s *CatalogService) ListTables(ctx context.Context, catalogName string, sch
 // If req.TableType is "EXTERNAL", delegates to createExternalTable.
 func (s *CatalogService) CreateTable(ctx context.Context, catalogName string, principal string, schemaName string, req domain.CreateTableRequest) (*domain.TableDetail, error) {
 	if err := ensureMutableCatalog(catalogName); err != nil {
+		return nil, err
+	}
+	if err := ensureMutableSchema(catalogName, schemaName); err != nil {
 		return nil, err
 	}
 	repo, err := s.repoFactory.ForCatalog(ctx, catalogName)
@@ -406,12 +429,18 @@ func (s *CatalogService) DeleteTable(ctx context.Context, catalogName string, pr
 	if err := ensureMutableCatalog(catalogName); err != nil {
 		return err
 	}
+	if err := ensureMutableSchema(catalogName, schemaName); err != nil {
+		return err
+	}
 	repo, err := s.repoFactory.ForCatalog(ctx, catalogName)
 	if err != nil {
 		return err
 	}
 	tbl, err := repo.GetTable(ctx, schemaName, tableName)
 	if err != nil {
+		return err
+	}
+	if err := ensureMutableTable(tableName, tbl.TableType); err != nil {
 		return err
 	}
 	schema, err := repo.GetSchema(ctx, schemaName)
@@ -450,12 +479,18 @@ func (s *CatalogService) UpdateTable(ctx context.Context, catalogName string, pr
 	if err := ensureMutableCatalog(catalogName); err != nil {
 		return nil, err
 	}
+	if err := ensureMutableSchema(catalogName, schemaName); err != nil {
+		return nil, err
+	}
 	repo, err := s.repoFactory.ForCatalog(ctx, catalogName)
 	if err != nil {
 		return nil, err
 	}
 	tbl, err := repo.GetTable(ctx, schemaName, tableName)
 	if err != nil {
+		return nil, err
+	}
+	if err := ensureMutableTable(tableName, tbl.TableType); err != nil {
 		return nil, err
 	}
 	schema, err := repo.GetSchema(ctx, schemaName)
@@ -517,12 +552,18 @@ func (s *CatalogService) UpdateColumn(ctx context.Context, catalogName string, p
 	if err := ensureMutableCatalog(catalogName); err != nil {
 		return nil, err
 	}
+	if err := ensureMutableSchema(catalogName, schemaName); err != nil {
+		return nil, err
+	}
 	repo, err := s.repoFactory.ForCatalog(ctx, catalogName)
 	if err != nil {
 		return nil, err
 	}
 	tbl, err := repo.GetTable(ctx, schemaName, tableName)
 	if err != nil {
+		return nil, err
+	}
+	if err := ensureMutableTable(tableName, tbl.TableType); err != nil {
 		return nil, err
 	}
 	schema, err := repo.GetSchema(ctx, schemaName)
