@@ -84,6 +84,7 @@ package api
 		op:           "listWorkspaceProjects"
 		path:         "/workspaces/{workspace_id}/projects"
 		summary:      "List projects in a workspace"
+		cli:          "projects list"
 		returns:      "PaginatedProjects"
 		error_family: "resource"
 		params:       #workspaceProjectListParameters
@@ -94,6 +95,7 @@ package api
 		op:             "createWorkspaceProject"
 		path:           "/workspaces/{workspace_id}/projects"
 		summary:        "Create project in a workspace"
+		cli:            "projects create"
 		returns:        "Project"
 		success_status: 201
 		error_family:   "resource_conflict"
@@ -107,6 +109,7 @@ package api
 		op:           "getProject"
 		path:         "/projects/{project_id}"
 		summary:      "Get project"
+		cli:          "projects get"
 		returns:      "Project"
 		error_family: "resource"
 		params:       #projectPathParameters
@@ -117,6 +120,7 @@ package api
 		op:           "updateProject"
 		path:         "/projects/{project_id}"
 		summary:      "Update project"
+		cli:          "projects update"
 		returns:      "Project"
 		error_family: "resource_conflict"
 		params:       #projectPathParameters
@@ -129,6 +133,7 @@ package api
 		op:           "deleteProject"
 		path:         "/projects/{project_id}"
 		summary:      "Delete project"
+		cli:          "projects delete"
 		error_family: "resource_conflict"
 		params:       #projectPathParameters
 	},
@@ -138,6 +143,7 @@ package api
 		op:           "listProjectEnvironments"
 		path:         "/projects/{project_id}/environments"
 		summary:      "List project environments"
+		cli:          "projects environments list"
 		returns:      "PaginatedEnvironments"
 		error_family: "resource"
 		params:       #projectListParameters
@@ -148,6 +154,7 @@ package api
 		op:             "createProjectEnvironment"
 		path:           "/projects/{project_id}/environments"
 		summary:        "Create project environment"
+		cli:            "projects environments create"
 		returns:        "Environment"
 		success_status: 201
 		error_family:   "resource_conflict"
@@ -161,6 +168,7 @@ package api
 		op:           "updateProjectEnvironment"
 		path:         "/projects/{project_id}/environments/{environment_id}"
 		summary:      "Update project environment"
+		cli:          "projects environments update"
 		returns:      "Environment"
 		error_family: "resource_conflict"
 		params:       #projectEnvironmentPathParameters
@@ -173,6 +181,7 @@ package api
 		op:           "deleteProjectEnvironment"
 		path:         "/projects/{project_id}/environments/{environment_id}"
 		summary:      "Delete project environment"
+		cli:          "projects environments delete"
 		error_family: "resource_conflict"
 		params:       #projectEnvironmentPathParameters
 	},
@@ -182,6 +191,7 @@ package api
 		op:           "listProjectBuilds"
 		path:         "/projects/{project_id}/builds"
 		summary:      "List project builds"
+		cli:          "projects builds list"
 		returns:      "PaginatedBuilds"
 		error_family: "resource"
 		params:       #projectListParameters
@@ -192,6 +202,7 @@ package api
 		op:             "createProjectBuild"
 		path:           "/projects/{project_id}/builds"
 		summary:        "Create project build"
+		cli:            "projects builds create"
 		returns:        "Build"
 		success_status: 201
 		error_family:   "resource_conflict"
@@ -205,6 +216,7 @@ package api
 		op:           "listProjectDependencies"
 		path:         "/projects/{project_id}/dependencies"
 		summary:      "List project dependencies"
+		cli:          "projects dependencies list"
 		returns:      "PaginatedProjectDependencies"
 		error_family: "resource"
 		params:       #projectListParameters
@@ -215,6 +227,7 @@ package api
 		op:             "createProjectDependency"
 		path:           "/projects/{project_id}/dependencies"
 		summary:        "Create project dependency"
+		cli:            "projects dependencies create"
 		returns:        "ProjectDependency"
 		success_status: 201
 		error_family:   "resource_conflict"
@@ -228,6 +241,7 @@ package api
 		op:           "deleteProjectDependency"
 		path:         "/projects/{project_id}/dependencies/{dependency_project}"
 		summary:      "Delete project dependency"
+		cli:          "projects dependencies delete"
 		error_family: "resource_conflict"
 		params:       #projectDependencyPathParameters
 	},
@@ -237,6 +251,7 @@ package api
 		op:           "listProjectSources"
 		path:         "/projects/{project_id}/sources"
 		summary:      "List project sources"
+		cli:          "projects sources list"
 		returns:      "PaginatedProjectSources"
 		error_family: "resource"
 		params:       #projectListParameters
@@ -247,6 +262,7 @@ package api
 		op:             "createProjectSource"
 		path:           "/projects/{project_id}/sources"
 		summary:        "Create project source"
+		cli:            "projects sources create"
 		returns:        "SourceDefinition"
 		success_status: 201
 		error_family:   "resource_conflict"
@@ -260,6 +276,7 @@ package api
 		op:           "getProjectSource"
 		path:         "/projects/{project_id}/sources/{source_name}/{table_name}"
 		summary:      "Get project source"
+		cli:          "projects sources get"
 		returns:      "SourceDefinition"
 		error_family: "resource"
 		params:       #projectSourcePathParameters
@@ -270,6 +287,7 @@ package api
 		op:           "updateProjectSource"
 		path:         "/projects/{project_id}/sources/{source_name}/{table_name}"
 		summary:      "Update project source"
+		cli:          "projects sources update"
 		returns:      "SourceDefinition"
 		error_family: "resource_conflict"
 		params:       #projectSourcePathParameters
@@ -282,6 +300,7 @@ package api
 		op:           "deleteProjectSource"
 		path:         "/projects/{project_id}/sources/{source_name}/{table_name}"
 		summary:      "Delete project source"
+		cli:          "projects sources delete"
 		error_family: "resource_conflict"
 		params:       #projectSourcePathParameters
 	},
@@ -291,6 +310,7 @@ package api
 		op:           "listProjectSeeds"
 		path:         "/projects/{project_id}/seeds"
 		summary:      "List project seeds"
+		cli:          "projects seeds list"
 		returns:      "PaginatedProjectSeeds"
 		error_family: "resource"
 		params:       #projectListParameters
@@ -301,6 +321,7 @@ package api
 		op:             "createProjectSeed"
 		path:           "/projects/{project_id}/seeds"
 		summary:        "Create project seed"
+		cli:            "projects seeds create"
 		returns:        "ProjectSeed"
 		success_status: 201
 		error_family:   "resource_conflict"
@@ -314,6 +335,7 @@ package api
 		op:           "getProjectSeed"
 		path:         "/projects/{project_id}/seeds/{seed_name}"
 		summary:      "Get project seed"
+		cli:          "projects seeds get"
 		returns:      "ProjectSeed"
 		error_family: "resource"
 		params:       #projectSeedPathParameters
@@ -324,6 +346,7 @@ package api
 		op:           "updateProjectSeed"
 		path:         "/projects/{project_id}/seeds/{seed_name}"
 		summary:      "Update project seed"
+		cli:          "projects seeds update"
 		returns:      "ProjectSeed"
 		error_family: "resource_conflict"
 		params:       #projectSeedPathParameters
@@ -336,6 +359,7 @@ package api
 		op:           "deleteProjectSeed"
 		path:         "/projects/{project_id}/seeds/{seed_name}"
 		summary:      "Delete project seed"
+		cli:          "projects seeds delete"
 		error_family: "resource_conflict"
 		params:       #projectSeedPathParameters
 	},

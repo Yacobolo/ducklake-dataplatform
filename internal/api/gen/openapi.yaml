@@ -28686,6 +28686,7 @@ paths:
                 message: validation failed
       tags:
         - Projects
+      x-cli-command: projects delete
     get:
       operationId: getProject
       summary: Get project
@@ -28789,6 +28790,7 @@ paths:
                 message: validation failed
       tags:
         - Projects
+      x-cli-command: projects get
     patch:
       operationId: updateProject
       summary: Update project
@@ -28915,6 +28917,7 @@ paths:
               default_branch: example
               description: example
               product_id: example
+      x-cli-command: projects update
   /projects/{project_id}/builds:
     get:
       operationId: listProjectBuilds
@@ -29041,6 +29044,7 @@ paths:
                 message: validation failed
       tags:
         - Projects
+      x-cli-command: projects builds list
     post:
       operationId: createProjectBuild
       summary: Create project build
@@ -29178,6 +29182,7 @@ paths:
               source_model_run_id: run_01hzymodel
               target_catalog: analytics
               target_schema: mart
+      x-cli-command: projects builds create
   /projects/{project_id}/dependencies:
     get:
       operationId: listProjectDependencies
@@ -29296,6 +29301,7 @@ paths:
                 message: validation failed
       tags:
         - Projects
+      x-cli-command: projects dependencies list
     post:
       operationId: createProjectDependency
       summary: Create project dependency
@@ -29419,6 +29425,7 @@ paths:
               dependency_kind: example
               dependency_project: example
               position: 1
+      x-cli-command: projects dependencies create
   /projects/{project_id}/dependencies/{dependency_project}:
     delete:
       operationId: deleteProjectDependency
@@ -29525,6 +29532,7 @@ paths:
                 message: validation failed
       tags:
         - Projects
+      x-cli-command: projects dependencies delete
   /projects/{project_id}/environments:
     get:
       operationId: listProjectEnvironments
@@ -29651,6 +29659,7 @@ paths:
                 message: validation failed
       tags:
         - Projects
+      x-cli-command: projects environments list
     post:
       operationId: createProjectEnvironment
       summary: Create project environment
@@ -29790,6 +29799,7 @@ paths:
               target_schema: example
               variables:
                 key: example
+      x-cli-command: projects environments create
   /projects/{project_id}/environments/{environment_id}:
     delete:
       operationId: deleteProjectEnvironment
@@ -29896,6 +29906,7 @@ paths:
                 message: validation failed
       tags:
         - Projects
+      x-cli-command: projects environments delete
     patch:
       operationId: updateProjectEnvironment
       summary: Update project environment
@@ -30039,6 +30050,7 @@ paths:
               target_schema: example
               variables:
                 key: example
+      x-cli-command: projects environments update
   /projects/{project_id}/seeds:
     get:
       operationId: listProjectSeeds
@@ -30164,6 +30176,7 @@ paths:
                 message: validation failed
       tags:
         - Projects
+      x-cli-command: projects seeds list
     post:
       operationId: createProjectSeed
       summary: Create project seed
@@ -30301,6 +30314,7 @@ paths:
               name: example
               tags:
                 - example
+      x-cli-command: projects seeds create
   /projects/{project_id}/seeds/{seed_name}:
     delete:
       operationId: deleteProjectSeed
@@ -30407,6 +30421,7 @@ paths:
                 message: validation failed
       tags:
         - Projects
+      x-cli-command: projects seeds delete
     get:
       operationId: getProjectSeed
       summary: Get project seed
@@ -30520,6 +30535,7 @@ paths:
                 message: validation failed
       tags:
         - Projects
+      x-cli-command: projects seeds get
     patch:
       operationId: updateProjectSeed
       summary: Update project seed
@@ -30662,6 +30678,7 @@ paths:
               input_ref: example
               tags:
                 - example
+      x-cli-command: projects seeds update
   /projects/{project_id}/sources:
     get:
       operationId: listProjectSources
@@ -30784,6 +30801,7 @@ paths:
                 message: validation failed
       tags:
         - Projects
+      x-cli-command: projects sources list
     post:
       operationId: createProjectSource
       summary: Create project source
@@ -30915,6 +30933,7 @@ paths:
               relation_ref: example
               source_name: example
               table_name: example
+      x-cli-command: projects sources create
   /projects/{project_id}/sources/{source_name}/{table_name}:
     delete:
       operationId: deleteProjectSource
@@ -31027,6 +31046,7 @@ paths:
                 message: validation failed
       tags:
         - Projects
+      x-cli-command: projects sources delete
     get:
       operationId: getProjectSource
       summary: Get project source
@@ -31143,6 +31163,7 @@ paths:
                 message: validation failed
       tags:
         - Projects
+      x-cli-command: projects sources get
     patch:
       operationId: updateProjectSource
       summary: Update project source
@@ -31284,6 +31305,7 @@ paths:
                 max_lag_seconds: 1
                 timestamp_column: example
               relation_ref: example
+      x-cli-command: projects sources update
   /queries:
     get:
       operationId: listQueries
@@ -35616,6 +35638,7 @@ paths:
                 message: validation failed
       tags:
         - Projects
+      x-cli-command: projects list
     post:
       operationId: createWorkspaceProject
       summary: Create project in a workspace
@@ -35744,6 +35767,7 @@ paths:
               kind: personal
               name: example
               product_id: example
+      x-cli-command: projects create
   /workspaces/{workspace_id}/semantic-models:
     get:
       operationId: listSemanticModels

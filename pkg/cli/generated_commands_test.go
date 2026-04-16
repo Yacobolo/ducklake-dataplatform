@@ -103,3 +103,29 @@ func TestAllAPIEndpoints_AddsResourceCLICommands(t *testing.T) {
 	assert.Equal(t, "me saved-resources create", commands["createSavedResource"])
 	assert.Equal(t, "me saved-resources delete", commands["deleteSavedResource"])
 }
+
+func TestAllAPIEndpoints_AddsTransformationProjectCLICommands(t *testing.T) {
+	t.Helper()
+
+	endpoints := allAPIEndpoints()
+	commands := map[string]string{}
+	for _, ep := range endpoints {
+		switch ep.OperationID {
+		case "createWorkspaceProject", "listProjectEnvironments", "createProjectDependency", "getProjectSource", "updateProjectSeed", "createProjectBuild":
+			commands[ep.OperationID] = ep.CLICommand
+		case "createModel", "listMacros", "triggerModelRun":
+			commands[ep.OperationID] = ep.CLICommand
+		}
+	}
+
+	assert.Equal(t, "projects create", commands["createWorkspaceProject"])
+	assert.Equal(t, "projects environments list", commands["listProjectEnvironments"])
+	assert.Equal(t, "projects dependencies create", commands["createProjectDependency"])
+	assert.Equal(t, "projects sources get", commands["getProjectSource"])
+	assert.Equal(t, "projects seeds update", commands["updateProjectSeed"])
+	assert.Equal(t, "projects builds create", commands["createProjectBuild"])
+
+	assert.Equal(t, "models create", commands["createModel"])
+	assert.Equal(t, "models macros list", commands["listMacros"])
+	assert.Equal(t, "models runs trigger", commands["triggerModelRun"])
+}
