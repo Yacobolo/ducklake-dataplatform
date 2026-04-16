@@ -118,7 +118,7 @@ func (r *CatalogRepo) getDuckLakeSystemTable(ctx context.Context, schemaName, ta
 	err := r.duckDB.QueryRowContext(ctx,
 		`SELECT table_name
 		 FROM information_schema.tables
-		 WHERE table_catalog = ? AND table_schema = ? AND lower(table_name) = lower(?) AND table_type = 'BASE TABLE'`,
+		 WHERE table_catalog = ? AND table_schema = ? AND lower(table_name) = lower(?)`,
 		r.catalogName, schemaName, tableName,
 	).Scan(&name)
 	if errors.Is(err, sql.ErrNoRows) {
@@ -155,7 +155,7 @@ func (r *CatalogRepo) listDuckLakeSystemTables(ctx context.Context, schemaName s
 	rows, err := r.duckDB.QueryContext(ctx,
 		`SELECT table_name
 		 FROM information_schema.tables
-		 WHERE table_catalog = ? AND table_schema = ? AND table_type = 'BASE TABLE'
+		 WHERE table_catalog = ? AND table_schema = ?
 		 ORDER BY table_name`,
 		r.catalogName, schemaName,
 	)

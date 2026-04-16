@@ -103,7 +103,7 @@ func TestCatalogRepo_GetTable(t *testing.T) {
 
 		_, err := repo.duckDB.ExecContext(ctx, `CREATE SCHEMA lake.__ducklake_metadata_lake`)
 		require.NoError(t, err)
-		_, err = repo.duckDB.ExecContext(ctx, `CREATE TABLE lake.__ducklake_metadata_lake.ducklake_table(table_id INTEGER, table_name VARCHAR)`)
+		_, err = repo.duckDB.ExecContext(ctx, `CREATE VIEW lake.__ducklake_metadata_lake.ducklake_table AS SELECT 1 AS table_id, 'orders' AS table_name`)
 		require.NoError(t, err)
 
 		tbl, err := repo.GetTable(ctx, "__ducklake_metadata_lake", "ducklake_table")
@@ -226,9 +226,9 @@ func TestCatalogRepo_ListTables(t *testing.T) {
 
 		_, err := repo.duckDB.ExecContext(ctx, `CREATE SCHEMA lake.__ducklake_metadata_lake`)
 		require.NoError(t, err)
-		_, err = repo.duckDB.ExecContext(ctx, `CREATE TABLE lake.__ducklake_metadata_lake.ducklake_table(table_id INTEGER)`)
+		_, err = repo.duckDB.ExecContext(ctx, `CREATE VIEW lake.__ducklake_metadata_lake.ducklake_table AS SELECT 1 AS table_id`)
 		require.NoError(t, err)
-		_, err = repo.duckDB.ExecContext(ctx, `CREATE TABLE lake.__ducklake_metadata_lake.ducklake_schema(schema_id INTEGER)`)
+		_, err = repo.duckDB.ExecContext(ctx, `CREATE VIEW lake.__ducklake_metadata_lake.ducklake_schema AS SELECT 1 AS schema_id`)
 		require.NoError(t, err)
 
 		tables, total, err := repo.ListTables(ctx, "__ducklake_metadata_lake", domain.PageRequest{})
@@ -332,7 +332,7 @@ func TestCatalogRepo_ListColumns(t *testing.T) {
 
 		_, err := repo.duckDB.ExecContext(ctx, `CREATE SCHEMA lake.__ducklake_metadata_lake`)
 		require.NoError(t, err)
-		_, err = repo.duckDB.ExecContext(ctx, `CREATE TABLE lake.__ducklake_metadata_lake.ducklake_snapshot(snapshot_id BIGINT, created_at TIMESTAMP)`)
+		_, err = repo.duckDB.ExecContext(ctx, `CREATE VIEW lake.__ducklake_metadata_lake.ducklake_snapshot AS SELECT 1::BIGINT AS snapshot_id, now() AS created_at`)
 		require.NoError(t, err)
 
 		cols, total, err := repo.ListColumns(ctx, "__ducklake_metadata_lake", "ducklake_snapshot", domain.PageRequest{})

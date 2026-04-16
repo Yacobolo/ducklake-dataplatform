@@ -7,6 +7,7 @@ import (
 	"database/sql"
 	"log/slog"
 	"os"
+	"path/filepath"
 	"testing"
 
 	_ "github.com/duckdb/duckdb-go/v2"
@@ -383,6 +384,48 @@ func TestAdminCannotMutateSystemSchema(t *testing.T) {
 	err = queryAndClose(t, eng, "admin", `INSERT INTO system.principals (id, name, "type", is_admin) VALUES ('x', 'y', 'user', 0)`)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "read-only (SYSTEM)")
+}
+
+func TestAttachDuckLakeMetadataSchema_ExposesQueryableViews(t *testing.T) {
+	db, err := sql.Open("duckdb", "")
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = db.Close() })
+
+	require.NoError(t, engine.InstallExtensions(ctx, db))
+
+	tmpDir := t.TempDir()
+	reg := domain.CatalogRegistration{
+		Name:          "lake",
+		MetastoreType: domain.MetastoreTypeSQLite,
+		DSN:           filepath.Join(tmpDir, "lake.sqlite"),
+		DataPath:      filepath.Join(tmpDir, "data"),
+	}
+	require.NoError(t, os.MkdirAll(reg.DataPath, 0o755))
+	require.NoError(t, engine.AttachDuckLake(ctx, db, reg.Name, reg.DSN, reg.DataPath))
+	require.NoError(t, engine.AttachDuckLakeMetadataSchema(ctx, db, reg))
+
+	var schemaCount int
+	err = db.QueryRowContext(ctx,
+		`SELECT COUNT(*)
+		 FROM information_schema.schemata
+		 WHERE catalog_name = 'lake' AND schema_name = '__ducklake_metadata_lake'`,
+	).Scan(&schemaCount)
+	require.NoError(t, err)
+	require.Equal(t, 1, schemaCount)
+
+	rows, err := db.QueryContext(ctx, `SELECT schema_name FROM lake.__ducklake_metadata_lake.ducklake_schema ORDER BY schema_name`)
+	require.NoError(t, err)
+	defer rows.Close() //nolint:errcheck
+
+	var schemaNames []string
+	for rows.Next() {
+		var schemaName string
+		require.NoError(t, rows.Scan(&schemaName))
+		schemaNames = append(schemaNames, schemaName)
+	}
+	require.NoError(t, rows.Err())
+	require.Contains(t, schemaNames, "main")
+	require.Contains(t, schemaNames, "__ducklake_metadata_lake")
 }
 
 func TestAccessToDeniedTableFails(t *testing.T) {

@@ -49,14 +49,20 @@ func (m *DuckDBSecretManager) DropSecret(ctx context.Context, name string) error
 func (m *DuckDBSecretManager) Attach(ctx context.Context, reg domain.CatalogRegistration) error {
 	switch reg.MetastoreType {
 	case domain.MetastoreTypeSQLite:
-		return AttachDuckLake(ctx, m.db, reg.Name, reg.DSN, reg.DataPath)
+		if err := AttachDuckLake(ctx, m.db, reg.Name, reg.DSN, reg.DataPath); err != nil {
+			return err
+		}
+		return AttachDuckLakeMetadataSchema(ctx, m.db, reg)
 	case domain.MetastoreTypePostgres:
 		// Install postgres extension if not yet loaded. Uses a mutex + bool
 		// instead of sync.Once so that transient failures can be retried.
 		if err := m.ensurePostgresExtension(ctx); err != nil {
 			return fmt.Errorf("install postgres extension: %w", err)
 		}
-		return AttachDuckLakePostgres(ctx, m.db, reg.Name, reg.DSN, reg.DataPath)
+		if err := AttachDuckLakePostgres(ctx, m.db, reg.Name, reg.DSN, reg.DataPath); err != nil {
+			return err
+		}
+		return AttachDuckLakeMetadataSchema(ctx, m.db, reg)
 	default:
 		return fmt.Errorf("unsupported metastore type: %q", reg.MetastoreType)
 	}
@@ -81,7 +87,10 @@ func (m *DuckDBSecretManager) ensurePostgresExtension(ctx context.Context) error
 
 // Detach detaches a named catalog from DuckDB.
 func (m *DuckDBSecretManager) Detach(ctx context.Context, catalogName string) error {
-	return DetachCatalog(ctx, m.db, catalogName)
+	if err := DetachCatalog(ctx, m.db, catalogName); err != nil {
+		return err
+	}
+	return DetachDuckLakeMetadataCatalog(ctx, m.db, catalogName)
 }
 
 // SetDefaultCatalog runs USE <catalog> on DuckDB.

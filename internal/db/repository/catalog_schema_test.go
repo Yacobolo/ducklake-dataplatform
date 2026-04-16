@@ -71,6 +71,8 @@ func TestCatalogRepo_GetSchema(t *testing.T) {
 
 		_, err := repo.duckDB.ExecContext(ctx, `CREATE SCHEMA lake.__ducklake_metadata_lake`)
 		require.NoError(t, err)
+		_, err = repo.duckDB.ExecContext(ctx, `CREATE VIEW lake.__ducklake_metadata_lake.ducklake_schema AS SELECT 1 AS schema_id`)
+		require.NoError(t, err)
 
 		s, err := repo.GetSchema(ctx, "__ducklake_metadata_lake")
 		require.NoError(t, err)
@@ -172,6 +174,8 @@ func TestCatalogRepo_ListSchemas(t *testing.T) {
 
 		seedSchema(t, repo.metaDB, "main")
 		_, err := repo.duckDB.ExecContext(ctx, `CREATE SCHEMA lake.__ducklake_metadata_lake`)
+		require.NoError(t, err)
+		_, err = repo.duckDB.ExecContext(ctx, `CREATE VIEW lake.__ducklake_metadata_lake.ducklake_schema AS SELECT 1 AS schema_id`)
 		require.NoError(t, err)
 
 		schemas, total, err := repo.ListSchemas(ctx, domain.PageRequest{})
