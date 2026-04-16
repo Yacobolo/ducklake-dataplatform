@@ -124,6 +124,31 @@ type EnvironmentRepository interface {
 	Delete(ctx context.Context, id string) error
 }
 
+// ProjectDependencyRepository provides ordered dependency declarations for projects.
+type ProjectDependencyRepository interface {
+	Create(ctx context.Context, dep *ProjectDependency) (*ProjectDependency, error)
+	ListByProject(ctx context.Context, projectID string) ([]ProjectDependency, error)
+	Delete(ctx context.Context, projectID string, dependencyProject string) error
+}
+
+// SourceDefinitionRepository provides CRUD operations for first-class source declarations.
+type SourceDefinitionRepository interface {
+	Create(ctx context.Context, source *SourceDefinition) (*SourceDefinition, error)
+	GetByName(ctx context.Context, projectName, sourceName, tableName string) (*SourceDefinition, error)
+	ListByProject(ctx context.Context, projectName string) ([]SourceDefinition, error)
+	Update(ctx context.Context, id string, source *SourceDefinition) (*SourceDefinition, error)
+	Delete(ctx context.Context, id string) error
+}
+
+// SeedRepository provides CRUD operations for project-owned seed resources.
+type SeedRepository interface {
+	Create(ctx context.Context, seed *Seed) (*Seed, error)
+	GetByName(ctx context.Context, projectName, name string) (*Seed, error)
+	ListByProject(ctx context.Context, projectName string) ([]Seed, error)
+	Update(ctx context.Context, id string, seed *Seed) (*Seed, error)
+	Delete(ctx context.Context, id string) error
+}
+
 // BuildRepository provides CRUD operations for internal immutable build snapshots.
 type BuildRepository interface {
 	Create(ctx context.Context, b *Build) (*Build, error)

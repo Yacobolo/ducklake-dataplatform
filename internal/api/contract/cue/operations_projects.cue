@@ -24,6 +24,22 @@ package api
 	#name: "environment_id"
 }
 
+#dependencyProjectPathParameter: #pathStringParameter & {
+	#name: "dependency_project"
+}
+
+#sourceNamePathParameter: #pathStringParameter & {
+	#name: "source_name"
+}
+
+#sourceTableNamePathParameter: #pathStringParameter & {
+	#name: "table_name"
+}
+
+#seedNamePathParameter: #pathStringParameter & {
+	#name: "seed_name"
+}
+
 #workspaceProjectPathParameters: [
 	#projectWorkspaceIDPathParameter,
 ]
@@ -31,6 +47,22 @@ package api
 #projectEnvironmentPathParameters: [
 	#projectIDPathParameter,
 	#environmentIDPathParameter,
+]
+
+#projectDependencyPathParameters: [
+	#projectIDPathParameter,
+	#dependencyProjectPathParameter,
+]
+
+#projectSourcePathParameters: [
+	#projectIDPathParameter,
+	#sourceNamePathParameter,
+	#sourceTableNamePathParameter,
+]
+
+#projectSeedPathParameters: [
+	#projectIDPathParameter,
+	#seedNamePathParameter,
 ]
 
 #workspaceProjectListParameters: [
@@ -166,6 +198,146 @@ package api
 		params:         #projectPathParameters
 		body_ref:       "CreateBuildRequest"
 		body_description: "Request payload"
+	},
+	#plainProjectOperation & {
+		kind:         "response"
+		method:       "get"
+		op:           "listProjectDependencies"
+		path:         "/projects/{project_id}/dependencies"
+		summary:      "List project dependencies"
+		returns:      "PaginatedProjectDependencies"
+		error_family: "resource"
+		params:       #projectListParameters
+	},
+	#plainProjectOperation & {
+		kind:           "response"
+		method:         "post"
+		op:             "createProjectDependency"
+		path:           "/projects/{project_id}/dependencies"
+		summary:        "Create project dependency"
+		returns:        "ProjectDependency"
+		success_status: 201
+		error_family:   "resource_conflict"
+		params:         #projectPathParameters
+		body_ref:       "CreateProjectDependencyRequest"
+		body_description: "Request payload"
+	},
+	#plainProjectOperation & {
+		kind:         "no_content"
+		method:       "delete"
+		op:           "deleteProjectDependency"
+		path:         "/projects/{project_id}/dependencies/{dependency_project}"
+		summary:      "Delete project dependency"
+		error_family: "resource_conflict"
+		params:       #projectDependencyPathParameters
+	},
+	#plainProjectOperation & {
+		kind:         "response"
+		method:       "get"
+		op:           "listProjectSources"
+		path:         "/projects/{project_id}/sources"
+		summary:      "List project sources"
+		returns:      "PaginatedProjectSources"
+		error_family: "resource"
+		params:       #projectListParameters
+	},
+	#plainProjectOperation & {
+		kind:           "response"
+		method:         "post"
+		op:             "createProjectSource"
+		path:           "/projects/{project_id}/sources"
+		summary:        "Create project source"
+		returns:        "SourceDefinition"
+		success_status: 201
+		error_family:   "resource_conflict"
+		params:         #projectPathParameters
+		body_ref:       "CreateSourceDefinitionRequest"
+		body_description: "Request payload"
+	},
+	#plainProjectOperation & {
+		kind:         "response"
+		method:       "get"
+		op:           "getProjectSource"
+		path:         "/projects/{project_id}/sources/{source_name}/{table_name}"
+		summary:      "Get project source"
+		returns:      "SourceDefinition"
+		error_family: "resource"
+		params:       #projectSourcePathParameters
+	},
+	#plainProjectOperation & {
+		kind:         "response"
+		method:       "patch"
+		op:           "updateProjectSource"
+		path:         "/projects/{project_id}/sources/{source_name}/{table_name}"
+		summary:      "Update project source"
+		returns:      "SourceDefinition"
+		error_family: "resource_conflict"
+		params:       #projectSourcePathParameters
+		body_ref:     "UpdateSourceDefinitionRequest"
+		body_description: "Request payload"
+	},
+	#plainProjectOperation & {
+		kind:         "no_content"
+		method:       "delete"
+		op:           "deleteProjectSource"
+		path:         "/projects/{project_id}/sources/{source_name}/{table_name}"
+		summary:      "Delete project source"
+		error_family: "resource_conflict"
+		params:       #projectSourcePathParameters
+	},
+	#plainProjectOperation & {
+		kind:         "response"
+		method:       "get"
+		op:           "listProjectSeeds"
+		path:         "/projects/{project_id}/seeds"
+		summary:      "List project seeds"
+		returns:      "PaginatedProjectSeeds"
+		error_family: "resource"
+		params:       #projectListParameters
+	},
+	#plainProjectOperation & {
+		kind:           "response"
+		method:         "post"
+		op:             "createProjectSeed"
+		path:           "/projects/{project_id}/seeds"
+		summary:        "Create project seed"
+		returns:        "ProjectSeed"
+		success_status: 201
+		error_family:   "resource_conflict"
+		params:         #projectPathParameters
+		body_ref:       "CreateProjectSeedRequest"
+		body_description: "Request payload"
+	},
+	#plainProjectOperation & {
+		kind:         "response"
+		method:       "get"
+		op:           "getProjectSeed"
+		path:         "/projects/{project_id}/seeds/{seed_name}"
+		summary:      "Get project seed"
+		returns:      "ProjectSeed"
+		error_family: "resource"
+		params:       #projectSeedPathParameters
+	},
+	#plainProjectOperation & {
+		kind:         "response"
+		method:       "patch"
+		op:           "updateProjectSeed"
+		path:         "/projects/{project_id}/seeds/{seed_name}"
+		summary:      "Update project seed"
+		returns:      "ProjectSeed"
+		error_family: "resource_conflict"
+		params:       #projectSeedPathParameters
+		body_ref:     "UpdateProjectSeedRequest"
+		body_description: "Request payload"
+	},
+	#plainProjectOperation & {
+		kind:         "no_content"
+		method:       "delete"
+		op:           "deleteProjectSeed"
+		path:         "/projects/{project_id}/seeds/{seed_name}"
+		summary:      "Delete project seed"
+		error_family: "resource_conflict"
+		params:       #projectSeedPathParameters
 	},
 ]
 

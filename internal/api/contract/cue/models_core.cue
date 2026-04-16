@@ -59,6 +59,16 @@ schemas_core: {
       "target_schema"
     ]
   },
+  CreateProjectDependencyRequest: #objectSchema & {
+    #fields: {
+      dependency_project: #stringProperty,
+      dependency_kind: #stringProperty,
+      position: #int32Property
+    },
+    #required: [
+      "dependency_project"
+    ]
+  },
   CreateFolderRequest: #objectSchema & {
     #fields: {
       name: #nameProperty,
@@ -84,6 +94,36 @@ schemas_core: {
       "name"
     ]
   },
+  CreateProjectSeedRequest: #objectSchema & {
+    #fields: {
+      name: #nameProperty,
+      description: #descriptionProperty,
+      input_ref: #stringProperty,
+      format: #refProperty & {#ref: "SeedFormat"},
+      delimiter: #stringProperty,
+      has_header: #boolProperty,
+      column_types: #stringMapProperty,
+      tags: #stringArrayProperty
+    },
+    #required: [
+      "name",
+      "input_ref"
+    ]
+  },
+  CreateSourceDefinitionRequest: #objectSchema & {
+    #fields: {
+      source_name: #stringProperty,
+      table_name: #stringProperty,
+      relation_ref: #stringProperty,
+      description: #descriptionProperty,
+      freshness_policy: #refProperty & {#ref: "SourceFreshnessPolicy"}
+    },
+    #required: [
+      "source_name",
+      "table_name",
+      "relation_ref"
+    ]
+  },
   UpdateEnvironmentRequest: #objectSchema & {
     #fields: {
       description: #descriptionProperty,
@@ -95,11 +135,29 @@ schemas_core: {
       source_overrides: #stringMapProperty
     }
   },
+  UpdateProjectSeedRequest: #objectSchema & {
+    #fields: {
+      description: #descriptionProperty,
+      input_ref: #stringProperty,
+      format: #refProperty & {#ref: "SeedFormat"},
+      delimiter: #stringProperty,
+      has_header: #boolProperty,
+      column_types: #stringMapProperty,
+      tags: #stringArrayProperty
+    }
+  },
   UpdateProjectRequest: #objectSchema & {
     #fields: {
       description: #descriptionProperty,
       product_id: #stringProperty,
       default_branch: #stringProperty
+    }
+  },
+  UpdateSourceDefinitionRequest: #objectSchema & {
+    #fields: {
+      relation_ref: #stringProperty,
+      description: #descriptionProperty,
+      freshness_policy: #refProperty & {#ref: "SourceFreshnessPolicy"}
     }
   },
   Error: #objectSchema & {

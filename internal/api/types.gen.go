@@ -924,12 +924,29 @@ type CreateProductTeamRequest struct {
 	Name           string  `json:"name"`
 }
 
+type CreateProjectDependencyRequest struct {
+	DependencyKind    *string `json:"dependency_kind,omitempty"`
+	DependencyProject string  `json:"dependency_project"`
+	Position          *int32  `json:"position,omitempty"`
+}
+
 type CreateProjectRequest struct {
 	DefaultBranch *string      `json:"default_branch,omitempty"`
 	Description   *string      `json:"description,omitempty"`
 	Kind          *ProjectKind `json:"kind,omitempty"`
 	Name          string       `json:"name"`
 	ProductId     *string      `json:"product_id,omitempty"`
+}
+
+type CreateProjectSeedRequest struct {
+	ColumnTypes *map[string]any `json:"column_types,omitempty"`
+	Delimiter   *string         `json:"delimiter,omitempty"`
+	Description *string         `json:"description,omitempty"`
+	Format      *SeedFormat     `json:"format,omitempty"`
+	HasHeader   *bool           `json:"has_header,omitempty"`
+	InputRef    string          `json:"input_ref"`
+	Name        string          `json:"name"`
+	Tags        *[]string       `json:"tags,omitempty"`
 }
 
 type CreateRowFilterRequest struct {
@@ -1003,6 +1020,14 @@ type CreateSemanticRelationshipRequest struct {
 	Name             string                               `json:"name"`
 	RelationshipType SemanticRelationshipRelationshipType `json:"relationship_type"`
 	ToSemanticId     string                               `json:"to_semantic_id"`
+}
+
+type CreateSourceDefinitionRequest struct {
+	Description     *string                `json:"description,omitempty"`
+	FreshnessPolicy *SourceFreshnessPolicy `json:"freshness_policy,omitempty"`
+	RelationRef     string                 `json:"relation_ref"`
+	SourceName      string                 `json:"source_name"`
+	TableName       string                 `json:"table_name"`
 }
 
 type CreateStorageCredentialRequest struct {
@@ -2124,6 +2149,21 @@ type PaginatedProductTeams struct {
 	NextPageToken *string       `json:"next_page_token,omitempty"`
 }
 
+type PaginatedProjectDependencies struct {
+	Data          []ProjectDependency `json:"data"`
+	NextPageToken *string             `json:"next_page_token,omitempty"`
+}
+
+type PaginatedProjectSeeds struct {
+	Data          []ProjectSeed `json:"data"`
+	NextPageToken *string       `json:"next_page_token,omitempty"`
+}
+
+type PaginatedProjectSources struct {
+	Data          []SourceDefinition `json:"data"`
+	NextPageToken *string            `json:"next_page_token,omitempty"`
+}
+
 type PaginatedProjects struct {
 	Data          []Project `json:"data"`
 	NextPageToken *string   `json:"next_page_token,omitempty"`
@@ -2494,6 +2534,17 @@ type Project struct {
 	WorkspaceId    string      `json:"workspace_id"`
 }
 
+type ProjectDependency struct {
+	CreatedAt         *string `json:"created_at,omitempty"`
+	DependencyKind    *string `json:"dependency_kind,omitempty"`
+	DependencyProject string  `json:"dependency_project"`
+	Id                *string `json:"id,omitempty"`
+	Position          *int32  `json:"position,omitempty"`
+	ProjectId         string  `json:"project_id"`
+	ProjectName       *string `json:"project_name,omitempty"`
+	UpdatedAt         *string `json:"updated_at,omitempty"`
+}
+
 type ProjectKind string
 
 const (
@@ -2501,6 +2552,22 @@ const (
 	ProjectKindShared   ProjectKind = "shared"
 	ProjectKindLibrary  ProjectKind = "library"
 )
+
+type ProjectSeed struct {
+	ColumnTypes *map[string]any `json:"column_types,omitempty"`
+	CreatedAt   *string         `json:"created_at,omitempty"`
+	CreatedBy   *string         `json:"created_by,omitempty"`
+	Delimiter   *string         `json:"delimiter,omitempty"`
+	Description *string         `json:"description,omitempty"`
+	Format      *SeedFormat     `json:"format,omitempty"`
+	HasHeader   *bool           `json:"has_header,omitempty"`
+	Id          *string         `json:"id,omitempty"`
+	InputRef    string          `json:"input_ref"`
+	Name        string          `json:"name"`
+	ProjectName string          `json:"project_name"`
+	Tags        *[]string       `json:"tags,omitempty"`
+	UpdatedAt   *string         `json:"updated_at,omitempty"`
+}
 
 type PromoteNotebookRequest struct {
 	CellIndex       int32                 `json:"cell_index"`
@@ -2659,6 +2726,14 @@ type SearchResult struct {
 	Type       *string `json:"type,omitempty"`
 }
 
+type SeedFormat string
+
+const (
+	SeedFormatCsv     SeedFormat = "csv"
+	SeedFormatParquet SeedFormat = "parquet"
+	SeedFormatJson    SeedFormat = "json"
+)
+
 type SemanticMetric struct {
 	CertificationState *CreateSemanticMetricRequestCertificationState `json:"certification_state,omitempty"`
 	CreatedAt          *string                                        `json:"created_at,omitempty"`
@@ -2785,6 +2860,24 @@ type ShareFolderRequest struct {
 type ShareNotebookRequest struct {
 	PrincipalName string             `json:"principal_name"`
 	Role          *NotebookShareRole `json:"role,omitempty"`
+}
+
+type SourceDefinition struct {
+	CreatedAt       *string                `json:"created_at,omitempty"`
+	CreatedBy       *string                `json:"created_by,omitempty"`
+	Description     *string                `json:"description,omitempty"`
+	FreshnessPolicy *SourceFreshnessPolicy `json:"freshness_policy,omitempty"`
+	Id              string                 `json:"id"`
+	ProjectName     string                 `json:"project_name"`
+	RelationRef     string                 `json:"relation_ref"`
+	SourceName      string                 `json:"source_name"`
+	TableName       string                 `json:"table_name"`
+	UpdatedAt       *string                `json:"updated_at,omitempty"`
+}
+
+type SourceFreshnessPolicy struct {
+	MaxLagSeconds   *int32  `json:"max_lag_seconds,omitempty"`
+	TimestampColumn *string `json:"timestamp_column,omitempty"`
 }
 
 type SourceFreshnessStatus struct {
@@ -3101,6 +3194,16 @@ type UpdateProjectRequest struct {
 	ProductId     *string `json:"product_id,omitempty"`
 }
 
+type UpdateProjectSeedRequest struct {
+	ColumnTypes *map[string]any `json:"column_types,omitempty"`
+	Delimiter   *string         `json:"delimiter,omitempty"`
+	Description *string         `json:"description,omitempty"`
+	Format      *SeedFormat     `json:"format,omitempty"`
+	HasHeader   *bool           `json:"has_header,omitempty"`
+	InputRef    *string         `json:"input_ref,omitempty"`
+	Tags        *[]string       `json:"tags,omitempty"`
+}
+
 type UpdateRowFilterRequest struct {
 	Description *string `json:"description,omitempty"`
 	FilterSql   *string `json:"filter_sql,omitempty"`
@@ -3147,6 +3250,12 @@ type UpdateSemanticRelationshipRequest struct {
 	JoinSql          *string                               `json:"join_sql,omitempty"`
 	MaxHops          *int32                                `json:"max_hops,omitempty"`
 	RelationshipType *SemanticRelationshipRelationshipType `json:"relationship_type,omitempty"`
+}
+
+type UpdateSourceDefinitionRequest struct {
+	Description     *string                `json:"description,omitempty"`
+	FreshnessPolicy *SourceFreshnessPolicy `json:"freshness_policy,omitempty"`
+	RelationRef     *string                `json:"relation_ref,omitempty"`
 }
 
 type UpdateStorageCredentialRequest struct {
@@ -3465,7 +3574,13 @@ type ListProductTeamsParams = GenListProductTeamsParams
 
 type ListProjectBuildsParams = GenListProjectBuildsParams
 
+type ListProjectDependenciesParams = GenListProjectDependenciesParams
+
 type ListProjectEnvironmentsParams = GenListProjectEnvironmentsParams
+
+type ListProjectSeedsParams = GenListProjectSeedsParams
+
+type ListProjectSourcesParams = GenListProjectSourcesParams
 
 type ListQueriesParams = GenListQueriesParams
 
@@ -3579,7 +3694,13 @@ type CreateProductTeamJSONRequestBody = GenCreateProductTeamJSONBody
 
 type CreateProjectBuildJSONRequestBody = GenCreateProjectBuildJSONBody
 
+type CreateProjectDependencyJSONRequestBody = GenCreateProjectDependencyJSONBody
+
 type CreateProjectEnvironmentJSONRequestBody = GenCreateProjectEnvironmentJSONBody
+
+type CreateProjectSeedJSONRequestBody = GenCreateProjectSeedJSONBody
+
+type CreateProjectSourceJSONRequestBody = GenCreateProjectSourceJSONBody
 
 type CreateRowFilterJSONRequestBody = GenCreateRowFilterJSONBody
 
@@ -3700,6 +3821,10 @@ type UpdateProductTeamJSONRequestBody = GenUpdateProductTeamJSONBody
 type UpdateProjectEnvironmentJSONRequestBody = GenUpdateProjectEnvironmentJSONBody
 
 type UpdateProjectJSONRequestBody = GenUpdateProjectJSONBody
+
+type UpdateProjectSeedJSONRequestBody = GenUpdateProjectSeedJSONBody
+
+type UpdateProjectSourceJSONRequestBody = GenUpdateProjectSourceJSONBody
 
 type UpdateRowFilterJSONRequestBody = GenUpdateRowFilterJSONBody
 

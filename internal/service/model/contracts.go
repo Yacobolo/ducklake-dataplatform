@@ -18,12 +18,13 @@ func (s *Service) validateContract(ctx context.Context, conn *sql.Conn,
 		return nil
 	}
 
-	fqn := quoteIdent(config.TargetSchema) + "." + quoteIdent(model.Name)
+	targetSchema := effectiveSchema(config.TargetSchema, model.Config.Schema)
+	fqn := quoteIdent(targetSchema) + "." + quoteIdent(model.Name)
 
 	// Query information_schema to get actual columns
 	const infoSQL = "SELECT column_name, data_type, is_nullable FROM information_schema.columns WHERE table_schema = ? AND table_name = ? ORDER BY ordinal_position"
 
-	rows, err := conn.QueryContext(ctx, infoSQL, config.TargetSchema, model.Name)
+	rows, err := conn.QueryContext(ctx, infoSQL, targetSchema, model.Name)
 	if err != nil {
 		return fmt.Errorf("query information_schema for %s: %w", fqn, err)
 	}

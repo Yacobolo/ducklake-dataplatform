@@ -29178,6 +29178,353 @@ paths:
               source_model_run_id: run_01hzymodel
               target_catalog: analytics
               target_schema: mart
+  /projects/{project_id}/dependencies:
+    get:
+      operationId: listProjectDependencies
+      summary: List project dependencies
+      parameters:
+        - name: project_id
+          in: path
+          required: true
+          schema:
+            type: string
+          example: example
+        - name: max_results
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+          example: 1
+          explode: false
+        - name: page_token
+          in: query
+          required: false
+          schema:
+            type: string
+          example: example
+          explode: false
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedProjectDependencies'
+              example:
+                data:
+                  - created_at: "2026-01-02T15:04:05Z"
+                    dependency_kind: example
+                    dependency_project: example
+                    id: example
+                    position: 1
+                    project_id: example
+                    project_name: example
+                    updated_at: "2026-01-02T15:04:05Z"
+                next_page_token: example
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '404':
+          description: The server cannot find the requested resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+      tags:
+        - Projects
+    post:
+      operationId: createProjectDependency
+      summary: Create project dependency
+      parameters:
+        - name: project_id
+          in: path
+          required: true
+          schema:
+            type: string
+          example: example
+      responses:
+        '201':
+          description: The request has succeeded and a new resource has been created as a result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectDependency'
+              example:
+                created_at: "2026-01-02T15:04:05Z"
+                dependency_kind: example
+                dependency_project: example
+                id: example
+                position: 1
+                project_id: example
+                project_name: example
+                updated_at: "2026-01-02T15:04:05Z"
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '404':
+          description: The server cannot find the requested resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '409':
+          description: The request conflicts with the current state of the server.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+      tags:
+        - Projects
+      requestBody:
+        required: true
+        description: Request payload
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateProjectDependencyRequest'
+            example:
+              dependency_kind: example
+              dependency_project: example
+              position: 1
+  /projects/{project_id}/dependencies/{dependency_project}:
+    delete:
+      operationId: deleteProjectDependency
+      summary: Delete project dependency
+      parameters:
+        - name: project_id
+          in: path
+          required: true
+          schema:
+            type: string
+          example: example
+        - name: dependency_project
+          in: path
+          required: true
+          schema:
+            type: string
+          example: example
+      responses:
+        '204':
+          description: 'There is no content to send for this request, but the headers may be useful. '
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '404':
+          description: The server cannot find the requested resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '409':
+          description: The request conflicts with the current state of the server.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+      tags:
+        - Projects
   /projects/{project_id}/environments:
     get:
       operationId: listProjectEnvironments
@@ -29692,6 +30039,1251 @@ paths:
               target_schema: example
               variables:
                 key: example
+  /projects/{project_id}/seeds:
+    get:
+      operationId: listProjectSeeds
+      summary: List project seeds
+      parameters:
+        - name: project_id
+          in: path
+          required: true
+          schema:
+            type: string
+          example: example
+        - name: max_results
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+          example: 1
+          explode: false
+        - name: page_token
+          in: query
+          required: false
+          schema:
+            type: string
+          example: example
+          explode: false
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedProjectSeeds'
+              example:
+                data:
+                  - column_types:
+                      key: example
+                    created_at: "2026-01-02T15:04:05Z"
+                    created_by: example
+                    delimiter: example
+                    description: example
+                    format: csv
+                    has_header: true
+                    id: example
+                    input_ref: example
+                    name: example
+                    project_name: example
+                    tags:
+                      - example
+                    updated_at: "2026-01-02T15:04:05Z"
+                next_page_token: example
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '404':
+          description: The server cannot find the requested resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+      tags:
+        - Projects
+    post:
+      operationId: createProjectSeed
+      summary: Create project seed
+      parameters:
+        - name: project_id
+          in: path
+          required: true
+          schema:
+            type: string
+          example: example
+      responses:
+        '201':
+          description: The request has succeeded and a new resource has been created as a result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectSeed'
+              example:
+                column_types:
+                  key: example
+                created_at: "2026-01-02T15:04:05Z"
+                created_by: example
+                delimiter: example
+                description: example
+                format: csv
+                has_header: true
+                id: example
+                input_ref: example
+                name: example
+                project_name: example
+                tags:
+                  - example
+                updated_at: "2026-01-02T15:04:05Z"
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '404':
+          description: The server cannot find the requested resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '409':
+          description: The request conflicts with the current state of the server.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+      tags:
+        - Projects
+      requestBody:
+        required: true
+        description: Request payload
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateProjectSeedRequest'
+            example:
+              column_types:
+                key: example
+              delimiter: example
+              description: example
+              format: csv
+              has_header: true
+              input_ref: example
+              name: example
+              tags:
+                - example
+  /projects/{project_id}/seeds/{seed_name}:
+    delete:
+      operationId: deleteProjectSeed
+      summary: Delete project seed
+      parameters:
+        - name: project_id
+          in: path
+          required: true
+          schema:
+            type: string
+          example: example
+        - name: seed_name
+          in: path
+          required: true
+          schema:
+            type: string
+          example: example
+      responses:
+        '204':
+          description: 'There is no content to send for this request, but the headers may be useful. '
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '404':
+          description: The server cannot find the requested resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '409':
+          description: The request conflicts with the current state of the server.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+      tags:
+        - Projects
+    get:
+      operationId: getProjectSeed
+      summary: Get project seed
+      parameters:
+        - name: project_id
+          in: path
+          required: true
+          schema:
+            type: string
+          example: example
+        - name: seed_name
+          in: path
+          required: true
+          schema:
+            type: string
+          example: example
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectSeed'
+              example:
+                column_types:
+                  key: example
+                created_at: "2026-01-02T15:04:05Z"
+                created_by: example
+                delimiter: example
+                description: example
+                format: csv
+                has_header: true
+                id: example
+                input_ref: example
+                name: example
+                project_name: example
+                tags:
+                  - example
+                updated_at: "2026-01-02T15:04:05Z"
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '404':
+          description: The server cannot find the requested resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+      tags:
+        - Projects
+    patch:
+      operationId: updateProjectSeed
+      summary: Update project seed
+      parameters:
+        - name: project_id
+          in: path
+          required: true
+          schema:
+            type: string
+          example: example
+        - name: seed_name
+          in: path
+          required: true
+          schema:
+            type: string
+          example: example
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectSeed'
+              example:
+                column_types:
+                  key: example
+                created_at: "2026-01-02T15:04:05Z"
+                created_by: example
+                delimiter: example
+                description: example
+                format: csv
+                has_header: true
+                id: example
+                input_ref: example
+                name: example
+                project_name: example
+                tags:
+                  - example
+                updated_at: "2026-01-02T15:04:05Z"
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '404':
+          description: The server cannot find the requested resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '409':
+          description: The request conflicts with the current state of the server.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+      tags:
+        - Projects
+      requestBody:
+        required: true
+        description: Request payload
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateProjectSeedRequest'
+            example:
+              column_types:
+                key: example
+              delimiter: example
+              description: example
+              format: csv
+              has_header: true
+              input_ref: example
+              tags:
+                - example
+  /projects/{project_id}/sources:
+    get:
+      operationId: listProjectSources
+      summary: List project sources
+      parameters:
+        - name: project_id
+          in: path
+          required: true
+          schema:
+            type: string
+          example: example
+        - name: max_results
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+          example: 1
+          explode: false
+        - name: page_token
+          in: query
+          required: false
+          schema:
+            type: string
+          example: example
+          explode: false
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedProjectSources'
+              example:
+                data:
+                  - created_at: "2026-01-02T15:04:05Z"
+                    created_by: example
+                    description: example
+                    freshness_policy:
+                      max_lag_seconds: 1
+                      timestamp_column: example
+                    id: example
+                    project_name: example
+                    relation_ref: example
+                    source_name: example
+                    table_name: example
+                    updated_at: "2026-01-02T15:04:05Z"
+                next_page_token: example
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '404':
+          description: The server cannot find the requested resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+      tags:
+        - Projects
+    post:
+      operationId: createProjectSource
+      summary: Create project source
+      parameters:
+        - name: project_id
+          in: path
+          required: true
+          schema:
+            type: string
+          example: example
+      responses:
+        '201':
+          description: The request has succeeded and a new resource has been created as a result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SourceDefinition'
+              example:
+                created_at: "2026-01-02T15:04:05Z"
+                created_by: example
+                description: example
+                freshness_policy:
+                  max_lag_seconds: 1
+                  timestamp_column: example
+                id: example
+                project_name: example
+                relation_ref: example
+                source_name: example
+                table_name: example
+                updated_at: "2026-01-02T15:04:05Z"
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '404':
+          description: The server cannot find the requested resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '409':
+          description: The request conflicts with the current state of the server.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+      tags:
+        - Projects
+      requestBody:
+        required: true
+        description: Request payload
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateSourceDefinitionRequest'
+            example:
+              description: example
+              freshness_policy:
+                max_lag_seconds: 1
+                timestamp_column: example
+              relation_ref: example
+              source_name: example
+              table_name: example
+  /projects/{project_id}/sources/{source_name}/{table_name}:
+    delete:
+      operationId: deleteProjectSource
+      summary: Delete project source
+      parameters:
+        - name: project_id
+          in: path
+          required: true
+          schema:
+            type: string
+          example: example
+        - name: source_name
+          in: path
+          required: true
+          schema:
+            type: string
+          example: example
+        - name: table_name
+          in: path
+          required: true
+          schema:
+            type: string
+          example: example
+      responses:
+        '204':
+          description: 'There is no content to send for this request, but the headers may be useful. '
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '404':
+          description: The server cannot find the requested resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '409':
+          description: The request conflicts with the current state of the server.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+      tags:
+        - Projects
+    get:
+      operationId: getProjectSource
+      summary: Get project source
+      parameters:
+        - name: project_id
+          in: path
+          required: true
+          schema:
+            type: string
+          example: example
+        - name: source_name
+          in: path
+          required: true
+          schema:
+            type: string
+          example: example
+        - name: table_name
+          in: path
+          required: true
+          schema:
+            type: string
+          example: example
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SourceDefinition'
+              example:
+                created_at: "2026-01-02T15:04:05Z"
+                created_by: example
+                description: example
+                freshness_policy:
+                  max_lag_seconds: 1
+                  timestamp_column: example
+                id: example
+                project_name: example
+                relation_ref: example
+                source_name: example
+                table_name: example
+                updated_at: "2026-01-02T15:04:05Z"
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '404':
+          description: The server cannot find the requested resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+      tags:
+        - Projects
+    patch:
+      operationId: updateProjectSource
+      summary: Update project source
+      parameters:
+        - name: project_id
+          in: path
+          required: true
+          schema:
+            type: string
+          example: example
+        - name: source_name
+          in: path
+          required: true
+          schema:
+            type: string
+          example: example
+        - name: table_name
+          in: path
+          required: true
+          schema:
+            type: string
+          example: example
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SourceDefinition'
+              example:
+                created_at: "2026-01-02T15:04:05Z"
+                created_by: example
+                description: example
+                freshness_policy:
+                  max_lag_seconds: 1
+                  timestamp_column: example
+                id: example
+                project_name: example
+                relation_ref: example
+                source_name: example
+                table_name: example
+                updated_at: "2026-01-02T15:04:05Z"
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '404':
+          description: The server cannot find the requested resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '409':
+          description: The request conflicts with the current state of the server.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+      tags:
+        - Projects
+      requestBody:
+        required: true
+        description: Request payload
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateSourceDefinitionRequest'
+            example:
+              description: example
+              freshness_policy:
+                max_lag_seconds: 1
+                timestamp_column: example
+              relation_ref: example
   /queries:
     get:
       operationId: listQueries
@@ -39933,6 +41525,25 @@ components:
       example:
         contact_channel: '#customer-data'
         name: customer-platform
+    CreateProjectDependencyRequest:
+      type: object
+      required:
+        - dependency_project
+      properties:
+        dependency_project:
+          type: string
+          example: example
+        dependency_kind:
+          type: string
+          example: example
+        position:
+          type: integer
+          format: int32
+          example: 1
+      example:
+        dependency_kind: example
+        dependency_project: example
+        position: 1
     CreateProjectRequest:
       type: object
       required:
@@ -39958,6 +41569,52 @@ components:
         kind: personal
         name: example
         product_id: example
+    CreateProjectSeedRequest:
+      type: object
+      required:
+        - name
+        - input_ref
+      properties:
+        name:
+          type: string
+          example: example
+        description:
+          type: string
+          example: example
+        input_ref:
+          type: string
+          example: example
+        format:
+          $ref: '#/components/schemas/SeedFormat'
+        delimiter:
+          type: string
+          example: example
+        has_header:
+          type: boolean
+          example: true
+        column_types:
+          type: object
+          additionalProperties:
+            type: string
+          example:
+            key: example
+        tags:
+          type: array
+          items:
+            type: string
+          example:
+            - example
+      example:
+        column_types:
+          key: example
+        delimiter: example
+        description: example
+        format: csv
+        has_header: true
+        input_ref: example
+        name: example
+        tags:
+          - example
     CreateRowFilterRequest:
       type: object
       required:
@@ -40204,6 +41861,35 @@ components:
         name: example
         relationship_type: ONE_TO_ONE
         to_semantic_id: example
+    CreateSourceDefinitionRequest:
+      type: object
+      required:
+        - source_name
+        - table_name
+        - relation_ref
+      properties:
+        source_name:
+          type: string
+          example: example
+        table_name:
+          type: string
+          example: example
+        relation_ref:
+          type: string
+          example: example
+        description:
+          type: string
+          example: example
+        freshness_policy:
+          $ref: '#/components/schemas/SourceFreshnessPolicy'
+      example:
+        description: example
+        freshness_policy:
+          max_lag_seconds: 1
+          timestamp_column: example
+        relation_ref: example
+        source_name: example
+        table_name: example
     CreateStorageCredentialRequest:
       type: object
       required:
@@ -46263,6 +47949,124 @@ components:
             name: customer-platform
             updated_at: "2026-04-01T09:00:00Z"
         next_page_token: example
+    PaginatedProjectDependencies:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProjectDependency'
+          example:
+            - created_at: "2026-01-02T15:04:05Z"
+              dependency_kind: example
+              dependency_project: example
+              id: example
+              position: 1
+              project_id: example
+              project_name: example
+              updated_at: "2026-01-02T15:04:05Z"
+        next_page_token:
+          type: string
+          example: example
+      example:
+        data:
+          - created_at: "2026-01-02T15:04:05Z"
+            dependency_kind: example
+            dependency_project: example
+            id: example
+            position: 1
+            project_id: example
+            project_name: example
+            updated_at: "2026-01-02T15:04:05Z"
+        next_page_token: example
+    PaginatedProjectSeeds:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProjectSeed'
+          example:
+            - column_types:
+                key: example
+              created_at: "2026-01-02T15:04:05Z"
+              created_by: example
+              delimiter: example
+              description: example
+              format: csv
+              has_header: true
+              id: example
+              input_ref: example
+              name: example
+              project_name: example
+              tags:
+                - example
+              updated_at: "2026-01-02T15:04:05Z"
+        next_page_token:
+          type: string
+          example: example
+      example:
+        data:
+          - column_types:
+              key: example
+            created_at: "2026-01-02T15:04:05Z"
+            created_by: example
+            delimiter: example
+            description: example
+            format: csv
+            has_header: true
+            id: example
+            input_ref: example
+            name: example
+            project_name: example
+            tags:
+              - example
+            updated_at: "2026-01-02T15:04:05Z"
+        next_page_token: example
+    PaginatedProjectSources:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/SourceDefinition'
+          example:
+            - created_at: "2026-01-02T15:04:05Z"
+              created_by: example
+              description: example
+              freshness_policy:
+                max_lag_seconds: 1
+                timestamp_column: example
+              id: example
+              project_name: example
+              relation_ref: example
+              source_name: example
+              table_name: example
+              updated_at: "2026-01-02T15:04:05Z"
+        next_page_token:
+          type: string
+          example: example
+      example:
+        data:
+          - created_at: "2026-01-02T15:04:05Z"
+            created_by: example
+            description: example
+            freshness_policy:
+              max_lag_seconds: 1
+              timestamp_column: example
+            id: example
+            project_name: example
+            relation_ref: example
+            source_name: example
+            table_name: example
+            updated_at: "2026-01-02T15:04:05Z"
+        next_page_token: example
     PaginatedProjects:
       type: object
       required:
@@ -48315,6 +50119,48 @@ components:
         product_id: example
         updated_at: "2026-01-02T15:04:05Z"
         workspace_id: example
+    ProjectDependency:
+      type: object
+      required:
+        - project_id
+        - dependency_project
+      properties:
+        id:
+          type: string
+          example: example
+        project_id:
+          type: string
+          example: example
+        project_name:
+          type: string
+          example: example
+        dependency_project:
+          type: string
+          example: example
+        dependency_kind:
+          type: string
+          example: example
+        position:
+          type: integer
+          format: int32
+          example: 1
+        created_at:
+          type: string
+          format: date-time
+          example: "2026-01-02T15:04:05Z"
+        updated_at:
+          type: string
+          format: date-time
+          example: "2026-01-02T15:04:05Z"
+      example:
+        created_at: "2026-01-02T15:04:05Z"
+        dependency_kind: example
+        dependency_project: example
+        id: example
+        position: 1
+        project_id: example
+        project_name: example
+        updated_at: "2026-01-02T15:04:05Z"
     ProjectKind:
       type: string
       enum:
@@ -48322,6 +50168,75 @@ components:
         - shared
         - library
       example: personal
+    ProjectSeed:
+      type: object
+      required:
+        - project_name
+        - name
+        - input_ref
+      properties:
+        id:
+          type: string
+          example: example
+        project_name:
+          type: string
+          example: example
+        name:
+          type: string
+          example: example
+        description:
+          type: string
+          example: example
+        input_ref:
+          type: string
+          example: example
+        format:
+          $ref: '#/components/schemas/SeedFormat'
+        delimiter:
+          type: string
+          example: example
+        has_header:
+          type: boolean
+          example: true
+        column_types:
+          type: object
+          additionalProperties:
+            type: string
+          example:
+            key: example
+        tags:
+          type: array
+          items:
+            type: string
+          example:
+            - example
+        created_by:
+          type: string
+          example: example
+        created_at:
+          type: string
+          format: date-time
+          example: "2026-01-02T15:04:05Z"
+        updated_at:
+          type: string
+          format: date-time
+          example: "2026-01-02T15:04:05Z"
+      example:
+        column_types:
+          key: example
+        created_at: "2026-01-02T15:04:05Z"
+        created_by: example
+        delimiter: example
+        description: example
+        format: csv
+        has_header: true
+        id: example
+        input_ref: example
+        name: example
+        project_name: example
+        tags:
+          - example
+        updated_at: "2026-01-02T15:04:05Z"
     PromoteNotebookRequest:
       type: object
       required:
@@ -48980,6 +50895,13 @@ components:
         schema_name: example
         table_name: example
         type: example
+    SeedFormat:
+      type: string
+      enum:
+        - csv
+        - parquet
+        - json
+      example: csv
     SemanticMetric:
       type: object
       properties:
@@ -49393,6 +51315,72 @@ components:
       example:
         principal_name: analytics-reviewers
         role: viewer
+    SourceDefinition:
+      type: object
+      required:
+        - id
+        - project_name
+        - source_name
+        - table_name
+        - relation_ref
+      properties:
+        id:
+          type: string
+          example: example
+        project_name:
+          type: string
+          example: example
+        source_name:
+          type: string
+          example: example
+        table_name:
+          type: string
+          example: example
+        relation_ref:
+          type: string
+          example: example
+        description:
+          type: string
+          example: example
+        freshness_policy:
+          $ref: '#/components/schemas/SourceFreshnessPolicy'
+        created_by:
+          type: string
+          example: example
+        created_at:
+          type: string
+          format: date-time
+          example: "2026-01-02T15:04:05Z"
+        updated_at:
+          type: string
+          format: date-time
+          example: "2026-01-02T15:04:05Z"
+      example:
+        created_at: "2026-01-02T15:04:05Z"
+        created_by: example
+        description: example
+        freshness_policy:
+          max_lag_seconds: 1
+          timestamp_column: example
+        id: example
+        project_name: example
+        relation_ref: example
+        source_name: example
+        table_name: example
+        updated_at: "2026-01-02T15:04:05Z"
+    SourceFreshnessPolicy:
+      type: object
+      properties:
+        timestamp_column:
+          type: string
+          example: example
+        max_lag_seconds:
+          type: integer
+          format: int64
+          example: 1
+      example:
+        max_lag_seconds: 1
+        timestamp_column: example
     SourceFreshnessStatus:
       type: object
       properties:
@@ -50433,6 +52421,45 @@ components:
         default_branch: example
         description: example
         product_id: example
+    UpdateProjectSeedRequest:
+      type: object
+      properties:
+        description:
+          type: string
+          example: example
+        input_ref:
+          type: string
+          example: example
+        format:
+          $ref: '#/components/schemas/SeedFormat'
+        delimiter:
+          type: string
+          example: example
+        has_header:
+          type: boolean
+          example: true
+        column_types:
+          type: object
+          additionalProperties:
+            type: string
+          example:
+            key: example
+        tags:
+          type: array
+          items:
+            type: string
+          example:
+            - example
+      example:
+        column_types:
+          key: example
+        delimiter: example
+        description: example
+        format: csv
+        has_header: true
+        input_ref: example
+        tags:
+          - example
     UpdateRowFilterRequest:
       type: object
       properties:
@@ -50595,6 +52622,23 @@ components:
         join_sql: example
         max_hops: 1
         relationship_type: ONE_TO_ONE
+    UpdateSourceDefinitionRequest:
+      type: object
+      properties:
+        relation_ref:
+          type: string
+          example: example
+        description:
+          type: string
+          example: example
+        freshness_policy:
+          $ref: '#/components/schemas/SourceFreshnessPolicy'
+      example:
+        description: example
+        freshness_policy:
+          max_lag_seconds: 1
+          timestamp_column: example
+        relation_ref: example
     UpdateStorageCredentialRequest:
       type: object
       properties:

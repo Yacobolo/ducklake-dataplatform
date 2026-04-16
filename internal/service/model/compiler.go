@@ -20,11 +20,21 @@ type compileContext struct {
 	projectName   string
 	modelName     string
 	materialize   string
+	allowedRefs   map[string]struct{}
 	models        map[string]domain.Model
 	byName        map[string][]domain.Model
-	sources       map[string]string
+	sources       map[string]compileSourceDefinition
 	macros        map[string]compileMacroDefinition
 	macroRuntimes map[string]*starlarkMacroRuntime
+}
+
+type compileSourceDefinition struct {
+	key         string
+	projectName string
+	sourceName  string
+	tableName   string
+	relation    string
+	relationRef string
 }
 
 type compileMacroDefinition struct {
@@ -33,6 +43,8 @@ type compileMacroDefinition struct {
 	body       string
 	starlark   bool
 	runtimeKey string
+	status     string
+	origin     string
 }
 
 type compileResult struct {
@@ -40,6 +52,7 @@ type compileResult struct {
 	dependsOn    []string
 	varsUsed     []string
 	macrosUsed   []string
+	sourcesUsed  map[string]string
 	compiledHash string
 }
 
@@ -80,6 +93,7 @@ func compileModelSQL(sqlText string, ctx compileContext) (*compileResult, error)
 		dependsOn:    allDeps,
 		varsUsed:     dedupeSorted(varsUsed),
 		macrosUsed:   dedupeSorted(macrosUsed),
+		sourcesUsed:  mapStringKeysToRelationMap(sources, ctx.sources),
 		compiledHash: hash,
 	}, nil
 }
@@ -115,28 +129,42 @@ func renderTemplate(sqlText string, ctx compileContext) (string, []string, []str
 
 		switch fnName {
 		case "ref":
-			if len(args) != 1 {
-				return "", domain.ErrValidation("ref() expects exactly one string argument")
+			if len(args) != 1 && len(args) != 2 {
+				return "", domain.ErrValidation("ref() expects one required model argument and optional project argument")
 			}
-			name, err := unquoteString(args[0])
+			refProject := ctx.projectName
+			refModelArg := args[0]
+			if len(args) == 2 {
+				projectName, err := unquoteString(args[0])
+				if err != nil {
+					return "", err
+				}
+				modelName, err := unquoteString(args[1])
+				if err != nil {
+					return "", err
+				}
+				refProject = projectName
+				refModelArg = "'" + strings.ReplaceAll(modelName, "'", "''") + "'"
+			}
+			name, err := unquoteString(refModelArg)
 			if err != nil {
 				return "", err
 			}
-			qualified := qualifyRef(ctx.projectName, name)
+			if strings.Contains(name, ".") {
+				parts := strings.SplitN(name, ".", 2)
+				refProject = strings.TrimSpace(parts[0])
+				name = strings.TrimSpace(parts[1])
+			}
+			qualified := qualifyRef(refProject, name)
+			if refProject != ctx.projectName && !projectAllowed(ctx.allowedRefs, refProject) {
+				return "", domain.ErrValidation("ref(%q) requires project dependency on %q", qualified, refProject)
+			}
 			m, ok := ctx.models[qualified]
 			if !ok {
-				if strings.Contains(name, ".") {
-					return "", domain.ErrValidation("unknown ref(%q)", name)
-				}
-				if candidates := ctx.byName[name]; len(candidates) == 1 {
-					m = candidates[0]
-					qualified = m.QualifiedName()
-				} else {
-					return "", domain.ErrValidation("unknown ref(%q)", name)
-				}
+				return "", domain.ErrValidation("unknown ref(%q)", qualified)
 			}
 			refsSet[qualified] = struct{}{}
-			return relationFQN(ctx.targetCatalog, ctx.targetSchema, m.Name), nil
+			return relationFQN(ctx.targetCatalog, effectiveSchema(ctx.targetSchema, m.Config.Schema), m.Name), nil
 		case "source":
 			if len(args) != 2 {
 				return "", domain.ErrValidation("source() expects exactly two string arguments")
@@ -149,11 +177,11 @@ func renderTemplate(sqlText string, ctx compileContext) (string, []string, []str
 			if err != nil {
 				return "", err
 			}
-			key := sourceName + "." + tableName
-			relation, ok := ctx.sources[key]
+			key := sourceLookupKey(ctx.projectName, sourceName, tableName)
+			sourceDef, ok := ctx.sources[key]
 			if ok {
 				sourcesSet[key] = struct{}{}
-				return relation, nil
+				return sourceDef.relation, nil
 			}
 			if ctx.strictSources || len(ctx.sources) > 0 {
 				return "", domain.ErrValidation("unknown source(%q,%q)", sourceName, tableName)
@@ -486,6 +514,51 @@ func dedupeSorted(values []string) []string {
 			out = append(out, v)
 			prev = v
 		}
+	}
+	return out
+}
+
+func projectAllowed(allowed map[string]struct{}, projectName string) bool {
+	if strings.TrimSpace(projectName) == "" {
+		return false
+	}
+	if len(allowed) == 0 {
+		return false
+	}
+	_, ok := allowed[projectName]
+	return ok
+}
+
+func sourceLookupKey(projectName, sourceName, tableName string) string {
+	return strings.TrimSpace(projectName) + ":" + strings.TrimSpace(sourceName) + "." + strings.TrimSpace(tableName)
+}
+
+func effectiveSchema(defaultSchema, override string) string {
+	if strings.TrimSpace(override) != "" {
+		return strings.TrimSpace(override)
+	}
+	return strings.TrimSpace(defaultSchema)
+}
+
+func mapStringKeysToRelationMap(
+	keys []string,
+	values map[string]compileSourceDefinition,
+) map[string]string {
+	if len(keys) == 0 {
+		return nil
+	}
+	sorted := append([]string(nil), keys...)
+	sort.Strings(sorted)
+	out := make(map[string]string, len(sorted))
+	for _, key := range sorted {
+		value, ok := values[key]
+		if !ok {
+			continue
+		}
+		out[value.sourceName+"."+value.tableName] = value.relationRef
+	}
+	if len(out) == 0 {
+		return nil
 	}
 	return out
 }

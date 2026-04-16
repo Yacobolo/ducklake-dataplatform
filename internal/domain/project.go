@@ -9,27 +9,27 @@ const (
 	// ProjectKindPersonal is a per-user draft authoring workspace.
 	ProjectKindPersonal = "personal"
 	// ProjectKindShared is a team-owned authoring workspace that can back products.
-	ProjectKindShared   = "shared"
+	ProjectKindShared = "shared"
 	// ProjectKindLibrary is a reusable compile-time workspace for shared macros and checks.
-	ProjectKindLibrary  = "library"
+	ProjectKindLibrary = "library"
 )
 
 const (
 	// EnvironmentKindDevelopment is the non-production execution context for authoring.
 	EnvironmentKindDevelopment = "development"
 	// EnvironmentKindStaging is the pre-production execution context for shared validation.
-	EnvironmentKindStaging     = "staging"
+	EnvironmentKindStaging = "staging"
 	// EnvironmentKindProduction is the production execution context for released builds.
-	EnvironmentKindProduction  = "production"
+	EnvironmentKindProduction = "production"
 )
 
 const (
 	// BuildStateDraft is an internal placeholder state before a build is ready.
-	BuildStateDraft      = "draft"
+	BuildStateDraft = "draft"
 	// BuildStateReady means a build can be used for validation or publication.
-	BuildStateReady      = "ready"
+	BuildStateReady = "ready"
 	// BuildStateReleased marks the build currently backing a published product version.
-	BuildStateReleased   = "released"
+	BuildStateReleased = "released"
 	// BuildStateSuperseded marks a build replaced by a newer released product version.
 	BuildStateSuperseded = "superseded"
 )
@@ -86,6 +86,63 @@ type Environment struct {
 	CreatedBy          string
 	CreatedAt          time.Time
 	UpdatedAt          time.Time
+}
+
+// ProjectDependency declares that a project may compile against another project.
+// Library/shared projects act as the package mechanism for transformation authoring.
+type ProjectDependency struct {
+	ID                string
+	ProjectID         string
+	ProjectName       string
+	DependencyProject string
+	DependencyKind    string
+	Position          int
+	CreatedBy         string
+	CreatedAt         time.Time
+	UpdatedAt         time.Time
+}
+
+// SourceFreshnessPolicy defines freshness thresholds for a registered source.
+type SourceFreshnessPolicy struct {
+	TimestampColumn string `json:"timestamp_column,omitempty"`
+	MaxLagSeconds   int64  `json:"max_lag_seconds,omitempty"`
+}
+
+// SourceDefinition is a first-class project-owned source declaration.
+type SourceDefinition struct {
+	ID          string
+	ProjectName string
+	SourceName  string
+	TableName   string
+	RelationRef string
+	Description string
+	Freshness   *SourceFreshnessPolicy
+	CreatedBy   string
+	CreatedAt   time.Time
+	UpdatedAt   time.Time
+}
+
+// CreateProjectDependencyRequest defines the input for attaching a dependency project.
+type CreateProjectDependencyRequest struct {
+	DependencyProject string
+	DependencyKind    string
+	Position          int
+}
+
+// CreateSourceDefinitionRequest defines the input for creating a project-owned source.
+type CreateSourceDefinitionRequest struct {
+	SourceName  string
+	TableName   string
+	RelationRef string
+	Description string
+	Freshness   *SourceFreshnessPolicy
+}
+
+// UpdateSourceDefinitionRequest defines mutable source fields.
+type UpdateSourceDefinitionRequest struct {
+	RelationRef *string
+	Description *string
+	Freshness   *SourceFreshnessPolicy
 }
 
 // CreateEnvironmentRequest defines the input for creating a project execution environment.
@@ -188,6 +245,39 @@ func ValidateUpdateProjectRequest(req UpdateProjectRequest) error {
 	}
 	if req.ProductID != nil && strings.TrimSpace(*req.ProductID) == "" {
 		return ErrValidation("product_id cannot be empty")
+	}
+	return nil
+}
+
+// Validate validates a dependency creation request.
+func (r *CreateProjectDependencyRequest) Validate() error {
+	if strings.TrimSpace(r.DependencyProject) == "" {
+		return ErrValidation("dependency_project is required")
+	}
+	return nil
+}
+
+// Validate validates a source definition creation request.
+func (r *CreateSourceDefinitionRequest) Validate() error {
+	if strings.TrimSpace(r.SourceName) == "" {
+		return ErrValidation("source_name is required")
+	}
+	if strings.TrimSpace(r.TableName) == "" {
+		return ErrValidation("table_name is required")
+	}
+	if strings.TrimSpace(r.RelationRef) == "" {
+		return ErrValidation("relation_ref is required")
+	}
+	return nil
+}
+
+// Validate validates a source definition update request.
+func (r *UpdateSourceDefinitionRequest) Validate() error {
+	if r.RelationRef != nil && strings.TrimSpace(*r.RelationRef) == "" {
+		return ErrValidation("relation_ref cannot be empty")
+	}
+	if r.Description != nil && strings.TrimSpace(*r.Description) == "" {
+		return ErrValidation("description cannot be empty")
 	}
 	return nil
 }
