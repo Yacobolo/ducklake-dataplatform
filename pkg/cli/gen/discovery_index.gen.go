@@ -3,61 +3,61 @@
 package gen
 
 type ReferenceIndex struct {
-	Docs            []ReferenceDoc
-	Operations      []ReferenceOperation
-	Links           []ReferenceLink
-	OpenAPISpecYAML string
+	Docs            []ReferenceDoc       `json:"docs"`
+	Operations      []ReferenceOperation `json:"operations"`
+	Links           []ReferenceLink      `json:"links"`
+	OpenAPISpecYAML string               `json:"openapi_spec_yaml"`
 }
 
 type ReferenceDoc struct {
-	ID           string
-	Path         string
-	Section      string
-	Title        string
-	Description  string
-	Headings     []string
-	Excerpt      string
-	CodeExamples []string
-	Keywords     []string
+	ID           string   `json:"id"`
+	Path         string   `json:"path"`
+	Section      string   `json:"section"`
+	Title        string   `json:"title"`
+	Description  string   `json:"description"`
+	Headings     []string `json:"headings"`
+	Excerpt      string   `json:"excerpt"`
+	CodeExamples []string `json:"code_examples"`
+	Keywords     []string `json:"keywords"`
 }
 
 type ReferenceOperation struct {
-	OperationID  string
-	Method       string
-	Path         string
-	Tags         []string
-	Summary      string
-	Description  string
-	Parameters   []ReferenceParam
-	BodyFields   []ReferenceField
-	CLICommand   string
-	ContentTypes []string
+	OperationID  string           `json:"operation_id"`
+	Method       string           `json:"method"`
+	Path         string           `json:"path"`
+	Tags         []string         `json:"tags"`
+	Summary      string           `json:"summary"`
+	Description  string           `json:"description"`
+	Parameters   []ReferenceParam `json:"parameters"`
+	BodyFields   []ReferenceField `json:"body_fields"`
+	CLICommand   string           `json:"cli_command"`
+	ContentTypes []string         `json:"content_types"`
 }
 
 type ReferenceParam struct {
-	Name        string
-	In          string
-	Type        string
-	Description string
-	Required    bool
-	Enum        []string
+	Name        string   `json:"name"`
+	In          string   `json:"in"`
+	Type        string   `json:"type"`
+	Description string   `json:"description"`
+	Required    bool     `json:"required"`
+	Enum        []string `json:"enum"`
 }
 
 type ReferenceField struct {
-	Name        string
-	Type        string
-	Description string
-	Required    bool
-	Enum        []string
+	Name        string   `json:"name"`
+	Type        string   `json:"type"`
+	Description string   `json:"description"`
+	Required    bool     `json:"required"`
+	Enum        []string `json:"enum"`
 }
 
 type ReferenceLink struct {
-	SourceKind string
-	SourceID   string
-	TargetKind string
-	TargetID   string
-	Reason     string
-	Confidence int
+	SourceKind string `json:"source_kind"`
+	SourceID   string `json:"source_id"`
+	TargetKind string `json:"target_kind"`
+	TargetID   string `json:"target_id"`
+	Reason     string `json:"reason"`
+	Confidence int    `json:"confidence"`
 }
 
 var CLIReferenceIndex = ReferenceIndex{
