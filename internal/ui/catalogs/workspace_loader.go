@@ -221,10 +221,9 @@ func (h *Handler) renderCatalogWorkspace(w http.ResponseWriter, r *http.Request,
 		v, viewErr := h.deps.View.GetView(r.Context(), catalogName, selectedSchema, selectedName)
 		if viewErr == nil {
 			assetRef := assetLinks.resolve(catalogName, selectedSchema, selectedName)
-			columns, _, columnsErr := h.deps.Catalog.ListColumns(r.Context(), catalogName, selectedSchema, selectedName, domain.PageRequest{MaxResults: 200})
-			columnRows := make([]tableColumnRowData, 0, len(columns))
-			for i := range columns {
-				c := columns[i]
+			columnRows := make([]tableColumnRowData, 0, len(v.Columns))
+			for i := range v.Columns {
+				c := v.Columns[i]
 				columnRows = append(columnRows, tableColumnRowData{Name: c.Name, Type: c.Type, Nullable: fmt.Sprintf("%t", c.Nullable), Comment: dashIfEmpty(c.Comment), Properties: mapJSON(c.Properties)})
 			}
 			panel = catalogWorkspacePanelData{
@@ -242,7 +241,7 @@ func (h *Handler) renderCatalogWorkspace(w http.ResponseWriter, r *http.Request,
 				},
 				Definition:       v.ViewDefinition,
 				Columns:          columnRows,
-				ColumnsAvailable: columnsErr == nil,
+				ColumnsAvailable: len(v.Columns) > 0,
 				AssetURL:         assetRef.URL,
 				AssetKey:         assetRef.Key,
 				HistoryEntity:    historyEntity,

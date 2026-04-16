@@ -6585,6 +6585,12 @@ paths:
               example:
                 data:
                   - catalog_name: example
+                    columns:
+                      - comment: example
+                        name: example
+                        nullable: true
+                        position: 1
+                        type: example
                     comment: example
                     created_at: "2026-01-02T15:04:05Z"
                     id: example
@@ -6697,6 +6703,12 @@ paths:
                 $ref: '#/components/schemas/ViewDetail'
               example:
                 catalog_name: example
+                columns:
+                  - comment: example
+                    name: example
+                    nullable: true
+                    position: 1
+                    type: example
                 comment: example
                 created_at: "2026-01-02T15:04:05Z"
                 id: example
@@ -6914,6 +6926,12 @@ paths:
                 $ref: '#/components/schemas/ViewDetail'
               example:
                 catalog_name: example
+                columns:
+                  - comment: example
+                    name: example
+                    nullable: true
+                    position: 1
+                    type: example
                 comment: example
                 created_at: "2026-01-02T15:04:05Z"
                 id: example
@@ -7031,6 +7049,12 @@ paths:
                 $ref: '#/components/schemas/ViewDetail'
               example:
                 catalog_name: example
+                columns:
+                  - comment: example
+                    name: example
+                    nullable: true
+                    position: 1
+                    type: example
                 comment: example
                 created_at: "2026-01-02T15:04:05Z"
                 id: example
@@ -46701,6 +46725,12 @@ components:
             $ref: '#/components/schemas/ViewDetail'
           example:
             - catalog_name: example
+              columns:
+                - comment: example
+                  name: example
+                  nullable: true
+                  position: 1
+                  type: example
               comment: example
               created_at: "2026-01-02T15:04:05Z"
               id: example
@@ -46718,6 +46748,12 @@ components:
       example:
         data:
           - catalog_name: example
+            columns:
+              - comment: example
+                name: example
+                nullable: true
+                position: 1
+                type: example
             comment: example
             created_at: "2026-01-02T15:04:05Z"
             id: example
@@ -50687,6 +50723,16 @@ components:
         name:
           type: string
           example: example
+        columns:
+          type: array
+          items:
+            $ref: '#/components/schemas/ColumnDetail'
+          example:
+            - comment: example
+              name: example
+              nullable: true
+              position: 1
+              type: example
         source_tables:
           type: array
           items:
@@ -50712,6 +50758,12 @@ components:
           example: "2026-01-02T15:04:05Z"
       example:
         catalog_name: example
+        columns:
+          - comment: example
+            name: example
+            nullable: true
+            position: 1
+            type: example
         comment: example
         created_at: "2026-01-02T15:04:05Z"
         id: example

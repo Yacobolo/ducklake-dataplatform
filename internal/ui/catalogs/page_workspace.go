@@ -163,25 +163,11 @@ func catalogWorkspacePage(d catalogWorkspacePageData) Node {
 		panelActions = append(panelActions, core.ActionMenu("More", core.ActionMenuPost(d.Panel.DeleteURL, "Delete", d.CSRFField, true)))
 	}
 
-	columnsNode := Node(nil)
-	if d.Panel.Mode == "table" || d.Panel.Mode == "view" {
-		if len(d.Panel.Columns) == 0 && d.Panel.Mode == "view" && !d.Panel.ColumnsAvailable {
-			columnsNode = P(Class(catalogMutedCopyClass()), Text("Columns unavailable for this view."))
-		} else {
-			rows := make([]Node, 0, len(d.Panel.Columns))
-			for i := range d.Panel.Columns {
-				c := d.Panel.Columns[i]
-				rows = append(rows, Tr(Td(Text(c.Name)), Td(Text(c.Type)), Td(Text(c.Nullable)), Td(Text(c.Comment)), Td(Text(c.Properties))))
-			}
-			columnsNode = Div(Class(catalogTableWrapClass("catalog-columns-table")), core.DataTable("", THead(Tr(Th(Text("Name")), Th(Text("Type")), Th(Text("Nullable")), Th(Text("Comment")), Th(Text("Properties")))), TBody(Group(rows))))
-		}
-	}
-
 	definitionNode := Node(nil)
 	if d.Panel.Definition != "" {
 		definitionNode = Div(Class(catalogSectionClass()),
 			H3(Class(catalogSectionTitleClass()), Text("Definition")),
-			Pre(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-3"), Text(d.Panel.Definition)),
+			Pre(Class("m-0 overflow-x-auto whitespace-pre-wrap text-sm leading-6 text-[var(--fgColor-default)]"), Text(d.Panel.Definition)),
 		)
 	}
 
@@ -204,13 +190,6 @@ func catalogWorkspacePage(d catalogWorkspacePageData) Node {
 
 	overviewContent := catalogOverviewContent(d)
 	detailsNodes := []Node{Dl(Class(catalogMetaListClass()), Group(metaNodes)), definitionNode}
-	if d.Panel.Mode == "table" || d.Panel.Mode == "view" {
-		if columnsNode != nil {
-			detailsNodes = append(detailsNodes, Div(Class(catalogSectionClass()), H3(Class(catalogSectionTitleClass()), Text("Columns")), columnsNode))
-		} else {
-			detailsNodes = append(detailsNodes, Div(Class(catalogSectionClass()), H3(Class(catalogSectionTitleClass()), Text("Columns")), P(Class(catalogMutedCopyClass()), Text("No columns available."))))
-		}
-	}
 	detailsContent := Node(Group(detailsNodes))
 	permissionsContent := catalogPlaceholderTab("Permissions", "Permissions for this "+d.Panel.Mode+" will appear here.")
 	policiesContent := catalogPlaceholderTab("Policies", "Policies for this "+d.Panel.Mode+" will appear here.")
@@ -243,16 +222,17 @@ func catalogWorkspacePage(d catalogWorkspacePageData) Node {
 		detailContent = qualityContent
 	}
 
-	return core.AppPage(
+	return core.ApplicationPage(
 		"Catalog: "+d.ActiveCatalogName,
 		"catalogs",
 		d.Principal,
-		data.Signals(map[string]any{"q": "", "childq": ""}),
-		core.WorkspaceLayout(
-			"min-h-0",
-			core.WorkspaceAside(
+		core.ApplicationLayoutSlots{
+			CenterAttributes: []Node{
+				data.Signals(map[string]any{"q": "", "childq": ""}),
+			},
+			SecondaryAside: core.WorkspaceAside(
 				"catalog-workspace",
-				"catalog-aside",
+				"catalog-aside workspace-aside-plain h-full",
 				[]workspaceAsideTab{
 					{
 						ID:      "explorer",
@@ -263,22 +243,27 @@ func catalogWorkspacePage(d catalogWorkspacePageData) Node {
 				},
 				"explorer",
 			),
-			Section(
-				Class("flex min-w-0 flex-col gap-4 rounded-2xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-5 shadow-xs max-md:p-4"),
-				Div(Class("flex flex-wrap items-start justify-between gap-3"),
-					Div(Class("min-w-0 flex-1"),
-						catalogBreadcrumb(d),
-						Div(Class("inline-flex flex-wrap items-center gap-3"),
-							H2(Class("m-0 text-2xl font-semibold"), Text(d.Panel.Title)),
-							core.StatusLabel(panelStatus, "accent"),
+			Main: core.ApplicationMainContentSection(
+				"Catalog: "+d.ActiveCatalogName,
+				"flex min-h-0 w-full flex-1 flex-col gap-5",
+				Section(
+					Class("flex min-w-0 flex-col gap-5 py-1"),
+					Div(Class("flex flex-wrap items-start justify-between gap-3"),
+						Div(Class("min-w-0 flex-1"),
+							catalogBreadcrumb(d),
+							Div(Class("inline-flex flex-wrap items-center gap-3"),
+								H2(Class("m-0 text-2xl font-semibold"), Text(d.Panel.Title)),
+								core.StatusLabel(panelStatus, "accent"),
+							),
 						),
+						Div(Class(catalogButtonRowClass()), Group(panelActions)),
 					),
-					Div(Class(catalogButtonRowClass()), Group(panelActions)),
+					Div(Class(catalogTabsClass()), Group(tabItems)),
+					detailContent,
 				),
-				Div(Class(catalogTabsClass()), Group(tabItems)),
-				detailContent,
 			),
-		),
+			Footer: catalogWorkspaceFooter(d),
+		},
 	)
 }
 
@@ -440,7 +425,7 @@ func catalogHistoryContent(d catalogWorkspacePageData) Node {
 		Div(
 			Class(catalogSectionClass()),
 			H3(Class(catalogSectionTitleClass()), Text("Metadata tables")),
-			Div(Class(catalogTableWrapClass()),
+			core.TableContainer("",
 				core.DataTable("",
 					THead(Tr(Th(Text("Entity")), Th(Text("Active")), Th(Text("Historical")), Th(Text("Total")), Th(Text("Latest snapshot")))),
 					TBody(Group(rows)),
@@ -486,7 +471,7 @@ func catalogHistoryEntriesTable(entries []domain.CatalogHistoryEntry) Node {
 		historyRows = append(historyRows,
 			Tr(
 				Td(Text(historyEntityLabel(entry.EntityType))),
-				Td(Text(dashIfEmpty(entry.ObjectName))),
+				Td(Text(core.TableValue(entry.ObjectName))),
 				Td(Text(snapshotIDLabel(entry.BeginSnapshotID))),
 				Td(Text(snapshotIDLabel(entry.EndSnapshotID))),
 				Td(Text(historyStatusLabel(entry))),
@@ -496,7 +481,7 @@ func catalogHistoryEntriesTable(entries []domain.CatalogHistoryEntry) Node {
 	if len(historyRows) == 0 {
 		return P(Class(catalogMutedCopyClass()), Text("No history entries match the current filter."))
 	}
-	return Div(Class(catalogTableWrapClass()), core.DataTable("", THead(Tr(Th(Text("Entity")), Th(Text("Object")), Th(Text("Begin snapshot")), Th(Text("End snapshot")), Th(Text("Status")))), TBody(Group(historyRows))))
+	return core.TableContainer("", core.DataTable("", THead(Tr(Th(Text("Entity")), Th(Text("Object")), Th(Text("Begin snapshot")), Th(Text("End snapshot")), Th(Text("Status")))), TBody(Group(historyRows))))
 }
 
 func catalogOverviewContent(d catalogWorkspacePageData) Node {
@@ -516,8 +501,8 @@ func catalogOverviewContent(d catalogWorkspacePageData) Node {
 				Tr(
 					data.Show(containsExprSignal(schema.Name+" "+schema.Owner+" "+schema.Created, "childq")),
 					Td(core.TextLink(schema.URL, Text(schema.Name))),
-					Td(Text(dashIfEmpty(schema.Owner))),
-					Td(Text(dashIfEmpty(schema.Created))),
+					Td(Text(core.TableValue(schema.Owner))),
+					Td(Text(core.TableValue(schema.Created))),
 				),
 			)
 		}
@@ -532,7 +517,7 @@ func catalogOverviewContent(d catalogWorkspacePageData) Node {
 			}
 			for j := range schema.Tables {
 				table := schema.Tables[j]
-				assetNode := Node(Text("-"))
+				assetNode := Node(Text(""))
 				if table.AssetURL != "" {
 					assetNode = core.TextLink(table.AssetURL, Text(core.FallbackString(table.AssetKey, "Open asset")))
 				}
@@ -540,15 +525,15 @@ func catalogOverviewContent(d catalogWorkspacePageData) Node {
 					Tr(
 						data.Show(containsExprSignal(table.Name+" "+table.Owner+" "+table.Created+" "+table.Kind, "childq")),
 						Td(core.TextLink(table.URL, Text(table.Name))),
-						Td(Text(dashIfEmpty(table.Owner))),
-						Td(Text(dashIfEmpty(table.Created))),
+						Td(Text(core.TableValue(table.Owner))),
+						Td(Text(core.TableValue(table.Created))),
 						Td(assetNode),
 					),
 				)
 			}
 			for j := range schema.Views {
 				view := schema.Views[j]
-				assetNode := Node(Text("-"))
+				assetNode := Node(Text(""))
 				if view.AssetURL != "" {
 					assetNode = core.TextLink(view.AssetURL, Text(core.FallbackString(view.AssetKey, "Open asset")))
 				}
@@ -556,8 +541,8 @@ func catalogOverviewContent(d catalogWorkspacePageData) Node {
 					Tr(
 						data.Show(containsExprSignal(view.Name+" "+view.Owner+" "+view.Created+" "+view.Kind, "childq")),
 						Td(core.TextLink(view.URL, Text(view.Name))),
-						Td(Text(dashIfEmpty(view.Owner))),
-						Td(Text(dashIfEmpty(view.Created))),
+						Td(Text(core.TableValue(view.Owner))),
+						Td(Text(core.TableValue(view.Created))),
 						Td(assetNode),
 					),
 				)
@@ -570,12 +555,37 @@ func catalogOverviewContent(d catalogWorkspacePageData) Node {
 		countLabelPlural = "columns"
 		for i := range d.Panel.Columns {
 			col := d.Panel.Columns[i]
+			typeInfo := catalogColumnTypeInfo(col.Type)
+			nullable := strings.EqualFold(strings.TrimSpace(col.Nullable), "true")
 			childRows = append(childRows,
 				Tr(
-					data.Show(containsExprSignal(col.Name+" "+col.Type+" "+col.Comment, "childq")),
-					Td(Text(col.Name)),
-					Td(Text(col.Type)),
-					Td(Text(col.Nullable)),
+					data.Show(containsExprSignal(col.Name+" "+col.Type+" "+col.Comment+" "+col.Properties, "childq")),
+					Td(
+						Div(Class("flex items-center gap-3"),
+							core.Icon(
+								typeInfo.Icon,
+								Attr("data-column-type-group", typeInfo.Group),
+								Class(core.ClassNames("h-4 w-4 shrink-0", catalogColumnNameIconClass(typeInfo.Tone))),
+							),
+							Span(Class("font-medium text-[var(--fgColor-default)]"), Text(col.Name)),
+						),
+					),
+					Td(
+						Span(
+							Class(catalogColumnTypeBadgeClass(typeInfo.Tone)),
+							Attr("data-column-type-group", typeInfo.Group),
+							Span(Class("font-mono text-[11px] font-semibold"), Text(catalogColumnTypeDisplayLabel(col.Type))),
+						),
+					),
+					Td(
+						Span(
+							Class(catalogColumnNullableClass(nullable)),
+							Attr("data-column-nullable", strconv.FormatBool(nullable)),
+							Text(catalogColumnNullableLabel(col.Nullable)),
+						),
+					),
+					Td(Text(core.TableValue(col.Comment))),
+					Td(Text(core.TableValue(col.Properties))),
 				),
 			)
 		}
@@ -589,14 +599,23 @@ func catalogOverviewContent(d catalogWorkspacePageData) Node {
 	headers := []Node{Th(Text("Name")), Th(Text("Owner")), Th(Text("Created at"))}
 	switch d.Panel.Mode {
 	case "table", "view":
-		headers = []Node{Th(Text("Name")), Th(Text("Type")), Th(Text("Nullable"))}
+		headers = []Node{Th(Text("Name")), Th(Text("Type")), Th(Text("Nullable")), Th(Text("Comment")), Th(Text("Properties"))}
 	case "schema":
 		headers = []Node{Th(Text("Name")), Th(Text("Owner")), Th(Text("Created at")), Th(Text("Asset"))}
 	}
 
 	childTable := Node(P(Class(catalogMutedCopyClass()), Text("No child elements.")))
 	if len(childRows) > 0 {
-		childTable = Div(Class(catalogTableWrapClass()), core.DataTable("border-[var(--borderColor-muted)]", THead(Tr(Group(headers))), TBody(Group(childRows))))
+		childTable = core.TableContainer("", core.DataTable("", THead(Tr(Group(headers))), TBody(Group(childRows))))
+	} else if d.Panel.Mode == "view" && !d.Panel.ColumnsAvailable {
+		childTable = P(Class(catalogMutedCopyClass()), Text("Columns unavailable for this view."))
+	} else if d.Panel.Mode == "table" || d.Panel.Mode == "view" {
+		childTable = P(Class(catalogMutedCopyClass()), Text("No columns available."))
+	}
+
+	childSectionTitle := "Contents"
+	if d.Panel.Mode == "table" || d.Panel.Mode == "view" {
+		childSectionTitle = "Columns"
 	}
 
 	return Div(
@@ -609,15 +628,18 @@ func catalogOverviewContent(d catalogWorkspacePageData) Node {
 				core.SecondaryLink(d.Panel.AssetURL, "", Text(core.FallbackString(d.Panel.AssetKey, "Open asset"))),
 			),
 		),
-		Div(Class(catalogOverviewToolbarClass()),
-			Div(Class("flex min-w-0 max-w-[22rem] flex-1 items-center gap-2"),
-				core.Icon("search", Class(core.NavIconClass())),
-				Label(Class("sr-only"), Text("Filter child elements")),
-				core.InputControl("w-full", Type("search"), Placeholder(filterPlaceholder), data.Bind("childq"), AutoComplete("off")),
+		Div(Class(catalogSectionClass()),
+			H3(Class(catalogSectionTitleClass()), Text(childSectionTitle)),
+			Div(Class(catalogOverviewToolbarClass()),
+				Div(Class("flex min-w-0 max-w-[22rem] flex-1 items-center gap-2"),
+					core.Icon("search", Class(core.NavIconClass())),
+					Label(Class("sr-only"), Text("Filter child elements")),
+					core.InputControl("w-full", Type("search"), Placeholder(filterPlaceholder), data.Bind("childq"), AutoComplete("off")),
+				),
+				P(Class("m-0 whitespace-nowrap text-xs text-[var(--fgColor-muted)]"), Text(strconv.Itoa(len(childRows))+" "+pluralize(len(childRows), countLabelSingular, countLabelPlural))),
 			),
-			P(Class("m-0 whitespace-nowrap text-xs text-[var(--fgColor-muted)]"), Text(strconv.Itoa(len(childRows))+" "+pluralize(len(childRows), countLabelSingular, countLabelPlural))),
+			childTable,
 		),
-		childTable,
 	)
 }
 
@@ -726,4 +748,32 @@ func historyEntityLabel(entityType string) string {
 		return "-"
 	}
 	return strings.ToUpper(entityType[:1]) + entityType[1:]
+}
+
+func catalogWorkspaceFooter(d catalogWorkspacePageData) Node {
+	pathParts := []string{d.ActiveCatalogName}
+	if strings.TrimSpace(d.SelectedSchemaName) != "" {
+		pathParts = append(pathParts, d.SelectedSchemaName)
+	}
+	if strings.TrimSpace(d.SelectedName) != "" {
+		pathParts = append(pathParts, d.SelectedName)
+	}
+
+	leftLabel := strings.ToUpper(d.Panel.Mode)
+	if leftLabel == "" {
+		leftLabel = "CATALOG"
+	}
+
+	rightLabel := "Tab " + strings.ToUpper(catalogTabLabel(d.ActiveTab))
+	if strings.TrimSpace(d.ActiveTab) == "" {
+		rightLabel = "Tab OVERVIEW"
+	}
+
+	return Group([]Node{
+		Div(Class("flex min-w-0 items-center gap-3"),
+			Span(Class("font-semibold tracking-[0.12em] text-[var(--fgColor-default)]"), Text(leftLabel)),
+			Span(Class("truncate"), Text(strings.Join(pathParts, " / "))),
+		),
+		Span(Class("shrink-0 font-medium"), Text(rightLabel)),
+	})
 }

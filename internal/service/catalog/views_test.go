@@ -275,6 +275,12 @@ func TestViewService_GetView(t *testing.T) {
 			GetSchemaFn: func(_ context.Context, _ string) (*domain.SchemaDetail, error) {
 				return schema, nil
 			},
+			DescribeViewColumnsFn: func(_ context.Context, _, _ string) ([]domain.ColumnDetail, error) {
+				return []domain.ColumnDetail{
+					{Name: "id", Type: "INTEGER", Position: 0, Nullable: false},
+					{Name: "name", Type: "VARCHAR", Position: 1, Nullable: true},
+				}, nil
+			},
 			DeleteViewFn: func(_ context.Context, _, _ string) error {
 				return nil
 			},
@@ -287,6 +293,35 @@ func TestViewService_GetView(t *testing.T) {
 		assert.Equal(t, "v_test", result.Name)
 		assert.Equal(t, "main", result.SchemaName)
 		assert.Equal(t, "lake", result.CatalogName)
+		require.Len(t, result.Columns, 2)
+		assert.Equal(t, "id", result.Columns[0].Name)
+	})
+
+	t.Run("column introspection failure soft fails", func(t *testing.T) {
+		viewRepo := &mockViewRepo{
+			GetByNameFn: func(_ context.Context, _ string, _ string) (*domain.ViewDetail, error) {
+				return &domain.ViewDetail{ID: "1", Name: "v_test"}, nil
+			},
+		}
+		catalog := &mockCatalogRepo{
+			GetSchemaFn: func(_ context.Context, _ string) (*domain.SchemaDetail, error) {
+				return schema, nil
+			},
+			DescribeViewColumnsFn: func(_ context.Context, _, _ string) ([]domain.ColumnDetail, error) {
+				return nil, errTest
+			},
+			DeleteViewFn: func(_ context.Context, _, _ string) error {
+				return nil
+			},
+		}
+
+		svc := NewViewService(viewRepo, &mockCatalogRepoFactory{repo: catalog}, &mockAuthService{}, &mockAuditRepo{})
+		result, err := svc.GetView(context.Background(), "lake", "main", "v_test")
+
+		require.NoError(t, err)
+		require.NotNil(t, result)
+		assert.Empty(t, result.Columns)
+		assert.Equal(t, "v_test", result.Name)
 	})
 
 	t.Run("schema_not_found", func(t *testing.T) {

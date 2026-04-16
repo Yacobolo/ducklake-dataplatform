@@ -83,6 +83,33 @@ func (r *CatalogRepo) UpdateViewDefinition(ctx context.Context, schemaName, view
 	return nil
 }
 
+// DescribeViewColumns discovers columns for a managed DuckDB view at read time.
+func (r *CatalogRepo) DescribeViewColumns(ctx context.Context, schemaName, viewName string) ([]domain.ColumnDetail, error) {
+	if r.duckDB == nil {
+		return nil, domain.ErrNotImplemented("catalog runtime does not support view introspection")
+	}
+
+	stmt, err := ddl.DescribeViewColumnsSQL(r.catalogName, schemaName, viewName)
+	if err != nil {
+		return nil, domain.ErrValidation("%s", err.Error())
+	}
+	rows, err := r.duckDB.QueryContext(ctx, stmt)
+	if err != nil {
+		errMsg := err.Error()
+		if strings.Contains(errMsg, "not found") || strings.Contains(errMsg, "does not exist") {
+			return nil, domain.ErrNotFound("view %q not found in schema %q", viewName, schemaName)
+		}
+		return nil, fmt.Errorf("describe view columns for %s.%s: %w", schemaName, viewName, err)
+	}
+	defer rows.Close() //nolint:errcheck
+
+	columns, err := scanDescribeColumnDetails(rows)
+	if err != nil {
+		return nil, fmt.Errorf("describe view columns for %s.%s: %w", schemaName, viewName, err)
+	}
+	return columns, nil
+}
+
 // DeleteView drops a managed DuckDB view from the attached catalog.
 func (r *CatalogRepo) DeleteView(ctx context.Context, schemaName, viewName string) error {
 	unlock := r.lockCatalogWrites()

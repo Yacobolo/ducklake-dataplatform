@@ -152,6 +152,13 @@ tasks:
           "${quack_bin}" --host "${host}" --profile "${profile}" apply \
             --config-dir "${rendered_config_dir}" \
             --auto-approve
+
+          echo "Materializing seeded managed tables"
+          "${duck_bin}" --host "${host}" --profile "${profile}" query execute \
+            --sql "INSERT INTO seeded_local.nyc_taxi.trips SELECT CAST(tpep_pickup_datetime AS TIMESTAMP) AS pickup_at, CAST(tpep_dropoff_datetime AS TIMESTAMP) AS dropoff_at, CAST(PULocationID AS INTEGER) AS pickup_location_id, CAST(DOLocationID AS INTEGER) AS dropoff_location_id, CAST(passenger_count AS INTEGER) AS passenger_count, CAST(trip_distance AS DOUBLE) AS trip_distance, CAST(total_amount AS DOUBLE) AS total_amount, CAST(fare_amount AS DOUBLE) AS fare_amount, CAST(tip_amount AS DOUBLE) AS tip_amount FROM read_parquet('${dataset_cache_dir}/taxi_trips/yellow_tripdata_2024-01.parquet')" >/dev/null
+
+          "${duck_bin}" --host "${host}" --profile "${profile}" query execute \
+            --sql "INSERT INTO seeded_local.nyc_taxi.zones SELECT CAST(LocationID AS INTEGER) AS location_id, CAST(Borough AS VARCHAR) AS borough, CAST(Zone AS VARCHAR) AS zone, CAST(service_zone AS VARCHAR) AS service_zone FROM read_csv_auto('${dataset_cache_dir}/taxi_zones/taxi_zone_lookup.csv', HEADER=TRUE)" >/dev/null
         }; then
           cleanup
           exit 1

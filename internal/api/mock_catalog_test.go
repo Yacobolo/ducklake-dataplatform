@@ -318,6 +318,25 @@ func (m *mockCatalogRepo) GetTable(_ context.Context, schemaName, tableName stri
 	return &t, nil
 }
 
+func (m *mockCatalogRepo) DescribeViewColumns(_ context.Context, schemaName, viewName string) ([]domain.ColumnDetail, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	if _, exists := m.schemas[schemaName]; !exists {
+		return nil, domain.ErrNotFound("schema %q not found", schemaName)
+	}
+
+	key := schemaName + "." + viewName
+	cols, exists := m.columns[key]
+	if !exists {
+		return nil, domain.ErrNotFound("view %q not found in schema %q", viewName, schemaName)
+	}
+
+	out := make([]domain.ColumnDetail, len(cols))
+	copy(out, cols)
+	return out, nil
+}
+
 func (m *mockCatalogRepo) ListTables(_ context.Context, schemaName string, page domain.PageRequest) ([]domain.TableDetail, int64, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()

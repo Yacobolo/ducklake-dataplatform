@@ -9,6 +9,7 @@ type ViewDetail struct {
 	SchemaName     string
 	CatalogName    string
 	Name           string
+	Columns        []ColumnDetail
 	ViewDefinition string
 	Comment        *string
 	Properties     map[string]string

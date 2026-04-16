@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"testing"
 
+	_ "github.com/duckdb/duckdb-go/v2"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -35,6 +36,20 @@ func setupCatalogRepo(t *testing.T) *CatalogRepo {
 
 	q := dbstore.New(writeDB)
 	return NewCatalogRepo(writeDB, writeDB, q, nil, "lake", nil, slog.Default())
+}
+
+func setupCatalogRepoWithDuckDB(t *testing.T) *CatalogRepo {
+	t.Helper()
+
+	writeDB, _ := internaldb.OpenTestSQLite(t)
+	createCatalogDuckLakeTables(t, writeDB)
+
+	duckDB, err := sql.Open("duckdb", "")
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = duckDB.Close() })
+
+	q := dbstore.New(writeDB)
+	return NewCatalogRepo(writeDB, writeDB, q, duckDB, "lake", nil, slog.Default())
 }
 
 // createCatalogDuckLakeTables creates the full ducklake_* tables that

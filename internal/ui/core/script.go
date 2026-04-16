@@ -21,6 +21,7 @@ const ShellBehaviorScript = `(function(){
   var sidebar=document.getElementById('app-sidebar');
   var compactKey='quack-ui-sidebar-compact';
   var sidebarCompactMedia=window.matchMedia('(max-width: 48rem)');
+  var compactLocked=shell.getAttribute('data-shell-compact-locked')==='true';
 
   function bindMediaListener(query, listener){
     if(!query){ return; }
@@ -40,17 +41,32 @@ const ShellBehaviorScript = `(function(){
   }
 
   function setCompact(enabled, persist){
+    if(compactLocked){
+      enabled=true;
+      persist=false;
+    }
     shell.classList.toggle('sidebar-compact', !!enabled);
+    if(compactLocked){
+      return;
+    }
     if(persist){
       try { localStorage.setItem(compactKey, enabled ? '1' : '0'); } catch (_) {}
     }
   }
 
-  try {
-    setCompact(localStorage.getItem(compactKey)==='1', false);
-  } catch (_) {}
+  if(compactLocked){
+    setCompact(true, false);
+  } else {
+    try {
+      setCompact(localStorage.getItem(compactKey)==='1', false);
+    } catch (_) {}
+  }
 
   function syncResponsiveCompact(){
+    if(compactLocked){
+      setCompact(true, false);
+      return;
+    }
     var hasCompactPreference=false;
     try { hasCompactPreference=localStorage.getItem(compactKey)!==null; } catch (_) {}
     if(!hasCompactPreference){
@@ -61,7 +77,7 @@ const ShellBehaviorScript = `(function(){
   syncResponsiveCompact();
   bindMediaListener(sidebarCompactMedia, syncResponsiveCompact);
 
-  if(sidebarToggle){
+  if(sidebarToggle && !compactLocked){
     sidebarToggle.addEventListener('click', function(){
       setCompact(!shell.classList.contains('sidebar-compact'), true);
     });

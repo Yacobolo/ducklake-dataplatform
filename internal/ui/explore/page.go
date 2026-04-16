@@ -40,24 +40,29 @@ type breadcrumbItem struct {
 }
 
 func listPage(principal domain.ContextPrincipal, rows []listRow, breadcrumbs []breadcrumbItem, asideItems []core.ExploreNavigatorItem, selectedFolderID string, selectedKinds []string, selectedOwners []string, searchQuery string, ownerOptions []string, streamID, csrfToken string, page domain.PageRequest, total int64) Node {
-	nodes := pageBody(rows, breadcrumbs, asideItems, selectedFolderID, selectedKinds, selectedOwners, searchQuery, ownerOptions, streamID, csrfToken, page, total)
-	nodes = append(nodes, Script(Src(core.UIScriptHref("explore.js"))))
-	return core.AppPage("Explore", "explore", principal, nodes...)
-}
-
-func mainContent(rows []listRow, breadcrumbs []breadcrumbItem, asideItems []core.ExploreNavigatorItem, selectedFolderID string, selectedKinds []string, selectedOwners []string, searchQuery string, ownerOptions []string, streamID, csrfToken string, page domain.PageRequest, total int64) Node {
-	return core.MainContentSection("Explore", pageBody(rows, breadcrumbs, asideItems, selectedFolderID, selectedKinds, selectedOwners, searchQuery, ownerOptions, streamID, csrfToken, page, total)...)
-}
-
-func pageBody(rows []listRow, breadcrumbs []breadcrumbItem, asideItems []core.ExploreNavigatorItem, selectedFolderID string, selectedKinds []string, selectedOwners []string, searchQuery string, ownerOptions []string, streamID, csrfToken string, page domain.PageRequest, total int64) []Node {
-	signalKinds := append([]string{}, selectedKinds...)
-	signalOwners := append([]string{}, selectedOwners...)
-	asidePanel := core.ExploreNavigatorPanel(core.ExploreNavigatorPanelData{
-		Title:             "Resource navigator",
-		FilterPlaceholder: "Search folders and resources",
-		Items:             asideItems,
-		EmptyText:         "No folders or resources found.",
+	return core.ApplicationPage("Explore", "explore", principal, core.ApplicationLayoutSlots{
+		CenterAttributes: exploreCenterAttributes(selectedFolderID, selectedKinds, selectedOwners, searchQuery, streamID, csrfToken),
+		SecondaryAside:   exploreAside(asideItems),
+		Main: Group([]Node{
+			mainContent(rows, breadcrumbs, selectedFolderID, selectedKinds, selectedOwners, searchQuery, ownerOptions, page, total),
+			Script(Src(core.UIScriptHref("explore.js"))),
+		}),
+		Footer: exploreFooter(breadcrumbs, selectedKinds, selectedOwners, searchQuery, total),
 	})
+}
+
+func mainContent(rows []listRow, breadcrumbs []breadcrumbItem, selectedFolderID string, selectedKinds []string, selectedOwners []string, searchQuery string, ownerOptions []string, page domain.PageRequest, total int64) Node {
+	return core.ApplicationMainContentSection(
+		"Explore",
+		"flex min-h-0 w-full flex-1 flex-col gap-5",
+		Section(
+			Class("flex min-w-0 flex-col gap-5 py-1"),
+			Group(mainBody(rows, breadcrumbs, selectedFolderID, selectedKinds, selectedOwners, searchQuery, ownerOptions, page, total)),
+		),
+	)
+}
+
+func mainBody(rows []listRow, breadcrumbs []breadcrumbItem, selectedFolderID string, selectedKinds []string, selectedOwners []string, searchQuery string, ownerOptions []string, page domain.PageRequest, total int64) []Node {
 	return []Node{
 		core.PageHeader(
 			"Discover",
@@ -66,41 +71,77 @@ func pageBody(rows []listRow, breadcrumbs []breadcrumbItem, asideItems []core.Ex
 			core.SecondaryLink("/ui/explore/git-repos", "", core.Icon("git-branch", Class(core.IconGlyphClass())), Span(Text("Git repos"))),
 			createMenu(selectedFolderID),
 		),
-		core.ListPageBody(
-			Div(
-				data.Signals(map[string]any{
-					"q":         "",
-					"streamID":  streamID,
-					"csrfToken": strings.TrimSpace(csrfToken),
-					"urlParams": map[string]any{
-						"folder_id": strings.TrimSpace(selectedFolderID),
-						"kind":      signalKinds,
-						"owner":     signalOwners,
-						"q":         strings.TrimSpace(searchQuery),
-					},
-					"filterOpen": false,
-				}),
-				data.Init("@get('/ui/explore/updates/' + $streamID)"),
-				core.WorkspaceLayout(
-					"min-h-0",
-					core.WorkspaceAside(
-						"explore-workspace",
-						"explore-aside",
-						[]core.WorkspaceAsideTab{
-							{
-								ID:      "navigator",
-								Label:   "Navigator",
-								Icon:    "folder-tree",
-								Content: asidePanel,
-							},
-						},
-						"navigator",
-					),
-					Div(Class("min-w-0"), content(rows, breadcrumbs, selectedFolderID, selectedKinds, selectedOwners, searchQuery, ownerOptions, page, total)),
-				),
-			),
-		),
+		content(rows, breadcrumbs, selectedFolderID, selectedKinds, selectedOwners, searchQuery, ownerOptions, page, total),
 	}
+}
+
+func exploreCenterAttributes(selectedFolderID string, selectedKinds []string, selectedOwners []string, searchQuery, streamID, csrfToken string) []Node {
+	signalKinds := append([]string{}, selectedKinds...)
+	signalOwners := append([]string{}, selectedOwners...)
+	return []Node{
+		data.Signals(map[string]any{
+			"q":         "",
+			"streamID":  streamID,
+			"csrfToken": strings.TrimSpace(csrfToken),
+			"urlParams": map[string]any{
+				"folder_id": strings.TrimSpace(selectedFolderID),
+				"kind":      signalKinds,
+				"owner":     signalOwners,
+				"q":         strings.TrimSpace(searchQuery),
+			},
+			"filterOpen": false,
+		}),
+		data.Init("@get('/ui/explore/updates/' + $streamID)"),
+	}
+}
+
+func exploreAside(asideItems []core.ExploreNavigatorItem) Node {
+	asidePanel := core.ExploreNavigatorPanel(core.ExploreNavigatorPanelData{
+		Title:             "Resource navigator",
+		FilterPlaceholder: "Search folders and resources",
+		Items:             asideItems,
+		EmptyText:         "No folders or resources found.",
+	})
+	return core.WorkspaceAside(
+		"explore-workspace",
+		"explore-aside workspace-aside-plain h-full",
+		[]core.WorkspaceAsideTab{
+			{
+				ID:      "navigator",
+				Label:   "Navigator",
+				Icon:    "folder-tree",
+				Content: asidePanel,
+			},
+		},
+		"navigator",
+	)
+}
+
+func exploreFooter(breadcrumbs []breadcrumbItem, selectedKinds []string, selectedOwners []string, searchQuery string, total int64) Node {
+	scopeLabel := "All folders"
+	if len(breadcrumbs) > 0 {
+		scopeLabel = strings.TrimSpace(breadcrumbs[len(breadcrumbs)-1].Label)
+	}
+	if scopeLabel == "" {
+		scopeLabel = "All folders"
+	}
+
+	resultLabel := fmt.Sprintf("%d results", total)
+	if total == 1 {
+		resultLabel = "1 result"
+	}
+	filterLabel := "All assets"
+	if hasActiveFilters(selectedKinds, selectedOwners, searchQuery) {
+		filterLabel = "Filtered"
+	}
+
+	return Group([]Node{
+		Div(Class("flex min-w-0 items-center gap-3"),
+			Span(Class("font-semibold tracking-[0.12em] text-[var(--fgColor-default)]"), Text("EXPLORE")),
+			Span(Class("truncate"), Text(scopeLabel)),
+		),
+		Span(Class("shrink-0 font-medium"), Text(resultLabel+" / "+filterLabel)),
+	})
 }
 
 func content(rows []listRow, breadcrumbs []breadcrumbItem, selectedFolderID string, selectedKinds []string, selectedOwners []string, searchQuery string, ownerOptions []string, page domain.PageRequest, total int64) Node {
@@ -313,7 +354,7 @@ func nameMetaBadge(label string, show bool) Node {
 func projectCell(row listRow) Node {
 	project := strings.TrimSpace(row.Project)
 	if project == "" {
-		return core.TableMetaText("-")
+		return core.TableMetaText(project)
 	}
 	return Span(Class("font-mono text-xs text-[var(--fgColor-muted)]"), Text(project))
 }

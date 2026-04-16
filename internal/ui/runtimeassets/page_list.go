@@ -110,7 +110,7 @@ func assetsListTable(rows []assetsListRowData) Node {
 				core.TableSubtleCopy(fallbackString(row.Description, "No description yet.")),
 			),
 			Td(statusPill(strings.ToUpper(row.Type), assetTypeTone(row.Type))),
-			Td(core.TableMetaText(fallbackString(row.Owner, "-"))),
+			Td(core.TableMetaText(row.Owner)),
 			Td(Div(Class("flex flex-wrap gap-2"),
 				statusPill(core.TitleizeWords(row.MaterializationMode), "accent"),
 				func() Node {

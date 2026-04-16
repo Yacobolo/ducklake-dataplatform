@@ -289,6 +289,26 @@ func DiscoverColumnsSQL(sourcePath, fileFormat string) (string, error) {
 	), nil
 }
 
+// DescribeViewColumnsSQL generates a DESCRIBE statement to discover column
+// metadata from a view in an attached DuckDB catalog.
+func DescribeViewColumnsSQL(catalog, schema, view string) (string, error) {
+	if err := ValidateIdentifier(catalog); err != nil {
+		return "", fmt.Errorf("invalid catalog name: %w", err)
+	}
+	if err := ValidateIdentifier(schema); err != nil {
+		return "", fmt.Errorf("invalid schema name: %w", err)
+	}
+	if err := ValidateIdentifier(view); err != nil {
+		return "", fmt.Errorf("invalid view name: %w", err)
+	}
+
+	return fmt.Sprintf("DESCRIBE SELECT * FROM %s.%s.%s LIMIT 0",
+		QuoteIdentifier(catalog),
+		QuoteIdentifier(schema),
+		QuoteIdentifier(view),
+	), nil
+}
+
 // AttachDuckLakePostgres returns a DuckDB DDL statement to attach a DuckLake catalog
 // using a PostgreSQL metastore instead of SQLite.
 func AttachDuckLakePostgres(catalogName, dsn, dataPath string) (string, error) {

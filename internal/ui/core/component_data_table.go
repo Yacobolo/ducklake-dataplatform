@@ -50,11 +50,19 @@ func TablePrimaryCell(icon Node, primary Node, secondary ...Node) Node {
 }
 
 func TableMetaText(text string) Node {
-	return Span(Class("text-sm text-[var(--fgColor-muted)]"), Text(text))
+	return Span(Class("text-sm text-[var(--fgColor-muted)]"), Text(TableValue(text)))
 }
 
 func TableSubtleCopy(text string) Node {
-	return P(Class("m-0 text-sm text-[var(--fgColor-muted)]"), Text(text))
+	return P(Class("m-0 text-sm text-[var(--fgColor-muted)]"), Text(TableValue(text)))
+}
+
+func TableValue(text string) string {
+	trimmed := strings.TrimSpace(text)
+	if trimmed == "" || trimmed == "-" {
+		return ""
+	}
+	return text
 }
 
 func TableActionHeader() Node {

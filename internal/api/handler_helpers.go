@@ -568,7 +568,7 @@ func catalogHistoryEntryToAPI(entry domain.CatalogHistoryEntry) CatalogHistoryEn
 }
 
 func viewDetailToAPI(v domain.ViewDetail) ViewDetail {
-	return ViewDetail{
+	out := ViewDetail{
 		Id:             v.ID,
 		SchemaId:       &v.SchemaID,
 		SchemaName:     v.SchemaName,
@@ -581,6 +581,14 @@ func viewDetailToAPI(v domain.ViewDetail) ViewDetail {
 		CreatedAt:      formatTimePtr(&v.CreatedAt),
 		UpdatedAt:      formatTimePtr(&v.UpdatedAt),
 	}
+	if len(v.Columns) > 0 {
+		cols := make([]ColumnDetail, len(v.Columns))
+		for i := range v.Columns {
+			cols[i] = columnDetailToAPI(v.Columns[i])
+		}
+		out.Columns = &cols
+	}
+	return out
 }
 
 func tableStatisticsToAPI(s *domain.TableStatistics) TableStatistics {

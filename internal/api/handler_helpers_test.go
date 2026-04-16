@@ -359,10 +359,14 @@ func TestHelpers_viewDetailToAPI(t *testing.T) {
 		CatalogName: "default", Name: "active_users",
 		ViewDefinition: "SELECT * FROM users WHERE active",
 		Owner:          "admin",
-		Properties:     map[string]string{},
-		SourceTables:   []string{"users"},
-		CreatedAt:      helpersFixedTime,
-		UpdatedAt:      helpersFixedTime,
+		Columns: []domain.ColumnDetail{
+			{Name: "id", Type: "INTEGER", Position: 0, Nullable: false},
+			{Name: "email", Type: "VARCHAR", Position: 1, Nullable: true},
+		},
+		Properties:   map[string]string{},
+		SourceTables: []string{"users"},
+		CreatedAt:    helpersFixedTime,
+		UpdatedAt:    helpersFixedTime,
 	}
 	result := viewDetailToAPI(v)
 
@@ -376,6 +380,9 @@ func TestHelpers_viewDetailToAPI(t *testing.T) {
 	assert.Equal(t, "SELECT * FROM users WHERE active", *result.ViewDefinition)
 	require.NotNil(t, result.Owner)
 	assert.Equal(t, "admin", *result.Owner)
+	require.NotNil(t, result.Columns)
+	require.Len(t, *result.Columns, 2)
+	assert.Equal(t, "id", (*result.Columns)[0].Name)
 	require.NotNil(t, result.SourceTables)
 	assert.Equal(t, []string{"users"}, *result.SourceTables)
 	require.NotNil(t, result.CreatedAt)

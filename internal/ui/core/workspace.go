@@ -68,17 +68,60 @@ type ExploreNavigatorPanelData struct {
 }
 
 func WorkspaceLayout(className string, aside Node, main ...Node) Node {
-	classes := ClassNames("workspace-layout relative grid min-h-0 gap-4 md:[grid-template-columns:18rem_minmax(0,1fr)] [.is-aside-collapsed&]:md:[grid-template-columns:3.5rem_minmax(0,1fr)]", className)
+	isRightAside := strings.Contains(className, "workspace-layout-right-aside")
+	isNoDivider := strings.Contains(className, "workspace-layout-no-divider")
+	baseClasses := "workspace-layout relative grid min-h-0 gap-4 [grid-template-columns:18rem_minmax(0,1fr)] max-md:grid-cols-1"
+	mainClass := "workspace-main min-w-0"
+	asideNode := aside
+	if isRightAside {
+		baseClasses = "workspace-layout relative grid min-h-0 gap-4 [grid-template-columns:minmax(0,1fr)_18rem] max-md:grid-cols-1"
+		mainClass = "workspace-main min-w-0 md:order-1 max-md:order-2"
+		asideNode = Group([]Node{
+			Div(Class("workspace-layout-divider hidden self-stretch md:block md:border-l md:border-[var(--borderColor-muted)]")),
+			aside,
+		})
+	} else {
+		if isNoDivider {
+			mainClass += " pt-1"
+		} else {
+			mainClass += " border-l border-[var(--borderColor-muted)] pl-4 max-md:border-l-0 max-md:pl-0"
+		}
+	}
+	classes := ClassNames(baseClasses, className)
+	mainSection := Section(Class(mainClass), Group(main))
+	if isRightAside {
+		return Div(
+			Class(classes),
+			Attr("data-workspace-layout", "true"),
+			mainSection,
+			Div(Class("workspace-aside-rail flex min-h-0 md:order-2 max-md:order-1"), asideNode),
+		)
+	}
 	return Div(
 		Class(classes),
 		Attr("data-workspace-layout", "true"),
-		aside,
-		Section(Class("workspace-main min-w-0 border-l border-[var(--borderColor-muted)] pl-4 max-md:border-l-0 max-md:pl-0"), Group(main)),
+		asideNode,
+		mainSection,
 	)
 }
 
 func WorkspaceAside(storageKey, className string, tabs []WorkspaceAsideTab, defaultTab string) Node {
-	classes := ClassNames("workspace-aside min-w-0 self-stretch rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-muted)] pr-2 shadow-xs [.is-aside-collapsed_&]:pr-1 max-md:mb-1 max-md:border-b max-md:border-[var(--borderColor-muted)] max-md:pb-2 max-md:pr-0", className)
+	isPlain := strings.Contains(className, "workspace-aside-plain")
+	isRightRail := strings.Contains(className, "workspace-aside-right")
+	baseClasses := "workspace-aside min-w-0 self-stretch pr-2 [.is-aside-collapsed_&]:pr-1 max-md:mb-1 max-md:pb-2 max-md:pr-0"
+	if isRightRail {
+		baseClasses = "workspace-aside min-w-0 self-stretch pl-4 [.is-aside-collapsed_&]:pl-2 max-md:mb-1 max-md:border-b max-md:border-[var(--borderColor-muted)] max-md:pb-2 max-md:pl-0"
+	}
+	headClasses := "workspace-aside-head flex items-start justify-between gap-2 px-3 py-3 [.is-aside-collapsed_&]:flex-col [.is-aside-collapsed_&]:items-stretch [.is-aside-collapsed_&]:gap-1 max-md:items-start max-md:[.is-aside-collapsed_&]:flex-row max-md:[.is-aside-collapsed_&]:items-center"
+	panelWrapClasses := "workspace-aside-panels flex min-h-0 flex-1 flex-col gap-4 overflow-auto py-3"
+	if !isPlain {
+		baseClasses += " rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-muted)] shadow-xs max-md:border-b max-md:border-[var(--borderColor-muted)]"
+		headClasses += " border-b border-[var(--borderColor-default)]"
+		panelWrapClasses += " p-3"
+	} else {
+		panelWrapClasses += " px-3"
+	}
+	classes := ClassNames(baseClasses, className)
 	if len(tabs) == 0 {
 		return Aside(Class(classes))
 	}
@@ -164,11 +207,11 @@ func WorkspaceAside(storageKey, className string, tabs []WorkspaceAsideTab, defa
 		Div(
 			Class("workspace-aside-shell sticky top-0 flex min-h-0 flex-col gap-2 max-md:static"),
 			Div(
-				Class("workspace-aside-head flex items-start justify-between gap-2 border-b border-[var(--borderColor-default)] px-3 py-3 [.is-aside-collapsed_&]:flex-col [.is-aside-collapsed_&]:items-stretch [.is-aside-collapsed_&]:gap-1 max-md:items-start max-md:[.is-aside-collapsed_&]:flex-row max-md:[.is-aside-collapsed_&]:items-center"),
+				Class(headClasses),
 				Div(Class("workspace-aside-tabs flex min-w-0 flex-1 flex-col gap-1 [.is-aside-collapsed_&]:items-stretch max-md:overflow-x-auto max-md:[.is-aside-collapsed_&]:flex-row max-md:[.is-aside-collapsed_&]:items-center"), Attr("role", "tablist"), Group(tabButtons)),
 				collapseButton,
 			),
-			Div(Class("workspace-aside-panels flex min-h-0 flex-1 flex-col gap-4 overflow-auto p-3"), Group(tabPanels)),
+			Div(Class(panelWrapClasses), Group(tabPanels)),
 		),
 	)
 }
@@ -211,7 +254,7 @@ func CatalogExplorerPanel(d CatalogExplorerPanelData) Node {
 
 			objectSection := Node(P(Class("m-0 px-2.5 py-2 text-xs text-[var(--fgColor-muted)]"), Text(fallbackString(schema.EmptyText, "No objects in this schema."))))
 			if len(objectNodes) > 0 {
-				objectSection = Ul(Class("mt-1 grid gap-1 border-l border-[var(--borderColor-default)] pl-3"), Group(objectNodes))
+				objectSection = Ul(Class("mt-1 grid gap-1 pl-3"), Group(objectNodes))
 			}
 
 			schemaFilter := schema.Name + " " + catalogExplorerNames(schema.Objects)
@@ -235,7 +278,7 @@ func CatalogExplorerPanel(d CatalogExplorerPanelData) Node {
 
 		childrenNode := Node(P(Class("m-0 px-2.5 py-2 text-xs text-[var(--fgColor-muted)]"), Text(fallbackString(catalog.EmptyText, "No schemas in this catalog."))))
 		if len(schemaNodes) > 0 {
-			childrenNode = Ul(Class("mt-1 grid gap-2 border-l border-[var(--borderColor-default)] pl-3"), Group(schemaNodes))
+			childrenNode = Ul(Class("mt-1 grid gap-2 pl-3"), Group(schemaNodes))
 		}
 
 		showValue := catalog.Name + " " + catalogExplorerNamesFromSchemas(catalog.Schemas)
@@ -415,7 +458,7 @@ func renderExploreNavigatorItem(item ExploreNavigatorItem) Node {
 					A(Href(item.URL), Class(linkClass), Icon(icon, Class(NavIconClass())), Span(Text(item.Name))),
 				),
 			),
-			Ul(Class("mt-1 grid gap-1 border-l border-[var(--borderColor-default)] pl-3"), Group(renderExploreNavigatorItems(item.Children))),
+			Ul(Class("mt-1 grid gap-1 pl-3"), Group(renderExploreNavigatorItems(item.Children))),
 		),
 	)
 }
