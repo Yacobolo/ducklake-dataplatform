@@ -834,7 +834,10 @@ func (s *liveSuite) resolvePath(op liveOperation) (string, bool) {
 		}
 		path = strings.ReplaceAll(path, "{"+param.Name+"}", value)
 	}
-	return "/v1" + path, true
+	if !strings.HasPrefix(path, "/v1/") && path != "/v1" {
+		path = "/v1" + path
+	}
+	return path, true
 }
 
 func (s *liveSuite) buildQueryPath(op liveOperation, extra url.Values) (string, bool) {
