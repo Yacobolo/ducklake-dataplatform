@@ -1350,6 +1350,19 @@ func (integrationSessionEngine) QueryOnConn(ctx context.Context, conn *sql.Conn,
 	return conn.QueryContext(ctx, sqlQuery)
 }
 
+type overrideCatalogRepoFactory struct {
+	base      catalog.CatalogRepoFactory
+	overrides map[string]domain.CatalogRepository
+}
+
+func (f overrideCatalogRepoFactory) ForCatalog(ctx context.Context, catalogName string) (domain.CatalogRepository, error) {
+	repo, ok := f.overrides[catalogName]
+	if !ok {
+		return f.base.ForCatalog(ctx, catalogName)
+	}
+	return repo, nil
+}
+
 // setupHTTPServer creates a fully-wired in-process HTTP server with real auth
 // middleware and real SQLite repositories. Does NOT require S3 credentials.
 func setupHTTPServer(t *testing.T, opts httpTestOpts) *httpTestEnv {
@@ -1361,7 +1374,7 @@ func setupHTTPServer(t *testing.T, opts httpTestOpts) *httpTestEnv {
 	}
 
 	// Temp SQLite with hardened connection (WAL, busy_timeout, etc.)
-	// We create the DB at a known path so we can register the catalog later.
+	// We create the control-plane DB at a known path so we can register catalogs later.
 	metaPath := filepath.Join(t.TempDir(), "test.sqlite")
 	metaDB, err := internaldb.OpenSQLite(metaPath, "write", 0)
 	if err != nil {
@@ -1385,6 +1398,7 @@ func setupHTTPServer(t *testing.T, opts httpTestOpts) *httpTestEnv {
 
 	// Seed RBAC data (principals, groups, grants, row filters, column masks, API keys)
 	keys := seedRBAC(t, metaDB)
+	catalogMetaDB := metaDB
 
 	// Build repositories
 	principalRepo := repository.NewPrincipalRepo(metaDB)
@@ -1393,7 +1407,7 @@ func setupHTTPServer(t *testing.T, opts httpTestOpts) *httpTestEnv {
 	rowFilterRepo := repository.NewRowFilterRepo(metaDB)
 	columnMaskRepo := repository.NewColumnMaskRepo(metaDB)
 	auditRepo := repository.NewAuditRepo(metaDB)
-	introspectionRepo := repository.NewIntrospectionRepo(metaDB)
+	introspectionRepo := repository.NewIntrospectionRepo(catalogMetaDB)
 	apiKeyRepo := repository.NewAPIKeyRepo(metaDB)
 	localCredentialRepo := repository.NewLocalCredentialRepo(metaDB)
 	authLoginAttemptRepo := repository.NewAuthLoginAttemptRepo(metaDB)
@@ -1402,7 +1416,7 @@ func setupHTTPServer(t *testing.T, opts httpTestOpts) *httpTestEnv {
 	webSessionRepo := repository.NewWebSessionRepo(metaDB)
 	tagRepo := repository.NewTagRepo(metaDB)
 	lineageRepo := repository.NewLineageRepo(metaDB)
-	searchRepo := repository.NewSearchRepo(metaDB, metaDB)
+	searchRepo := repository.NewSearchRepo(catalogMetaDB, metaDB)
 	queryHistoryRepo := repository.NewQueryHistoryRepo(metaDB)
 	viewRepo := repository.NewViewRepo(metaDB)
 	domainRepo := repository.NewDomainRepo(metaDB)
@@ -1432,9 +1446,9 @@ func setupHTTPServer(t *testing.T, opts httpTestOpts) *httpTestEnv {
 	// querySvc gets nil engine — no /v1/queries:execute support unless WithDuckLake+engine
 	querySvc := query.NewQueryService(nil, auditRepo, nil)
 
-	// catalogRepoFactory with duckDB=nil is safe — GetSchema only reads ducklake_schema from metaDB
+	// catalogRepoFactory with duckDB=nil is safe — GetSchema only reads ducklake_schema from the metastore DB.
 	catalogRegRepo := repository.NewCatalogRegistrationRepo(metaDB)
-	catalogRepoFactory := repository.NewCatalogRepoFactory(catalogRegRepo, metaDB, nil, nil, slog.New(slog.NewTextHandler(io.Discard, nil)))
+	var catalogRepoFactory catalog.CatalogRepoFactory = repository.NewCatalogRepoFactory(catalogRegRepo, metaDB, nil, nil, slog.New(slog.NewTextHandler(io.Discard, nil)))
 	catalogRegSvc := catalog.NewCatalogRegistrationService(catalog.RegistrationServiceDeps{
 		Repo:               catalogRegRepo,
 		Attacher:           noOpCatalogAttacher{},
@@ -1451,43 +1465,19 @@ func setupHTTPServer(t *testing.T, opts httpTestOpts) *httpTestEnv {
 	if opts.WithDuckLake {
 		env := setupLocalDuckLake(t)
 		duckDB = env.DuckDB
-		// The local DuckLake setup creates its own SQLite; but we need RBAC in the
-		// same DB. Re-run migrations and re-seed into the DuckLake metaDB.
-		// Actually, we need to use the DuckLake metaDB for everything.
-		// Close the original metaDB and replace it.
-		_ = metaDB.Close()
-		metaDB = env.MetaDB
+		catalogMetaDB = env.MetaDB
 
-		// Re-seed RBAC data into the DuckLake metaDB (migrations already ran in setupLocalDuckLake)
-		keys = seedRBAC(t, metaDB)
-
-		// Register the "lake" catalog so ForCatalog("lake") can find it.
+		// Register the real DuckLake metastore in the control-plane DB so
+		// CatalogRepoFactory can keep metastore reads and control-plane writes separate.
 		registerTestCatalog(t, metaDB, env.MetaPath)
 
-		// Rebuild repos on the new metaDB
-		principalRepo = repository.NewPrincipalRepo(metaDB)
-		groupRepo = repository.NewGroupRepo(metaDB)
-		grantRepo = repository.NewGrantRepo(metaDB)
-		rowFilterRepo = repository.NewRowFilterRepo(metaDB)
-		columnMaskRepo = repository.NewColumnMaskRepo(metaDB)
-		auditRepo = repository.NewAuditRepo(metaDB)
-		introspectionRepo = repository.NewIntrospectionRepo(metaDB)
-		apiKeyRepo = repository.NewAPIKeyRepo(metaDB)
-		localCredentialRepo = repository.NewLocalCredentialRepo(metaDB)
-		authLoginAttemptRepo = repository.NewAuthLoginAttemptRepo(metaDB)
-		setupStateRepo = repository.NewSetupStateRepo(metaDB)
-		authProviderRepo = repository.NewAuthProviderRepo(metaDB)
-		webSessionRepo = repository.NewWebSessionRepo(metaDB)
-		tagRepo = repository.NewTagRepo(metaDB)
-		lineageRepo = repository.NewLineageRepo(metaDB)
-		searchRepo = repository.NewSearchRepo(metaDB, metaDB)
-		queryHistoryRepo = repository.NewQueryHistoryRepo(metaDB)
-		viewRepo = repository.NewViewRepo(metaDB)
-		domainRepo = repository.NewDomainRepo(metaDB)
-		teamRepo = repository.NewTeamRepo(metaDB)
-		productRepo = repository.NewDataProductRepo(metaDB)
+		// Rebuild only the metastore-aware repos/services. Control-plane repos
+		// continue using the original metadata DB, which avoids concurrent writes
+		// from both DuckDB and the application into the same SQLite file.
+		introspectionRepo = repository.NewIntrospectionRepo(catalogMetaDB)
+		searchRepo = repository.NewSearchRepo(catalogMetaDB, metaDB)
+		lakeRepo := repository.NewCatalogRepo(catalogMetaDB, metaDB, dbstore.New(metaDB), duckDB, "lake", nil, slog.New(slog.NewTextHandler(io.Discard, nil)))
 
-		// Rebuild services on new repos
 		authSvc = security.NewAuthorizationService(
 			principalRepo, groupRepo, grantRepo,
 			rowFilterRepo, columnMaskRepo, introspectionRepo,
@@ -1507,11 +1497,16 @@ func setupHTTPServer(t *testing.T, opts httpTestOpts) *httpTestEnv {
 		productSvc = productsvc.NewService(domainRepo, teamRepo, nil, nil, nil, productRepo, auditRepo)
 
 		catalogRegRepo = repository.NewCatalogRegistrationRepo(metaDB)
-		catalogRepoFactory = repository.NewCatalogRepoFactory(catalogRegRepo, metaDB, duckDB, nil, slog.New(slog.NewTextHandler(io.Discard, nil)))
+		catalogRepoFactory = overrideCatalogRepoFactory{
+			base: repository.NewCatalogRepoFactory(catalogRegRepo, metaDB, duckDB, nil, slog.New(slog.NewTextHandler(io.Discard, nil))),
+			overrides: map[string]domain.CatalogRepository{
+				"lake": lakeRepo,
+			},
+		}
 		catalogRegSvc = catalog.NewCatalogRegistrationService(catalog.RegistrationServiceDeps{
 			Repo:               catalogRegRepo,
 			Attacher:           engine.NewDuckDBSecretManager(duckDB),
-			ControlPlaneDBPath: env.MetaPath,
+			ControlPlaneDBPath: metaPath,
 			Logger:             slog.New(slog.NewTextHandler(io.Discard, nil)),
 		})
 		viewSvc = catalog.NewViewService(viewRepo, catalogRepoFactory, authSvc, auditRepo)
@@ -1719,6 +1714,9 @@ func setupHTTPServer(t *testing.T, opts httpTestOpts) *httpTestEnv {
 		colLineageRepo := repository.NewColumnLineageRepo(metaDB)
 		macroRepo = repository.NewMacroRepo(metaDB)
 		projectRepo = repository.NewProjectRepo(metaDB)
+		projectDependencyRepo := repository.NewProjectDependencyRepo(metaDB)
+		sourceDefinitionRepo := repository.NewSourceDefinitionRepo(metaDB)
+		seedRepo := repository.NewSeedRepo(metaDB)
 		environmentRepo := repository.NewEnvironmentRepo(metaDB)
 		buildRepo := repository.NewBuildRepo(metaDB)
 		macroSvc = macro.NewService(macroRepo, auditRepo)
@@ -1754,6 +1752,9 @@ func setupHTTPServer(t *testing.T, opts httpTestOpts) *httpTestEnv {
 			Runs:          modelRunRepo,
 			Projects:      projectRepo,
 			Environments:  environmentRepo,
+			ProjectDeps:   projectDependencyRepo,
+			Sources:       sourceDefinitionRepo,
+			Seeds:         seedRepo,
 			Builds:        buildRepo,
 			Tests:         modelTestRepo,
 			TestResults:   modelTestResultRepo,

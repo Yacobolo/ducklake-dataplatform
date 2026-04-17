@@ -116,7 +116,7 @@ func (f *CatalogRepoFactory) CloseAll() {
 func (f *CatalogRepoFactory) openMetastore(reg *domain.CatalogRegistration) (*sql.DB, error) {
 	switch reg.MetastoreType {
 	case domain.MetastoreTypeSQLite:
-		return internaldb.OpenSQLite(reg.DSN, "write", 1)
+		return internaldb.OpenSQLite(reg.DSN, "read", 4)
 	case domain.MetastoreTypePostgres:
 		db, err := sql.Open("postgres", reg.DSN)
 		if err != nil {

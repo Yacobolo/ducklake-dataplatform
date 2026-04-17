@@ -2,7 +2,6 @@ package repository
 
 import (
 	"context"
-	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -127,11 +126,11 @@ func TestProjectAuthoringRepos_DependencySourceAndSeedLifecycle(t *testing.T) {
 	_, err = sourceRepo.GetByName(ctx, "analytics", "raw", "orders")
 	require.Error(t, err)
 	var notFound *domain.NotFoundError
-	assert.True(t, errors.As(err, &notFound))
+	require.ErrorAs(t, err, &notFound)
 
 	_, err = seedRepo.GetByName(ctx, "analytics", "seed_orders")
 	require.Error(t, err)
-	assert.True(t, errors.As(err, &notFound))
+	require.ErrorAs(t, err, &notFound)
 
 	dependencies, err = dependencyRepo.ListByProject(ctx, project.ID)
 	require.NoError(t, err)

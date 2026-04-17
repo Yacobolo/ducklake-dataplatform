@@ -19,10 +19,12 @@ type ProjectDependencyRepo struct {
 	db *sql.DB
 }
 
+// NewProjectDependencyRepo creates a repository for project dependency records.
 func NewProjectDependencyRepo(db *sql.DB) *ProjectDependencyRepo {
 	return &ProjectDependencyRepo{db: db}
 }
 
+// Create inserts a project dependency and returns the stored record.
 func (r *ProjectDependencyRepo) Create(ctx context.Context, dep *domain.ProjectDependency) (*domain.ProjectDependency, error) {
 	now := time.Now().UTC()
 	id := newID()
@@ -46,6 +48,7 @@ func (r *ProjectDependencyRepo) Create(ctx context.Context, dep *domain.ProjectD
 	return scanProjectDependency(row)
 }
 
+// ListByProject returns project dependencies in declaration order.
 func (r *ProjectDependencyRepo) ListByProject(ctx context.Context, projectID string) ([]domain.ProjectDependency, error) {
 	rows, err := r.db.QueryContext(ctx, projectDependencySelectSQL+`
 		WHERE d.project_id = ?
@@ -69,6 +72,7 @@ func (r *ProjectDependencyRepo) ListByProject(ctx context.Context, projectID str
 	return items, nil
 }
 
+// Delete removes a project dependency by project and dependency name.
 func (r *ProjectDependencyRepo) Delete(ctx context.Context, projectID string, dependencyProject string) error {
 	result, err := r.db.ExecContext(ctx, `
 		DELETE FROM project_dependencies WHERE project_id = ? AND dependency_project = ?`,
@@ -127,10 +131,12 @@ type SourceDefinitionRepo struct {
 	db *sql.DB
 }
 
+// NewSourceDefinitionRepo creates a repository for source definitions.
 func NewSourceDefinitionRepo(db *sql.DB) *SourceDefinitionRepo {
 	return &SourceDefinitionRepo{db: db}
 }
 
+// Create inserts a source definition and returns the stored record.
 func (r *SourceDefinitionRepo) Create(ctx context.Context, source *domain.SourceDefinition) (*domain.SourceDefinition, error) {
 	now := time.Now().UTC()
 	id := newID()
@@ -161,6 +167,7 @@ func (r *SourceDefinitionRepo) Create(ctx context.Context, source *domain.Source
 	return scanSourceDefinition(row)
 }
 
+// GetByName returns a source definition by project, source name, and table name.
 func (r *SourceDefinitionRepo) GetByName(ctx context.Context, projectName, sourceName, tableName string) (*domain.SourceDefinition, error) {
 	row := r.db.QueryRowContext(ctx, sourceDefinitionSelectSQL+`
 		WHERE s.project_name = ? AND s.source_name = ? AND s.table_name = ?`,
@@ -168,6 +175,7 @@ func (r *SourceDefinitionRepo) GetByName(ctx context.Context, projectName, sourc
 	return scanSourceDefinition(row)
 }
 
+// ListByProject returns all source definitions for a project.
 func (r *SourceDefinitionRepo) ListByProject(ctx context.Context, projectName string) ([]domain.SourceDefinition, error) {
 	rows, err := r.db.QueryContext(ctx, sourceDefinitionSelectSQL+`
 		WHERE s.project_name = ?
@@ -191,6 +199,7 @@ func (r *SourceDefinitionRepo) ListByProject(ctx context.Context, projectName st
 	return items, nil
 }
 
+// Update replaces a source definition and returns the stored record.
 func (r *SourceDefinitionRepo) Update(ctx context.Context, id string, source *domain.SourceDefinition) (*domain.SourceDefinition, error) {
 	currentRow := r.db.QueryRowContext(ctx, sourceDefinitionSelectSQL+` WHERE s.id = ?`, id)
 	current, err := scanSourceDefinition(currentRow)
@@ -226,6 +235,7 @@ func (r *SourceDefinitionRepo) Update(ctx context.Context, id string, source *do
 	return scanSourceDefinition(row)
 }
 
+// Delete removes a source definition by ID.
 func (r *SourceDefinitionRepo) Delete(ctx context.Context, id string) error {
 	result, err := r.db.ExecContext(ctx, `DELETE FROM source_definitions WHERE id = ?`, id)
 	if err != nil {
@@ -306,10 +316,12 @@ type SeedRepo struct {
 	db *sql.DB
 }
 
+// NewSeedRepo creates a repository for project seed resources.
 func NewSeedRepo(db *sql.DB) *SeedRepo {
 	return &SeedRepo{db: db}
 }
 
+// Create inserts a seed resource and returns the stored record.
 func (r *SeedRepo) Create(ctx context.Context, seed *domain.Seed) (*domain.Seed, error) {
 	now := time.Now().UTC()
 	id := newID()
@@ -347,11 +359,13 @@ func (r *SeedRepo) Create(ctx context.Context, seed *domain.Seed) (*domain.Seed,
 	return scanSeed(row)
 }
 
+// GetByName returns a seed by project and seed name.
 func (r *SeedRepo) GetByName(ctx context.Context, projectName, name string) (*domain.Seed, error) {
 	row := r.db.QueryRowContext(ctx, seedSelectSQL+` WHERE s.project_name = ? AND s.name = ?`, projectName, name)
 	return scanSeed(row)
 }
 
+// ListByProject returns all seeds for a project.
 func (r *SeedRepo) ListByProject(ctx context.Context, projectName string) ([]domain.Seed, error) {
 	rows, err := r.db.QueryContext(ctx, seedSelectSQL+` WHERE s.project_name = ? ORDER BY s.name`, projectName)
 	if err != nil {
@@ -373,6 +387,7 @@ func (r *SeedRepo) ListByProject(ctx context.Context, projectName string) ([]dom
 	return items, nil
 }
 
+// Update replaces a seed resource and returns the stored record.
 func (r *SeedRepo) Update(ctx context.Context, id string, seed *domain.Seed) (*domain.Seed, error) {
 	columnTypesJSON, err := marshalStringMap(seed.ColumnTypes)
 	if err != nil {
@@ -406,6 +421,7 @@ func (r *SeedRepo) Update(ctx context.Context, id string, seed *domain.Seed) (*d
 	return scanSeed(row)
 }
 
+// Delete removes a seed by ID.
 func (r *SeedRepo) Delete(ctx context.Context, id string) error {
 	result, err := r.db.ExecContext(ctx, `DELETE FROM seeds WHERE id = ?`, id)
 	if err != nil {

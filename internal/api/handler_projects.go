@@ -1056,6 +1056,14 @@ func derefInt64(value *int32) int64 {
 }
 
 func safeIntPtr(value int) *int32 {
+	if value > 1<<31-1 {
+		result := int32(1<<31 - 1)
+		return &result
+	}
+	if value < -1<<31 {
+		result := int32(-1 << 31)
+		return &result
+	}
 	result := int32(value)
 	return &result
 }
