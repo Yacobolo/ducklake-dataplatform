@@ -514,19 +514,9 @@ func validateCLICollectionSchema(doc Document, operationID string, successSchema
 }
 
 func normalizeEndpointCLI(doc Document, endpoint Endpoint) (*CLI, error) {
-	legacyCommand := legacyCLICommand(endpoint.Extensions)
 	cli := CloneCLI(endpoint.CLI)
-	if cli == nil && legacyCommand == "" {
-		return nil, nil
-	}
 	if cli == nil {
-		cli = &CLI{}
-	}
-	if len(cli.Command) == 0 && legacyCommand != "" {
-		cli.Command = ParseCLICommand(legacyCommand)
-	}
-	if len(cli.Command) > 0 && legacyCommand != "" && strings.Join(cli.Command, " ") != legacyCommand {
-		return nil, fmt.Errorf("endpoint %q cli.command does not match legacy x-cli-command", endpoint.OperationID)
+		return nil, nil
 	}
 	for i := range cli.Command {
 		cli.Command[i] = strings.TrimSpace(cli.Command[i])
@@ -570,24 +560,6 @@ func normalizeEndpointCLI(doc Document, endpoint Endpoint) (*CLI, error) {
 		cli.Pagination = pagination
 	}
 	return cli, nil
-}
-
-func legacyCLICommand(extensions map[string]any) string {
-	if len(extensions) == 0 {
-		return ""
-	}
-	for _, key := range []string{"x-cli-command", "cli_command", "x_cli_command"} {
-		raw, ok := extensions[key]
-		if !ok {
-			continue
-		}
-		value, ok := raw.(string)
-		if !ok {
-			continue
-		}
-		return strings.TrimSpace(value)
-	}
-	return ""
 }
 
 func defaultCLIArgs(doc Document, endpoint Endpoint, _ string) []CLIArg {

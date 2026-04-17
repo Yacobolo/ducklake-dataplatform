@@ -25,7 +25,7 @@ func TestV1FixtureLoadsAndEmits(t *testing.T) {
 	openapiYAML, err := openapiemit.EmitYAML(doc, openapiemit.Options{})
 	require.NoError(t, err)
 	require.Contains(t, string(openapiYAML), "x-authz:")
-	require.Contains(t, string(openapiYAML), "x-cli-command: widgets list")
+	require.NotContains(t, string(openapiYAML), "x-cli-command:")
 
 	requestModels, err := requestmodelgoemit.EmitWithResponseRoots(doc, requestmodelgoemit.Options{})
 	require.NoError(t, err)

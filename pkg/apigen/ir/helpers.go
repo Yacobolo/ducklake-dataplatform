@@ -123,11 +123,6 @@ func CLICommandString(cli *CLI) string {
 	return strings.Join(cli.Command, " ")
 }
 
-// ParseCLICommand splits a legacy x-cli-command string into ordered segments.
-func ParseCLICommand(value string) []string {
-	return strings.Fields(strings.TrimSpace(value))
-}
-
 // CloneCLI returns a deep copy of CLI metadata.
 func CloneCLI(in *CLI) *CLI {
 	if in == nil {

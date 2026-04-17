@@ -21,7 +21,7 @@ func TestCompileDir(t *testing.T) {
 	require.Equal(t, "Widget API", bundle.Document.Info.Title)
 	require.Len(t, bundle.Document.Endpoints, 1)
 	require.Equal(t, "listWidgets", bundle.Document.Endpoints[0].OperationID)
-	require.Contains(t, string(bundle.CanonicalOpenAPI), "x-cli-command: widgets list")
+	require.Equal(t, []string{"widgets", "list"}, bundle.Document.Endpoints[0].CLI.Command)
 	require.Contains(t, string(bundle.CanonicalOpenAPI), "x-apigen-manual: true")
 }
 

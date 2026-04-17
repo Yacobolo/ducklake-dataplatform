@@ -15,11 +15,12 @@ func TestGenerate_EmitsDocAndOperationMetadata(t *testing.T) {
 	require.NoError(t, os.MkdirAll(filepath.Join(docsDir, "govern"), 0o750))
 	require.NoError(t, os.MkdirAll(filepath.Join(docsDir, "reference", "generated"), 0o750))
 
-	docBody := `---
+docBody := `---
 title: Access the Platform
 description: Use tokens or API keys.
 keywords: [auth, login]
 operation_ids: [login]
+cli_commands: [auth login]
 ---
 
 # Access the Platform
@@ -46,7 +47,6 @@ paths:
       operationId: login
       summary: Login
       tags: [Auth]
-      x-cli-command: auth login
       requestBody:
         required: true
         content:

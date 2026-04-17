@@ -3,7 +3,6 @@ package discovery
 
 import (
 	"bytes"
-	"encoding/json"
 	"fmt"
 	"go/format"
 	"os"
@@ -14,6 +13,7 @@ import (
 	"unicode"
 
 	"github.com/getkin/kin-openapi/openapi3"
+	cligen "github.com/Yacobolo/quackstack/pkg/cli/gen"
 	"gopkg.in/yaml.v3"
 )
 
@@ -307,17 +307,29 @@ func loadOperations(specPath string) ([]referenceOperation, error) {
 	if err != nil {
 		return nil, fmt.Errorf("load spec: %w", err)
 	}
+	commandByOperation := generatedCLICommands()
 
 	operations := make([]referenceOperation, 0, len(spec.Paths.Map()))
 	for path, pathItem := range spec.Paths.Map() {
 		for method, op := range pathItem.Operations() {
-			operations = append(operations, buildOperation(path, method, pathItem, op))
+			operations = append(operations, buildOperation(path, method, pathItem, op, commandByOperation))
 		}
 	}
 	return operations, nil
 }
 
-func buildOperation(path, method string, pathItem *openapi3.PathItem, op *openapi3.Operation) referenceOperation {
+func generatedCLICommands() map[string]string {
+	commands := make(map[string]string, len(cligen.APIGeneratedCommandSpecs))
+	for _, spec := range cligen.APIGeneratedCommandSpecs {
+		if spec.OperationID == "" || len(spec.Command) == 0 {
+			continue
+		}
+		commands[spec.OperationID] = strings.Join(spec.Command, " ")
+	}
+	return commands
+}
+
+func buildOperation(path, method string, pathItem *openapi3.PathItem, op *openapi3.Operation, commandByOperation map[string]string) referenceOperation {
 	params := append([]*openapi3.ParameterRef{}, pathItem.Parameters...)
 	params = append(params, op.Parameters...)
 
@@ -328,7 +340,7 @@ func buildOperation(path, method string, pathItem *openapi3.PathItem, op *openap
 		Tags:        append([]string(nil), op.Tags...),
 		Summary:     strings.TrimSpace(op.Summary),
 		Description: strings.TrimSpace(op.Description),
-		CLICommand:  cliCommandFromExtensions(op.Extensions),
+		CLICommand:  strings.TrimSpace(commandByOperation[strings.TrimSpace(op.OperationID)]),
 	}
 
 	for _, p := range params {
@@ -420,7 +432,7 @@ func buildLinks(docs []referenceDoc, fmByDocID map[string]frontMatter, operation
 				SourceID:   op.OperationID,
 				TargetKind: "command",
 				TargetID:   op.CLICommand,
-				Reason:     "x-cli-command",
+				Reason:     "apigen-command-spec",
 				Confidence: 100,
 			})
 		}
@@ -535,28 +547,6 @@ func renderGo(docs []referenceDoc, operations []referenceOperation, links []refe
 		return nil, fmt.Errorf("format generated Go: %w", err)
 	}
 	return formatted, nil
-}
-
-func cliCommandFromExtensions(extensions map[string]any) string {
-	if len(extensions) == 0 {
-		return ""
-	}
-	for _, key := range []string{"x-cli-command", "cli_command", "x_cli_command"} {
-		raw, ok := extensions[key]
-		if !ok {
-			continue
-		}
-		switch value := raw.(type) {
-		case string:
-			return strings.TrimSpace(value)
-		case json.RawMessage:
-			var decoded string
-			if err := json.Unmarshal(value, &decoded); err == nil {
-				return strings.TrimSpace(decoded)
-			}
-		}
-	}
-	return ""
 }
 
 func schemaTypeFromSchemaRef(ref *openapi3.SchemaRef) string {

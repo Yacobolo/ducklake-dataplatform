@@ -197,14 +197,6 @@ func operationNode(endpoint ir.Endpoint, examples *exampleResolver) (*yaml.Node,
 
 	extensionKeys := make([]string, 0, len(endpoint.Extensions))
 	extensions := endpoint.Extensions
-	if cliCommand := ir.CLICommandString(endpoint.CLI); cliCommand != "" {
-		if extensions == nil {
-			extensions = map[string]any{}
-		} else {
-			extensions = cloneExtensions(extensions)
-		}
-		extensions["x-cli-command"] = cliCommand
-	}
 	for key := range extensions {
 		if key == "security" {
 			continue
@@ -218,7 +210,6 @@ func operationNode(endpoint ir.Endpoint, examples *exampleResolver) (*yaml.Node,
 		order := map[string]int{
 			"x-authz":         0,
 			"x-apigen-manual": 1,
-			"x-cli-command":   2,
 		}
 		if order[extensionKeys[i]] == order[extensionKeys[j]] {
 			return extensionKeys[i] < extensionKeys[j]

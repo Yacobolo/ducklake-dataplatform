@@ -36,8 +36,8 @@ func TestEmit(t *testing.T) {
 				},
 				RequestBody: &ir.RequestBody{Schema: ir.SchemaRef{Ref: "CreateQueryRequest"}},
 				Responses:   []ir.Response{{StatusCode: 200, Description: "ok"}},
-				Extensions: map[string]any{
-					"x-cli-command": "query execute",
+				CLI: &ir.CLI{
+					Command: []string{"query", "execute"},
 				},
 			},
 		},

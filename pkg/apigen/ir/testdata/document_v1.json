@@ -166,8 +166,13 @@
       "extensions": {
         "x-authz": {
           "mode": "admin_only"
-        },
-        "x-cli-command": "widgets list"
+        }
+      },
+      "cli": {
+        "command": [
+          "widgets",
+          "list"
+        ]
       }
     },
     {
@@ -209,8 +214,13 @@
       "extensions": {
         "x-authz": {
           "mode": "admin_only"
-        },
-        "x-cli-command": "widgets create"
+        }
+      },
+      "cli": {
+        "command": [
+          "widgets",
+          "create"
+        ]
       }
     }
   ]

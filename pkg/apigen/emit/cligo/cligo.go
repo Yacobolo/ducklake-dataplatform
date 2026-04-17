@@ -25,8 +25,6 @@ func Emit(doc ir.Document, opts Options) ([]byte, error) {
 	b.WriteString("import apigencobra \"github.com/Yacobolo/quackstack/pkg/apigen/runtime/cobra\"\n\n")
 	b.WriteString("// APIGenCommandSpec is generated from JSON IR.\n")
 	b.WriteString("type APIGenCommandSpec = apigencobra.CommandSpec\n\n")
-	b.WriteString("// APIGenEndpoint is kept as a compatibility alias for older generated consumers.\n")
-	b.WriteString("type APIGenEndpoint = apigencobra.CommandSpec\n\n")
 	b.WriteString("// APIGenParam is generated parameter metadata from JSON IR.\n")
 	b.WriteString("type APIGenParam = apigencobra.Param\n\n")
 	b.WriteString("// APIGenField is generated request body field metadata from JSON IR.\n")
@@ -49,8 +47,6 @@ func Emit(doc ir.Document, opts Options) ([]byte, error) {
 		fmt.Fprintf(&b, "\t%s,\n", spec)
 	}
 	b.WriteString("}\n\n")
-	b.WriteString("// APIGeneratedEndpoints is kept as a compatibility alias for older generated consumers.\n")
-	b.WriteString("var APIGeneratedEndpoints = APIGeneratedCommandSpecs\n")
 	return []byte(b.String()), nil
 }
 

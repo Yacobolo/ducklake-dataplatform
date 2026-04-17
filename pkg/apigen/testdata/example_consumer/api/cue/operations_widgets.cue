@@ -47,9 +47,6 @@ endpoints_widgets: [
 				next_page_token_field: "next_page_token"
 			}
 		}
-		extensions: {
-			"x-cli-command": "widgets list"
-		}
 	},
 	{
 		method:       "post"
@@ -103,9 +100,6 @@ endpoints_widgets: [
 				mode: "detail"
 				quiet_fields: ["id", "name"]
 			}
-		}
-		extensions: {
-			"x-cli-command": "widgets create"
 		}
 	},
 	{

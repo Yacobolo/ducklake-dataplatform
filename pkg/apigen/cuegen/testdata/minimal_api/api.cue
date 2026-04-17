@@ -87,8 +87,10 @@ endpoints: [
 				}
 			},
 		]
+		cli: {
+			command: ["widgets", "list"]
+		}
 		extensions: {
-			"x-cli-command": "widgets list"
 			"x-authz": {
 				mode: "authenticated"
 			}

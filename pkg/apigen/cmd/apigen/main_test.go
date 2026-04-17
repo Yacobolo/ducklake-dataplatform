@@ -250,6 +250,9 @@ endpoints: [
 		path:         "/widgets"
 		operation_id: "listWidgets"
 		summary:      "List widgets"
+		cli: {
+			command: ["widgets", "list"]
+		}
 		responses: [{
 			status_code: 200
 			description: "ok"
@@ -257,9 +260,6 @@ endpoints: [
 				ref: "Widget"
 			}
 		}]
-		extensions: {
-			"x-cli-command": "widgets list"
-		}
 	},
 ]
 `

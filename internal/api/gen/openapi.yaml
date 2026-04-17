@@ -125,7 +125,6 @@ paths:
                 message: validation failed
       tags:
         - Identity
-      x-cli-command: security api-keys cleanup
   /v1/api-keys:
     get:
       operationId: listAPIKeys
@@ -219,7 +218,6 @@ paths:
                 message: validation failed
       tags:
         - Identity
-      x-cli-command: security api-keys list
     post:
       operationId: createAPIKey
       summary: Create API key
@@ -311,7 +309,6 @@ paths:
               expires_at: "2026-12-31T00:00:00Z"
               name: dbt-cloud
               principal_id: user_01hzyreader4b8dm9q
-      x-cli-command: security api-keys create
   /v1/api-keys/{api_key_id}:
     delete:
       operationId: deleteAPIKey
@@ -388,7 +385,6 @@ paths:
                 message: validation failed
       tags:
         - Identity
-      x-cli-command: security api-keys delete
   /v1/assets:
     get:
       operationId: listAssets
@@ -498,7 +494,6 @@ paths:
                 message: validation failed
       tags:
         - Assets
-      x-cli-command: assets list
     post:
       operationId: createAsset
       summary: Create asset
@@ -660,7 +655,6 @@ paths:
           - securable_type: catalog
             privilege: MANAGE_ASSET_DEFINITIONS
             securable_id_source: catalog_sentinel
-      x-cli-command: assets create
   /v1/assets/{asset_key}:
     delete:
       operationId: deleteAsset
@@ -755,7 +749,6 @@ paths:
           - securable_type: catalog
             privilege: MANAGE_ASSET_DEFINITIONS
             securable_id_source: catalog_sentinel
-      x-cli-command: assets delete
     get:
       operationId: getAsset
       summary: Get asset
@@ -877,7 +870,6 @@ paths:
                 message: validation failed
       tags:
         - Assets
-      x-cli-command: assets get
     patch:
       operationId: updateAsset
       summary: Update asset
@@ -1047,7 +1039,6 @@ paths:
           - securable_type: catalog
             privilege: MANAGE_ASSET_DEFINITIONS
             securable_id_source: catalog_sentinel
-      x-cli-command: assets update
   /v1/assets/{asset_key}/backfills:
     get:
       operationId: listAssetBackfills
@@ -1176,7 +1167,6 @@ paths:
                 message: validation failed
       tags:
         - Assets
-      x-cli-command: assets backfills list
     post:
       operationId: createAssetBackfill
       summary: Create asset backfill
@@ -1313,7 +1303,6 @@ paths:
           - securable_type: catalog
             privilege: EXECUTE_ASSET_MATERIALIZATION
             securable_id_source: catalog_sentinel
-      x-cli-command: assets backfills create
   /v1/assets/{asset_key}/backfills/{backfill_id}:
     get:
       operationId: getAssetBackfill
@@ -1440,7 +1429,6 @@ paths:
                 message: validation failed
       tags:
         - Assets
-      x-cli-command: assets backfills get
   /v1/assets/{asset_key}/checks:
     get:
       operationId: listAssetChecks
@@ -1543,7 +1531,6 @@ paths:
                 message: validation failed
       tags:
         - Assets
-      x-cli-command: assets checks list
   /v1/assets/{asset_key}/checks/results:
     get:
       operationId: listAssetCheckResults
@@ -1664,7 +1651,6 @@ paths:
                 message: validation failed
       tags:
         - Assets
-      x-cli-command: assets check-results list
   /v1/assets/{asset_key}/freshness:
     get:
       operationId: getAssetFreshness
@@ -1769,7 +1755,6 @@ paths:
                 message: validation failed
       tags:
         - Assets
-      x-cli-command: assets freshness get
   /v1/assets/{asset_key}/freshness-reconciliations:
     post:
       operationId: reconcileAssetFreshness
@@ -1881,7 +1866,6 @@ paths:
                 message: validation failed
       tags:
         - Assets
-      x-cli-command: assets freshness reconcile
   /v1/assets/{asset_key}/freshness/blockers:
     get:
       operationId: listAssetFreshnessBlockers
@@ -2001,7 +1985,6 @@ paths:
                 message: validation failed
       tags:
         - Assets
-      x-cli-command: assets freshness blockers
   /v1/assets/{asset_key}/freshness/explanation:
     get:
       operationId: explainAssetFreshness
@@ -2123,7 +2106,6 @@ paths:
                 message: validation failed
       tags:
         - Assets
-      x-cli-command: assets freshness explain
   /v1/assets/{asset_key}/freshness/requirements:
     get:
       operationId: listAssetFreshnessRequirements
@@ -2243,7 +2225,6 @@ paths:
                 message: validation failed
       tags:
         - Assets
-      x-cli-command: assets freshness requirements
   /v1/assets/{asset_key}/graph:
     get:
       operationId: getAssetGraph
@@ -2344,7 +2325,6 @@ paths:
                 message: validation failed
       tags:
         - Assets
-      x-cli-command: assets graph get
   /v1/assets/{asset_key}/materializations:
     get:
       operationId: listAssetMaterializations
@@ -2463,7 +2443,6 @@ paths:
                 message: validation failed
       tags:
         - Assets
-      x-cli-command: assets materializations list
     post:
       operationId: triggerAssetMaterialization
       summary: Trigger asset materialization
@@ -2577,7 +2556,6 @@ paths:
           - securable_type: catalog
             privilege: EXECUTE_ASSET_MATERIALIZATION
             securable_id_source: catalog_sentinel
-      x-cli-command: assets materialize
   /v1/assets/{asset_key}/partitions:
     get:
       operationId: listAssetPartitions
@@ -2694,7 +2672,6 @@ paths:
                 message: validation failed
       tags:
         - Assets
-      x-cli-command: assets partitions list
   /v1/assets/{asset_key}/runs:
     get:
       operationId: listAssetRuns
@@ -2828,7 +2805,6 @@ paths:
                 message: validation failed
       tags:
         - Assets
-      x-cli-command: assets runs list
   /v1/audit-entries:
     get:
       operationId: listAuditLogs
@@ -2956,7 +2932,6 @@ paths:
         - Audit
       x-authz:
         mode: admin_only
-      x-cli-command: audit entries list
   /v1/auth/bootstrap/complete:
     post:
       operationId: bootstrapComplete
@@ -3695,7 +3670,6 @@ paths:
         - Catalogs
       x-authz:
         mode: admin_only
-      x-cli-command: catalog registrations list
     post:
       operationId: registerCatalog
       summary: Register catalog
@@ -3794,7 +3768,6 @@ paths:
               dsn: example
               metastore_type: sqlite
               name: example
-      x-cli-command: catalog registrations create
   /v1/catalogs/search:
     get:
       operationId: searchCatalog
@@ -3902,7 +3875,6 @@ paths:
                 message: validation failed
       tags:
         - Catalogs
-      x-cli-command: catalog search
   /v1/catalogs/{catalog_name}:
     delete:
       operationId: deleteCatalogRegistration
@@ -3991,7 +3963,6 @@ paths:
                 message: validation failed
       tags:
         - Catalogs
-      x-cli-command: catalog registrations delete
     get:
       operationId: getCatalog
       summary: Get catalog
@@ -4095,7 +4066,6 @@ paths:
                 message: validation failed
       tags:
         - Catalogs
-      x-cli-command: catalog registrations get
     patch:
       operationId: updateCatalogRegistration
       summary: Update catalog registration
@@ -4209,7 +4179,6 @@ paths:
             example:
               comment: example
               data_path: example
-      x-cli-command: catalog registrations update
   /v1/catalogs/{catalog_name}/default:
     put:
       operationId: setDefaultCatalog
@@ -4310,7 +4279,6 @@ paths:
             schema:
               $ref: '#/components/schemas/SetDefaultCatalogRequest'
             example: {}
-      x-cli-command: catalog registrations set-default
   /v1/catalogs/{catalog_name}/history:
     get:
       operationId: listCatalogHistory
@@ -4544,7 +4512,6 @@ paths:
                 message: validation failed
       tags:
         - Catalogs
-      x-cli-command: catalog metastore summary
   /v1/catalogs/{catalog_name}/schemas:
     get:
       operationId: listSchemas
@@ -4668,7 +4635,6 @@ paths:
                 message: validation failed
       tags:
         - Catalogs
-      x-cli-command: catalog schemas list
     post:
       operationId: createSchema
       summary: Create schema
@@ -4780,7 +4746,6 @@ paths:
           - securable_type: catalog
             privilege: CREATE_SCHEMA
             securable_id_source: catalog_name_param
-      x-cli-command: catalog schemas create
   /v1/catalogs/{catalog_name}/schemas/{schema_name}:
     delete:
       operationId: deleteSchema
@@ -4876,7 +4841,6 @@ paths:
           - securable_type: schema
             privilege: CREATE_SCHEMA
             securable_id_source: runtime_resolved_object_id
-      x-cli-command: catalog schemas delete
     get:
       operationId: getSchema
       summary: Get schema
@@ -4988,7 +4952,6 @@ paths:
                 message: validation failed
       tags:
         - Catalogs
-      x-cli-command: catalog schemas get
     patch:
       operationId: updateSchema
       summary: Update schema
@@ -5104,7 +5067,6 @@ paths:
           - securable_type: schema
             privilege: CREATE_SCHEMA
             securable_id_source: runtime_resolved_object_id
-      x-cli-command: catalog schemas update
   /v1/catalogs/{catalog_name}/schemas/{schema_name}/tables:
     get:
       operationId: listTables
@@ -5250,7 +5212,6 @@ paths:
                 message: validation failed
       tags:
         - Catalogs
-      x-cli-command: catalog tables list
     post:
       operationId: createTable
       summary: Create table
@@ -5386,7 +5347,6 @@ paths:
           - securable_type: schema
             privilege: CREATE_TABLE
             securable_id_source: runtime_resolved_object_id
-      x-cli-command: catalog tables create
   /v1/catalogs/{catalog_name}/schemas/{schema_name}/tables/{table_name}:
     delete:
       operationId: deleteTable
@@ -5481,7 +5441,6 @@ paths:
           - securable_type: table
             privilege: CREATE_TABLE
             securable_id_source: runtime_resolved_object_id
-      x-cli-command: catalog tables delete
     get:
       operationId: getTable
       summary: Get table
@@ -5615,7 +5574,6 @@ paths:
                 message: validation failed
       tags:
         - Catalogs
-      x-cli-command: catalog tables get
     patch:
       operationId: updateTable
       summary: Update table
@@ -5754,7 +5712,6 @@ paths:
           - securable_type: table
             privilege: CREATE_TABLE
             securable_id_source: runtime_resolved_object_id
-      x-cli-command: catalog tables update
   /v1/catalogs/{catalog_name}/schemas/{schema_name}/tables/{table_name}/columns:
     get:
       operationId: listTableColumns
@@ -5883,7 +5840,6 @@ paths:
                 message: validation failed
       tags:
         - Catalogs
-      x-cli-command: catalog columns list
   /v1/catalogs/{catalog_name}/schemas/{schema_name}/tables/{table_name}/columns/{column_name}:
     patch:
       operationId: updateColumn
@@ -6004,7 +5960,6 @@ paths:
           - securable_type: table
             privilege: CREATE_TABLE
             securable_id_source: runtime_resolved_object_id
-      x-cli-command: catalog columns update
   /v1/catalogs/{catalog_name}/schemas/{schema_name}/tables/{table_name}/ingestion-commits:
     post:
       operationId: commitTableIngestion
@@ -6122,7 +6077,6 @@ paths:
           - securable_type: table
             privilege: INSERT
             securable_id_source: runtime_resolved_object_id
-      x-cli-command: ingestion commit
   /v1/catalogs/{catalog_name}/schemas/{schema_name}/tables/{table_name}/ingestion-loads:
     post:
       operationId: loadTableExternalFiles
@@ -6239,7 +6193,6 @@ paths:
           - securable_type: table
             privilege: INSERT
             securable_id_source: runtime_resolved_object_id
-      x-cli-command: ingestion load
   /v1/catalogs/{catalog_name}/schemas/{schema_name}/tables/{table_name}/manifest:
     get:
       operationId: createManifest
@@ -6357,7 +6310,6 @@ paths:
                 message: validation failed
       tags:
         - Catalogs
-      x-cli-command: catalog tables manifest get
   /v1/catalogs/{catalog_name}/schemas/{schema_name}/tables/{table_name}/profiles:
     post:
       operationId: profileTable
@@ -6456,7 +6408,6 @@ paths:
                 message: validation failed
       tags:
         - Catalogs
-      x-cli-command: catalog tables profile
   /v1/catalogs/{catalog_name}/schemas/{schema_name}/tables/{table_name}/upload-urls:
     post:
       operationId: createUploadUrl
@@ -6568,7 +6519,6 @@ paths:
           - securable_type: table
             privilege: INSERT
             securable_id_source: runtime_resolved_object_id
-      x-cli-command: ingestion upload-url
   /v1/catalogs/{catalog_name}/schemas/{schema_name}/views:
     get:
       operationId: listViews
@@ -6703,7 +6653,6 @@ paths:
                 message: validation failed
       tags:
         - Catalogs
-      x-cli-command: catalog views list
     post:
       operationId: createView
       summary: Create view
@@ -6825,7 +6774,6 @@ paths:
           - securable_type: schema
             privilege: CREATE_TABLE
             securable_id_source: runtime_resolved_object_id
-      x-cli-command: catalog views create
   /v1/catalogs/{catalog_name}/schemas/{schema_name}/views/{view_name}:
     delete:
       operationId: deleteView
@@ -6920,7 +6868,6 @@ paths:
           - securable_type: schema
             privilege: CREATE_TABLE
             securable_id_source: runtime_resolved_object_id
-      x-cli-command: catalog views delete
     get:
       operationId: getView
       summary: Get view
@@ -7043,7 +6990,6 @@ paths:
                 message: validation failed
       tags:
         - Catalogs
-      x-cli-command: catalog views get
     patch:
       operationId: updateView
       summary: Update view
@@ -7170,7 +7116,6 @@ paths:
           - securable_type: schema
             privilege: CREATE_TABLE
             securable_id_source: runtime_resolved_object_id
-      x-cli-command: catalog views update
   /v1/catalogs/{catalog_name}/schemas/{schema_name}/volumes:
     get:
       operationId: listVolumes
@@ -7297,7 +7242,6 @@ paths:
                 message: validation failed
       tags:
         - Catalogs
-      x-cli-command: catalog volumes list
     post:
       operationId: createVolume
       summary: Create volume
@@ -7412,7 +7356,6 @@ paths:
           - securable_type: catalog
             privilege: CREATE_VOLUME
             securable_id_source: catalog_sentinel
-      x-cli-command: catalog volumes create
   /v1/catalogs/{catalog_name}/schemas/{schema_name}/volumes/{volume_name}:
     delete:
       operationId: deleteVolume
@@ -7507,7 +7450,6 @@ paths:
           - securable_type: volume
             privilege: CREATE_VOLUME
             securable_id_source: runtime_resolved_object_id
-      x-cli-command: catalog volumes delete
     get:
       operationId: getVolume
       summary: Get volume
@@ -7622,7 +7564,6 @@ paths:
                 message: validation failed
       tags:
         - Catalogs
-      x-cli-command: catalog volumes get
     patch:
       operationId: updateVolume
       summary: Update volume
@@ -7742,7 +7683,6 @@ paths:
           - securable_type: volume
             privilege: CREATE_VOLUME
             securable_id_source: runtime_resolved_object_id
-      x-cli-command: catalog volumes update
   /v1/catalogs/{catalog_name}/version-summary:
     get:
       operationId: getCatalogVersionSummary
@@ -7945,7 +7885,6 @@ paths:
                 message: validation failed
       tags:
         - Governance
-      x-cli-command: governance classifications list
   /v1/column-masks:
     get:
       operationId: listColumnMasks
@@ -8064,7 +8003,6 @@ paths:
                 message: validation failed
       tags:
         - Governance
-      x-cli-command: security column-masks list
     post:
       operationId: createColumnMask
       summary: Create column mask
@@ -8159,7 +8097,6 @@ paths:
               mask_expression: example
               name: example
               table_id: example
-      x-cli-command: security column-masks create
   /v1/column-masks/{column_mask_id}:
     delete:
       operationId: deleteColumnMask
@@ -8236,7 +8173,6 @@ paths:
                 message: validation failed
       tags:
         - Governance
-      x-cli-command: security column-masks delete
     get:
       operationId: getColumnMask
       summary: Get column mask
@@ -8636,7 +8572,6 @@ paths:
               principal_id: example
               principal_type: user
               see_original: true
-      x-cli-command: security column-masks bind
   /v1/column-masks/{column_mask_id}/bindings/{principal_type}/{principal_id}:
     delete:
       operationId: unbindColumnMask
@@ -8725,7 +8660,6 @@ paths:
                 message: validation failed
       tags:
         - Governance
-      x-cli-command: security column-masks unbind
   /v1/compute-endpoints:
     get:
       operationId: listComputeEndpoints
@@ -8831,7 +8765,6 @@ paths:
         - Compute
       x-authz:
         mode: admin_only
-      x-cli-command: compute endpoints list
     post:
       operationId: createComputeEndpoint
       summary: Create compute endpoint
@@ -8953,7 +8886,6 @@ paths:
           - securable_type: catalog
             privilege: MANAGE_COMPUTE
             securable_id_source: catalog_sentinel
-      x-cli-command: compute endpoints create
   /v1/compute-endpoints/{endpoint_name}:
     delete:
       operationId: deleteComputeEndpoint
@@ -9048,7 +8980,6 @@ paths:
           - securable_type: compute_endpoint
             privilege: MANAGE_COMPUTE
             securable_id_source: runtime_resolved_object_id
-      x-cli-command: compute endpoints delete
     get:
       operationId: getComputeEndpoint
       summary: Get compute endpoint
@@ -9152,7 +9083,6 @@ paths:
                 message: validation failed
       tags:
         - Compute
-      x-cli-command: compute endpoints get
     patch:
       operationId: updateComputeEndpoint
       summary: Update compute endpoint
@@ -9275,7 +9205,6 @@ paths:
           - securable_type: compute_endpoint
             privilege: MANAGE_COMPUTE
             securable_id_source: runtime_resolved_object_id
-      x-cli-command: compute endpoints update
   /v1/compute-endpoints/{endpoint_name}/assignments:
     get:
       operationId: listComputeAssignments
@@ -9394,7 +9323,6 @@ paths:
                 message: validation failed
       tags:
         - Compute
-      x-cli-command: compute assignments list
     post:
       operationId: createComputeAssignment
       summary: Create compute assignment
@@ -9515,7 +9443,6 @@ paths:
           - securable_type: compute_endpoint
             privilege: MANAGE_COMPUTE
             securable_id_source: runtime_resolved_object_id
-      x-cli-command: compute assignments create
   /v1/compute-endpoints/{endpoint_name}/assignments/{assignment_id}:
     delete:
       operationId: deleteComputeAssignment
@@ -9616,7 +9543,6 @@ paths:
           - securable_type: catalog
             privilege: MANAGE_COMPUTE
             securable_id_source: catalog_sentinel
-      x-cli-command: compute assignments delete
   /v1/compute-endpoints/{endpoint_name}/health:
     get:
       operationId: getComputeEndpointHealth
@@ -9730,7 +9656,6 @@ paths:
                 message: validation failed
       tags:
         - Compute
-      x-cli-command: compute endpoints health
   /v1/compute-routing-defaults:
     get:
       operationId: getComputeRoutingDefaults
@@ -10003,7 +9928,6 @@ paths:
                 message: validation failed
       tags:
         - Dashboards
-      x-cli-command: dashboards list
     post:
       operationId: createDashboard
       summary: Create dashboard
@@ -10109,7 +10033,6 @@ paths:
               owner: team-analytics
               semantic_model_name: executive_metrics
               semantic_project_name: revenue
-      x-cli-command: dashboards create
   /v1/dashboards/{dashboard_id}:
     delete:
       operationId: deleteDashboard
@@ -10186,7 +10109,6 @@ paths:
                 message: validation failed
       tags:
         - Dashboards
-      x-cli-command: dashboards delete
     get:
       operationId: getDashboard
       summary: Get dashboard
@@ -10325,7 +10247,6 @@ paths:
                 message: validation failed
       tags:
         - Dashboards
-      x-cli-command: dashboards get
     patch:
       operationId: updateDashboard
       summary: Update dashboard
@@ -10432,7 +10353,6 @@ paths:
               owner: team-finance
               semantic_model_name: executive_metrics
               semantic_project_name: revenue
-      x-cli-command: dashboards update
   /v1/dashboards/{dashboard_id}/rendered:
     get:
       operationId: getRenderedDashboard
@@ -10580,7 +10500,6 @@ paths:
                 message: validation failed
       tags:
         - Dashboards
-      x-cli-command: dashboards get-rendered
   /v1/dashboards/{dashboard_id}/widgets:
     get:
       operationId: listDashboardWidgets
@@ -10832,7 +10751,6 @@ paths:
                 kind: chart
                 legend: false
                 title: MRR by plan tier
-      x-cli-command: dashboards widgets create
   /v1/dashboards/{dashboard_id}/widgets/{widget_id}:
     delete:
       operationId: deleteDashboardWidget
@@ -10915,7 +10833,6 @@ paths:
                 message: validation failed
       tags:
         - Dashboards
-      x-cli-command: dashboards widgets delete
     get:
       operationId: getDashboardWidget
       summary: Get dashboard widget
@@ -11188,7 +11105,6 @@ paths:
               visual_spec:
                 chart_type: stacked_bar
                 title: MRR by plan tier and region
-      x-cli-command: dashboards widgets update
   /v1/data-products:
     get:
       operationId: listDataProducts
@@ -15814,7 +15730,6 @@ paths:
                 message: validation failed
       tags:
         - Storage
-      x-cli-command: storage locations list
     post:
       operationId: createExternalLocation
       summary: Create external location
@@ -15920,7 +15835,6 @@ paths:
           - securable_type: catalog
             privilege: CREATE_EXTERNAL_LOCATION
             securable_id_source: catalog_sentinel
-      x-cli-command: storage locations create
   /v1/external-locations/{location_name}:
     delete:
       operationId: deleteExternalLocation
@@ -16015,7 +15929,6 @@ paths:
           - securable_type: external_location
             privilege: CREATE_EXTERNAL_LOCATION
             securable_id_source: runtime_resolved_object_id
-      x-cli-command: storage locations delete
     get:
       operationId: getExternalLocation
       summary: Get external location
@@ -16118,7 +16031,6 @@ paths:
                 message: validation failed
       tags:
         - Storage
-      x-cli-command: storage locations get
     patch:
       operationId: updateExternalLocation
       summary: Update external location
@@ -16239,7 +16151,6 @@ paths:
           - securable_type: external_location
             privilege: CREATE_EXTERNAL_LOCATION
             securable_id_source: runtime_resolved_object_id
-      x-cli-command: storage locations update
   /v1/folders/contents:
     get:
       operationId: listRootFolderContents
@@ -17593,7 +17504,6 @@ paths:
                 message: validation failed
       tags:
         - Integrations
-      x-cli-command: notebooks git-repos list
     post:
       operationId: createGitRepo
       summary: Create git repo
@@ -17689,7 +17599,6 @@ paths:
               branch: example
               path: example
               url: example
-      x-cli-command: notebooks git-repos create
   /v1/git-repos/{git_repo_id}:
     delete:
       operationId: deleteGitRepo
@@ -17778,7 +17687,6 @@ paths:
                 message: validation failed
       tags:
         - Integrations
-      x-cli-command: notebooks git-repos delete
     get:
       operationId: getGitRepo
       summary: Get git repo
@@ -17880,7 +17788,6 @@ paths:
                 message: validation failed
       tags:
         - Integrations
-      x-cli-command: notebooks git-repos get
   /v1/git-repos/{git_repo_id}/sync-runs:
     post:
       operationId: syncGitRepo
@@ -17990,7 +17897,6 @@ paths:
                 message: validation failed
       tags:
         - Integrations
-      x-cli-command: notebooks git-repos sync
   /v1/grants:
     get:
       operationId: listGrants
@@ -18121,7 +18027,6 @@ paths:
         - Governance
       x-authz:
         mode: admin_only
-      x-cli-command: security grants list
     post:
       operationId: createGrant
       summary: Create grant
@@ -18233,7 +18138,6 @@ paths:
               privilege: SELECT
       x-authz:
         mode: admin_only
-      x-cli-command: security grants create
   /v1/grants/{grant_id}:
     delete:
       operationId: deleteGrant
@@ -18312,7 +18216,6 @@ paths:
         - Governance
       x-authz:
         mode: admin_only
-      x-cli-command: security grants revoke
   /v1/groups:
     get:
       operationId: listGroups
@@ -18411,7 +18314,6 @@ paths:
         - Identity
       x-authz:
         mode: admin_only
-      x-cli-command: security groups list
     post:
       operationId: createGroup
       summary: Create group
@@ -18500,7 +18402,6 @@ paths:
             example:
               description: example
               name: example
-      x-cli-command: security groups create
   /v1/groups/{group_id}:
     delete:
       operationId: deleteGroup
@@ -18577,7 +18478,6 @@ paths:
                 message: validation failed
       tags:
         - Identity
-      x-cli-command: security groups delete
     get:
       operationId: getGroup
       summary: Get group
@@ -18674,7 +18574,6 @@ paths:
                 message: validation failed
       tags:
         - Identity
-      x-cli-command: security groups get
     patch:
       operationId: updateGroup
       summary: Update group
@@ -18895,7 +18794,6 @@ paths:
                 message: validation failed
       tags:
         - Identity
-      x-cli-command: security members list
     post:
       operationId: createGroupMember
       summary: Create group member
@@ -18981,7 +18879,6 @@ paths:
             example:
               member_id: example
               member_type: user
-      x-cli-command: security members add
   /v1/groups/{group_id}/members/{member_type}/{member_id}:
     delete:
       operationId: deleteGroupMember
@@ -19070,7 +18967,6 @@ paths:
                 message: validation failed
       tags:
         - Identity
-      x-cli-command: security members remove
   /v1/healthz:
     get:
       operationId: getHealth
@@ -19263,7 +19159,6 @@ paths:
                 message: validation failed
       tags:
         - Lineage
-      x-cli-command: lineage columns get
   /v1/lineage/columns/{schema_name}/{table_name}/{column_name}/impacts:
     get:
       operationId: getColumnImpact
@@ -19394,7 +19289,6 @@ paths:
                 message: validation failed
       tags:
         - Lineage
-      x-cli-command: lineage impact get
   /v1/lineage/edges/{edge_id}:
     delete:
       operationId: deleteLineageEdge
@@ -19471,7 +19365,6 @@ paths:
                 message: validation failed
       tags:
         - Lineage
-      x-cli-command: lineage edges delete
   /v1/lineage/purges:
     post:
       operationId: purgeLineage
@@ -19557,7 +19450,6 @@ paths:
               $ref: '#/components/schemas/PurgeLineageRequest'
             example:
               older_than_days: 30
-      x-cli-command: lineage purge
   /v1/lineage/tables/{schema_name}/{table_name}:
     get:
       operationId: getTableLineage
@@ -19683,7 +19575,6 @@ paths:
                 message: validation failed
       tags:
         - Lineage
-      x-cli-command: lineage tables get
   /v1/lineage/tables/{schema_name}/{table_name}/downstream:
     get:
       operationId: getDownstreamLineage
@@ -19808,7 +19699,6 @@ paths:
                 message: validation failed
       tags:
         - Lineage
-      x-cli-command: lineage tables downstream
   /v1/lineage/tables/{schema_name}/{table_name}/upstream:
     get:
       operationId: getUpstreamLineage
@@ -19933,7 +19823,6 @@ paths:
                 message: validation failed
       tags:
         - Lineage
-      x-cli-command: lineage tables upstream
   /v1/macros:
     get:
       operationId: listMacros
@@ -20035,7 +19924,6 @@ paths:
                 message: validation failed
       tags:
         - Models
-      x-cli-command: models macros list
     post:
       operationId: createMacro
       summary: Create macro
@@ -20154,7 +20042,6 @@ paths:
               tags:
                 - example
               visibility: project
-      x-cli-command: models macros create
   /v1/macros/{macro_name}:
     delete:
       operationId: deleteMacro
@@ -20231,7 +20118,6 @@ paths:
                 message: validation failed
       tags:
         - Models
-      x-cli-command: models macros delete
     get:
       operationId: getMacro
       summary: Get macro
@@ -20345,7 +20231,6 @@ paths:
                 message: validation failed
       tags:
         - Models
-      x-cli-command: models macros get
     patch:
       operationId: updateMacro
       summary: Update macro
@@ -20468,7 +20353,6 @@ paths:
               tags:
                 - example
               visibility: project
-      x-cli-command: models macros update
   /v1/macros/{macro_name}/impacts:
     get:
       operationId: getMacroImpact
@@ -20583,7 +20467,6 @@ paths:
                 message: validation failed
       tags:
         - Models
-      x-cli-command: models impact get
   /v1/macros/{macro_name}/revision-diffs:
     get:
       operationId: diffMacroRevisions
@@ -20729,7 +20612,6 @@ paths:
                 message: validation failed
       tags:
         - Models
-      x-cli-command: models revisions diff
   /v1/macros/{macro_name}/revisions:
     get:
       operationId: listMacroRevisions
@@ -20835,7 +20717,6 @@ paths:
                 message: validation failed
       tags:
         - Models
-      x-cli-command: models revisions list
   /v1/me/recent-resources:
     get:
       operationId: listRecentResources
@@ -20936,7 +20817,6 @@ paths:
                 message: validation failed
       tags:
         - Resources
-      x-cli-command: me recent-resources list
   /v1/me/saved-resources:
     get:
       operationId: listSavedResources
@@ -21038,7 +20918,6 @@ paths:
                 message: validation failed
       tags:
         - Resources
-      x-cli-command: me saved-resources list
     post:
       operationId: createSavedResource
       summary: Save resource
@@ -21135,7 +21014,6 @@ paths:
               resource_path: example
               resource_type: example
               section: example
-      x-cli-command: me saved-resources create
   /v1/me/saved-resources/{resource_type}/{resource_key}:
     delete:
       operationId: deleteSavedResource
@@ -21219,7 +21097,6 @@ paths:
                 message: validation failed
       tags:
         - Resources
-      x-cli-command: me saved-resources delete
   /v1/model-runs:
     get:
       operationId: listModelRuns
@@ -21326,7 +21203,6 @@ paths:
                 message: validation failed
       tags:
         - Models
-      x-cli-command: models runs list
     post:
       operationId: triggerModelRun
       summary: Trigger model run
@@ -21434,7 +21310,6 @@ paths:
                 - fct_daily_revenue
                 - dim_customer
               project_name: finance-platform
-      x-cli-command: models runs trigger
   /v1/model-runs/{run_id}:
     get:
       operationId: getModelRun
@@ -21547,7 +21422,6 @@ paths:
                 message: validation failed
       tags:
         - Models
-      x-cli-command: models runs get
   /v1/model-runs/{run_id}/cancellations:
     post:
       operationId: cancelModelRun
@@ -21648,7 +21522,6 @@ paths:
                 message: validation failed
       tags:
         - Models
-      x-cli-command: models runs cancel
   /v1/model-runs/{run_id}/steps:
     get:
       operationId: listModelRunSteps
@@ -21760,7 +21633,6 @@ paths:
                 message: validation failed
       tags:
         - Models
-      x-cli-command: models steps list
   /v1/model-runs/{run_id}/steps/{step_id}/test-results:
     get:
       operationId: listModelTestResults
@@ -21869,7 +21741,6 @@ paths:
                 message: validation failed
       tags:
         - Models
-      x-cli-command: models test-results list
   /v1/models:
     get:
       operationId: listModels
@@ -21989,7 +21860,6 @@ paths:
                 message: validation failed
       tags:
         - Models
-      x-cli-command: models list
     post:
       operationId: createModel
       summary: Create model
@@ -22129,7 +21999,6 @@ paths:
               tags:
                 - finance
                 - gold
-      x-cli-command: models create
   /v1/models/dag:
     get:
       operationId: getModelDAG
@@ -22208,7 +22077,6 @@ paths:
                 message: validation failed
       tags:
         - Models
-      x-cli-command: models dag get
   /v1/models/{project_name}/{model_name}:
     delete:
       operationId: deleteModel
@@ -22291,7 +22159,6 @@ paths:
                 message: validation failed
       tags:
         - Models
-      x-cli-command: models delete
     get:
       operationId: getModel
       summary: Get model
@@ -22422,7 +22289,6 @@ paths:
                 message: validation failed
       tags:
         - Models
-      x-cli-command: models get
     patch:
       operationId: updateModel
       summary: Update model
@@ -22568,7 +22434,6 @@ paths:
               sql: example
               tags:
                 - example
-      x-cli-command: models update
   /v1/models/{project_name}/{model_name}/freshness:
     get:
       operationId: checkModelFreshness
@@ -22672,7 +22537,6 @@ paths:
                 message: validation failed
       tags:
         - Models
-      x-cli-command: models freshness check
   /v1/models/{project_name}/{model_name}/tests:
     get:
       operationId: listModelTests
@@ -22785,7 +22649,6 @@ paths:
                 message: validation failed
       tags:
         - Models
-      x-cli-command: models tests list
     post:
       operationId: createModelTest
       summary: Create model test
@@ -22901,7 +22764,6 @@ paths:
                   - example
               name: example
               test_type: not_null
-      x-cli-command: models tests create
   /v1/models/{project_name}/{model_name}/tests/{test_id}:
     delete:
       operationId: deleteModelTest
@@ -22990,7 +22852,6 @@ paths:
                 message: validation failed
       tags:
         - Models
-      x-cli-command: models tests delete
   /v1/notebooks:
     get:
       operationId: listNotebooks
@@ -23089,7 +22950,6 @@ paths:
                 message: validation failed
       tags:
         - Notebooks
-      x-cli-command: notebooks list
     post:
       operationId: createNotebook
       summary: Create notebook
@@ -23187,7 +23047,6 @@ paths:
               folder_id: fld_01hzynotebooks
               name: Revenue diagnostics
               source: manual
-      x-cli-command: notebooks create
   /v1/notebooks/{notebook_id}:
     delete:
       operationId: deleteNotebook
@@ -23276,7 +23135,6 @@ paths:
                 message: validation failed
       tags:
         - Notebooks
-      x-cli-command: notebooks delete
     get:
       operationId: getNotebook
       summary: Get notebook
@@ -23436,7 +23294,6 @@ paths:
                 message: validation failed
       tags:
         - Notebooks
-      x-cli-command: notebooks get
     patch:
       operationId: updateNotebook
       summary: Update notebook
@@ -23552,7 +23409,6 @@ paths:
               environment_override_id: env_01hzyprod
               name: Revenue diagnostics
               project_override_id: prj_01hzyfinance
-      x-cli-command: notebooks update
   /v1/notebooks/{notebook_id}/cells:
     post:
       operationId: createCell
@@ -23706,7 +23562,6 @@ paths:
                 kind: chart
                 legend: false
                 title: Orders by region
-      x-cli-command: notebooks cells create
   /v1/notebooks/{notebook_id}/cells/reorder:
     post:
       operationId: reorderCells
@@ -23850,7 +23705,6 @@ paths:
                 - cell_01hzyintro
                 - cell_01hzycellsql
                 - cell_01hzychart
-      x-cli-command: notebooks cells reorder
   /v1/notebooks/{notebook_id}/cells/{cell_id}:
     delete:
       operationId: deleteCell
@@ -23945,7 +23799,6 @@ paths:
                 message: validation failed
       tags:
         - Notebooks
-      x-cli-command: notebooks cells delete
     patch:
       operationId: updateCell
       summary: Update cell
@@ -24101,7 +23954,6 @@ paths:
                   x:
                     field: region
                 title: Completed orders by region
-      x-cli-command: notebooks cells update
   /v1/notebooks/{notebook_id}/copies:
     post:
       operationId: duplicateNotebook
@@ -24335,7 +24187,6 @@ paths:
                 message: validation failed
       tags:
         - Notebooks
-      x-cli-command: notebooks jobs list
   /v1/notebooks/{notebook_id}/jobs/{job_id}:
     get:
       operationId: getNotebookJob
@@ -24443,7 +24294,6 @@ paths:
                 message: validation failed
       tags:
         - Notebooks
-      x-cli-command: notebooks jobs get
   /v1/notebooks/{notebook_id}/model-promotions:
     delete:
       operationId: unpublishNotebookModel
@@ -24656,7 +24506,6 @@ paths:
               materialization: VIEW
               name: example
               project_name: example
-      x-cli-command: models from-notebook promote
   /v1/notebooks/{notebook_id}/moves:
     post:
       operationId: moveNotebook
@@ -24872,7 +24721,6 @@ paths:
                 message: validation failed
       tags:
         - Notebooks
-      x-cli-command: notebooks sessions create
   /v1/notebooks/{notebook_id}/sessions/{session_id}:
     delete:
       operationId: closeNotebookSession
@@ -24967,7 +24815,6 @@ paths:
                 message: validation failed
       tags:
         - Notebooks
-      x-cli-command: notebooks sessions close
   /v1/notebooks/{notebook_id}/sessions/{session_id}/cell-executions:
     post:
       operationId: runAllCells
@@ -25084,7 +24931,6 @@ paths:
                 message: validation failed
       tags:
         - Notebooks
-      x-cli-command: notebooks sessions run-all
   /v1/notebooks/{notebook_id}/sessions/{session_id}/cell-executions/{cell_id}:
     post:
       operationId: executeCell
@@ -25206,7 +25052,6 @@ paths:
                 message: validation failed
       tags:
         - Notebooks
-      x-cli-command: notebooks cells execute
   /v1/notebooks/{notebook_id}/sessions/{session_id}/job-runs:
     post:
       operationId: runAllCellsAsync
@@ -25314,7 +25159,6 @@ paths:
                 message: validation failed
       tags:
         - Notebooks
-      x-cli-command: notebooks sessions run-all-async
   /v1/notebooks/{notebook_id}/shares:
     get:
       operationId: listNotebookShares
@@ -25709,7 +25553,6 @@ paths:
                 message: validation failed
       tags:
         - Pipelines
-      x-cli-command: pipelines list
     post:
       operationId: createPipeline
       summary: Create pipeline
@@ -25829,7 +25672,6 @@ paths:
                   url: example
               run_as_principal: example
               schedule_cron: example
-      x-cli-command: pipelines create
   /v1/pipelines/runs/{run_id}:
     get:
       operationId: getPipelineRun
@@ -25942,7 +25784,6 @@ paths:
                 message: validation failed
       tags:
         - Pipelines
-      x-cli-command: pipelines runs get
   /v1/pipelines/runs/{run_id}/cancellations:
     post:
       operationId: cancelPipelineRun
@@ -26043,7 +25884,6 @@ paths:
                 message: validation failed
       tags:
         - Pipelines
-      x-cli-command: pipelines runs cancel
   /v1/pipelines/runs/{run_id}/events:
     get:
       operationId: listPipelineRunEvents
@@ -26147,7 +25987,6 @@ paths:
                 message: validation failed
       tags:
         - Pipelines
-      x-cli-command: pipelines runs list-events
   /v1/pipelines/runs/{run_id}/jobs:
     get:
       operationId: listPipelineJobRuns
@@ -26255,7 +26094,6 @@ paths:
                 message: validation failed
       tags:
         - Pipelines
-      x-cli-command: pipelines runs list-job-runs
   /v1/pipelines/runs/{run_id}/repairs:
     post:
       operationId: repairPipelineRun
@@ -26366,7 +26204,6 @@ paths:
             example:
               from_job_id: example
               mode: example
-      x-cli-command: pipelines runs repair
   /v1/pipelines/{pipeline_name}:
     delete:
       operationId: deletePipeline
@@ -26443,7 +26280,6 @@ paths:
                 message: validation failed
       tags:
         - Pipelines
-      x-cli-command: pipelines delete
     get:
       operationId: getPipeline
       summary: Get pipeline
@@ -26557,7 +26393,6 @@ paths:
                 message: validation failed
       tags:
         - Pipelines
-      x-cli-command: pipelines get
     patch:
       operationId: updatePipeline
       summary: Update pipeline
@@ -26682,7 +26517,6 @@ paths:
                   url: example
               run_as_principal: example
               schedule_cron: example
-      x-cli-command: pipelines update
   /v1/pipelines/{pipeline_name}/jobs:
     get:
       operationId: listPipelineJobs
@@ -26790,7 +26624,6 @@ paths:
                 message: validation failed
       tags:
         - Pipelines
-      x-cli-command: pipelines jobs list
     post:
       operationId: createPipelineJob
       summary: Create pipeline job
@@ -26902,7 +26735,6 @@ paths:
               notebook_id: example
               retry_count: 1
               timeout_seconds: 1
-      x-cli-command: pipelines jobs create
   /v1/pipelines/{pipeline_name}/jobs/{job_id}:
     delete:
       operationId: deletePipelineJob
@@ -26985,7 +26817,6 @@ paths:
                 message: validation failed
       tags:
         - Pipelines
-      x-cli-command: pipelines jobs delete
     get:
       operationId: getPipelineJob
       summary: Get pipeline job
@@ -27097,7 +26928,6 @@ paths:
                 message: validation failed
       tags:
         - Pipelines
-      x-cli-command: pipelines jobs get
     patch:
       operationId: updatePipelineJob
       summary: Update pipeline job
@@ -27215,7 +27045,6 @@ paths:
               notebook_id: example
               retry_count: 1
               timeout_seconds: 1
-      x-cli-command: pipelines jobs update
   /v1/pipelines/{pipeline_name}/runs:
     get:
       operationId: listPipelineRuns
@@ -27352,7 +27181,6 @@ paths:
                 message: validation failed
       tags:
         - Pipelines
-      x-cli-command: pipelines runs list
     post:
       operationId: triggerPipelineRun
       summary: Trigger pipeline run
@@ -27462,7 +27290,6 @@ paths:
             example:
               parameters:
                 key: example
-      x-cli-command: pipelines runs trigger
   /v1/principals:
     get:
       operationId: listPrincipals
@@ -27562,7 +27389,6 @@ paths:
         - Identity
       x-authz:
         mode: admin_only
-      x-cli-command: security principals list
     post:
       operationId: createPrincipal
       summary: Create principal
@@ -27653,7 +27479,6 @@ paths:
               is_admin: true
               name: example
               type: user
-      x-cli-command: security principals create
   /v1/principals/{principal_id}:
     delete:
       operationId: deletePrincipal
@@ -27730,7 +27555,6 @@ paths:
                 message: validation failed
       tags:
         - Identity
-      x-cli-command: security principals delete
     get:
       operationId: getPrincipal
       summary: Get principal
@@ -27828,7 +27652,6 @@ paths:
                 message: validation failed
       tags:
         - Identity
-      x-cli-command: security principals get
     patch:
       operationId: updatePrincipal
       summary: Update principal
@@ -27923,7 +27746,6 @@ paths:
               $ref: '#/components/schemas/UpdatePrincipalRequest'
             example:
               is_admin: true
-      x-cli-command: security principals set-admin
   /v1/product-domains:
     get:
       operationId: listProductDomains
@@ -29006,7 +28828,6 @@ paths:
                 message: validation failed
       tags:
         - Projects
-      x-cli-command: projects delete
     get:
       operationId: getProject
       summary: Get project
@@ -29110,7 +28931,6 @@ paths:
                 message: validation failed
       tags:
         - Projects
-      x-cli-command: projects get
     patch:
       operationId: updateProject
       summary: Update project
@@ -29237,7 +29057,6 @@ paths:
               default_branch: example
               description: example
               product_id: example
-      x-cli-command: projects update
   /v1/projects/{project_id}/builds:
     get:
       operationId: listProjectBuilds
@@ -29364,7 +29183,6 @@ paths:
                 message: validation failed
       tags:
         - Projects
-      x-cli-command: projects builds list
     post:
       operationId: createProjectBuild
       summary: Create project build
@@ -29502,7 +29320,6 @@ paths:
               source_model_run_id: run_01hzymodel
               target_catalog: analytics
               target_schema: mart
-      x-cli-command: projects builds create
   /v1/projects/{project_id}/dependencies:
     get:
       operationId: listProjectDependencies
@@ -29621,7 +29438,6 @@ paths:
                 message: validation failed
       tags:
         - Projects
-      x-cli-command: projects dependencies list
     post:
       operationId: createProjectDependency
       summary: Create project dependency
@@ -29745,7 +29561,6 @@ paths:
               dependency_kind: example
               dependency_project: example
               position: 1
-      x-cli-command: projects dependencies create
   /v1/projects/{project_id}/dependencies/{dependency_project}:
     delete:
       operationId: deleteProjectDependency
@@ -29852,7 +29667,6 @@ paths:
                 message: validation failed
       tags:
         - Projects
-      x-cli-command: projects dependencies delete
   /v1/projects/{project_id}/environments:
     get:
       operationId: listProjectEnvironments
@@ -29979,7 +29793,6 @@ paths:
                 message: validation failed
       tags:
         - Projects
-      x-cli-command: projects environments list
     post:
       operationId: createProjectEnvironment
       summary: Create project environment
@@ -30119,7 +29932,6 @@ paths:
               target_schema: example
               variables:
                 key: example
-      x-cli-command: projects environments create
   /v1/projects/{project_id}/environments/{environment_id}:
     delete:
       operationId: deleteProjectEnvironment
@@ -30226,7 +30038,6 @@ paths:
                 message: validation failed
       tags:
         - Projects
-      x-cli-command: projects environments delete
     patch:
       operationId: updateProjectEnvironment
       summary: Update project environment
@@ -30370,7 +30181,6 @@ paths:
               target_schema: example
               variables:
                 key: example
-      x-cli-command: projects environments update
   /v1/projects/{project_id}/seeds:
     get:
       operationId: listProjectSeeds
@@ -30496,7 +30306,6 @@ paths:
                 message: validation failed
       tags:
         - Projects
-      x-cli-command: projects seeds list
     post:
       operationId: createProjectSeed
       summary: Create project seed
@@ -30634,7 +30443,6 @@ paths:
               name: example
               tags:
                 - example
-      x-cli-command: projects seeds create
   /v1/projects/{project_id}/seeds/{seed_name}:
     delete:
       operationId: deleteProjectSeed
@@ -30741,7 +30549,6 @@ paths:
                 message: validation failed
       tags:
         - Projects
-      x-cli-command: projects seeds delete
     get:
       operationId: getProjectSeed
       summary: Get project seed
@@ -30855,7 +30662,6 @@ paths:
                 message: validation failed
       tags:
         - Projects
-      x-cli-command: projects seeds get
     patch:
       operationId: updateProjectSeed
       summary: Update project seed
@@ -30998,7 +30804,6 @@ paths:
               input_ref: example
               tags:
                 - example
-      x-cli-command: projects seeds update
   /v1/projects/{project_id}/sources:
     get:
       operationId: listProjectSources
@@ -31121,7 +30926,6 @@ paths:
                 message: validation failed
       tags:
         - Projects
-      x-cli-command: projects sources list
     post:
       operationId: createProjectSource
       summary: Create project source
@@ -31253,7 +31057,6 @@ paths:
               relation_ref: example
               source_name: example
               table_name: example
-      x-cli-command: projects sources create
   /v1/projects/{project_id}/sources/{source_name}/{table_name}:
     delete:
       operationId: deleteProjectSource
@@ -31366,7 +31169,6 @@ paths:
                 message: validation failed
       tags:
         - Projects
-      x-cli-command: projects sources delete
     get:
       operationId: getProjectSource
       summary: Get project source
@@ -31483,7 +31285,6 @@ paths:
                 message: validation failed
       tags:
         - Projects
-      x-cli-command: projects sources get
     patch:
       operationId: updateProjectSource
       summary: Update project source
@@ -31625,7 +31426,6 @@ paths:
                 max_lag_seconds: 1
                 timestamp_column: example
               relation_ref: example
-      x-cli-command: projects sources update
   /v1/queries:
     get:
       operationId: listQueries
@@ -31809,7 +31609,6 @@ paths:
             example:
               request_id: req_01hzyquery1
               sql: select * from analytics.orders where order_status = 'PENDING' limit 100
-      x-cli-command: query submit
   /v1/queries/history:
     get:
       operationId: listQueryHistory
@@ -31947,7 +31746,6 @@ paths:
         - Queries
       x-authz:
         mode: admin_only
-      x-cli-command: query history list
   /v1/queries/{query_id}:
     delete:
       operationId: deleteQuery
@@ -32024,7 +31822,6 @@ paths:
                 message: validation failed
       tags:
         - Queries
-      x-cli-command: query delete
     get:
       operationId: getQuery
       summary: Get query
@@ -32125,7 +31922,6 @@ paths:
                 message: validation failed
       tags:
         - Queries
-      x-cli-command: query status
   /v1/queries/{query_id}/cancellations:
     post:
       operationId: cancelQuery
@@ -32221,7 +32017,6 @@ paths:
                 message: validation failed
       tags:
         - Queries
-      x-cli-command: query cancel
   /v1/queries/{query_id}/results:
     get:
       operationId: getQueryResults
@@ -32343,7 +32138,6 @@ paths:
                 message: validation failed
       tags:
         - Queries
-      x-cli-command: query results
   /v1/query-executions:
     post:
       operationId: executeQuery
@@ -32441,7 +32235,6 @@ paths:
               $ref: '#/components/schemas/QueryRequest'
             example:
               sql: select order_id, total_amount from analytics.orders order by created_at desc limit 10
-      x-cli-command: query execute
   /v1/row-filters:
     get:
       operationId: listRowFilters
@@ -32559,7 +32352,6 @@ paths:
                 message: validation failed
       tags:
         - Governance
-      x-cli-command: security row-filters list
     post:
       operationId: createRowFilter
       summary: Create row filter
@@ -32652,7 +32444,6 @@ paths:
               filter_sql: example
               name: example
               table_id: example
-      x-cli-command: security row-filters create
   /v1/row-filters/{row_filter_id}:
     delete:
       operationId: deleteRowFilter
@@ -32729,7 +32520,6 @@ paths:
                 message: validation failed
       tags:
         - Governance
-      x-cli-command: security row-filters delete
     get:
       operationId: getRowFilter
       summary: Get row filter
@@ -33124,7 +32914,6 @@ paths:
             example:
               principal_id: example
               principal_type: user
-      x-cli-command: security row-filters bind
   /v1/row-filters/{row_filter_id}/bindings/{principal_type}/{principal_id}:
     delete:
       operationId: unbindRowFilter
@@ -33213,7 +33002,6 @@ paths:
                 message: validation failed
       tags:
         - Governance
-      x-cli-command: security row-filters unbind
   /v1/semantic-metrics/{metric_name}/freshness:
     get:
       operationId: checkMetricFreshness
@@ -33322,7 +33110,6 @@ paths:
                 message: validation failed
       tags:
         - Semantic Layer
-      x-cli-command: semantic freshness check
   /v1/semantic-sources/{source_schema}/{source_table}/freshness:
     get:
       operationId: checkSourceFreshness
@@ -33444,7 +33231,6 @@ paths:
                 message: validation failed
       tags:
         - Semantic Layer
-      x-cli-command: models sources freshness
   /v1/storage-credentials:
     get:
       operationId: listStorageCredentials
@@ -33535,7 +33321,6 @@ paths:
                 message: validation failed
       tags:
         - Storage
-      x-cli-command: storage credentials list
     post:
       operationId: createStorageCredential
       summary: Create storage credential
@@ -33643,7 +33428,6 @@ paths:
           - securable_type: catalog
             privilege: CREATE_STORAGE_CREDENTIAL
             securable_id_source: catalog_sentinel
-      x-cli-command: storage credentials create
   /v1/storage-credentials/{credential_name}:
     delete:
       operationId: deleteStorageCredential
@@ -33738,7 +33522,6 @@ paths:
           - securable_type: storage_credential
             privilege: CREATE_STORAGE_CREDENTIAL
             securable_id_source: runtime_resolved_object_id
-      x-cli-command: storage credentials delete
     get:
       operationId: getStorageCredential
       summary: Get storage credential
@@ -33841,7 +33624,6 @@ paths:
                 message: validation failed
       tags:
         - Storage
-      x-cli-command: storage credentials get
     patch:
       operationId: updateStorageCredential
       summary: Update storage credential
@@ -33964,7 +33746,6 @@ paths:
           - securable_type: storage_credential
             privilege: CREATE_STORAGE_CREDENTIAL
             securable_id_source: runtime_resolved_object_id
-      x-cli-command: storage credentials update
   /v1/tags:
     get:
       operationId: listTags
@@ -34050,7 +33831,6 @@ paths:
                 message: validation failed
       tags:
         - Governance
-      x-cli-command: governance tags list
     post:
       operationId: createTag
       summary: Create tag
@@ -34140,7 +33920,6 @@ paths:
             example:
               key: example
               value: example
-      x-cli-command: governance tags create
   /v1/tags/{tag_id}:
     delete:
       operationId: deleteTag
@@ -34217,7 +33996,6 @@ paths:
                 message: validation failed
       tags:
         - Governance
-      x-cli-command: governance tags delete
     get:
       operationId: getTag
       summary: Get tag
@@ -34639,7 +34417,6 @@ paths:
               column_name: example
               securable_id: example
               securable_type: schema
-      x-cli-command: governance tags assignments create
   /v1/tags/{tag_id}/assignments/{assignment_id}:
     delete:
       operationId: deleteTagAssignment
@@ -34722,7 +34499,6 @@ paths:
                 message: validation failed
       tags:
         - Governance
-      x-cli-command: governance tags assignments delete
   /v1/workspaces:
     get:
       operationId: listWorkspaces
@@ -35958,7 +35734,6 @@ paths:
                 message: validation failed
       tags:
         - Projects
-      x-cli-command: projects list
     post:
       operationId: createWorkspaceProject
       summary: Create project in a workspace
@@ -36087,7 +35862,6 @@ paths:
               kind: personal
               name: example
               product_id: example
-      x-cli-command: projects create
   /v1/workspaces/{workspace_id}/semantic-models:
     get:
       operationId: listSemanticModels
@@ -36187,7 +35961,6 @@ paths:
                 message: validation failed
       tags:
         - Semantic Layer
-      x-cli-command: semantic models list
     post:
       operationId: createSemanticModel
       summary: Create semantic model
@@ -36296,7 +36069,6 @@ paths:
               tags:
                 - growth
                 - finance
-      x-cli-command: semantic models create
   /v1/workspaces/{workspace_id}/semantic-models/{semantic_model_id}:
     delete:
       operationId: deleteSemanticModel
@@ -36379,7 +36151,6 @@ paths:
                 message: validation failed
       tags:
         - Semantic Layer
-      x-cli-command: semantic models delete
     get:
       operationId: getSemanticModel
       summary: Get semantic model
@@ -36491,7 +36262,6 @@ paths:
                 message: validation failed
       tags:
         - Semantic Layer
-      x-cli-command: semantic models get
     patch:
       operationId: updateSemanticModel
       summary: Update semantic model
@@ -36605,7 +36375,6 @@ paths:
               owner: example
               tags:
                 - example
-      x-cli-command: semantic models update
   /v1/workspaces/{workspace_id}/semantic-models/{semantic_model_id}/metrics:
     get:
       operationId: listSemanticMetrics
@@ -36724,7 +36493,6 @@ paths:
                 message: validation failed
       tags:
         - Semantic Layer
-      x-cli-command: semantic metrics list
     post:
       operationId: createSemanticMetric
       summary: Create semantic metric
@@ -36849,7 +36617,6 @@ paths:
               name: monthly_recurring_revenue
               relationship_names:
                 - account_to_subscription
-      x-cli-command: semantic metrics create
   /v1/workspaces/{workspace_id}/semantic-models/{semantic_model_id}/metrics/{metric_name}:
     delete:
       operationId: deleteSemanticMetric
@@ -36938,7 +36705,6 @@ paths:
                 message: validation failed
       tags:
         - Semantic Layer
-      x-cli-command: semantic metrics delete
     get:
       operationId: getSemanticMetric
       summary: Get semantic metric
@@ -37191,7 +36957,6 @@ paths:
               owner: example
               relationship_names:
                 - example
-      x-cli-command: semantic metrics update
   /v1/workspaces/{workspace_id}/semantic-models/{semantic_model_id}/pre-aggregations:
     get:
       operationId: listSemanticPreAggregations
@@ -37305,7 +37070,6 @@ paths:
                 message: validation failed
       tags:
         - Semantic Layer
-      x-cli-command: semantic pre-aggregations list
     post:
       operationId: createSemanticPreAggregation
       summary: Create semantic pre aggregation
@@ -37421,7 +37185,6 @@ paths:
               name: example
               refresh_policy: example
               target_relation: example
-      x-cli-command: semantic pre-aggregations create
   /v1/workspaces/{workspace_id}/semantic-models/{semantic_model_id}/pre-aggregations/{pre_aggregation_name}:
     delete:
       operationId: deleteSemanticPreAggregation
@@ -37510,7 +37273,6 @@ paths:
                 message: validation failed
       tags:
         - Semantic Layer
-      x-cli-command: semantic pre-aggregations delete
     get:
       operationId: getSemanticPreAggregation
       summary: Get semantic pre aggregation
@@ -37748,7 +37510,6 @@ paths:
                 - example
               refresh_policy: example
               target_relation: example
-      x-cli-command: semantic pre-aggregations update
   /v1/workspaces/{workspace_id}/semantic-models/{semantic_model_id}/query-explanations:
     post:
       operationId: explainMetricQuery
@@ -37876,7 +37637,6 @@ paths:
               relationship_names:
                 - account_to_subscription
               time_grain: month
-      x-cli-command: semantic explain
   /v1/workspaces/{workspace_id}/semantic-models/{semantic_model_id}/query-runs:
     post:
       operationId: runMetricQuery
@@ -38017,7 +37777,6 @@ paths:
               relationship_names:
                 - account_to_subscription
               time_grain: month
-      x-cli-command: semantic run
   /v1/workspaces/{workspace_id}/semantic-models/{semantic_model_id}/relationships:
     get:
       operationId: listSemanticModelRelationships
@@ -38129,7 +37888,6 @@ paths:
                 message: validation failed
       tags:
         - Semantic Layer
-      x-cli-command: semantic relationships list
     post:
       operationId: createSemanticModelRelationship
       summary: Create semantic relationship for a semantic model
@@ -38242,7 +38000,6 @@ paths:
               name: example
               relationship_type: ONE_TO_ONE
               to_semantic_id: example
-      x-cli-command: semantic relationships create
   /v1/workspaces/{workspace_id}/semantic-models/{semantic_model_id}/relationships/{relationship_name}:
     delete:
       operationId: deleteSemanticModelRelationship
@@ -38331,7 +38088,6 @@ paths:
                 message: validation failed
       tags:
         - Semantic Layer
-      x-cli-command: semantic relationships delete
     get:
       operationId: getSemanticModelRelationship
       summary: Get semantic relationship for a semantic model
@@ -38562,7 +38318,6 @@ paths:
               join_sql: example
               max_hops: 1
               relationship_type: ONE_TO_ONE
-      x-cli-command: semantic relationships update
 security:
   - BearerAuth: []
   - ApiKeyAuth: []

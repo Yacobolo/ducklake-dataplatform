@@ -20,9 +20,6 @@ type CommandSpec struct {
 	Pagination  *PaginationSpec  `json:"pagination,omitempty"`
 }
 
-// Endpoint remains as a compatibility alias for older generated consumers.
-type Endpoint = CommandSpec
-
 // Param describes one generated endpoint parameter.
 type Param struct {
 	Name        string   `json:"name"`
