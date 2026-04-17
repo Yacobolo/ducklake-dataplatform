@@ -268,13 +268,15 @@ tasks:
 
   generate:declarative-reference:
     desc: Generate declarative CUE reference docs
+    deps: [generate:api]
     cmds:
-      - go run ./cmd/docsgen -openapi internal/api/gen/openapi.yaml -outdir site/content/reference/generated -docs-dir site/content -cli-index-out pkg/cli/gen/discovery_index.gen.go
+      - go run ./cmd/docsgen -openapi internal/api/gen/openapi.yaml -json-ir internal/api/gen/json-ir.json -outdir site/content/reference/generated -docs-dir site/content -cli-index-out pkg/cli/gen/discovery_index.gen.go
     sources:
       - internal/declarative/*.go
       - internal/docsgen/declarative/*.go
       - cmd/docsgen/*.go
       - internal/api/gen/openapi.yaml
+      - internal/api/gen/json-ir.json
     generates:
       - site/content/reference/generated/declarative/index.md
       - pkg/cli/gen/discovery_index.gen.go
@@ -293,9 +295,10 @@ tasks:
     desc: Generate docs reference pages from generated API and declarative CUE docs
     deps: [generate:api]
     cmds:
-      - go run ./cmd/docsgen -openapi internal/api/gen/openapi.yaml -outdir site/content/reference/generated -docs-dir site/content -cli-index-out pkg/cli/gen/discovery_index.gen.go
+      - go run ./cmd/docsgen -openapi internal/api/gen/openapi.yaml -json-ir internal/api/gen/json-ir.json -outdir site/content/reference/generated -docs-dir site/content -cli-index-out pkg/cli/gen/discovery_index.gen.go
     sources:
       - internal/api/gen/openapi.yaml
+      - internal/api/gen/json-ir.json
       - cmd/docsgen/*.go
       - internal/docsgen/**/*.go
     generates:
@@ -308,7 +311,7 @@ tasks:
     desc: Generate docs from canonical OpenAPI artifact and declarative CUE docs
     deps: [generate:api]
     cmds:
-      - go run ./cmd/docsgen -openapi internal/api/gen/openapi.yaml -outdir site/content/reference/generated -docs-dir site/content -cli-index-out pkg/cli/gen/discovery_index.gen.go
+      - go run ./cmd/docsgen -openapi internal/api/gen/openapi.yaml -json-ir internal/api/gen/json-ir.json -outdir site/content/reference/generated -docs-dir site/content -cli-index-out pkg/cli/gen/discovery_index.gen.go
 
   site:generate:
     desc: Generate the public site content and static export

@@ -16,7 +16,12 @@ type Options struct {
 // Emit renders Go code for generated CLI command metadata.
 func Emit(doc ir.Document, opts Options) ([]byte, error) {
 	normalized := doc
-	ir.Normalize(&normalized)
+	if err := ir.Validate(normalized); err != nil {
+		return nil, fmt.Errorf("validate ir for cli emission: %w", err)
+	}
+	if err := ir.Normalize(&normalized); err != nil {
+		return nil, fmt.Errorf("normalize ir for cli emission: %w", err)
+	}
 
 	var b strings.Builder
 	b.WriteString("package ")

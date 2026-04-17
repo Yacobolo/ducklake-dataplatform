@@ -31,7 +31,9 @@ func Load(path string) (Document, error) {
 	if err := Validate(doc); err != nil {
 		return Document{}, err
 	}
-	Normalize(&doc)
+	if err := Normalize(&doc); err != nil {
+		return Document{}, err
+	}
 	return doc, nil
 }
 
@@ -328,7 +330,7 @@ func resolvedParameterArrayItemType(doc Document, schemaRef SchemaRef, context s
 }
 
 // Normalize applies deterministic ordering for generation.
-func Normalize(doc *Document) {
+func Normalize(doc *Document) error {
 	sort.Slice(doc.Endpoints, func(i, j int) bool {
 		if doc.Endpoints[i].Path == doc.Endpoints[j].Path {
 			return strings.ToLower(doc.Endpoints[i].Method) < strings.ToLower(doc.Endpoints[j].Method)
@@ -337,9 +339,10 @@ func Normalize(doc *Document) {
 	})
 	for i := range doc.Endpoints {
 		normalizedCLI, err := normalizeEndpointCLI(*doc, doc.Endpoints[i])
-		if err == nil {
-			doc.Endpoints[i].CLI = normalizedCLI
+		if err != nil {
+			return err
 		}
+		doc.Endpoints[i].CLI = normalizedCLI
 		if doc.Endpoints[i].RequestBody != nil && strings.TrimSpace(doc.Endpoints[i].RequestBody.ContentType) == "" {
 			doc.Endpoints[i].RequestBody.ContentType = "application/json"
 		}
@@ -361,6 +364,7 @@ func Normalize(doc *Document) {
 			})
 		}
 	}
+	return nil
 }
 
 func validateEndpointCLI(doc Document, endpoint Endpoint, cli *CLI) error {

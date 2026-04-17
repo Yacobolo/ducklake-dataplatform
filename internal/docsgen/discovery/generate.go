@@ -1,4 +1,4 @@
-// Package discovery renders CLI discovery metadata from docs and OpenAPI.
+// Package discovery renders CLI discovery metadata from docs, OpenAPI, and APIGen IR.
 package discovery
 
 import (
@@ -13,7 +13,7 @@ import (
 	"unicode"
 
 	"github.com/getkin/kin-openapi/openapi3"
-	cligen "github.com/Yacobolo/quackstack/pkg/cli/gen"
+	apigenir "github.com/Yacobolo/quackstack/pkg/apigen/ir"
 	"gopkg.in/yaml.v3"
 )
 
@@ -78,13 +78,18 @@ type referenceLink struct {
 }
 
 // Generate renders discovery metadata into a generated Go file.
-func Generate(docsDir, specPath, outPath string) error {
+func Generate(docsDir, specPath, irPath, outPath string) error {
 	docs, frontMatterByDocID, err := loadDocs(docsDir)
 	if err != nil {
 		return err
 	}
 
-	operations, err := loadOperations(specPath)
+	commandByOperation, err := loadCLICommands(irPath)
+	if err != nil {
+		return err
+	}
+
+	operations, err := loadOperations(specPath, commandByOperation)
 	if err != nil {
 		return err
 	}
@@ -301,13 +306,12 @@ func docKeywords(id, title string, headings []string, fm frontMatter) []string {
 	return dedupeStrings(words)
 }
 
-func loadOperations(specPath string) ([]referenceOperation, error) {
+func loadOperations(specPath string, commandByOperation map[string]string) ([]referenceOperation, error) {
 	loader := &openapi3.Loader{IsExternalRefsAllowed: true}
 	spec, err := loader.LoadFromFile(specPath)
 	if err != nil {
 		return nil, fmt.Errorf("load spec: %w", err)
 	}
-	commandByOperation := generatedCLICommands()
 
 	operations := make([]referenceOperation, 0, len(spec.Paths.Map()))
 	for path, pathItem := range spec.Paths.Map() {
@@ -318,15 +322,20 @@ func loadOperations(specPath string) ([]referenceOperation, error) {
 	return operations, nil
 }
 
-func generatedCLICommands() map[string]string {
-	commands := make(map[string]string, len(cligen.APIGeneratedCommandSpecs))
-	for _, spec := range cligen.APIGeneratedCommandSpecs {
-		if spec.OperationID == "" || len(spec.Command) == 0 {
+func loadCLICommands(irPath string) (map[string]string, error) {
+	doc, err := apigenir.Load(irPath)
+	if err != nil {
+		return nil, fmt.Errorf("load apigen ir: %w", err)
+	}
+	commands := make(map[string]string, len(doc.Endpoints))
+	for _, endpoint := range doc.Endpoints {
+		command := apigenir.CLICommandString(endpoint.CLI)
+		if strings.TrimSpace(command) == "" || strings.TrimSpace(endpoint.OperationID) == "" {
 			continue
 		}
-		commands[spec.OperationID] = strings.Join(spec.Command, " ")
+		commands[endpoint.OperationID] = command
 	}
-	return commands
+	return commands, nil
 }
 
 func buildOperation(path, method string, pathItem *openapi3.PathItem, op *openapi3.Operation, commandByOperation map[string]string) referenceOperation {

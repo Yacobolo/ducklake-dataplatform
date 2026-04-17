@@ -86,11 +86,15 @@ func CompileDir(dir string) (Bundle, error) {
 	if err := ir.Validate(doc); err != nil {
 		return Bundle{}, fmt.Errorf("validate cue-derived ir: %w", err)
 	}
-	ir.Normalize(&doc)
+	if err := ir.Normalize(&doc); err != nil {
+		return Bundle{}, fmt.Errorf("normalize cue-derived ir: %w", err)
+	}
 	if err := ir.Validate(fullDoc); err != nil {
 		return Bundle{}, fmt.Errorf("validate cue-derived canonical doc: %w", err)
 	}
-	ir.Normalize(&fullDoc)
+	if err := ir.Normalize(&fullDoc); err != nil {
+		return Bundle{}, fmt.Errorf("normalize cue-derived canonical doc: %w", err)
+	}
 
 	canonicalOpenAPI, err := openapiemit.EmitYAML(fullDoc, openapiemit.Options{})
 	if err != nil {
