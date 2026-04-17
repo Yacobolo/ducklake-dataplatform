@@ -135,6 +135,13 @@ schemas_platform_delivery: {
       schedule_cron: #stringProperty,
       is_paused: #boolProperty,
       concurrency_limit: #int32Property,
+      run_as_principal: #stringProperty,
+      admission_mode: #refProperty & {#ref: "PipelineAdmissionMode"},
+      max_run_duration_seconds: #int64Property,
+      notification_webhooks: #arrayRefProperty & {#ref: "PipelineNotificationWebhook"},
+      default_retry_count: #int32Property,
+      default_timeout_seconds: #int64Property,
+      default_compute_endpoint_id: #stringProperty,
       folder_id: #stringProperty
     },
     #required: [
@@ -243,6 +250,18 @@ schemas_platform_delivery: {
       schedule_cron:     "0 6 * * *"
       is_paused:         false
       concurrency_limit: 1
+      run_as_principal:  "service:finance-pipeline"
+      admission_mode:    "QUEUE"
+      max_run_duration_seconds: 1800
+      notification_webhooks: [
+        {
+          url: "https://hooks.example.com/pipelines"
+          events: ["FAILED", "SLA_BREACHED"]
+        }
+      ]
+      default_retry_count: 2
+      default_timeout_seconds: 900
+      default_compute_endpoint_id: "cmp_prod"
       created_by:        "alice@example.com"
       folder_id:         "fld_01hzyfinance"
       created_at:        "2026-04-01T08:00:00Z"
@@ -255,11 +274,31 @@ schemas_platform_delivery: {
       schedule_cron: #stringProperty,
       is_paused: #boolProperty,
       concurrency_limit: #int32Property,
+      run_as_principal: #stringProperty,
+      admission_mode: #refProperty & {#ref: "PipelineAdmissionMode"},
+      max_run_duration_seconds: #int64Property,
+      notification_webhooks: #arrayRefProperty & {#ref: "PipelineNotificationWebhook"},
+      default_retry_count: #int32Property,
+      default_timeout_seconds: #int64Property,
+      default_compute_endpoint_id: #stringProperty,
       created_by: #stringProperty,
       folder_id: #stringProperty,
       created_at: #createdAtProperty,
       updated_at: #updatedAtProperty
     }
+  },
+  PipelineAdmissionMode: #enumSchema & {
+    #values: [
+      "REJECT",
+      "QUEUE"
+    ]
+  },
+  PipelineNotificationWebhook: #objectSchema & {
+    #fields: {
+      url: #stringProperty,
+      events: #stringArrayProperty
+    },
+    #required: ["url"]
   },
   PipelineJob: #objectSchema & {
     #fields: {
@@ -302,6 +341,9 @@ schemas_platform_delivery: {
       finished_at: #dateTimeProperty,
       error_message: #stringProperty,
       retry_attempt: #int32Property,
+      effective_compute_endpoint_id: #stringProperty,
+      attempt_count: #int32Property,
+      last_error_code: #stringProperty,
       created_at: #createdAtProperty
     }
   },
@@ -330,8 +372,18 @@ schemas_platform_delivery: {
       status:       "SUCCESS"
       trigger_type: "SCHEDULED"
       triggered_by: "system:scheduler"
+      effective_principal: "service:finance-pipeline"
+      queued_at: "2026-04-13T05:59:00Z"
+      queue_started_at: "2026-04-13T06:00:00Z"
+      repaired_from_run_id: "pirun_01hzyprev"
       started_at:   "2026-04-13T06:00:00Z"
       finished_at:  "2026-04-13T06:14:00Z"
+      provenance: {
+        trigger_type: "SCHEDULED"
+        triggered_by: "system:scheduler"
+        effective_principal: "service:finance-pipeline"
+        pipeline_definition_version: "2026-04-13T05:55:00Z"
+      }
       error_message:""
       created_at:   "2026-04-13T06:00:00Z"
       updated_at:   "2026-04-13T06:14:00Z"
@@ -342,13 +394,63 @@ schemas_platform_delivery: {
       status: #refProperty & {#ref: "PipelineRunStatus"},
       trigger_type: #refProperty & {#ref: "PipelineRunTriggerType"},
       triggered_by: #stringProperty,
+      effective_principal: #stringProperty,
       parameters: #stringMapProperty,
       git_commit_hash: #stringProperty,
+      queued_at: #dateTimeProperty,
+      queue_started_at: #dateTimeProperty,
       started_at: #dateTimeProperty,
       finished_at: #dateTimeProperty,
+      repaired_from_run_id: #stringProperty,
+      provenance: #refProperty & {#ref: "PipelineRunProvenance"},
       error_message: #stringProperty,
       created_at: #createdAtProperty
     }
+  },
+  PipelineRunProvenance: #objectSchema & {
+    #fields: {
+      trigger_type: #stringProperty,
+      triggered_by: #stringProperty,
+      effective_principal: #stringProperty,
+      pipeline_definition_version: #stringProperty,
+      notebooks: #arrayRefProperty & {#ref: "PipelineNotebookProvenance"},
+      models: #arrayRefProperty & {#ref: "PipelineModelProvenance"}
+    }
+  },
+  PipelineNotebookProvenance: #objectSchema & {
+    #fields: {
+      notebook_id: #stringProperty,
+      git_repo_id: #stringProperty,
+      git_commit_sha: #stringProperty,
+      last_updated_at: #dateTimeProperty
+    },
+    #required: ["notebook_id"]
+  },
+  PipelineModelProvenance: #objectSchema & {
+    #fields: {
+      selector: #stringProperty,
+      model_id: #stringProperty,
+      last_updated_at: #dateTimeProperty
+    },
+    #required: ["selector"]
+  },
+  PipelineRunEvent: #objectSchema & {
+    #fields: {
+      id: #idProperty,
+      run_id: #stringProperty,
+      job_run_id: #stringProperty,
+      event_type: #stringProperty,
+      message: #stringProperty,
+      error_code: #stringProperty,
+      metadata: #anyMapProperty,
+      created_at: #createdAtProperty
+    }
+  },
+  PipelineRunEventList: #objectSchema & {
+    #fields: {
+      data: #arrayRefProperty & {#ref: "PipelineRunEvent"}
+    },
+    #required: ["data"]
   },
   PipelineRunStatus: #enumSchema & {
     #values: [
@@ -369,6 +471,13 @@ schemas_platform_delivery: {
     #fields: {
       parameters: #stringMapProperty
     }
+  },
+  RepairPipelineRunRequest: #objectSchema & {
+    #fields: {
+      mode: #stringProperty,
+      from_job_id: #stringProperty
+    },
+    #required: ["mode"]
   },
   UpdateExternalLocationRequest: #objectSchema & {
     #fields: {
@@ -397,6 +506,13 @@ schemas_platform_delivery: {
       schedule_cron: #stringProperty,
       is_paused: #boolProperty,
       concurrency_limit: #int32Property,
+      run_as_principal: #stringProperty,
+      admission_mode: #refProperty & {#ref: "PipelineAdmissionMode"},
+      max_run_duration_seconds: #int64Property,
+      notification_webhooks: #arrayRefProperty & {#ref: "PipelineNotificationWebhook"},
+      default_retry_count: #int32Property,
+      default_timeout_seconds: #int64Property,
+      default_compute_endpoint_id: #stringProperty,
       folder_id: #stringProperty
     }
   },

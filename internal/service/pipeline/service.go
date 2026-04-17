@@ -6,12 +6,14 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"net/http"
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/Yacobolo/quackstack/internal/domain"
 	"github.com/Yacobolo/quackstack/internal/service/orchestration"
+	servicepolicy "github.com/Yacobolo/quackstack/internal/service/policy"
 	"github.com/robfig/cron/v3"
 )
 
@@ -26,13 +28,22 @@ type Service struct {
 	runs        domain.PipelineRunRepository
 	audit       domain.AuditRepository
 	notebooks   domain.NotebookProvider
+	notebookRepo domain.NotebookRepository
+	gitRepos    domain.GitRepoRepository
+	models      domain.ModelRepository
 	folders     domain.FolderRepository
+	principals  domain.PrincipalRepository
+	grants      domain.GrantRepository
+	auth        domain.AuthorizationService
+	computeRepo domain.ComputeEndpointRepository
 	modelRunner domain.ModelRunner
 	engine      domain.SessionEngine
 	duckDB      *sql.DB
+	httpClient  *http.Client
 	logger      *slog.Logger
 	reloader    ScheduleReloader
 	runCancels  sync.Map // maps run ID (string) → context.CancelFunc
+	dispatching sync.Map // maps pipeline ID (string) → struct{}
 
 	assetRepo      domain.DataAssetRepository
 	assetDepRepo   domain.AssetDependencyRepository
@@ -50,6 +61,9 @@ func NewService(
 	duckDB *sql.DB,
 	logger *slog.Logger,
 ) *Service {
+	if logger == nil {
+		logger = slog.New(slog.DiscardHandler)
+	}
 	return &Service{
 		pipelines: pipelines,
 		runs:      runs,
@@ -88,6 +102,46 @@ func (s *Service) SetModelRunner(runner domain.ModelRunner) {
 // SetFolderRepository enables folder-backed pipeline placement.
 func (s *Service) SetFolderRepository(folders domain.FolderRepository) {
 	s.folders = folders
+}
+
+// SetAuthorization enables pipeline privilege enforcement.
+func (s *Service) SetAuthorization(auth domain.AuthorizationService) {
+	s.auth = auth
+}
+
+// SetGrantRepository enables creator self-grants for new pipelines.
+func (s *Service) SetGrantRepository(repo domain.GrantRepository) {
+	s.grants = repo
+}
+
+// SetPrincipalRepository enables principal lookup for run_as validation and grants.
+func (s *Service) SetPrincipalRepository(repo domain.PrincipalRepository) {
+	s.principals = repo
+}
+
+// SetComputeEndpointRepository enables compute-endpoint validation and routing.
+func (s *Service) SetComputeEndpointRepository(repo domain.ComputeEndpointRepository) {
+	s.computeRepo = repo
+}
+
+// SetNotebookRepository enables pipeline provenance lookups.
+func (s *Service) SetNotebookRepository(repo domain.NotebookRepository) {
+	s.notebookRepo = repo
+}
+
+// SetGitRepoRepository enables Git-backed provenance lookups.
+func (s *Service) SetGitRepoRepository(repo domain.GitRepoRepository) {
+	s.gitRepos = repo
+}
+
+// SetModelRepository enables model provenance lookups.
+func (s *Service) SetModelRepository(repo domain.ModelRepository) {
+	s.models = repo
+}
+
+// SetHTTPClient configures the outbound webhook client.
+func (s *Service) SetHTTPClient(client *http.Client) {
+	s.httpClient = client
 }
 
 // SetAssetOrchestration wires asset-centric orchestration dependencies.
@@ -199,19 +253,33 @@ func (s *Service) CreatePipeline(ctx context.Context, principal string, req doma
 	if err := req.Validate(); err != nil {
 		return nil, err
 	}
+	req.AdmissionMode = normalizeAdmissionMode(req.AdmissionMode)
+	if err := s.validateRunAsPrincipal(ctx, req.RunAsPrincipal, "setting run_as_principal"); err != nil {
+		return nil, err
+	}
+	if err := s.validatePipelineDefaults(ctx, req.DefaultComputeEndpointID, req.NotificationWebhooks); err != nil {
+		return nil, err
+	}
 
 	if req.ConcurrencyLimit == 0 {
 		req.ConcurrencyLimit = 1
 	}
 
 	p := &domain.Pipeline{
-		ID:               domain.NewID(),
-		Name:             req.Name,
-		Description:      req.Description,
-		ScheduleCron:     req.ScheduleCron,
-		IsPaused:         req.IsPaused,
-		ConcurrencyLimit: req.ConcurrencyLimit,
-		CreatedBy:        principal,
+		ID:                       domain.NewID(),
+		Name:                     req.Name,
+		Description:              req.Description,
+		ScheduleCron:             req.ScheduleCron,
+		IsPaused:                 req.IsPaused,
+		ConcurrencyLimit:         req.ConcurrencyLimit,
+		RunAsPrincipal:           req.RunAsPrincipal,
+		AdmissionMode:            req.AdmissionMode,
+		MaxRunDurationSeconds:    req.MaxRunDurationSeconds,
+		NotificationWebhooks:     req.NotificationWebhooks,
+		DefaultRetryCount:        req.DefaultRetryCount,
+		DefaultTimeoutSeconds:    req.DefaultTimeoutSeconds,
+		DefaultComputeEndpointID: req.DefaultComputeEndpointID,
+		CreatedBy:                principal,
 	}
 	if req.FolderID != nil && *req.FolderID != "" {
 		p.FolderID = *req.FolderID
@@ -225,6 +293,9 @@ func (s *Service) CreatePipeline(ctx context.Context, principal string, req doma
 
 	result, err := s.pipelines.CreatePipeline(ctx, p)
 	if err != nil {
+		return nil, err
+	}
+	if err := s.grantCreatorPipelinePrivileges(ctx, result.ID, principal); err != nil {
 		return nil, err
 	}
 
@@ -248,7 +319,14 @@ func (s *Service) GetPipeline(ctx context.Context, name string) (*domain.Pipelin
 	if err := s.requirePipelinesRepo(); err != nil {
 		return nil, err
 	}
-	return s.pipelines.GetPipelineByName(ctx, name)
+	result, err := s.pipelines.GetPipelineByName(ctx, name)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.requirePipelineView(ctx, servicePrincipalName(ctx), result); err != nil {
+		return nil, err
+	}
+	return result, nil
 }
 
 // ListPipelines returns a paginated list of pipelines.
@@ -256,7 +334,25 @@ func (s *Service) ListPipelines(ctx context.Context, page domain.PageRequest) ([
 	if err := s.requirePipelinesRepo(); err != nil {
 		return nil, 0, err
 	}
-	return s.pipelines.ListPipelines(ctx, page)
+	items, total, err := s.pipelines.ListPipelines(ctx, page)
+	if err != nil {
+		return nil, 0, err
+	}
+	principal := servicePrincipalName(ctx)
+	if s.auth == nil && !servicepolicy.IsAdmin(ctx) {
+		return items, total, nil
+	}
+	filtered := make([]domain.Pipeline, 0, len(items))
+	for i := range items {
+		allowed, checkErr := s.canViewPipeline(ctx, principal, &items[i])
+		if checkErr != nil {
+			return nil, 0, checkErr
+		}
+		if allowed {
+			filtered = append(filtered, items[i])
+		}
+	}
+	return filtered, int64(len(filtered)), nil
 }
 
 // UpdatePipeline applies changes to an existing pipeline and reloads schedules.
@@ -272,6 +368,27 @@ func (s *Service) UpdatePipeline(ctx context.Context, principal string, name str
 
 	p, err := s.pipelines.GetPipelineByName(ctx, name)
 	if err != nil {
+		return nil, err
+	}
+	if err := s.requirePipelineManage(ctx, principal, p); err != nil {
+		return nil, err
+	}
+	if req.AdmissionMode != nil {
+		value := normalizeAdmissionMode(*req.AdmissionMode)
+		req.AdmissionMode = &value
+	}
+	if err := s.validateRunAsPrincipal(ctx, req.RunAsPrincipal, "updating run_as_principal"); err != nil {
+		return nil, err
+	}
+	notificationWebhooks := p.NotificationWebhooks
+	if req.NotificationWebhooks != nil {
+		notificationWebhooks = *req.NotificationWebhooks
+	}
+	defaultComputeEndpointID := p.DefaultComputeEndpointID
+	if req.DefaultComputeEndpointID != nil {
+		defaultComputeEndpointID = req.DefaultComputeEndpointID
+	}
+	if err := s.validatePipelineDefaults(ctx, defaultComputeEndpointID, notificationWebhooks); err != nil {
 		return nil, err
 	}
 
@@ -302,6 +419,9 @@ func (s *Service) DeletePipeline(ctx context.Context, principal string, name str
 	}
 	p, err := s.pipelines.GetPipelineByName(ctx, name)
 	if err != nil {
+		return err
+	}
+	if err := s.requirePipelineManage(ctx, principal, p); err != nil {
 		return err
 	}
 
@@ -339,6 +459,9 @@ func (s *Service) CreateJob(ctx context.Context, principal string, pipelineName 
 	if err != nil {
 		return nil, err
 	}
+	if err := s.requirePipelineManage(ctx, principal, p); err != nil {
+		return nil, err
+	}
 
 	// Validate notebook exists and has SQL (only for NOTEBOOK jobs).
 	if req.JobType == "" || req.JobType == domain.PipelineJobTypeNotebook {
@@ -346,6 +469,9 @@ func (s *Service) CreateJob(ctx context.Context, principal string, pipelineName 
 		if err != nil {
 			return nil, fmt.Errorf("validate notebook: %w", err)
 		}
+	}
+	if err := s.validateComputeEndpoint(ctx, req.ComputeEndpointID); err != nil {
+		return nil, err
 	}
 
 	job := &domain.PipelineJob{
@@ -387,6 +513,9 @@ func (s *Service) ListJobs(ctx context.Context, pipelineName string) ([]domain.P
 	if err != nil {
 		return nil, err
 	}
+	if err := s.requirePipelineView(ctx, servicePrincipalName(ctx), p); err != nil {
+		return nil, err
+	}
 	return s.pipelines.ListJobsByPipeline(ctx, p.ID)
 }
 
@@ -397,6 +526,9 @@ func (s *Service) GetJob(ctx context.Context, pipelineName, jobID string) (*doma
 	}
 	p, err := s.pipelines.GetPipelineByName(ctx, pipelineName)
 	if err != nil {
+		return nil, err
+	}
+	if err := s.requirePipelineView(ctx, servicePrincipalName(ctx), p); err != nil {
 		return nil, err
 	}
 	job, err := s.pipelines.GetJobByID(ctx, jobID)
@@ -419,6 +551,13 @@ func (s *Service) UpdateJob(ctx context.Context, principal string, pipelineName,
 	}
 	job, err := s.GetJob(ctx, pipelineName, jobID)
 	if err != nil {
+		return nil, err
+	}
+	pipelineDef, err := s.pipelines.GetPipelineByID(ctx, job.PipelineID)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.requirePipelineManage(ctx, principal, pipelineDef); err != nil {
 		return nil, err
 	}
 
@@ -450,6 +589,13 @@ func (s *Service) UpdateJob(ctx context.Context, principal string, pipelineName,
 	default:
 		return nil, domain.ErrValidation("job_type must be NOTEBOOK or MODEL_RUN")
 	}
+	computeEndpointID := job.ComputeEndpointID
+	if req.ComputeEndpointID != nil {
+		computeEndpointID = req.ComputeEndpointID
+	}
+	if err := s.validateComputeEndpoint(ctx, computeEndpointID); err != nil {
+		return nil, err
+	}
 
 	result, err := s.pipelines.UpdateJob(ctx, job.ID, req)
 	if err != nil {
@@ -466,9 +612,18 @@ func (s *Service) UpdateJob(ctx context.Context, principal string, pipelineName,
 }
 
 // DeleteJob removes a job from a pipeline by ID.
-func (s *Service) DeleteJob(ctx context.Context, principal string, _ string, jobID string) error {
+func (s *Service) DeleteJob(ctx context.Context, principal string, pipelineName string, jobID string) error {
 	if err := s.requirePipelinesRepo(); err != nil {
 		return err
+	}
+	if s.auth != nil {
+		pipelineDef, err := s.pipelines.GetPipelineByName(ctx, pipelineName)
+		if err != nil {
+			return err
+		}
+		if err := s.requirePipelineManage(ctx, principal, pipelineDef); err != nil {
+			return err
+		}
 	}
 	// Verify the job exists (also validates jobID).
 	_, err := s.pipelines.GetJobByID(ctx, jobID)
@@ -492,7 +647,7 @@ func (s *Service) DeleteJob(ctx context.Context, principal string, _ string, job
 
 // === Run Operations ===
 
-// TriggerRun validates the pipeline DAG and delegates execution to asset orchestration.
+// TriggerRun persists a real pipeline run, pre-creates job runs, and dispatches execution.
 func (s *Service) TriggerRun(ctx context.Context, principal string, pipelineName string,
 	params map[string]string, triggerType string) (*domain.PipelineRun, error) {
 	if err := s.requirePipelinesRepo(); err != nil {
@@ -501,11 +656,29 @@ func (s *Service) TriggerRun(ctx context.Context, principal string, pipelineName
 	if err := s.requireRunsRepo(); err != nil {
 		return nil, err
 	}
-	runID := domain.NewID()
-	paramsCopy := cloneParams(params)
-	pipelineID, err := s.triggerAssets(ctx, runID, principal, pipelineName, paramsCopy)
+
+	pipelineDef, jobs, levels, err := s.loadPipelineExecution(ctx, pipelineName)
 	if err != nil {
 		return nil, err
+	}
+	if err := s.requirePipelineRun(ctx, principal, pipelineDef); err != nil {
+		return nil, err
+	}
+	effectivePrincipal := principal
+	if pipelineDef.RunAsPrincipal != nil && strings.TrimSpace(*pipelineDef.RunAsPrincipal) != "" {
+		effectivePrincipal = strings.TrimSpace(*pipelineDef.RunAsPrincipal)
+	}
+	queued, err := s.shouldQueueRun(ctx, pipelineDef, triggerType)
+	if err != nil {
+		return nil, err
+	}
+
+	run, jobRunsByJobID, err := s.createRunRecords(ctx, pipelineDef, jobs, principal, effectivePrincipal, params, triggerType, queued, nil, nil)
+	if err != nil {
+		return nil, err
+	}
+	if !queued {
+		s.dispatchRunExecution(*run, pipelineDef, jobs, levels, jobRunsByJobID)
 	}
 
 	_ = s.audit.Insert(ctx, &domain.AuditEntry{
@@ -516,117 +689,67 @@ func (s *Service) TriggerRun(ctx context.Context, principal string, pipelineName
 		CreatedAt:     time.Now(),
 	})
 
-	return &domain.PipelineRun{
-		ID:          runID,
-		PipelineID:  pipelineID,
-		Status:      domain.PipelineRunStatusPending,
-		TriggerType: triggerType,
-		TriggeredBy: principal,
-		Parameters:  cloneParams(paramsCopy),
-		CreatedAt:   time.Now(),
-	}, nil
-}
-
-func (s *Service) triggerAssets(ctx context.Context, runID string, principal string, pipelineName string,
-	params map[string]string) (string, error) {
-
-	p, err := s.pipelines.GetPipelineByName(ctx, pipelineName)
-	if err != nil {
-		return "", err
-	}
-
-	// List jobs and validate DAG.
-	jobs, err := s.pipelines.ListJobsByPipeline(ctx, p.ID)
-	if err != nil {
-		return "", err
-	}
-	if len(jobs) == 0 {
-		return "", domain.ErrValidation("pipeline has no jobs")
-	}
-
-	levels, err := ResolveExecutionOrder(jobs)
-	if err != nil {
-		return "", err
-	}
-
-	runCtx, cancel := context.WithCancel(context.Background())
-	s.runCancels.Store(runID, cancel)
-
-	go func() {
-		defer s.runCancels.LoadAndDelete(runID)
-		s.executeRunViaAssets(runCtx, p, jobs, levels, cloneParams(params), principal)
-	}()
-
-	return p.ID, nil
+	return run, nil
 }
 
 func (s *Service) executeRunViaAssets(
 	ctx context.Context,
+	run *domain.PipelineRun,
 	pipeline *domain.Pipeline,
 	jobs []domain.PipelineJob,
 	levels [][]string,
 	params map[string]string,
 	principal string,
+	jobRunsByJobID map[string]*domain.PipelineJobRun,
 ) {
+	persistCtx := context.Background()
+
 	if s.assetRepo == nil || s.assetDepRepo == nil || s.assetRunRepo == nil {
-		s.logger.Warn("asset orchestration not configured for pipeline run", "pipeline", pipeline.Name)
+		s.failActiveJobRuns(persistCtx, run.ID, "asset orchestration not configured for pipeline run")
+		s.failRun(persistCtx, run.ID, "asset orchestration not configured for pipeline run")
+		s.logger.Warn("asset orchestration not configured for pipeline run", "pipeline", pipeline.Name, "run_id", run.ID)
 		return
 	}
 
-	adapted, err := BuildPipelineAssetGraph(pipeline, jobs)
-	if err != nil {
-		s.logger.Error("build pipeline asset graph", "pipeline", pipeline.Name, "error", err)
+	if s.runCancelled(persistCtx, run.ID) || ctx.Err() != nil {
+		s.cancelPendingJobRuns(persistCtx, run.ID)
+		msg := "pipeline run cancelled"
+		_ = s.runs.UpdateRunFinished(persistCtx, run.ID, domain.PipelineRunStatusCancelled, &msg)
+		run.Status = domain.PipelineRunStatusCancelled
+		run.ErrorMessage = &msg
+		s.logRunEventAndNotify(persistCtx, run, domain.PipelineRunEventCancelled, &msg, pipelineMessagePtr("CANCELLED"), nil)
+		go s.dispatchQueuedRuns(context.Background(), run.PipelineID)
 		return
 	}
 
-	for i := range adapted.Assets {
-		if adapted.Assets[i].ProductID == "" {
-			adapted.Assets[i].ProductID = s.assetProductID
-		}
-		_, getErr := s.assetRepo.GetByID(ctx, adapted.Assets[i].ID)
-		if getErr == nil {
-			continue
-		}
-		var notFoundErr *domain.NotFoundError
-		if !errors.As(getErr, &notFoundErr) {
-			s.logger.Error("get asset", "asset_id", adapted.Assets[i].ID, "error", getErr)
-			return
-		}
-		if _, createErr := s.assetRepo.Create(ctx, &adapted.Assets[i]); createErr != nil {
-			var conflictErr *domain.ConflictError
-			if errors.As(createErr, &conflictErr) {
-				if _, updateErr := s.assetRepo.Update(ctx, adapted.Assets[i].ID, &adapted.Assets[i]); updateErr != nil {
-					s.logger.Error("ensure asset", "asset_id", adapted.Assets[i].ID, "error", updateErr)
-					return
-				}
-				continue
-			}
-			s.logger.Error("create asset", "asset_id", adapted.Assets[i].ID, "error", createErr)
-			return
-		}
+	if err := s.runs.UpdateRunStarted(persistCtx, run.ID); err != nil {
+		s.logger.Error("mark pipeline run started", "run_id", run.ID, "error", err)
+		return
 	}
+	run.Status = domain.PipelineRunStatusRunning
+	startMsg := "pipeline run started"
+	s.logRunEventAndNotify(persistCtx, run, domain.PipelineRunEventStarted, &startMsg, nil, nil)
 
-	for i := range adapted.Dependencies {
-		_, depErr := s.assetDepRepo.Create(ctx, &adapted.Dependencies[i])
-		if depErr != nil {
-			var conflict *domain.ConflictError
-			if !errors.As(depErr, &conflict) {
-				s.logger.Error("create asset dependency", "error", depErr)
-				return
-			}
-		}
+	if err := s.syncPipelineAssets(persistCtx, pipeline); err != nil {
+		s.failActiveJobRuns(persistCtx, run.ID, err.Error())
+		s.failRun(persistCtx, run.ID, err.Error())
+		s.logger.Error("sync pipeline assets", "pipeline", pipeline.Name, "run_id", run.ID, "error", err)
+		return
 	}
 
 	rootAssetID := levels[0][0]
 	assetRun, err := s.assetRunRepo.CreateRun(ctx, &domain.AssetRun{
 		ID:          domain.NewID(),
 		AssetID:     rootAssetID,
+		RunGroupID:  &run.ID,
 		Status:      domain.AssetRunStatusQueued,
 		TriggerType: domain.AssetTriggerTypePipeline,
 		TriggeredBy: principal,
 		MaxAttempts: 1,
 	})
 	if err != nil {
+		s.failActiveJobRuns(persistCtx, run.ID, err.Error())
+		s.failRun(persistCtx, run.ID, err.Error())
 		s.logger.Error("create asset run", "asset_id", rootAssetID, "error", err)
 		return
 	}
@@ -642,18 +765,64 @@ func (s *Service) executeRunViaAssets(
 	}
 
 	stepper := &pipelineAssetStepper{
-		svc:       s,
-		jobByID:   jobByID,
-		params:    params,
-		principal: principal,
-		logger:    s.logger.With("pipeline", pipeline.Name),
+		svc:            s,
+		pipeline:       pipeline,
+		jobByID:        jobByID,
+		jobRunsByJobID: jobRunsByJobID,
+		runID:          run.ID,
+		params:         params,
+		principal:      principal,
+		logger:         s.logger.With("pipeline", pipeline.Name, "run_id", run.ID),
 	}
 	executor := orchestration.NewAssetExecutor(s.assetRunRepo, state, io, limiter, stepper)
 
 	if err := executor.ExecutePlan(ctx, assetRun.ID, assetRun.Status, plan); err != nil {
+		if errors.Is(err, context.DeadlineExceeded) {
+			msg := "pipeline run exceeded max_run_duration_seconds"
+			_ = s.runs.MarkRunSLABreached(persistCtx, run.ID, &msg)
+			run.SLABreachedAt = timePtr(time.Now().UTC())
+			s.logRunEventAndNotify(persistCtx, run, domain.PipelineRunEventSLABreach, &msg, pipelineMessagePtr("TIMEOUT"), nil)
+			s.finishFailedRunJobRuns(persistCtx, run.ID, msg)
+			s.failRun(persistCtx, run.ID, msg)
+			_ = s.assetRunRepo.UpdateRunFinished(persistCtx, assetRun.ID, domain.AssetRunStatusFailed, &msg)
+			return
+		}
+		if errors.Is(err, context.Canceled) || s.runCancelled(persistCtx, run.ID) {
+			msg := "pipeline run cancelled"
+			_ = s.assetRunRepo.UpdateRunFinished(persistCtx, assetRun.ID, domain.AssetRunStatusCancelled, &msg)
+			s.cancelPendingJobRuns(persistCtx, run.ID)
+			_ = s.runs.UpdateRunFinished(persistCtx, run.ID, domain.PipelineRunStatusCancelled, &msg)
+			run.Status = domain.PipelineRunStatusCancelled
+			run.ErrorMessage = &msg
+			s.logRunEventAndNotify(persistCtx, run, domain.PipelineRunEventCancelled, &msg, pipelineMessagePtr("CANCELLED"), nil)
+			go s.dispatchQueuedRuns(context.Background(), run.PipelineID)
+			return
+		}
+		s.finishFailedRunJobRuns(persistCtx, run.ID, err.Error())
+		s.failRun(persistCtx, run.ID, err.Error())
 		s.logger.Error("execute asset plan", "asset_run_id", assetRun.ID, "error", err)
 		return
 	}
+
+	if s.runCancelled(persistCtx, run.ID) {
+		msg := "pipeline run cancelled"
+		_ = s.assetRunRepo.UpdateRunFinished(persistCtx, assetRun.ID, domain.AssetRunStatusCancelled, &msg)
+		s.cancelPendingJobRuns(persistCtx, run.ID)
+		_ = s.runs.UpdateRunFinished(persistCtx, run.ID, domain.PipelineRunStatusCancelled, &msg)
+		run.Status = domain.PipelineRunStatusCancelled
+		run.ErrorMessage = &msg
+		s.logRunEventAndNotify(persistCtx, run, domain.PipelineRunEventCancelled, &msg, pipelineMessagePtr("CANCELLED"), nil)
+		go s.dispatchQueuedRuns(context.Background(), run.PipelineID)
+		return
+	}
+
+	if err := s.runs.UpdateRunFinished(persistCtx, run.ID, domain.PipelineRunStatusSuccess, nil); err != nil {
+		s.logger.Error("mark pipeline run success", "run_id", run.ID, "error", err)
+		return
+	}
+	run.Status = domain.PipelineRunStatusSuccess
+	s.logRunEventAndNotify(persistCtx, run, domain.PipelineRunEventSucceeded, nil, nil, nil)
+	go s.dispatchQueuedRuns(context.Background(), run.PipelineID)
 }
 
 func cloneParams(params map[string]string) map[string]string {
@@ -668,11 +837,14 @@ func cloneParams(params map[string]string) map[string]string {
 }
 
 type pipelineAssetStepper struct {
-	svc       *Service
-	jobByID   map[string]domain.PipelineJob
-	params    map[string]string
-	principal string
-	logger    *slog.Logger
+	svc            *Service
+	pipeline       *domain.Pipeline
+	jobByID        map[string]domain.PipelineJob
+	jobRunsByJobID map[string]*domain.PipelineJobRun
+	runID          string
+	params         map[string]string
+	principal      string
+	logger         *slog.Logger
 }
 
 func (p *pipelineAssetStepper) Execute(ctx context.Context, assetID string, _ orchestration.IOManager) (map[string]any, error) {
@@ -680,7 +852,14 @@ func (p *pipelineAssetStepper) Execute(ctx context.Context, assetID string, _ or
 	if !ok {
 		return nil, domain.ErrValidation("asset job not found for asset id %s", assetID)
 	}
-	if err := p.svc.executeJob(ctx, job, "", p.params, p.principal, p.logger); err != nil {
+	jobRunID := ""
+	if jobRun, ok := p.jobRunsByJobID[job.ID]; ok && jobRun != nil {
+		if jobRun.Status == domain.PipelineJobRunStatusSkipped {
+			return map[string]any{"asset_id": assetID, "status": "skipped"}, nil
+		}
+		jobRunID = jobRun.ID
+	}
+	if err := p.svc.executeJob(ctx, p.pipeline, job, p.runID, jobRunID, p.params, p.principal, p.logger); err != nil {
 		return nil, err
 	}
 	return map[string]any{"asset_id": assetID, "status": "success"}, nil
@@ -691,7 +870,18 @@ func (s *Service) GetRun(ctx context.Context, runID string) (*domain.PipelineRun
 	if err := s.requireRunsRepo(); err != nil {
 		return nil, err
 	}
-	return s.runs.GetRunByID(ctx, runID)
+	run, err := s.runs.GetRunByID(ctx, runID)
+	if err != nil {
+		return nil, err
+	}
+	pipelineDef, err := s.pipelines.GetPipelineByID(ctx, run.PipelineID)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.requirePipelineRun(ctx, servicePrincipalName(ctx), pipelineDef); err != nil {
+		return nil, err
+	}
+	return run, nil
 }
 
 // ListRuns returns a filtered, paginated list of runs for the named pipeline.
@@ -706,6 +896,9 @@ func (s *Service) ListRuns(ctx context.Context, pipelineName string, filter doma
 	if err != nil {
 		return nil, 0, err
 	}
+	if err := s.requirePipelineRun(ctx, servicePrincipalName(ctx), p); err != nil {
+		return nil, 0, err
+	}
 	filter.PipelineID = &p.ID
 	return s.runs.ListRuns(ctx, filter)
 }
@@ -716,8 +909,15 @@ func (s *Service) ListJobRuns(ctx context.Context, runID string) ([]domain.Pipel
 		return nil, err
 	}
 	// Verify run exists.
-	_, err := s.runs.GetRunByID(ctx, runID)
+	run, err := s.runs.GetRunByID(ctx, runID)
 	if err != nil {
+		return nil, err
+	}
+	pipelineDef, err := s.pipelines.GetPipelineByID(ctx, run.PipelineID)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.requirePipelineRun(ctx, servicePrincipalName(ctx), pipelineDef); err != nil {
 		return nil, err
 	}
 	return s.runs.ListJobRunsByRun(ctx, runID)
@@ -732,27 +932,47 @@ func (s *Service) CancelRun(ctx context.Context, principal string, runID string)
 	if err != nil {
 		return err
 	}
+	pipelineDef, err := s.pipelines.GetPipelineByID(ctx, run.PipelineID)
+	if err != nil {
+		return err
+	}
+	if err := s.requirePipelineManage(ctx, principal, pipelineDef); err != nil {
+		return err
+	}
 
 	if run.Status != domain.PipelineRunStatusPending && run.Status != domain.PipelineRunStatusRunning {
 		return domain.ErrValidation("cannot cancel run with status %s", run.Status)
 	}
 
-	// Signal the background goroutine to stop.
-	if cancel, ok := s.runCancels.LoadAndDelete(runID); ok {
-		cancel.(context.CancelFunc)()
-	}
-
 	errMsg := "cancelled by " + principal
-	if err := s.runs.UpdateRunFinished(ctx, runID, domain.PipelineRunStatusCancelled, &errMsg); err != nil {
-		return err
-	}
-
-	// Cancel pending job runs.
-	jobRuns, _ := s.runs.ListJobRunsByRun(ctx, runID) // best effort: run already cancelled
-	for _, jr := range jobRuns {
-		if jr.Status == domain.PipelineJobRunStatusPending {
-			_ = s.runs.UpdateJobRunFinished(ctx, jr.ID, domain.PipelineJobRunStatusCancelled, nil)
+	// Queued runs can be terminalized immediately because no work has started.
+	if run.Status == domain.PipelineRunStatusPending && run.QueueStartedAt == nil {
+		if err := s.runs.UpdateRunFinished(ctx, runID, domain.PipelineRunStatusCancelled, &errMsg); err != nil {
+			return err
 		}
+		jobRuns, _ := s.runs.ListJobRunsByRun(ctx, runID)
+		for _, jr := range jobRuns {
+			if jr.Status == domain.PipelineJobRunStatusPending {
+				_ = s.runs.UpdateJobRunFinished(ctx, jr.ID, domain.PipelineJobRunStatusCancelled, &errMsg, pipelineMessagePtr("CANCELLED"), jr.AttemptCount)
+			}
+		}
+		run.Status = domain.PipelineRunStatusCancelled
+		run.ErrorMessage = &errMsg
+		s.logRunEventAndNotify(ctx, run, domain.PipelineRunEventCancelled, &errMsg, pipelineMessagePtr("CANCELLED"), nil)
+		go s.dispatchQueuedRuns(context.Background(), run.PipelineID)
+	} else if cancel, ok := s.runCancels.LoadAndDelete(runID); ok {
+		s.cancelPendingJobRuns(ctx, runID)
+		cancel.(context.CancelFunc)()
+		s.logRunEventAndNotify(ctx, run, domain.PipelineRunEventCancelled, &errMsg, pipelineMessagePtr("CANCELLED"), map[string]any{"requested": true})
+	} else {
+		s.cancelPendingJobRuns(ctx, runID)
+		if err := s.runs.UpdateRunFinished(ctx, runID, domain.PipelineRunStatusCancelled, &errMsg); err != nil {
+			return err
+		}
+		run.Status = domain.PipelineRunStatusCancelled
+		run.ErrorMessage = &errMsg
+		s.logRunEventAndNotify(ctx, run, domain.PipelineRunEventCancelled, &errMsg, pipelineMessagePtr("CANCELLED"), map[string]any{"forced": true})
+		go s.dispatchQueuedRuns(context.Background(), run.PipelineID)
 	}
 
 	_ = s.audit.Insert(ctx, &domain.AuditEntry{

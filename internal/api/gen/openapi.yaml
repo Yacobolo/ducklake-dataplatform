@@ -25637,14 +25637,25 @@ paths:
                 $ref: '#/components/schemas/PaginatedPipelines'
               example:
                 data:
-                  - concurrency_limit: 1
+                  - admission_mode: QUEUE
+                    concurrency_limit: 1
                     created_at: "2026-04-01T08:00:00Z"
                     created_by: alice@example.com
+                    default_compute_endpoint_id: cmp_prod
+                    default_retry_count: 2
+                    default_timeout_seconds: 900
                     description: Refreshes revenue notebooks and downstream models every morning.
                     folder_id: fld_01hzyfinance
                     id: pipe_01hzydailyrev
                     is_paused: false
+                    max_run_duration_seconds: 1800
                     name: daily-revenue-refresh
+                    notification_webhooks:
+                      - events:
+                          - FAILED
+                          - SLA_BREACHED
+                        url: https://hooks.example.com/pipelines
+                    run_as_principal: service:finance-pipeline
                     schedule_cron: 0 6 * * *
                     updated_at: "2026-04-13T08:00:00Z"
                 next_page_token: example
@@ -25711,14 +25722,25 @@ paths:
               schema:
                 $ref: '#/components/schemas/Pipeline'
               example:
+                admission_mode: QUEUE
                 concurrency_limit: 1
                 created_at: "2026-04-01T08:00:00Z"
                 created_by: alice@example.com
+                default_compute_endpoint_id: cmp_prod
+                default_retry_count: 2
+                default_timeout_seconds: 900
                 description: Refreshes revenue notebooks and downstream models every morning.
                 folder_id: fld_01hzyfinance
                 id: pipe_01hzydailyrev
                 is_paused: false
+                max_run_duration_seconds: 1800
                 name: daily-revenue-refresh
+                notification_webhooks:
+                  - events:
+                      - FAILED
+                      - SLA_BREACHED
+                    url: https://hooks.example.com/pipelines
+                run_as_principal: service:finance-pipeline
                 schedule_cron: 0 6 * * *
                 updated_at: "2026-04-13T08:00:00Z"
         '400':
@@ -25791,11 +25813,21 @@ paths:
             schema:
               $ref: '#/components/schemas/CreatePipelineRequest'
             example:
+              admission_mode: REJECT
               concurrency_limit: 1
+              default_compute_endpoint_id: example
+              default_retry_count: 1
+              default_timeout_seconds: 1
               description: example
               folder_id: example
               is_paused: true
+              max_run_duration_seconds: 1
               name: example
+              notification_webhooks:
+                - events:
+                    - example
+                  url: example
+              run_as_principal: example
               schedule_cron: example
       x-cli-command: pipelines create
   /pipelines/runs/{run_id}:
@@ -25818,10 +25850,19 @@ paths:
                 $ref: '#/components/schemas/PipelineRun'
               example:
                 created_at: "2026-04-13T06:00:00Z"
+                effective_principal: service:finance-pipeline
                 error_message: ""
                 finished_at: "2026-04-13T06:14:00Z"
                 id: pirun_01hzydailyrev
                 pipeline_id: pipe_01hzydailyrev
+                provenance:
+                  effective_principal: service:finance-pipeline
+                  pipeline_definition_version: "2026-04-13T05:55:00Z"
+                  trigger_type: SCHEDULED
+                  triggered_by: system:scheduler
+                queue_started_at: "2026-04-13T06:00:00Z"
+                queued_at: "2026-04-13T05:59:00Z"
+                repaired_from_run_id: pirun_01hzyprev
                 started_at: "2026-04-13T06:00:00Z"
                 status: SUCCESS
                 trigger_type: SCHEDULED
@@ -25922,10 +25963,19 @@ paths:
                 $ref: '#/components/schemas/PipelineRun'
               example:
                 created_at: "2026-04-13T06:00:00Z"
+                effective_principal: service:finance-pipeline
                 error_message: ""
                 finished_at: "2026-04-13T06:14:00Z"
                 id: pirun_01hzydailyrev
                 pipeline_id: pipe_01hzydailyrev
+                provenance:
+                  effective_principal: service:finance-pipeline
+                  pipeline_definition_version: "2026-04-13T05:55:00Z"
+                  trigger_type: SCHEDULED
+                  triggered_by: system:scheduler
+                queue_started_at: "2026-04-13T06:00:00Z"
+                queued_at: "2026-04-13T05:59:00Z"
+                repaired_from_run_id: pirun_01hzyprev
                 started_at: "2026-04-13T06:00:00Z"
                 status: SUCCESS
                 trigger_type: SCHEDULED
@@ -25994,6 +26044,110 @@ paths:
       tags:
         - Pipelines
       x-cli-command: pipelines runs cancel
+  /pipelines/runs/{run_id}/events:
+    get:
+      operationId: listPipelineRunEvents
+      summary: List pipeline run events
+      parameters:
+        - name: run_id
+          in: path
+          required: true
+          schema:
+            type: string
+          example: example
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PipelineRunEventList'
+              example:
+                data:
+                  - created_at: "2026-01-02T15:04:05Z"
+                    error_code: example
+                    event_type: example
+                    id: example
+                    job_run_id: example
+                    message: example
+                    metadata:
+                      key: value
+                    run_id: example
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '404':
+          description: The server cannot find the requested resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+      tags:
+        - Pipelines
+      x-cli-command: pipelines runs list-events
   /pipelines/runs/{run_id}/jobs:
     get:
       operationId: listPipelineJobRuns
@@ -26014,12 +26168,15 @@ paths:
                 $ref: '#/components/schemas/PipelineJobRunList'
               example:
                 data:
-                  - created_at: "2026-01-02T15:04:05Z"
+                  - attempt_count: 1
+                    created_at: "2026-01-02T15:04:05Z"
+                    effective_compute_endpoint_id: example
                     error_message: example
                     finished_at: "2026-01-02T15:04:05Z"
                     id: example
                     job_id: example
                     job_name: example
+                    last_error_code: example
                     retry_attempt: 1
                     run_id: example
                     started_at: "2026-01-02T15:04:05Z"
@@ -26099,6 +26256,117 @@ paths:
       tags:
         - Pipelines
       x-cli-command: pipelines runs list-job-runs
+  /pipelines/runs/{run_id}/repairs:
+    post:
+      operationId: repairPipelineRun
+      summary: Repair pipeline run
+      parameters:
+        - name: run_id
+          in: path
+          required: true
+          schema:
+            type: string
+          example: example
+      responses:
+        '201':
+          description: The request has succeeded and a new resource has been created as a result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PipelineRun'
+              example:
+                created_at: "2026-04-13T06:00:00Z"
+                effective_principal: service:finance-pipeline
+                error_message: ""
+                finished_at: "2026-04-13T06:14:00Z"
+                id: pirun_01hzydailyrev
+                pipeline_id: pipe_01hzydailyrev
+                provenance:
+                  effective_principal: service:finance-pipeline
+                  pipeline_definition_version: "2026-04-13T05:55:00Z"
+                  trigger_type: SCHEDULED
+                  triggered_by: system:scheduler
+                queue_started_at: "2026-04-13T06:00:00Z"
+                queued_at: "2026-04-13T05:59:00Z"
+                repaired_from_run_id: pirun_01hzyprev
+                started_at: "2026-04-13T06:00:00Z"
+                status: SUCCESS
+                trigger_type: SCHEDULED
+                triggered_by: system:scheduler
+                updated_at: "2026-04-13T06:14:00Z"
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+      tags:
+        - Pipelines
+      requestBody:
+        required: true
+        description: Request payload
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RepairPipelineRunRequest'
+            example:
+              from_job_id: example
+              mode: example
+      x-cli-command: pipelines runs repair
   /pipelines/{pipeline_name}:
     delete:
       operationId: deletePipeline
@@ -26194,14 +26462,25 @@ paths:
               schema:
                 $ref: '#/components/schemas/Pipeline'
               example:
+                admission_mode: QUEUE
                 concurrency_limit: 1
                 created_at: "2026-04-01T08:00:00Z"
                 created_by: alice@example.com
+                default_compute_endpoint_id: cmp_prod
+                default_retry_count: 2
+                default_timeout_seconds: 900
                 description: Refreshes revenue notebooks and downstream models every morning.
                 folder_id: fld_01hzyfinance
                 id: pipe_01hzydailyrev
                 is_paused: false
+                max_run_duration_seconds: 1800
                 name: daily-revenue-refresh
+                notification_webhooks:
+                  - events:
+                      - FAILED
+                      - SLA_BREACHED
+                    url: https://hooks.example.com/pipelines
+                run_as_principal: service:finance-pipeline
                 schedule_cron: 0 6 * * *
                 updated_at: "2026-04-13T08:00:00Z"
         '400':
@@ -26297,14 +26576,25 @@ paths:
               schema:
                 $ref: '#/components/schemas/Pipeline'
               example:
+                admission_mode: QUEUE
                 concurrency_limit: 1
                 created_at: "2026-04-01T08:00:00Z"
                 created_by: alice@example.com
+                default_compute_endpoint_id: cmp_prod
+                default_retry_count: 2
+                default_timeout_seconds: 900
                 description: Refreshes revenue notebooks and downstream models every morning.
                 folder_id: fld_01hzyfinance
                 id: pipe_01hzydailyrev
                 is_paused: false
+                max_run_duration_seconds: 1800
                 name: daily-revenue-refresh
+                notification_webhooks:
+                  - events:
+                      - FAILED
+                      - SLA_BREACHED
+                    url: https://hooks.example.com/pipelines
+                run_as_principal: service:finance-pipeline
                 schedule_cron: 0 6 * * *
                 updated_at: "2026-04-13T08:00:00Z"
         '400':
@@ -26377,10 +26667,20 @@ paths:
             schema:
               $ref: '#/components/schemas/UpdatePipelineRequest'
             example:
+              admission_mode: REJECT
               concurrency_limit: 1
+              default_compute_endpoint_id: example
+              default_retry_count: 1
+              default_timeout_seconds: 1
               description: example
               folder_id: example
               is_paused: true
+              max_run_duration_seconds: 1
+              notification_webhooks:
+                - events:
+                    - example
+                  url: example
+              run_as_principal: example
               schedule_cron: example
       x-cli-command: pipelines update
   /pipelines/{pipeline_name}/jobs:
@@ -26797,6 +27097,7 @@ paths:
                 message: validation failed
       tags:
         - Pipelines
+      x-cli-command: pipelines jobs get
     patch:
       operationId: updatePipelineJob
       summary: Update pipeline job
@@ -26914,6 +27215,7 @@ paths:
               notebook_id: example
               retry_count: 1
               timeout_seconds: 1
+      x-cli-command: pipelines jobs update
   /pipelines/{pipeline_name}/runs:
     get:
       operationId: listPipelineRuns
@@ -26957,10 +27259,19 @@ paths:
               example:
                 data:
                   - created_at: "2026-04-13T06:00:00Z"
+                    effective_principal: service:finance-pipeline
                     error_message: ""
                     finished_at: "2026-04-13T06:14:00Z"
                     id: pirun_01hzydailyrev
                     pipeline_id: pipe_01hzydailyrev
+                    provenance:
+                      effective_principal: service:finance-pipeline
+                      pipeline_definition_version: "2026-04-13T05:55:00Z"
+                      trigger_type: SCHEDULED
+                      triggered_by: system:scheduler
+                    queue_started_at: "2026-04-13T06:00:00Z"
+                    queued_at: "2026-04-13T05:59:00Z"
+                    repaired_from_run_id: pirun_01hzyprev
                     started_at: "2026-04-13T06:00:00Z"
                     status: SUCCESS
                     trigger_type: SCHEDULED
@@ -27061,10 +27372,19 @@ paths:
                 $ref: '#/components/schemas/PipelineRun'
               example:
                 created_at: "2026-04-13T06:00:00Z"
+                effective_principal: service:finance-pipeline
                 error_message: ""
                 finished_at: "2026-04-13T06:14:00Z"
                 id: pirun_01hzydailyrev
                 pipeline_id: pipe_01hzydailyrev
+                provenance:
+                  effective_principal: service:finance-pipeline
+                  pipeline_definition_version: "2026-04-13T05:55:00Z"
+                  trigger_type: SCHEDULED
+                  triggered_by: system:scheduler
+                queue_started_at: "2026-04-13T06:00:00Z"
+                queued_at: "2026-04-13T05:59:00Z"
+                repaired_from_run_id: pirun_01hzyprev
                 started_at: "2026-04-13T06:00:00Z"
                 status: SUCCESS
                 trigger_type: SCHEDULED
@@ -41465,15 +41785,53 @@ components:
           type: integer
           format: int32
           example: 1
+        run_as_principal:
+          type: string
+          example: example
+        admission_mode:
+          $ref: '#/components/schemas/PipelineAdmissionMode'
+        max_run_duration_seconds:
+          type: integer
+          format: int64
+          example: 1
+        notification_webhooks:
+          type: array
+          items:
+            $ref: '#/components/schemas/PipelineNotificationWebhook'
+          example:
+            - events:
+                - example
+              url: example
+        default_retry_count:
+          type: integer
+          format: int32
+          example: 1
+        default_timeout_seconds:
+          type: integer
+          format: int64
+          example: 1
+        default_compute_endpoint_id:
+          type: string
+          example: example
         folder_id:
           type: string
           example: example
       example:
+        admission_mode: REJECT
         concurrency_limit: 1
+        default_compute_endpoint_id: example
+        default_retry_count: 1
+        default_timeout_seconds: 1
         description: example
         folder_id: example
         is_paused: true
+        max_run_duration_seconds: 1
         name: example
+        notification_webhooks:
+          - events:
+              - example
+            url: example
+        run_as_principal: example
         schedule_cron: example
     CreatePrincipalRequest:
       type: object
@@ -47832,10 +48190,19 @@ components:
             $ref: '#/components/schemas/PipelineRun'
           example:
             - created_at: "2026-04-13T06:00:00Z"
+              effective_principal: service:finance-pipeline
               error_message: ""
               finished_at: "2026-04-13T06:14:00Z"
               id: pirun_01hzydailyrev
               pipeline_id: pipe_01hzydailyrev
+              provenance:
+                effective_principal: service:finance-pipeline
+                pipeline_definition_version: "2026-04-13T05:55:00Z"
+                trigger_type: SCHEDULED
+                triggered_by: system:scheduler
+              queue_started_at: "2026-04-13T06:00:00Z"
+              queued_at: "2026-04-13T05:59:00Z"
+              repaired_from_run_id: pirun_01hzyprev
               started_at: "2026-04-13T06:00:00Z"
               status: SUCCESS
               trigger_type: SCHEDULED
@@ -47847,10 +48214,19 @@ components:
       example:
         data:
           - created_at: "2026-04-13T06:00:00Z"
+            effective_principal: service:finance-pipeline
             error_message: ""
             finished_at: "2026-04-13T06:14:00Z"
             id: pirun_01hzydailyrev
             pipeline_id: pipe_01hzydailyrev
+            provenance:
+              effective_principal: service:finance-pipeline
+              pipeline_definition_version: "2026-04-13T05:55:00Z"
+              trigger_type: SCHEDULED
+              triggered_by: system:scheduler
+            queue_started_at: "2026-04-13T06:00:00Z"
+            queued_at: "2026-04-13T05:59:00Z"
+            repaired_from_run_id: pirun_01hzyprev
             started_at: "2026-04-13T06:00:00Z"
             status: SUCCESS
             trigger_type: SCHEDULED
@@ -47867,14 +48243,25 @@ components:
           items:
             $ref: '#/components/schemas/Pipeline'
           example:
-            - concurrency_limit: 1
+            - admission_mode: QUEUE
+              concurrency_limit: 1
               created_at: "2026-04-01T08:00:00Z"
               created_by: alice@example.com
+              default_compute_endpoint_id: cmp_prod
+              default_retry_count: 2
+              default_timeout_seconds: 900
               description: Refreshes revenue notebooks and downstream models every morning.
               folder_id: fld_01hzyfinance
               id: pipe_01hzydailyrev
               is_paused: false
+              max_run_duration_seconds: 1800
               name: daily-revenue-refresh
+              notification_webhooks:
+                - events:
+                    - FAILED
+                    - SLA_BREACHED
+                  url: https://hooks.example.com/pipelines
+              run_as_principal: service:finance-pipeline
               schedule_cron: 0 6 * * *
               updated_at: "2026-04-13T08:00:00Z"
         next_page_token:
@@ -47882,14 +48269,25 @@ components:
           example: example
       example:
         data:
-          - concurrency_limit: 1
+          - admission_mode: QUEUE
+            concurrency_limit: 1
             created_at: "2026-04-01T08:00:00Z"
             created_by: alice@example.com
+            default_compute_endpoint_id: cmp_prod
+            default_retry_count: 2
+            default_timeout_seconds: 900
             description: Refreshes revenue notebooks and downstream models every morning.
             folder_id: fld_01hzyfinance
             id: pipe_01hzydailyrev
             is_paused: false
+            max_run_duration_seconds: 1800
             name: daily-revenue-refresh
+            notification_webhooks:
+              - events:
+                  - FAILED
+                  - SLA_BREACHED
+                url: https://hooks.example.com/pipelines
+            run_as_principal: service:finance-pipeline
             schedule_cron: 0 6 * * *
             updated_at: "2026-04-13T08:00:00Z"
         next_page_token: example
@@ -48737,6 +49135,34 @@ components:
           type: integer
           format: int32
           example: 1
+        run_as_principal:
+          type: string
+          example: example
+        admission_mode:
+          $ref: '#/components/schemas/PipelineAdmissionMode'
+        max_run_duration_seconds:
+          type: integer
+          format: int64
+          example: 1
+        notification_webhooks:
+          type: array
+          items:
+            $ref: '#/components/schemas/PipelineNotificationWebhook'
+          example:
+            - events:
+                - example
+              url: example
+        default_retry_count:
+          type: integer
+          format: int32
+          example: 1
+        default_timeout_seconds:
+          type: integer
+          format: int64
+          example: 1
+        default_compute_endpoint_id:
+          type: string
+          example: example
         created_by:
           type: string
           example: example
@@ -48752,16 +49178,33 @@ components:
           format: date-time
           example: "2026-01-02T15:04:05Z"
       example:
+        admission_mode: QUEUE
         concurrency_limit: 1
         created_at: "2026-04-01T08:00:00Z"
         created_by: alice@example.com
+        default_compute_endpoint_id: cmp_prod
+        default_retry_count: 2
+        default_timeout_seconds: 900
         description: Refreshes revenue notebooks and downstream models every morning.
         folder_id: fld_01hzyfinance
         id: pipe_01hzydailyrev
         is_paused: false
+        max_run_duration_seconds: 1800
         name: daily-revenue-refresh
+        notification_webhooks:
+          - events:
+              - FAILED
+              - SLA_BREACHED
+            url: https://hooks.example.com/pipelines
+        run_as_principal: service:finance-pipeline
         schedule_cron: 0 6 * * *
         updated_at: "2026-04-13T08:00:00Z"
+    PipelineAdmissionMode:
+      type: string
+      enum:
+        - REJECT
+        - QUEUE
+      example: REJECT
     PipelineJob:
       type: object
       properties:
@@ -48897,17 +49340,30 @@ components:
           type: integer
           format: int32
           example: 1
+        effective_compute_endpoint_id:
+          type: string
+          example: example
+        attempt_count:
+          type: integer
+          format: int32
+          example: 1
+        last_error_code:
+          type: string
+          example: example
         created_at:
           type: string
           format: date-time
           example: "2026-01-02T15:04:05Z"
       example:
+        attempt_count: 1
         created_at: "2026-01-02T15:04:05Z"
+        effective_compute_endpoint_id: example
         error_message: example
         finished_at: "2026-01-02T15:04:05Z"
         id: example
         job_id: example
         job_name: example
+        last_error_code: example
         retry_attempt: 1
         run_id: example
         started_at: "2026-01-02T15:04:05Z"
@@ -48922,24 +49378,30 @@ components:
           items:
             $ref: '#/components/schemas/PipelineJobRun'
           example:
-            - created_at: "2026-01-02T15:04:05Z"
+            - attempt_count: 1
+              created_at: "2026-01-02T15:04:05Z"
+              effective_compute_endpoint_id: example
               error_message: example
               finished_at: "2026-01-02T15:04:05Z"
               id: example
               job_id: example
               job_name: example
+              last_error_code: example
               retry_attempt: 1
               run_id: example
               started_at: "2026-01-02T15:04:05Z"
               status: PENDING
       example:
         data:
-          - created_at: "2026-01-02T15:04:05Z"
+          - attempt_count: 1
+            created_at: "2026-01-02T15:04:05Z"
+            effective_compute_endpoint_id: example
             error_message: example
             finished_at: "2026-01-02T15:04:05Z"
             id: example
             job_id: example
             job_name: example
+            last_error_code: example
             retry_attempt: 1
             run_id: example
             started_at: "2026-01-02T15:04:05Z"
@@ -48954,6 +49416,66 @@ components:
         - SKIPPED
         - CANCELLED
       example: PENDING
+    PipelineModelProvenance:
+      type: object
+      required:
+        - selector
+      properties:
+        selector:
+          type: string
+          example: example
+        model_id:
+          type: string
+          example: example
+        last_updated_at:
+          type: string
+          format: date-time
+          example: "2026-01-02T15:04:05Z"
+      example:
+        last_updated_at: "2026-01-02T15:04:05Z"
+        model_id: example
+        selector: example
+    PipelineNotebookProvenance:
+      type: object
+      required:
+        - notebook_id
+      properties:
+        notebook_id:
+          type: string
+          example: example
+        git_repo_id:
+          type: string
+          example: example
+        git_commit_sha:
+          type: string
+          example: example
+        last_updated_at:
+          type: string
+          format: date-time
+          example: "2026-01-02T15:04:05Z"
+      example:
+        git_commit_sha: example
+        git_repo_id: example
+        last_updated_at: "2026-01-02T15:04:05Z"
+        notebook_id: example
+    PipelineNotificationWebhook:
+      type: object
+      required:
+        - url
+      properties:
+        url:
+          type: string
+          example: example
+        events:
+          type: array
+          items:
+            type: string
+          example:
+            - example
+      example:
+        events:
+          - example
+        url: example
     PipelineRun:
       type: object
       properties:
@@ -48970,6 +49492,9 @@ components:
         triggered_by:
           type: string
           example: example
+        effective_principal:
+          type: string
+          example: example
         parameters:
           type: object
           additionalProperties:
@@ -48979,6 +49504,14 @@ components:
         git_commit_hash:
           type: string
           example: example
+        queued_at:
+          type: string
+          format: date-time
+          example: "2026-01-02T15:04:05Z"
+        queue_started_at:
+          type: string
+          format: date-time
+          example: "2026-01-02T15:04:05Z"
         started_at:
           type: string
           format: date-time
@@ -48987,6 +49520,11 @@ components:
           type: string
           format: date-time
           example: "2026-01-02T15:04:05Z"
+        repaired_from_run_id:
+          type: string
+          example: example
+        provenance:
+          $ref: '#/components/schemas/PipelineRunProvenance'
         error_message:
           type: string
           example: example
@@ -48996,15 +49534,140 @@ components:
           example: "2026-01-02T15:04:05Z"
       example:
         created_at: "2026-04-13T06:00:00Z"
+        effective_principal: service:finance-pipeline
         error_message: ""
         finished_at: "2026-04-13T06:14:00Z"
         id: pirun_01hzydailyrev
         pipeline_id: pipe_01hzydailyrev
+        provenance:
+          effective_principal: service:finance-pipeline
+          pipeline_definition_version: "2026-04-13T05:55:00Z"
+          trigger_type: SCHEDULED
+          triggered_by: system:scheduler
+        queue_started_at: "2026-04-13T06:00:00Z"
+        queued_at: "2026-04-13T05:59:00Z"
+        repaired_from_run_id: pirun_01hzyprev
         started_at: "2026-04-13T06:00:00Z"
         status: SUCCESS
         trigger_type: SCHEDULED
         triggered_by: system:scheduler
         updated_at: "2026-04-13T06:14:00Z"
+    PipelineRunEvent:
+      type: object
+      properties:
+        id:
+          type: string
+          example: example
+        run_id:
+          type: string
+          example: example
+        job_run_id:
+          type: string
+          example: example
+        event_type:
+          type: string
+          example: example
+        message:
+          type: string
+          example: example
+        error_code:
+          type: string
+          example: example
+        metadata:
+          type: object
+          additionalProperties: {}
+          example:
+            key: value
+        created_at:
+          type: string
+          format: date-time
+          example: "2026-01-02T15:04:05Z"
+      example:
+        created_at: "2026-01-02T15:04:05Z"
+        error_code: example
+        event_type: example
+        id: example
+        job_run_id: example
+        message: example
+        metadata:
+          key: value
+        run_id: example
+    PipelineRunEventList:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/PipelineRunEvent'
+          example:
+            - created_at: "2026-01-02T15:04:05Z"
+              error_code: example
+              event_type: example
+              id: example
+              job_run_id: example
+              message: example
+              metadata:
+                key: value
+              run_id: example
+      example:
+        data:
+          - created_at: "2026-01-02T15:04:05Z"
+            error_code: example
+            event_type: example
+            id: example
+            job_run_id: example
+            message: example
+            metadata:
+              key: value
+            run_id: example
+    PipelineRunProvenance:
+      type: object
+      properties:
+        trigger_type:
+          type: string
+          example: example
+        triggered_by:
+          type: string
+          example: example
+        effective_principal:
+          type: string
+          example: example
+        pipeline_definition_version:
+          type: string
+          example: example
+        notebooks:
+          type: array
+          items:
+            $ref: '#/components/schemas/PipelineNotebookProvenance'
+          example:
+            - git_commit_sha: example
+              git_repo_id: example
+              last_updated_at: "2026-01-02T15:04:05Z"
+              notebook_id: example
+        models:
+          type: array
+          items:
+            $ref: '#/components/schemas/PipelineModelProvenance'
+          example:
+            - last_updated_at: "2026-01-02T15:04:05Z"
+              model_id: example
+              selector: example
+      example:
+        effective_principal: example
+        models:
+          - last_updated_at: "2026-01-02T15:04:05Z"
+            model_id: example
+            selector: example
+        notebooks:
+          - git_commit_sha: example
+            git_repo_id: example
+            last_updated_at: "2026-01-02T15:04:05Z"
+            notebook_id: example
+        pipeline_definition_version: example
+        trigger_type: example
+        triggered_by: example
     PipelineRunStatus:
       type: string
       enum:
@@ -50519,6 +51182,20 @@ components:
           - cell_01hzyintro
           - cell_01hzycellsql
           - cell_01hzychart
+    RepairPipelineRunRequest:
+      type: object
+      required:
+        - mode
+      properties:
+        mode:
+          type: string
+          example: example
+        from_job_id:
+          type: string
+          example: example
+      example:
+        from_job_id: example
+        mode: example
     ResolvedDashboardDetail:
       type: object
       properties:
@@ -52396,14 +53073,52 @@ components:
           type: integer
           format: int32
           example: 1
+        run_as_principal:
+          type: string
+          example: example
+        admission_mode:
+          $ref: '#/components/schemas/PipelineAdmissionMode'
+        max_run_duration_seconds:
+          type: integer
+          format: int64
+          example: 1
+        notification_webhooks:
+          type: array
+          items:
+            $ref: '#/components/schemas/PipelineNotificationWebhook'
+          example:
+            - events:
+                - example
+              url: example
+        default_retry_count:
+          type: integer
+          format: int32
+          example: 1
+        default_timeout_seconds:
+          type: integer
+          format: int64
+          example: 1
+        default_compute_endpoint_id:
+          type: string
+          example: example
         folder_id:
           type: string
           example: example
       example:
+        admission_mode: REJECT
         concurrency_limit: 1
+        default_compute_endpoint_id: example
+        default_retry_count: 1
+        default_timeout_seconds: 1
         description: example
         folder_id: example
         is_paused: true
+        max_run_duration_seconds: 1
+        notification_webhooks:
+          - events:
+              - example
+            url: example
+        run_as_principal: example
         schedule_cron: example
     UpdatePrincipalRequest:
       type: object

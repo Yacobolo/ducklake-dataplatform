@@ -348,14 +348,14 @@ func TestPipelineJobRun_CRUD(t *testing.T) {
 	})
 
 	t.Run("job_run_lifecycle", func(t *testing.T) {
-		err := runRepo.UpdateJobRunStarted(ctx, jr.ID)
+		err := runRepo.UpdateJobRunStarted(ctx, jr.ID, nil, 1)
 		require.NoError(t, err)
 
 		started, err := runRepo.GetJobRunByID(ctx, jr.ID)
 		require.NoError(t, err)
 		require.NotNil(t, started.StartedAt)
 
-		err = runRepo.UpdateJobRunFinished(ctx, jr.ID, domain.PipelineJobRunStatusSuccess, nil)
+		err = runRepo.UpdateJobRunFinished(ctx, jr.ID, domain.PipelineJobRunStatusSuccess, nil, nil, 1)
 		require.NoError(t, err)
 
 		finished, err := runRepo.GetJobRunByID(ctx, jr.ID)

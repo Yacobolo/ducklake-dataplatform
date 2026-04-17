@@ -1,6 +1,22 @@
 -- name: CreatePipeline :one
-INSERT INTO pipelines (id, name, description, schedule_cron, is_paused, concurrency_limit, created_by, folder_id)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+INSERT INTO pipelines (
+  id,
+  name,
+  description,
+  schedule_cron,
+  is_paused,
+  concurrency_limit,
+  run_as_principal,
+  admission_mode,
+  max_run_duration_seconds,
+  notification_webhooks,
+  default_retry_count,
+  default_timeout_seconds,
+  default_compute_endpoint_id,
+  created_by,
+  folder_id
+)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 RETURNING *;
 
 -- name: GetPipelineByID :one
@@ -26,6 +42,13 @@ SET description = COALESCE(?, description),
     schedule_cron = COALESCE(?, schedule_cron),
     is_paused = COALESCE(?, is_paused),
     concurrency_limit = COALESCE(?, concurrency_limit),
+    run_as_principal = COALESCE(?, run_as_principal),
+    admission_mode = COALESCE(?, admission_mode),
+    max_run_duration_seconds = COALESCE(?, max_run_duration_seconds),
+    notification_webhooks = COALESCE(?, notification_webhooks),
+    default_retry_count = COALESCE(?, default_retry_count),
+    default_timeout_seconds = COALESCE(?, default_timeout_seconds),
+    default_compute_endpoint_id = COALESCE(?, default_compute_endpoint_id),
     folder_id = COALESCE(?, folder_id),
     updated_at = datetime('now')
 WHERE id = ?;
@@ -54,8 +77,22 @@ DELETE FROM pipeline_jobs WHERE id = ?;
 DELETE FROM pipeline_jobs WHERE pipeline_id = ?;
 
 -- name: CreatePipelineRun :one
-INSERT INTO pipeline_runs (id, pipeline_id, status, trigger_type, triggered_by, parameters, git_commit_hash)
-VALUES (?, ?, ?, ?, ?, ?, ?)
+INSERT INTO pipeline_runs (
+  id,
+  pipeline_id,
+  status,
+  trigger_type,
+  triggered_by,
+  effective_principal,
+  parameters,
+  git_commit_hash,
+  queued_at,
+  queue_started_at,
+  repaired_from_run_id,
+  provenance,
+  sla_breached_at
+)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 RETURNING *;
 
 -- name: GetPipelineRunByID :one
@@ -76,6 +113,17 @@ WHERE (? = '' OR pipeline_id = ?)
 -- name: UpdatePipelineRunStatus :exec
 UPDATE pipeline_runs SET status = ?, error_message = ? WHERE id = ?;
 
+-- name: MarkPipelineRunSLABreached :exec
+UPDATE pipeline_runs
+SET sla_breached_at = datetime('now'),
+    error_message = COALESCE(?, error_message)
+WHERE id = ?;
+
+-- name: UpdatePipelineRunQueueStarted :exec
+UPDATE pipeline_runs
+SET queue_started_at = COALESCE(queue_started_at, datetime('now'))
+WHERE id = ?;
+
 -- name: UpdatePipelineRunStarted :exec
 UPDATE pipeline_runs SET status = 'RUNNING', started_at = datetime('now') WHERE id = ?;
 
@@ -83,7 +131,19 @@ UPDATE pipeline_runs SET status = 'RUNNING', started_at = datetime('now') WHERE 
 UPDATE pipeline_runs SET status = ?, finished_at = datetime('now'), error_message = ? WHERE id = ?;
 
 -- name: CountActivePipelineRuns :one
-SELECT COUNT(*) FROM pipeline_runs WHERE pipeline_id = ? AND status IN ('PENDING', 'RUNNING');
+SELECT COUNT(*) FROM pipeline_runs
+WHERE pipeline_id = ?
+  AND status IN ('PENDING', 'RUNNING')
+  AND (queue_started_at IS NOT NULL OR queued_at IS NULL);
+
+-- name: ListQueuedPipelineRuns :many
+SELECT * FROM pipeline_runs
+WHERE pipeline_id = ?
+  AND status = 'PENDING'
+  AND queued_at IS NOT NULL
+  AND queue_started_at IS NULL
+ORDER BY queued_at, created_at
+LIMIT ?;
 
 -- name: CancelPendingPipelineRuns :exec
 UPDATE pipeline_runs SET status = 'CANCELLED' WHERE pipeline_id = ? AND status = 'PENDING';
@@ -103,7 +163,36 @@ SELECT * FROM pipeline_job_runs WHERE run_id = ? ORDER BY created_at;
 UPDATE pipeline_job_runs SET status = ?, error_message = ? WHERE id = ?;
 
 -- name: UpdatePipelineJobRunStarted :exec
-UPDATE pipeline_job_runs SET status = 'RUNNING', started_at = datetime('now') WHERE id = ?;
+UPDATE pipeline_job_runs
+SET status = 'RUNNING',
+    started_at = datetime('now'),
+    effective_compute_endpoint_id = sqlc.arg(effective_compute_endpoint_id),
+    attempt_count = sqlc.arg(attempt_count)
+WHERE id = sqlc.arg(id);
 
 -- name: UpdatePipelineJobRunFinished :exec
-UPDATE pipeline_job_runs SET status = ?, finished_at = datetime('now'), error_message = ? WHERE id = ?;
+UPDATE pipeline_job_runs
+SET status = sqlc.arg(status),
+    finished_at = datetime('now'),
+    error_message = sqlc.arg(error_message),
+    last_error_code = sqlc.arg(last_error_code),
+    attempt_count = sqlc.arg(attempt_count),
+    retry_attempt = CASE
+        WHEN sqlc.arg(attempt_count) > 0 THEN sqlc.arg(attempt_count) - 1
+        ELSE 0
+    END
+WHERE id = sqlc.arg(id);
+
+-- name: CreatePipelineRunEvent :one
+INSERT INTO pipeline_run_events (id, run_id, job_run_id, event_type, message, error_code, metadata)
+VALUES (?, ?, ?, ?, ?, ?, ?)
+RETURNING *;
+
+-- name: ListPipelineRunEvents :many
+SELECT * FROM pipeline_run_events
+WHERE run_id = ?
+ORDER BY created_at ASC
+LIMIT ? OFFSET ?;
+
+-- name: CountPipelineRunEvents :one
+SELECT COUNT(*) FROM pipeline_run_events WHERE run_id = ?;

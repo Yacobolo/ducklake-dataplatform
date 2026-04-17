@@ -508,7 +508,7 @@ func (s *AuthorizationService) checkPrivilegeForIdentities(ctx context.Context, 
 		return s.checkSchemaPrivilege(ctx, principalID, groupIDs, securableID, privilege)
 	case domain.SecurableCatalog:
 		return s.checkCatalogPrivilege(ctx, principalID, groupIDs, securableID, privilege)
-	case domain.SecurableFolder:
+	case domain.SecurableFolder, domain.SecurablePipeline:
 		return s.hasGrant(ctx, principalID, groupIDs, securableType, securableID, privilege)
 	case domain.SecurableExternalLocation, domain.SecurableStorageCredential, domain.SecurableVolume, domain.SecurableComputeEndpoint:
 		return s.checkCatalogScopedPrivilege(ctx, principalID, groupIDs, securableType, securableID, privilege)

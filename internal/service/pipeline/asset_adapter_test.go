@@ -143,7 +143,7 @@ func TestBuildDashboardAssetGraph(t *testing.T) {
 					Kind: domain.DashboardWidgetSourceSQLQuery,
 					SQLQuery: &domain.DashboardSQLQuerySource{
 						SQL:    "select * from fct_orders",
-						Schema: stringPtr("sales"),
+						Schema: pipelineStrPtr("sales"),
 					},
 				},
 			},
@@ -335,7 +335,7 @@ func TestSyncNotebookOutputsToAssets(t *testing.T) {
 func TestMatchingModelAssetIDsForSQLWidget(t *testing.T) {
 	source := &domain.DashboardSQLQuerySource{
 		SQL:    "select * from fct_orders join dim_customers on fct_orders.customer_id = dim_customers.id",
-		Schema: stringPtr("sales"),
+		Schema: pipelineStrPtr("sales"),
 	}
 
 	matches := matchingModelAssetIDsForSQLWidget(source, map[string]string{
@@ -346,7 +346,7 @@ func TestMatchingModelAssetIDsForSQLWidget(t *testing.T) {
 	assert.Equal(t, []string{"model-1", "model-2"}, matches)
 }
 
-func stringPtr(v string) *string {
+func pipelineStrPtr(v string) *string {
 	return &v
 }
 

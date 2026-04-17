@@ -609,7 +609,10 @@ type PipelineRunRepository interface {
 	CreateRun(ctx context.Context, run *PipelineRun) (*PipelineRun, error)
 	GetRunByID(ctx context.Context, id string) (*PipelineRun, error)
 	ListRuns(ctx context.Context, filter PipelineRunFilter) ([]PipelineRun, int64, error)
+	ListQueuedRuns(ctx context.Context, pipelineID string, limit int) ([]PipelineRun, error)
 	UpdateRunStatus(ctx context.Context, id string, status string, errorMsg *string) error
+	MarkRunSLABreached(ctx context.Context, id string, errorMsg *string) error
+	UpdateRunQueueStarted(ctx context.Context, id string) error
 	UpdateRunStarted(ctx context.Context, id string) error
 	UpdateRunFinished(ctx context.Context, id string, status string, errorMsg *string) error
 	CountActiveRuns(ctx context.Context, pipelineID string) (int64, error)
@@ -618,8 +621,10 @@ type PipelineRunRepository interface {
 	GetJobRunByID(ctx context.Context, id string) (*PipelineJobRun, error)
 	ListJobRunsByRun(ctx context.Context, runID string) ([]PipelineJobRun, error)
 	UpdateJobRunStatus(ctx context.Context, id string, status string, errorMsg *string) error
-	UpdateJobRunStarted(ctx context.Context, id string) error
-	UpdateJobRunFinished(ctx context.Context, id string, status string, errorMsg *string) error
+	UpdateJobRunStarted(ctx context.Context, id string, effectiveComputeEndpointID *string, attemptCount int) error
+	UpdateJobRunFinished(ctx context.Context, id string, status string, errorMsg *string, lastErrorCode *string, attemptCount int) error
+	CreateRunEvent(ctx context.Context, event *PipelineRunEvent) (*PipelineRunEvent, error)
+	ListRunEvents(ctx context.Context, runID string, page PageRequest) ([]PipelineRunEvent, int64, error)
 }
 
 // DataAssetRepository provides CRUD operations for data assets.

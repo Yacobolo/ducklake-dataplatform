@@ -890,12 +890,19 @@ type CreatePipelineJobRequest struct {
 }
 
 type CreatePipelineRequest struct {
-	ConcurrencyLimit *int32  `json:"concurrency_limit,omitempty"`
-	Description      *string `json:"description,omitempty"`
-	FolderId         *string `json:"folder_id,omitempty"`
-	IsPaused         *bool   `json:"is_paused,omitempty"`
-	Name             string  `json:"name"`
-	ScheduleCron     *string `json:"schedule_cron,omitempty"`
+	AdmissionMode            *PipelineAdmissionMode         `json:"admission_mode,omitempty"`
+	ConcurrencyLimit         *int32                         `json:"concurrency_limit,omitempty"`
+	DefaultComputeEndpointId *string                        `json:"default_compute_endpoint_id,omitempty"`
+	DefaultRetryCount        *int32                         `json:"default_retry_count,omitempty"`
+	DefaultTimeoutSeconds    *int32                         `json:"default_timeout_seconds,omitempty"`
+	Description              *string                        `json:"description,omitempty"`
+	FolderId                 *string                        `json:"folder_id,omitempty"`
+	IsPaused                 *bool                          `json:"is_paused,omitempty"`
+	MaxRunDurationSeconds    *int32                         `json:"max_run_duration_seconds,omitempty"`
+	Name                     string                         `json:"name"`
+	NotificationWebhooks     *[]PipelineNotificationWebhook `json:"notification_webhooks,omitempty"`
+	RunAsPrincipal           *string                        `json:"run_as_principal,omitempty"`
+	ScheduleCron             *string                        `json:"schedule_cron,omitempty"`
 }
 
 type CreatePrincipalRequest struct {
@@ -2250,17 +2257,33 @@ type PaginatedWorkspaces struct {
 }
 
 type Pipeline struct {
-	ConcurrencyLimit *int32  `json:"concurrency_limit,omitempty"`
-	CreatedAt        *string `json:"created_at,omitempty"`
-	CreatedBy        *string `json:"created_by,omitempty"`
-	Description      *string `json:"description,omitempty"`
-	FolderId         *string `json:"folder_id,omitempty"`
-	Id               *string `json:"id,omitempty"`
-	IsPaused         *bool   `json:"is_paused,omitempty"`
-	Name             *string `json:"name,omitempty"`
-	ScheduleCron     *string `json:"schedule_cron,omitempty"`
-	UpdatedAt        *string `json:"updated_at,omitempty"`
+	AdmissionMode            *PipelineAdmissionMode         `json:"admission_mode,omitempty"`
+	ConcurrencyLimit         *int32                         `json:"concurrency_limit,omitempty"`
+	CreatedAt                *string                        `json:"created_at,omitempty"`
+	CreatedBy                *string                        `json:"created_by,omitempty"`
+	DefaultComputeEndpointId *string                        `json:"default_compute_endpoint_id,omitempty"`
+	DefaultRetryCount        *int32                         `json:"default_retry_count,omitempty"`
+	DefaultTimeoutSeconds    *int32                         `json:"default_timeout_seconds,omitempty"`
+	Description              *string                        `json:"description,omitempty"`
+	FolderId                 *string                        `json:"folder_id,omitempty"`
+	Id                       *string                        `json:"id,omitempty"`
+	IsPaused                 *bool                          `json:"is_paused,omitempty"`
+	MaxRunDurationSeconds    *int32                         `json:"max_run_duration_seconds,omitempty"`
+	Name                     *string                        `json:"name,omitempty"`
+	NotificationWebhooks     *[]PipelineNotificationWebhook `json:"notification_webhooks,omitempty"`
+	RunAsPrincipal           *string                        `json:"run_as_principal,omitempty"`
+	ScheduleCron             *string                        `json:"schedule_cron,omitempty"`
+	UpdatedAt                *string                        `json:"updated_at,omitempty"`
 }
+
+type PipelineAdmissionMode string
+
+const (
+	PipelineAdmissionModeREJECT PipelineAdmissionMode = "REJECT"
+	REJECT                      PipelineAdmissionMode = "REJECT"
+	PipelineAdmissionModeQUEUE  PipelineAdmissionMode = "QUEUE"
+	QUEUE                       PipelineAdmissionMode = "QUEUE"
+)
 
 type PipelineJob struct {
 	ComputeEndpointId *string             `json:"compute_endpoint_id,omitempty"`
@@ -2290,16 +2313,19 @@ type PipelineJobList struct {
 }
 
 type PipelineJobRun struct {
-	CreatedAt    *string               `json:"created_at,omitempty"`
-	ErrorMessage *string               `json:"error_message,omitempty"`
-	FinishedAt   *string               `json:"finished_at,omitempty"`
-	Id           *string               `json:"id,omitempty"`
-	JobId        *string               `json:"job_id,omitempty"`
-	JobName      *string               `json:"job_name,omitempty"`
-	RetryAttempt *int32                `json:"retry_attempt,omitempty"`
-	RunId        *string               `json:"run_id,omitempty"`
-	StartedAt    *string               `json:"started_at,omitempty"`
-	Status       *PipelineJobRunStatus `json:"status,omitempty"`
+	AttemptCount               *int32                `json:"attempt_count,omitempty"`
+	CreatedAt                  *string               `json:"created_at,omitempty"`
+	EffectiveComputeEndpointId *string               `json:"effective_compute_endpoint_id,omitempty"`
+	ErrorMessage               *string               `json:"error_message,omitempty"`
+	FinishedAt                 *string               `json:"finished_at,omitempty"`
+	Id                         *string               `json:"id,omitempty"`
+	JobId                      *string               `json:"job_id,omitempty"`
+	JobName                    *string               `json:"job_name,omitempty"`
+	LastErrorCode              *string               `json:"last_error_code,omitempty"`
+	RetryAttempt               *int32                `json:"retry_attempt,omitempty"`
+	RunId                      *string               `json:"run_id,omitempty"`
+	StartedAt                  *string               `json:"started_at,omitempty"`
+	Status                     *PipelineJobRunStatus `json:"status,omitempty"`
 }
 
 type PipelineJobRunList struct {
@@ -2317,18 +2343,65 @@ const (
 	PipelineJobRunStatusCANCELLED PipelineJobRunStatus = "CANCELLED"
 )
 
+type PipelineModelProvenance struct {
+	LastUpdatedAt *string `json:"last_updated_at,omitempty"`
+	ModelId       *string `json:"model_id,omitempty"`
+	Selector      string  `json:"selector"`
+}
+
+type PipelineNotebookProvenance struct {
+	GitCommitSha  *string `json:"git_commit_sha,omitempty"`
+	GitRepoId     *string `json:"git_repo_id,omitempty"`
+	LastUpdatedAt *string `json:"last_updated_at,omitempty"`
+	NotebookId    string  `json:"notebook_id"`
+}
+
+type PipelineNotificationWebhook struct {
+	Events *[]string `json:"events,omitempty"`
+	Url    string    `json:"url"`
+}
+
 type PipelineRun struct {
-	CreatedAt     *string                 `json:"created_at,omitempty"`
-	ErrorMessage  *string                 `json:"error_message,omitempty"`
-	FinishedAt    *string                 `json:"finished_at,omitempty"`
-	GitCommitHash *string                 `json:"git_commit_hash,omitempty"`
-	Id            *string                 `json:"id,omitempty"`
-	Parameters    *map[string]any         `json:"parameters,omitempty"`
-	PipelineId    *string                 `json:"pipeline_id,omitempty"`
-	StartedAt     *string                 `json:"started_at,omitempty"`
-	Status        *PipelineRunStatus      `json:"status,omitempty"`
-	TriggerType   *PipelineRunTriggerType `json:"trigger_type,omitempty"`
-	TriggeredBy   *string                 `json:"triggered_by,omitempty"`
+	CreatedAt          *string                 `json:"created_at,omitempty"`
+	EffectivePrincipal *string                 `json:"effective_principal,omitempty"`
+	ErrorMessage       *string                 `json:"error_message,omitempty"`
+	FinishedAt         *string                 `json:"finished_at,omitempty"`
+	GitCommitHash      *string                 `json:"git_commit_hash,omitempty"`
+	Id                 *string                 `json:"id,omitempty"`
+	Parameters         *map[string]any         `json:"parameters,omitempty"`
+	PipelineId         *string                 `json:"pipeline_id,omitempty"`
+	Provenance         *PipelineRunProvenance  `json:"provenance,omitempty"`
+	QueueStartedAt     *string                 `json:"queue_started_at,omitempty"`
+	QueuedAt           *string                 `json:"queued_at,omitempty"`
+	RepairedFromRunId  *string                 `json:"repaired_from_run_id,omitempty"`
+	StartedAt          *string                 `json:"started_at,omitempty"`
+	Status             *PipelineRunStatus      `json:"status,omitempty"`
+	TriggerType        *PipelineRunTriggerType `json:"trigger_type,omitempty"`
+	TriggeredBy        *string                 `json:"triggered_by,omitempty"`
+}
+
+type PipelineRunEvent struct {
+	CreatedAt *string         `json:"created_at,omitempty"`
+	ErrorCode *string         `json:"error_code,omitempty"`
+	EventType *string         `json:"event_type,omitempty"`
+	Id        *string         `json:"id,omitempty"`
+	JobRunId  *string         `json:"job_run_id,omitempty"`
+	Message   *string         `json:"message,omitempty"`
+	Metadata  *map[string]any `json:"metadata,omitempty"`
+	RunId     *string         `json:"run_id,omitempty"`
+}
+
+type PipelineRunEventList struct {
+	Data []PipelineRunEvent `json:"data"`
+}
+
+type PipelineRunProvenance struct {
+	EffectivePrincipal        *string                       `json:"effective_principal,omitempty"`
+	Models                    *[]PipelineModelProvenance    `json:"models,omitempty"`
+	Notebooks                 *[]PipelineNotebookProvenance `json:"notebooks,omitempty"`
+	PipelineDefinitionVersion *string                       `json:"pipeline_definition_version,omitempty"`
+	TriggerType               *string                       `json:"trigger_type,omitempty"`
+	TriggeredBy               *string                       `json:"triggered_by,omitempty"`
 }
 
 type PipelineRunStatus string
@@ -2646,6 +2719,11 @@ type Record map[string]any
 
 type ReorderCellsRequest struct {
 	CellIds []string `json:"cell_ids"`
+}
+
+type RepairPipelineRunRequest struct {
+	FromJobId *string `json:"from_job_id,omitempty"`
+	Mode      string  `json:"mode"`
 }
 
 type ResolvedDashboardDetail struct {
@@ -3169,11 +3247,18 @@ type UpdatePipelineJobRequest struct {
 }
 
 type UpdatePipelineRequest struct {
-	ConcurrencyLimit *int32  `json:"concurrency_limit,omitempty"`
-	Description      *string `json:"description,omitempty"`
-	FolderId         *string `json:"folder_id,omitempty"`
-	IsPaused         *bool   `json:"is_paused,omitempty"`
-	ScheduleCron     *string `json:"schedule_cron,omitempty"`
+	AdmissionMode            *PipelineAdmissionMode         `json:"admission_mode,omitempty"`
+	ConcurrencyLimit         *int32                         `json:"concurrency_limit,omitempty"`
+	DefaultComputeEndpointId *string                        `json:"default_compute_endpoint_id,omitempty"`
+	DefaultRetryCount        *int32                         `json:"default_retry_count,omitempty"`
+	DefaultTimeoutSeconds    *int32                         `json:"default_timeout_seconds,omitempty"`
+	Description              *string                        `json:"description,omitempty"`
+	FolderId                 *string                        `json:"folder_id,omitempty"`
+	IsPaused                 *bool                          `json:"is_paused,omitempty"`
+	MaxRunDurationSeconds    *int32                         `json:"max_run_duration_seconds,omitempty"`
+	NotificationWebhooks     *[]PipelineNotificationWebhook `json:"notification_webhooks,omitempty"`
+	RunAsPrincipal           *string                        `json:"run_as_principal,omitempty"`
+	ScheduleCron             *string                        `json:"schedule_cron,omitempty"`
 }
 
 type UpdatePrincipalRequest struct {
@@ -3757,6 +3842,8 @@ type PurgeLineageJSONRequestBody = GenPurgeLineageJSONBody
 type RegisterCatalogJSONRequestBody = GenRegisterCatalogJSONBody
 
 type ReorderCellsJSONRequestBody = GenReorderCellsJSONBody
+
+type RepairPipelineRunJSONRequestBody = GenRepairPipelineRunJSONBody
 
 type RevokeAllWebSessionsJSONRequestBody = RevokeWebSessionsRequest
 
