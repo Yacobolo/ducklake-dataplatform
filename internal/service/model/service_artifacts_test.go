@@ -34,9 +34,9 @@ func TestBuildCompileManifest_DeterministicOrdering(t *testing.T) {
 		targetCatalog: "memory",
 		targetSchema:  "analytics",
 	}
-	one, err := buildCompileManifest(selected, artifacts, runCtx)
+	one, err := buildCompileManifest(selected, artifacts, runCtx, map[string]string{})
 	require.NoError(t, err)
-	two, err := buildCompileManifest(selected, artifacts, runCtx)
+	two, err := buildCompileManifest(selected, artifacts, runCtx, map[string]string{})
 	require.NoError(t, err)
 
 	assert.Equal(t, one, two)
@@ -49,6 +49,7 @@ func TestBuildCompileDiagnostics_DedupesAndSorts(t *testing.T) {
 	raw, err := buildCompileDiagnostics(
 		[]string{"z warning", "a warning", "z warning"},
 		[]string{"hard error", "hard error"},
+		nil,
 	)
 	require.NoError(t, err)
 

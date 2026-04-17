@@ -36,6 +36,12 @@ schemas_pagination: {
   PaginatedColumnLineageEdges: #paginatedItemsSchema & {
     #item_ref: "ColumnLineageEdge"
   },
+  PaginatedCompiledColumnLineage: #paginatedItemsSchema & {
+    #item_ref: "CompiledColumnLineage"
+  },
+  PaginatedCompileDiagnostics: #paginatedItemsSchema & {
+    #item_ref: "CompileDiagnostic"
+  },
   PaginatedColumnMaskBindings: #paginatedItemsSchema & {
     #item_ref: "ColumnMaskBinding"
   },

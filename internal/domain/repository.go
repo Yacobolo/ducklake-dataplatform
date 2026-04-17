@@ -309,6 +309,7 @@ type IntrospectionRepository interface {
 	GetTable(ctx context.Context, tableID string) (*Table, error)
 	ListColumns(ctx context.Context, tableID string, page PageRequest) ([]Column, int64, error)
 	GetTableByName(ctx context.Context, tableName string) (*Table, error)
+	GetTableBySchemaAndName(ctx context.Context, schemaName, tableName string) (*Table, error)
 	GetSchemaByName(ctx context.Context, schemaName string) (*Schema, error)
 }
 
@@ -375,6 +376,10 @@ type ColumnLineageRepository interface {
 	GetForTable(ctx context.Context, schema, table string) ([]ColumnLineageEdge, error)
 	GetForSourceColumn(ctx context.Context, schema, table, column string) ([]ColumnLineageEdge, error)
 	DeleteByEdgeID(ctx context.Context, edgeID string) error
+	ReplaceBuildLineage(ctx context.Context, buildID string, items []CompiledColumnLineage) error
+	ListBuildLineage(ctx context.Context, buildID string) ([]CompiledColumnLineage, error)
+	ListBuildLineageByModel(ctx context.Context, buildID, modelName string) ([]CompiledColumnLineage, error)
+	ListBuildImpactsForSourceColumn(ctx context.Context, buildID, schema, table, column string) ([]CompiledColumnLineage, error)
 }
 
 // TableStatisticsRepository provides operations for table statistics.

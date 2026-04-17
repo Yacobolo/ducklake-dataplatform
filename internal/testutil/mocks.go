@@ -1124,12 +1124,13 @@ var _ domain.VolumeRepository = (*MockVolumeRepo)(nil)
 
 // MockIntrospectionRepo implements domain.IntrospectionRepository for testing.
 type MockIntrospectionRepo struct {
-	ListSchemasFn     func(ctx context.Context, page domain.PageRequest) ([]domain.Schema, int64, error)
-	ListTablesFn      func(ctx context.Context, schemaID string, page domain.PageRequest) ([]domain.Table, int64, error)
-	GetTableFn        func(ctx context.Context, tableID string) (*domain.Table, error)
-	ListColumnsFn     func(ctx context.Context, tableID string, page domain.PageRequest) ([]domain.Column, int64, error)
-	GetTableByNameFn  func(ctx context.Context, tableName string) (*domain.Table, error)
-	GetSchemaByNameFn func(ctx context.Context, schemaName string) (*domain.Schema, error)
+	ListSchemasFn             func(ctx context.Context, page domain.PageRequest) ([]domain.Schema, int64, error)
+	ListTablesFn              func(ctx context.Context, schemaID string, page domain.PageRequest) ([]domain.Table, int64, error)
+	GetTableFn                func(ctx context.Context, tableID string) (*domain.Table, error)
+	ListColumnsFn             func(ctx context.Context, tableID string, page domain.PageRequest) ([]domain.Column, int64, error)
+	GetTableByNameFn          func(ctx context.Context, tableName string) (*domain.Table, error)
+	GetTableBySchemaAndNameFn func(ctx context.Context, schemaName, tableName string) (*domain.Table, error)
+	GetSchemaByNameFn         func(ctx context.Context, schemaName string) (*domain.Schema, error)
 }
 
 // ListSchemas implements the interface method for testing.
@@ -1170,6 +1171,14 @@ func (m *MockIntrospectionRepo) GetTableByName(ctx context.Context, tableName st
 		return m.GetTableByNameFn(ctx, tableName)
 	}
 	panic("unexpected call to MockIntrospectionRepo.GetTableByName")
+}
+
+// GetTableBySchemaAndName implements the interface method for testing.
+func (m *MockIntrospectionRepo) GetTableBySchemaAndName(ctx context.Context, schemaName, tableName string) (*domain.Table, error) {
+	if m.GetTableBySchemaAndNameFn != nil {
+		return m.GetTableBySchemaAndNameFn(ctx, schemaName, tableName)
+	}
+	panic("unexpected call to MockIntrospectionRepo.GetTableBySchemaAndName")
 }
 
 // GetSchemaByName implements the interface method for testing.
@@ -1567,25 +1576,25 @@ var _ domain.PipelineRepository = (*MockPipelineRepo)(nil)
 
 // MockPipelineRunRepo implements domain.PipelineRunRepository for testing.
 type MockPipelineRunRepo struct {
-	CreateRunFn            func(ctx context.Context, run *domain.PipelineRun) (*domain.PipelineRun, error)
-	GetRunByIDFn           func(ctx context.Context, id string) (*domain.PipelineRun, error)
-	ListRunsFn             func(ctx context.Context, filter domain.PipelineRunFilter) ([]domain.PipelineRun, int64, error)
-	ListQueuedRunsFn       func(ctx context.Context, pipelineID string, limit int) ([]domain.PipelineRun, error)
-	UpdateRunStatusFn      func(ctx context.Context, id string, status string, errorMsg *string) error
-	MarkRunSLABreachedFn   func(ctx context.Context, id string, errorMsg *string) error
+	CreateRunFn             func(ctx context.Context, run *domain.PipelineRun) (*domain.PipelineRun, error)
+	GetRunByIDFn            func(ctx context.Context, id string) (*domain.PipelineRun, error)
+	ListRunsFn              func(ctx context.Context, filter domain.PipelineRunFilter) ([]domain.PipelineRun, int64, error)
+	ListQueuedRunsFn        func(ctx context.Context, pipelineID string, limit int) ([]domain.PipelineRun, error)
+	UpdateRunStatusFn       func(ctx context.Context, id string, status string, errorMsg *string) error
+	MarkRunSLABreachedFn    func(ctx context.Context, id string, errorMsg *string) error
 	UpdateRunQueueStartedFn func(ctx context.Context, id string) error
-	UpdateRunStartedFn     func(ctx context.Context, id string) error
-	UpdateRunFinishedFn    func(ctx context.Context, id string, status string, errorMsg *string) error
-	CountActiveRunsFn      func(ctx context.Context, pipelineID string) (int64, error)
-	CancelPendingRunsFn    func(ctx context.Context, pipelineID string) (int64, error)
-	CreateJobRunFn         func(ctx context.Context, jr *domain.PipelineJobRun) (*domain.PipelineJobRun, error)
-	GetJobRunByIDFn        func(ctx context.Context, id string) (*domain.PipelineJobRun, error)
-	ListJobRunsByRunFn     func(ctx context.Context, runID string) ([]domain.PipelineJobRun, error)
-	UpdateJobRunStatusFn   func(ctx context.Context, id string, status string, errorMsg *string) error
-	UpdateJobRunStartedFn  func(ctx context.Context, id string, effectiveComputeEndpointID *string, attemptCount int) error
-	UpdateJobRunFinishedFn func(ctx context.Context, id string, status string, errorMsg *string, lastErrorCode *string, attemptCount int) error
-	CreateRunEventFn       func(ctx context.Context, event *domain.PipelineRunEvent) (*domain.PipelineRunEvent, error)
-	ListRunEventsFn        func(ctx context.Context, runID string, page domain.PageRequest) ([]domain.PipelineRunEvent, int64, error)
+	UpdateRunStartedFn      func(ctx context.Context, id string) error
+	UpdateRunFinishedFn     func(ctx context.Context, id string, status string, errorMsg *string) error
+	CountActiveRunsFn       func(ctx context.Context, pipelineID string) (int64, error)
+	CancelPendingRunsFn     func(ctx context.Context, pipelineID string) (int64, error)
+	CreateJobRunFn          func(ctx context.Context, jr *domain.PipelineJobRun) (*domain.PipelineJobRun, error)
+	GetJobRunByIDFn         func(ctx context.Context, id string) (*domain.PipelineJobRun, error)
+	ListJobRunsByRunFn      func(ctx context.Context, runID string) ([]domain.PipelineJobRun, error)
+	UpdateJobRunStatusFn    func(ctx context.Context, id string, status string, errorMsg *string) error
+	UpdateJobRunStartedFn   func(ctx context.Context, id string, effectiveComputeEndpointID *string, attemptCount int) error
+	UpdateJobRunFinishedFn  func(ctx context.Context, id string, status string, errorMsg *string, lastErrorCode *string, attemptCount int) error
+	CreateRunEventFn        func(ctx context.Context, event *domain.PipelineRunEvent) (*domain.PipelineRunEvent, error)
+	ListRunEventsFn         func(ctx context.Context, runID string, page domain.PageRequest) ([]domain.PipelineRunEvent, int64, error)
 }
 
 // CreateRun implements the interface method for testing.

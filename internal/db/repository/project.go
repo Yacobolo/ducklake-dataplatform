@@ -481,8 +481,8 @@ func (r *BuildRepo) Create(ctx context.Context, b *domain.Build) (*domain.Build,
 		INSERT INTO builds (
 			id, project_id, product_id, environment_id, state, git_ref, commit_sha, selector,
 			target_catalog, target_schema, source_model_run_id, compile_manifest, compile_diagnostics,
-			created_by, created_at
-		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+			state_snapshot, created_by, created_at
+		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 		id,
 		b.ProjectID,
 		nullableStringValue(b.ProductID),
@@ -496,6 +496,7 @@ func (r *BuildRepo) Create(ctx context.Context, b *domain.Build) (*domain.Build,
 		nullableStringValue(b.SourceModelRunID),
 		b.CompileManifest,
 		nullableStringValue(b.CompileDiagnostics),
+		nullableStringValue(b.StateSnapshot),
 		b.CreatedBy,
 		now.Format(time.RFC3339),
 	)
@@ -559,7 +560,7 @@ const buildSelectSQL = `
 	SELECT
 		b.id, b.project_id, p.name, b.product_id, b.environment_id, e.name, b.state, b.git_ref,
 		b.commit_sha, b.selector, b.target_catalog, b.target_schema, b.source_model_run_id,
-		b.compile_manifest, b.compile_diagnostics, b.created_by, b.created_at
+		b.compile_manifest, b.compile_diagnostics, b.state_snapshot, b.created_by, b.created_at
 	FROM builds b
 	JOIN projects p ON p.id = b.project_id
 	JOIN environments e ON e.id = b.environment_id`
@@ -570,6 +571,7 @@ func scanBuild(scanner projectRowScanner) (*domain.Build, error) {
 	var commitSHA sql.NullString
 	var sourceModelRunID sql.NullString
 	var compileDiagnostics sql.NullString
+	var stateSnapshot sql.NullString
 	if err := scanner.Scan(
 		&item.ID,
 		&item.ProjectID,
@@ -586,6 +588,7 @@ func scanBuild(scanner projectRowScanner) (*domain.Build, error) {
 		&sourceModelRunID,
 		&item.CompileManifest,
 		&compileDiagnostics,
+		&stateSnapshot,
 		&item.CreatedBy,
 		&item.CreatedAt,
 	); err != nil {
@@ -602,6 +605,9 @@ func scanBuild(scanner projectRowScanner) (*domain.Build, error) {
 	}
 	if compileDiagnostics.Valid {
 		item.CompileDiagnostics = &compileDiagnostics.String
+	}
+	if stateSnapshot.Valid {
+		item.StateSnapshot = &stateSnapshot.String
 	}
 	return &item, nil
 }

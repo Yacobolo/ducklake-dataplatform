@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"encoding/json"
 
 	"github.com/Yacobolo/quackstack/internal/domain"
 )
@@ -950,6 +951,17 @@ func environmentToAPI(item domain.Environment) Environment {
 }
 
 func buildToAPI(item domain.Build) Build {
+	var diagnostics *ModelRunCompileDiagnostics
+	if parsed := parseModelCompileDiagnosticsJSON(item.CompileDiagnostics); parsed != nil {
+		diagnostics = modelCompileDiagnosticsToAPI(parsed)
+	}
+	var stateSnapshot *BuildStateSnapshot
+	if raw := stringPtrValue(item.StateSnapshot); raw != "" {
+		var parsed domain.BuildStateSnapshot
+		if err := json.Unmarshal([]byte(raw), &parsed); err == nil {
+			stateSnapshot = buildStateSnapshotToAPI(&parsed)
+		}
+	}
 	return Build{
 		Id:                 optStr(item.ID),
 		ProjectId:          optStr(item.ProjectID),
@@ -965,7 +977,8 @@ func buildToAPI(item domain.Build) Build {
 		TargetSchema:       item.TargetSchema,
 		SourceModelRunId:   item.SourceModelRunID,
 		CompileManifest:    item.CompileManifest,
-		CompileDiagnostics: item.CompileDiagnostics,
+		CompileDiagnostics: diagnostics,
+		StateSnapshot:      stateSnapshot,
 		CreatedAt:          formatTimePtr(&item.CreatedAt),
 	}
 }

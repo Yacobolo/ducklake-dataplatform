@@ -347,22 +347,68 @@ type BootstrapTokenResponse struct {
 }
 
 type Build struct {
-	CommitSha          *string     `json:"commit_sha,omitempty"`
-	CompileDiagnostics *string     `json:"compile_diagnostics,omitempty"`
-	CompileManifest    string      `json:"compile_manifest"`
-	CreatedAt          *string     `json:"created_at,omitempty"`
-	EnvironmentId      *string     `json:"environment_id,omitempty"`
-	EnvironmentName    *string     `json:"environment_name,omitempty"`
-	GitRef             string      `json:"git_ref"`
-	Id                 *string     `json:"id,omitempty"`
-	ProductId          *string     `json:"product_id,omitempty"`
-	ProjectId          *string     `json:"project_id,omitempty"`
-	ProjectName        *string     `json:"project_name,omitempty"`
-	Selector           *string     `json:"selector,omitempty"`
-	SourceModelRunId   *string     `json:"source_model_run_id,omitempty"`
-	State              *BuildState `json:"state,omitempty"`
-	TargetCatalog      string      `json:"target_catalog"`
-	TargetSchema       string      `json:"target_schema"`
+	CommitSha          *string                     `json:"commit_sha,omitempty"`
+	CompileDiagnostics *ModelRunCompileDiagnostics `json:"compile_diagnostics,omitempty"`
+	CompileManifest    string                      `json:"compile_manifest"`
+	CreatedAt          *string                     `json:"created_at,omitempty"`
+	EnvironmentId      *string                     `json:"environment_id,omitempty"`
+	EnvironmentName    *string                     `json:"environment_name,omitempty"`
+	GitRef             string                      `json:"git_ref"`
+	Id                 *string                     `json:"id,omitempty"`
+	ProductId          *string                     `json:"product_id,omitempty"`
+	ProjectId          *string                     `json:"project_id,omitempty"`
+	ProjectName        *string                     `json:"project_name,omitempty"`
+	Selector           *string                     `json:"selector,omitempty"`
+	SourceModelRunId   *string                     `json:"source_model_run_id,omitempty"`
+	State              *BuildState                 `json:"state,omitempty"`
+	StateSnapshot      *BuildStateSnapshot         `json:"state_snapshot,omitempty"`
+	TargetCatalog      string                      `json:"target_catalog"`
+	TargetSchema       string                      `json:"target_schema"`
+}
+
+type BuildCompareModelDiff struct {
+	AddedColumns     *[]string `json:"added_columns,omitempty"`
+	ChangeType       *string   `json:"change_type,omitempty"`
+	ChangedColumns   *[]string `json:"changed_columns,omitempty"`
+	FromCompiledHash *string   `json:"from_compiled_hash,omitempty"`
+	ImpactedModels   *[]string `json:"impacted_models,omitempty"`
+	ImpactedProducts *[]string `json:"impacted_products,omitempty"`
+	ImpactedTests    *[]string `json:"impacted_tests,omitempty"`
+	ModelName        *string   `json:"model_name,omitempty"`
+	RemovedColumns   *[]string `json:"removed_columns,omitempty"`
+	ToCompiledHash   *string   `json:"to_compiled_hash,omitempty"`
+}
+
+type BuildCompareResult struct {
+	ComparedToHead     *bool                    `json:"compared_to_head,omitempty"`
+	DiagnosticsAdded   *[]CompileDiagnostic     `json:"diagnostics_added,omitempty"`
+	DiagnosticsRemoved *[]CompileDiagnostic     `json:"diagnostics_removed,omitempty"`
+	FromBuildId        *string                  `json:"from_build_id,omitempty"`
+	ModelDiffs         *[]BuildCompareModelDiff `json:"model_diffs,omitempty"`
+	ProjectName        *string                  `json:"project_name,omitempty"`
+	ToBuildId          *string                  `json:"to_build_id,omitempty"`
+}
+
+type BuildImpactResult struct {
+	BuildId          *string                  `json:"build_id,omitempty"`
+	ImpactedColumns  *[]CompiledColumnLineage `json:"impacted_columns,omitempty"`
+	ImpactedModels   *[]string                `json:"impacted_models,omitempty"`
+	ImpactedProducts *[]string                `json:"impacted_products,omitempty"`
+	ImpactedTests    *[]string                `json:"impacted_tests,omitempty"`
+	Key              string                   `json:"key"`
+	Kind             string                   `json:"kind"`
+	Partial          *bool                    `json:"partial,omitempty"`
+	ProjectName      *string                  `json:"project_name,omitempty"`
+}
+
+type BuildSourceStateSnapshot struct {
+	FreshnessBreached *bool   `json:"freshness_breached,omitempty"`
+	LastLoadedAt      *string `json:"last_loaded_at,omitempty"`
+	MaxLagSeconds     *int32  `json:"max_lag_seconds,omitempty"`
+	RelationRef       *string `json:"relation_ref,omitempty"`
+	SourceKey         *string `json:"source_key,omitempty"`
+	StaleSince        *string `json:"stale_since,omitempty"`
+	TimestampColumn   *string `json:"timestamp_column,omitempty"`
 }
 
 type BuildState string
@@ -373,6 +419,13 @@ const (
 	BuildStateReleased   BuildState = "released"
 	BuildStateSuperseded BuildState = "superseded"
 )
+
+type BuildStateSnapshot struct {
+	EnvironmentName *string                     `json:"environment_name,omitempty"`
+	ProjectName     *string                     `json:"project_name,omitempty"`
+	Sources         *[]BuildSourceStateSnapshot `json:"sources,omitempty"`
+	Version         *int32                      `json:"version,omitempty"`
+}
 
 type CancelQueryResponse struct {
 	QueryId string         `json:"query_id"`
@@ -511,9 +564,24 @@ type ColumnLineageEdgeTransformType string
 const (
 	ColumnLineageEdgeTransformTypeDIRECT     ColumnLineageEdgeTransformType = "DIRECT"
 	DIRECT                                   ColumnLineageEdgeTransformType = "DIRECT"
+	ColumnLineageEdgeTransformTypeRENAME     ColumnLineageEdgeTransformType = "RENAME"
+	RENAME                                   ColumnLineageEdgeTransformType = "RENAME"
 	ColumnLineageEdgeTransformTypeEXPRESSION ColumnLineageEdgeTransformType = "EXPRESSION"
 	EXPRESSION                               ColumnLineageEdgeTransformType = "EXPRESSION"
+	ColumnLineageEdgeTransformTypeAGGREGATE  ColumnLineageEdgeTransformType = "AGGREGATE"
+	AGGREGATE                                ColumnLineageEdgeTransformType = "AGGREGATE"
+	ColumnLineageEdgeTransformTypeUNKNOWN    ColumnLineageEdgeTransformType = "UNKNOWN"
+	UNKNOWN                                  ColumnLineageEdgeTransformType = "UNKNOWN"
 )
+
+type ColumnLineageSourceRef struct {
+	Catalog   *string `json:"catalog,omitempty"`
+	Column    *string `json:"column,omitempty"`
+	Kind      *string `json:"kind,omitempty"`
+	ModelName *string `json:"model_name,omitempty"`
+	Schema    *string `json:"schema,omitempty"`
+	Table     *string `json:"table,omitempty"`
+}
 
 type ColumnMask struct {
 	ColumnName     string  `json:"column_name"`
@@ -539,9 +607,63 @@ type ColumnMaskBindingRequest struct {
 	SeeOriginal   *bool         `json:"see_original,omitempty"`
 }
 
+type ColumnSensitivityInfo struct {
+	Partial      *bool                     `json:"partial,omitempty"`
+	Reasons      *[]string                 `json:"reasons,omitempty"`
+	SourceFields *[]ColumnLineageSourceRef `json:"source_fields,omitempty"`
+	Status       *string                   `json:"status,omitempty"`
+}
+
 type CommitIngestionRequest struct {
 	Options *IngestionOptions `json:"options,omitempty"`
 	S3Keys  []string          `json:"s3_keys"`
+}
+
+type CompareBuildsRequest struct {
+	CompareToHead *bool   `json:"compare_to_head,omitempty"`
+	FromBuildId   string  `json:"from_build_id"`
+	ProjectName   *string `json:"project_name,omitempty"`
+	ToBuildId     *string `json:"to_build_id,omitempty"`
+}
+
+type CompileDiagnostic struct {
+	Code           string                     `json:"code"`
+	ColumnName     *string                    `json:"column_name,omitempty"`
+	Location       *CompileDiagnosticLocation `json:"location,omitempty"`
+	Message        string                     `json:"message"`
+	ModelName      *string                    `json:"model_name,omitempty"`
+	RelatedObjects *[]string                  `json:"related_objects,omitempty"`
+	Severity       CompileDiagnosticSeverity  `json:"severity"`
+}
+
+type CompileDiagnosticLocation struct {
+	Column *int32 `json:"column,omitempty"`
+	Line   *int32 `json:"line,omitempty"`
+}
+
+type CompileDiagnosticSeverity string
+
+const (
+	CompileDiagnosticSeverityINFO    CompileDiagnosticSeverity = "INFO"
+	INFO                             CompileDiagnosticSeverity = "INFO"
+	CompileDiagnosticSeverityWARNING CompileDiagnosticSeverity = "WARNING"
+	WARNING                          CompileDiagnosticSeverity = "WARNING"
+	CompileDiagnosticSeverityERROR   CompileDiagnosticSeverity = "ERROR"
+)
+
+type CompiledColumnLineage struct {
+	BuildId       *string                         `json:"build_id,omitempty"`
+	Function      *string                         `json:"function,omitempty"`
+	ModelName     *string                         `json:"model_name,omitempty"`
+	Partial       *bool                           `json:"partial,omitempty"`
+	ProjectName   *string                         `json:"project_name,omitempty"`
+	Sensitivity   *ColumnSensitivityInfo          `json:"sensitivity,omitempty"`
+	Sources       *[]ColumnLineageSourceRef       `json:"sources,omitempty"`
+	TargetCatalog *string                         `json:"target_catalog,omitempty"`
+	TargetColumn  *string                         `json:"target_column,omitempty"`
+	TargetSchema  *string                         `json:"target_schema,omitempty"`
+	TargetTable   *string                         `json:"target_table,omitempty"`
+	TransformType *ColumnLineageEdgeTransformType `json:"transform_type,omitempty"`
 }
 
 type ComputeAssignment struct {
@@ -674,6 +796,7 @@ type CreateBuildRequest struct {
 	GitRef             string  `json:"git_ref"`
 	Selector           *string `json:"selector,omitempty"`
 	SourceModelRunId   *string `json:"source_model_run_id,omitempty"`
+	StateSnapshot      *string `json:"state_snapshot,omitempty"`
 	TargetCatalog      string  `json:"target_catalog"`
 	TargetSchema       string  `json:"target_schema"`
 }
@@ -1751,8 +1874,9 @@ type ModelRun struct {
 }
 
 type ModelRunCompileDiagnostics struct {
-	Errors   *[]string `json:"errors,omitempty"`
-	Warnings *[]string `json:"warnings,omitempty"`
+	Errors   *[]string            `json:"errors,omitempty"`
+	Items    *[]CompileDiagnostic `json:"items,omitempty"`
+	Warnings *[]string            `json:"warnings,omitempty"`
 }
 
 type ModelRunStep struct {
@@ -2039,6 +2163,16 @@ type PaginatedColumnMaskBindings struct {
 type PaginatedColumnMasks struct {
 	Data          []ColumnMask `json:"data"`
 	NextPageToken *string      `json:"next_page_token,omitempty"`
+}
+
+type PaginatedCompileDiagnostics struct {
+	Data          []CompileDiagnostic `json:"data"`
+	NextPageToken *string             `json:"next_page_token,omitempty"`
+}
+
+type PaginatedCompiledColumnLineage struct {
+	Data          []CompiledColumnLineage `json:"data"`
+	NextPageToken *string                 `json:"next_page_token,omitempty"`
 }
 
 type PaginatedComputeAssignments struct {
@@ -2421,6 +2555,12 @@ const (
 	PipelineRunTriggerTypeSCHEDULED PipelineRunTriggerType = "SCHEDULED"
 )
 
+type PlanRebuildRequest struct {
+	EnvironmentName string  `json:"environment_name"`
+	ProjectName     string  `json:"project_name"`
+	Selector        *string `json:"selector,omitempty"`
+}
+
 type Principal struct {
 	CreatedAt *string       `json:"created_at,omitempty"`
 	Id        string        `json:"id"`
@@ -2703,6 +2843,19 @@ type QueryResult struct {
 	NextPageToken *string          `json:"next_page_token,omitempty"`
 	RowCount      *int32           `json:"row_count,omitempty"`
 	Rows          []map[string]any `json:"rows"`
+}
+
+type RebuildPlan struct {
+	BaselineBuildId *string            `json:"baseline_build_id,omitempty"`
+	EnvironmentName *string            `json:"environment_name,omitempty"`
+	ProjectName     *string            `json:"project_name,omitempty"`
+	SelectedModels  *[]RebuildPlanItem `json:"selected_models,omitempty"`
+	UnchangedModels *[]string          `json:"unchanged_models,omitempty"`
+}
+
+type RebuildPlanItem struct {
+	ModelName *string   `json:"model_name,omitempty"`
+	Reasons   *[]string `json:"reasons,omitempty"`
 }
 
 type RecentResource struct {
@@ -3567,15 +3720,25 @@ type DeleteSchemaParams = GenDeleteSchemaParams
 
 type DiffMacroRevisionsParams = GenDiffMacroRevisionsParams
 
+type GetBuildColumnLineageParams = GenGetBuildColumnLineageParams
+
+type GetBuildDiagnosticsParams = GenGetBuildDiagnosticsParams
+
+type GetBuildSourceColumnImpactParams = GenGetBuildSourceColumnImpactParams
+
 type GetColumnImpactParams = GenGetColumnImpactParams
 
 type GetColumnLineageParams = GenGetColumnLineageParams
 
 type GetDownstreamLineageParams = GenGetDownstreamLineageParams
 
+type GetMacroImpactAnalysisParams = GenGetMacroImpactAnalysisParams
+
 type GetMacroImpactParams = GenGetMacroImpactParams
 
 type GetModelDAGParams = GenGetModelDAGParams
+
+type GetModelImpactAnalysisParams = GenGetModelImpactAnalysisParams
 
 type GetQueryResultsParams = GenGetQueryResultsParams
 
@@ -3719,6 +3882,8 @@ type BootstrapCompleteJSONRequestBody = BootstrapCompleteRequest
 
 type CommitTableIngestionJSONRequestBody = GenCommitTableIngestionJSONBody
 
+type CompareBuildsJSONRequestBody = GenCompareBuildsJSONBody
+
 type CreateAPIKeyJSONRequestBody = GenCreateAPIKeyJSONBody
 
 type CreateAssetBackfillJSONRequestBody = GenCreateAssetBackfillJSONBody
@@ -3834,6 +3999,8 @@ type LocalLoginJSONRequestBody = LocalLoginRequest
 type MoveFolderJSONRequestBody = GenMoveFolderJSONBody
 
 type MoveNotebookJSONRequestBody = GenMoveNotebookJSONBody
+
+type PlanRebuildJSONRequestBody = GenPlanRebuildJSONBody
 
 type PromoteNotebookToModelJSONRequestBody = GenPromoteNotebookToModelJSONBody
 

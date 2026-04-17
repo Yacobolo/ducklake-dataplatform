@@ -458,6 +458,7 @@ schemas_semantic_models: {
   },
   ModelRunCompileDiagnostics: #objectSchema & {
     #fields: {
+      items: #arrayRefProperty & {#ref: "CompileDiagnostic"},
       warnings: #stringArrayProperty,
       errors: #stringArrayProperty
     }

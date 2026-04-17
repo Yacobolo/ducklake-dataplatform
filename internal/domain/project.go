@@ -186,6 +186,7 @@ type Build struct {
 	SourceModelRunID   *string
 	CompileManifest    string
 	CompileDiagnostics *string
+	StateSnapshot      *string
 	CreatedBy          string
 	CreatedAt          time.Time
 }
@@ -201,6 +202,7 @@ type CreateBuildRequest struct {
 	SourceModelRunID   *string
 	CompileManifest    string
 	CompileDiagnostics *string
+	StateSnapshot      *string
 }
 
 // Validate validates a project creation request.

@@ -309,6 +309,127 @@ func (h *APIHandler) GetColumnImpact(ctx context.Context, req GenGetColumnImpact
 	}, nil
 }
 
+// GetBuildColumnLineage implements compile-time column lineage retrieval for a build.
+func (h *APIHandler) GetBuildColumnLineage(ctx context.Context, req GenGetBuildColumnLineageRequest) (GenGetBuildColumnLineageResponse, error) {
+	items, err := h.models.GetBuildLineage(ctx, req.BuildId, req.Params.ModelName)
+	if err != nil {
+		return nil, err
+	}
+	data := make([]CompiledColumnLineage, 0, len(items))
+	for _, item := range items {
+		data = append(data, compiledColumnLineageToAPI(item))
+	}
+	return GenGetBuildColumnLineage200JSONResponse{
+		Body:    PaginatedCompiledColumnLineage{Data: data},
+		Headers: GenGetBuildColumnLineage200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+	}, nil
+}
+
+// GetBuildDiagnostics implements structured build diagnostic retrieval.
+func (h *APIHandler) GetBuildDiagnostics(ctx context.Context, req GenGetBuildDiagnosticsRequest) (GenGetBuildDiagnosticsResponse, error) {
+	filter := domain.BuildDiagnosticsFilter{
+		ModelName: req.Params.ModelName,
+		Code:      req.Params.Code,
+	}
+	if req.Params.Severity != nil {
+		severity := domain.DiagnosticSeverity(*req.Params.Severity)
+		filter.Severity = &severity
+	}
+	items, err := h.models.GetBuildDiagnostics(ctx, req.BuildId, filter)
+	if err != nil {
+		return nil, err
+	}
+	data := make([]CompileDiagnostic, 0, len(items))
+	for _, item := range items {
+		data = append(data, compileDiagnosticToAPI(item))
+	}
+	return GenGetBuildDiagnostics200JSONResponse{
+		Body:    PaginatedCompileDiagnostics{Data: data},
+		Headers: GenGetBuildDiagnostics200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+	}, nil
+}
+
+// GetBuildSourceColumnImpact implements build-specific source column impact retrieval.
+func (h *APIHandler) GetBuildSourceColumnImpact(ctx context.Context, req GenGetBuildSourceColumnImpactRequest) (GenGetBuildSourceColumnImpactResponse, error) {
+	items, err := h.models.GetBuildSourceColumnImpact(ctx, req.BuildId, req.SchemaName, req.TableName, req.ColumnName)
+	if err != nil {
+		return nil, err
+	}
+	data := make([]CompiledColumnLineage, 0, len(items))
+	for _, item := range items {
+		data = append(data, compiledColumnLineageToAPI(item))
+	}
+	return GenGetBuildSourceColumnImpact200JSONResponse{
+		Body:    PaginatedCompiledColumnLineage{Data: data},
+		Headers: GenGetBuildSourceColumnImpact200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+	}, nil
+}
+
+// PlanRebuild returns a code and data aware rebuild plan.
+func (h *APIHandler) PlanRebuild(ctx context.Context, req GenPlanRebuildRequest) (GenPlanRebuildResponse, error) {
+	if req.Body == nil {
+		return GenPlanRebuild400JSONResponse{badRequestErrorResponse(domain.ErrValidation("request body is required"))}, nil
+	}
+	cp, _ := domain.PrincipalFromContext(ctx)
+	plan, err := h.models.PlanRebuild(ctx, cp.Name, domain.PlanRebuildRequest{
+		ProjectName:     req.Body.ProjectName,
+		EnvironmentName: req.Body.EnvironmentName,
+		Selector:        derefString(req.Body.Selector),
+	})
+	if err != nil {
+		return nil, err
+	}
+	return GenPlanRebuild200JSONResponse{
+		Body:    rebuildPlanToAPI(*plan),
+		Headers: GenPlanRebuild200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+	}, nil
+}
+
+// CompareBuilds compares two builds or a build to current head.
+func (h *APIHandler) CompareBuilds(ctx context.Context, req GenCompareBuildsRequest) (GenCompareBuildsResponse, error) {
+	if req.Body == nil {
+		return GenCompareBuilds400JSONResponse{badRequestErrorResponse(domain.ErrValidation("request body is required"))}, nil
+	}
+	cp, _ := domain.PrincipalFromContext(ctx)
+	result, err := h.models.CompareBuilds(ctx, cp.Name, domain.CompareBuildsRequest{
+		ProjectName:   derefString(req.Body.ProjectName),
+		FromBuildID:   req.Body.FromBuildId,
+		ToBuildID:     req.Body.ToBuildId,
+		CompareToHead: derefBoolDefault(req.Body.CompareToHead, false),
+	})
+	if err != nil {
+		return nil, err
+	}
+	return GenCompareBuilds200JSONResponse{
+		Body:    buildCompareResultToAPI(*result),
+		Headers: GenCompareBuilds200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+	}, nil
+}
+
+// GetModelImpactAnalysis returns downstream impact for a model.
+func (h *APIHandler) GetModelImpactAnalysis(ctx context.Context, req GenGetModelImpactAnalysisRequest) (GenGetModelImpactAnalysisResponse, error) {
+	result, err := h.models.GetModelImpact(ctx, req.ProjectName, req.Params.BuildId, req.ProjectName+"."+req.ModelName)
+	if err != nil {
+		return nil, err
+	}
+	return GenGetModelImpactAnalysis200JSONResponse{
+		Body:    buildImpactResultToAPI(*result),
+		Headers: GenGetModelImpactAnalysis200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+	}, nil
+}
+
+// GetMacroImpactAnalysis returns downstream impact for a macro.
+func (h *APIHandler) GetMacroImpactAnalysis(ctx context.Context, req GenGetMacroImpactAnalysisRequest) (GenGetMacroImpactAnalysisResponse, error) {
+	result, err := h.models.GetMacroImpact(ctx, req.ProjectName, req.Params.BuildId, req.MacroName)
+	if err != nil {
+		return nil, err
+	}
+	return GenGetMacroImpactAnalysis200JSONResponse{
+		Body:    buildImpactResultToAPI(*result),
+		Headers: GenGetMacroImpactAnalysis200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+	}, nil
+}
+
 // === Tags ===
 
 // ListTags implements the endpoint for listing all tags.

@@ -116,7 +116,171 @@ schemas_catalog_compute: {
   ColumnLineageEdgeTransformType: #enumSchema & {
     #values: [
       "DIRECT",
-      "EXPRESSION"
+      "RENAME",
+      "EXPRESSION",
+      "AGGREGATE",
+      "UNKNOWN"
+    ]
+  },
+  ColumnLineageSourceRef: #objectSchema & {
+    #fields: {
+      catalog: #stringProperty,
+      schema: #stringProperty,
+      table: #stringProperty,
+      column: #stringProperty,
+      kind: #stringProperty,
+      model_name: #stringProperty
+    }
+  },
+  ColumnSensitivityInfo: #objectSchema & {
+    #fields: {
+      status: #stringProperty,
+      partial: #boolProperty,
+      reasons: #stringArrayProperty,
+      source_fields: #arrayRefProperty & {#ref: "ColumnLineageSourceRef"}
+    }
+  },
+  CompiledColumnLineage: #objectSchema & {
+    #fields: {
+      build_id: #stringProperty,
+      project_name: #stringProperty,
+      model_name: #stringProperty,
+      target_catalog: #stringProperty,
+      target_schema: #stringProperty,
+      target_table: #stringProperty,
+      target_column: #stringProperty,
+      transform_type: #refProperty & {#ref: "ColumnLineageEdgeTransformType"},
+      function: #stringProperty,
+      partial: #boolProperty,
+      sources: #arrayRefProperty & {#ref: "ColumnLineageSourceRef"},
+      sensitivity: #refProperty & {#ref: "ColumnSensitivityInfo"}
+    }
+  },
+  CompileDiagnosticSeverity: #enumSchema & {
+    #values: [
+      "INFO",
+      "WARNING",
+      "ERROR"
+    ]
+  },
+  CompileDiagnosticLocation: #objectSchema & {
+    #fields: {
+      line: #int32Property,
+      column: #int32Property
+    }
+  },
+  CompileDiagnostic: #objectSchema & {
+    #fields: {
+      severity: #refProperty & {#ref: "CompileDiagnosticSeverity"},
+      code: #stringProperty,
+      message: #stringProperty,
+      model_name: #stringProperty,
+      column_name: #stringProperty,
+      location: #refProperty & {#ref: "CompileDiagnosticLocation"},
+      related_objects: #stringArrayProperty
+    },
+    #required: [
+      "severity",
+      "code",
+      "message"
+    ]
+  },
+  BuildSourceStateSnapshot: #objectSchema & {
+    #fields: {
+      source_key: #stringProperty,
+      relation_ref: #stringProperty,
+      timestamp_column: #stringProperty,
+      last_loaded_at: #dateTimeProperty,
+      max_lag_seconds: #int64Property,
+      freshness_breached: #boolProperty,
+      stale_since: #dateTimeProperty
+    }
+  },
+  BuildStateSnapshot: #objectSchema & {
+    #fields: {
+      version: #int32Property,
+      project_name: #stringProperty,
+      environment_name: #stringProperty,
+      sources: #arrayRefProperty & {#ref: "BuildSourceStateSnapshot"}
+    }
+  },
+  RebuildPlanItem: #objectSchema & {
+    #fields: {
+      model_name: #stringProperty,
+      reasons: #stringArrayProperty
+    }
+  },
+  RebuildPlan: #objectSchema & {
+    #fields: {
+      project_name: #stringProperty,
+      environment_name: #stringProperty,
+      baseline_build_id: #stringProperty,
+      selected_models: #arrayRefProperty & {#ref: "RebuildPlanItem"},
+      unchanged_models: #stringArrayProperty
+    }
+  },
+  PlanRebuildRequest: #objectSchema & {
+    #fields: {
+      project_name: #stringProperty,
+      environment_name: #stringProperty,
+      selector: #stringProperty
+    },
+    #required: [
+      "project_name",
+      "environment_name"
+    ]
+  },
+  CompareBuildsRequest: #objectSchema & {
+    #fields: {
+      project_name: #stringProperty,
+      from_build_id: #stringProperty,
+      to_build_id: #stringProperty,
+      compare_to_head: #boolProperty
+    },
+    #required: [
+      "from_build_id"
+    ]
+  },
+  BuildCompareModelDiff: #objectSchema & {
+    #fields: {
+      model_name: #stringProperty,
+      change_type: #stringProperty,
+      from_compiled_hash: #stringProperty,
+      to_compiled_hash: #stringProperty,
+      added_columns: #stringArrayProperty,
+      removed_columns: #stringArrayProperty,
+      changed_columns: #stringArrayProperty,
+      impacted_models: #stringArrayProperty,
+      impacted_tests: #stringArrayProperty,
+      impacted_products: #stringArrayProperty
+    }
+  },
+  BuildCompareResult: #objectSchema & {
+    #fields: {
+      project_name: #stringProperty,
+      from_build_id: #stringProperty,
+      to_build_id: #stringProperty,
+      compared_to_head: #boolProperty,
+      model_diffs: #arrayRefProperty & {#ref: "BuildCompareModelDiff"},
+      diagnostics_added: #arrayRefProperty & {#ref: "CompileDiagnostic"},
+      diagnostics_removed: #arrayRefProperty & {#ref: "CompileDiagnostic"}
+    }
+  },
+  BuildImpactResult: #objectSchema & {
+    #fields: {
+      project_name: #stringProperty,
+      kind: #stringProperty,
+      key: #stringProperty,
+      build_id: #stringProperty,
+      impacted_models: #stringArrayProperty,
+      impacted_columns: #arrayRefProperty & {#ref: "CompiledColumnLineage"},
+      impacted_tests: #stringArrayProperty,
+      impacted_products: #stringArrayProperty,
+      partial: #boolProperty
+    },
+    #required: [
+      "kind",
+      "key"
     ]
   },
   ColumnMask: #objectSchema & {

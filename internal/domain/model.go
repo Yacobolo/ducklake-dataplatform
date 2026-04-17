@@ -277,8 +277,9 @@ type ModelRun struct {
 
 // ModelCompileDiagnostics captures non-fatal compile diagnostics.
 type ModelCompileDiagnostics struct {
-	Warnings []string `json:"warnings,omitempty"`
-	Errors   []string `json:"errors,omitempty"`
+	Items    []CompileDiagnostic `json:"items,omitempty"`
+	Warnings []string            `json:"warnings,omitempty"`
+	Errors   []string            `json:"errors,omitempty"`
 }
 
 // ModelRunStep represents a single model's execution within a run.

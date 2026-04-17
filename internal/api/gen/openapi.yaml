@@ -19139,6 +19139,584 @@ paths:
         - {}
       x-authz:
         mode: none
+  /lineage/builds/compare:
+    post:
+      operationId: compareBuilds
+      summary: Compare builds or compare a build to head
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BuildCompareResult'
+              example:
+                compared_to_head: true
+                diagnostics_added:
+                  - code: example
+                    column_name: example
+                    location:
+                      column: 1
+                      line: 1
+                    message: example
+                    model_name: example
+                    related_objects:
+                      - example
+                    severity: INFO
+                diagnostics_removed:
+                  - code: example
+                    column_name: example
+                    location:
+                      column: 1
+                      line: 1
+                    message: example
+                    model_name: example
+                    related_objects:
+                      - example
+                    severity: INFO
+                from_build_id: example
+                model_diffs:
+                  - added_columns:
+                      - example
+                    change_type: example
+                    changed_columns:
+                      - example
+                    from_compiled_hash: example
+                    impacted_models:
+                      - example
+                    impacted_products:
+                      - example
+                    impacted_tests:
+                      - example
+                    model_name: example
+                    removed_columns:
+                      - example
+                    to_compiled_hash: example
+                project_name: example
+                to_build_id: example
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+      tags:
+        - Lineage
+      requestBody:
+        required: true
+        description: Request payload
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CompareBuildsRequest'
+            example:
+              compare_to_head: true
+              from_build_id: example
+              project_name: example
+              to_build_id: example
+      x-cli-command:
+  /lineage/builds/{build_id}/columns:
+    get:
+      operationId: getBuildColumnLineage
+      summary: Get compile-time build column lineage
+      parameters:
+        - name: build_id
+          in: path
+          required: true
+          schema:
+            type: string
+          example: example
+        - name: model_name
+          in: query
+          required: false
+          schema:
+            type: string
+          example: example
+          explode: false
+        - name: max_results
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+          example: 1
+          explode: false
+        - name: page_token
+          in: query
+          required: false
+          schema:
+            type: string
+          example: example
+          explode: false
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedCompiledColumnLineage'
+              example:
+                data:
+                  - build_id: example
+                    function: example
+                    model_name: example
+                    partial: true
+                    project_name: example
+                    sensitivity:
+                      partial: true
+                      reasons:
+                        - example
+                      source_fields:
+                        - catalog: example
+                          column: example
+                          kind: example
+                          model_name: example
+                          schema: example
+                          table: example
+                      status: example
+                    sources:
+                      - catalog: example
+                        column: example
+                        kind: example
+                        model_name: example
+                        schema: example
+                        table: example
+                    target_catalog: example
+                    target_column: example
+                    target_schema: example
+                    target_table: example
+                    transform_type: DIRECT
+                next_page_token: example
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '404':
+          description: The server cannot find the requested resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+      tags:
+        - Lineage
+      x-cli-command:
+  /lineage/builds/{build_id}/diagnostics:
+    get:
+      operationId: getBuildDiagnostics
+      summary: Get build diagnostics
+      parameters:
+        - name: build_id
+          in: path
+          required: true
+          schema:
+            type: string
+          example: example
+        - name: model_name
+          in: query
+          required: false
+          schema:
+            type: string
+          example: example
+          explode: false
+        - name: severity
+          in: query
+          required: false
+          schema:
+            type: string
+          example: example
+          explode: false
+        - name: code
+          in: query
+          required: false
+          schema:
+            type: string
+          example: example
+          explode: false
+        - name: max_results
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+          example: 1
+          explode: false
+        - name: page_token
+          in: query
+          required: false
+          schema:
+            type: string
+          example: example
+          explode: false
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedCompileDiagnostics'
+              example:
+                data:
+                  - code: example
+                    column_name: example
+                    location:
+                      column: 1
+                      line: 1
+                    message: example
+                    model_name: example
+                    related_objects:
+                      - example
+                    severity: INFO
+                next_page_token: example
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '404':
+          description: The server cannot find the requested resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+      tags:
+        - Lineage
+      x-cli-command:
+  /lineage/builds/{build_id}/impacts/sources/{schema_name}/{table_name}/{column_name}:
+    get:
+      operationId: getBuildSourceColumnImpact
+      summary: Get build impact for a source column
+      parameters:
+        - name: build_id
+          in: path
+          required: true
+          schema:
+            type: string
+          example: example
+        - name: schema_name
+          in: path
+          required: true
+          schema:
+            type: string
+          example: example
+        - name: table_name
+          in: path
+          required: true
+          schema:
+            type: string
+          example: example
+        - name: column_name
+          in: path
+          required: true
+          schema:
+            type: string
+          example: example
+        - name: max_results
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+          example: 1
+          explode: false
+        - name: page_token
+          in: query
+          required: false
+          schema:
+            type: string
+          example: example
+          explode: false
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedCompiledColumnLineage'
+              example:
+                data:
+                  - build_id: example
+                    function: example
+                    model_name: example
+                    partial: true
+                    project_name: example
+                    sensitivity:
+                      partial: true
+                      reasons:
+                        - example
+                      source_fields:
+                        - catalog: example
+                          column: example
+                          kind: example
+                          model_name: example
+                          schema: example
+                          table: example
+                      status: example
+                    sources:
+                      - catalog: example
+                        column: example
+                        kind: example
+                        model_name: example
+                        schema: example
+                        table: example
+                    target_catalog: example
+                    target_column: example
+                    target_schema: example
+                    target_table: example
+                    transform_type: DIRECT
+                next_page_token: example
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '404':
+          description: The server cannot find the requested resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+      tags:
+        - Lineage
+      x-cli-command:
   /lineage/columns/{schema_name}/{table_name}:
     get:
       operationId: getColumnLineage
@@ -19472,6 +20050,398 @@ paths:
       tags:
         - Lineage
       x-cli-command: lineage edges delete
+  /lineage/impacts/macros/{project_name}/{macro_name}:
+    get:
+      operationId: getMacroImpactAnalysis
+      summary: Get build impact for a macro
+      parameters:
+        - name: project_name
+          in: path
+          required: true
+          schema:
+            type: string
+          example: example
+        - name: macro_name
+          in: path
+          required: true
+          schema:
+            type: string
+          example: example
+        - name: build_id
+          in: query
+          required: false
+          schema:
+            type: string
+          example: example
+          explode: false
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BuildImpactResult'
+              example:
+                build_id: example
+                impacted_columns:
+                  - build_id: example
+                    function: example
+                    model_name: example
+                    partial: true
+                    project_name: example
+                    sensitivity:
+                      partial: true
+                      reasons:
+                        - example
+                      source_fields:
+                        - catalog: example
+                          column: example
+                          kind: example
+                          model_name: example
+                          schema: example
+                          table: example
+                      status: example
+                    sources:
+                      - catalog: example
+                        column: example
+                        kind: example
+                        model_name: example
+                        schema: example
+                        table: example
+                    target_catalog: example
+                    target_column: example
+                    target_schema: example
+                    target_table: example
+                    transform_type: DIRECT
+                impacted_models:
+                  - example
+                impacted_products:
+                  - example
+                impacted_tests:
+                  - example
+                key: example
+                kind: example
+                partial: true
+                project_name: example
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '404':
+          description: The server cannot find the requested resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+      tags:
+        - Lineage
+      x-cli-command:
+  /lineage/impacts/models/{project_name}/{model_name}:
+    get:
+      operationId: getModelImpactAnalysis
+      summary: Get build impact for a model
+      parameters:
+        - name: project_name
+          in: path
+          required: true
+          schema:
+            type: string
+          example: example
+        - name: model_name
+          in: path
+          required: true
+          schema:
+            type: string
+          example: example
+        - name: build_id
+          in: query
+          required: false
+          schema:
+            type: string
+          example: example
+          explode: false
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BuildImpactResult'
+              example:
+                build_id: example
+                impacted_columns:
+                  - build_id: example
+                    function: example
+                    model_name: example
+                    partial: true
+                    project_name: example
+                    sensitivity:
+                      partial: true
+                      reasons:
+                        - example
+                      source_fields:
+                        - catalog: example
+                          column: example
+                          kind: example
+                          model_name: example
+                          schema: example
+                          table: example
+                      status: example
+                    sources:
+                      - catalog: example
+                        column: example
+                        kind: example
+                        model_name: example
+                        schema: example
+                        table: example
+                    target_catalog: example
+                    target_column: example
+                    target_schema: example
+                    target_table: example
+                    transform_type: DIRECT
+                impacted_models:
+                  - example
+                impacted_products:
+                  - example
+                impacted_tests:
+                  - example
+                key: example
+                kind: example
+                partial: true
+                project_name: example
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '404':
+          description: The server cannot find the requested resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+      tags:
+        - Lineage
+      x-cli-command:
+  /lineage/plans/rebuild:
+    post:
+      operationId: planRebuild
+      summary: Plan a code and data aware rebuild
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RebuildPlan'
+              example:
+                baseline_build_id: example
+                environment_name: example
+                project_name: example
+                selected_models:
+                  - model_name: example
+                    reasons:
+                      - example
+                unchanged_models:
+                  - example
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+      tags:
+        - Lineage
+      requestBody:
+        required: true
+        description: Request payload
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlanRebuildRequest'
+            example:
+              environment_name: example
+              project_name: example
+              selector: example
+      x-cli-command:
   /lineage/purges:
     post:
       operationId: purgeLineage
@@ -29274,7 +30244,8 @@ paths:
               example:
                 data:
                   - commit_sha: 8f3d9e2a
-                    compile_diagnostics: '{...diagnostics json...}'
+                    compile_diagnostics:
+                      items: []
                     compile_manifest: '{...manifest json...}'
                     created_at: "2026-04-13T07:00:00Z"
                     environment_id: env_prod
@@ -29287,6 +30258,8 @@ paths:
                     selector: tag:daily
                     source_model_run_id: run_01hzymodel
                     state: released
+                    state_snapshot:
+                      version: 1
                     target_catalog: analytics
                     target_schema: mart
                 next_page_token: example
@@ -29384,7 +30357,8 @@ paths:
                 $ref: '#/components/schemas/Build'
               example:
                 commit_sha: 8f3d9e2a
-                compile_diagnostics: '{...diagnostics json...}'
+                compile_diagnostics:
+                  items: []
                 compile_manifest: '{...manifest json...}'
                 created_at: "2026-04-13T07:00:00Z"
                 environment_id: env_prod
@@ -29397,6 +30371,8 @@ paths:
                 selector: tag:daily
                 source_model_run_id: run_01hzymodel
                 state: released
+                state_snapshot:
+                  version: 1
                 target_catalog: analytics
                 target_schema: mart
         '400':
@@ -29500,6 +30476,7 @@ paths:
               git_ref: refs/heads/main
               selector: tag:daily
               source_model_run_id: run_01hzymodel
+              state_snapshot: '{...snapshot json...}'
               target_catalog: analytics
               target_schema: mart
       x-cli-command: projects builds create
@@ -39804,15 +40781,17 @@ components:
           type: string
           example: example
         compile_diagnostics:
-          type: string
-          example: example
+          $ref: '#/components/schemas/ModelRunCompileDiagnostics'
+        state_snapshot:
+          $ref: '#/components/schemas/BuildStateSnapshot'
         created_at:
           type: string
           format: date-time
           example: "2026-01-02T15:04:05Z"
       example:
         commit_sha: 8f3d9e2a
-        compile_diagnostics: '{...diagnostics json...}'
+        compile_diagnostics:
+          items: []
         compile_manifest: '{...manifest json...}'
         created_at: "2026-04-13T07:00:00Z"
         environment_id: env_prod
@@ -39825,8 +40804,338 @@ components:
         selector: tag:daily
         source_model_run_id: run_01hzymodel
         state: released
+        state_snapshot:
+          version: 1
         target_catalog: analytics
         target_schema: mart
+    BuildCompareModelDiff:
+      type: object
+      properties:
+        model_name:
+          type: string
+          example: example
+        change_type:
+          type: string
+          example: example
+        from_compiled_hash:
+          type: string
+          example: example
+        to_compiled_hash:
+          type: string
+          example: example
+        added_columns:
+          type: array
+          items:
+            type: string
+          example:
+            - example
+        removed_columns:
+          type: array
+          items:
+            type: string
+          example:
+            - example
+        changed_columns:
+          type: array
+          items:
+            type: string
+          example:
+            - example
+        impacted_models:
+          type: array
+          items:
+            type: string
+          example:
+            - example
+        impacted_tests:
+          type: array
+          items:
+            type: string
+          example:
+            - example
+        impacted_products:
+          type: array
+          items:
+            type: string
+          example:
+            - example
+      example:
+        added_columns:
+          - example
+        change_type: example
+        changed_columns:
+          - example
+        from_compiled_hash: example
+        impacted_models:
+          - example
+        impacted_products:
+          - example
+        impacted_tests:
+          - example
+        model_name: example
+        removed_columns:
+          - example
+        to_compiled_hash: example
+    BuildCompareResult:
+      type: object
+      properties:
+        project_name:
+          type: string
+          example: example
+        from_build_id:
+          type: string
+          example: example
+        to_build_id:
+          type: string
+          example: example
+        compared_to_head:
+          type: boolean
+          example: true
+        model_diffs:
+          type: array
+          items:
+            $ref: '#/components/schemas/BuildCompareModelDiff'
+          example:
+            - added_columns:
+                - example
+              change_type: example
+              changed_columns:
+                - example
+              from_compiled_hash: example
+              impacted_models:
+                - example
+              impacted_products:
+                - example
+              impacted_tests:
+                - example
+              model_name: example
+              removed_columns:
+                - example
+              to_compiled_hash: example
+        diagnostics_added:
+          type: array
+          items:
+            $ref: '#/components/schemas/CompileDiagnostic'
+          example:
+            - code: example
+              column_name: example
+              location:
+                column: 1
+                line: 1
+              message: example
+              model_name: example
+              related_objects:
+                - example
+              severity: INFO
+        diagnostics_removed:
+          type: array
+          items:
+            $ref: '#/components/schemas/CompileDiagnostic'
+          example:
+            - code: example
+              column_name: example
+              location:
+                column: 1
+                line: 1
+              message: example
+              model_name: example
+              related_objects:
+                - example
+              severity: INFO
+      example:
+        compared_to_head: true
+        diagnostics_added:
+          - code: example
+            column_name: example
+            location:
+              column: 1
+              line: 1
+            message: example
+            model_name: example
+            related_objects:
+              - example
+            severity: INFO
+        diagnostics_removed:
+          - code: example
+            column_name: example
+            location:
+              column: 1
+              line: 1
+            message: example
+            model_name: example
+            related_objects:
+              - example
+            severity: INFO
+        from_build_id: example
+        model_diffs:
+          - added_columns:
+              - example
+            change_type: example
+            changed_columns:
+              - example
+            from_compiled_hash: example
+            impacted_models:
+              - example
+            impacted_products:
+              - example
+            impacted_tests:
+              - example
+            model_name: example
+            removed_columns:
+              - example
+            to_compiled_hash: example
+        project_name: example
+        to_build_id: example
+    BuildImpactResult:
+      type: object
+      required:
+        - kind
+        - key
+      properties:
+        project_name:
+          type: string
+          example: example
+        kind:
+          type: string
+          example: example
+        key:
+          type: string
+          example: example
+        build_id:
+          type: string
+          example: example
+        impacted_models:
+          type: array
+          items:
+            type: string
+          example:
+            - example
+        impacted_columns:
+          type: array
+          items:
+            $ref: '#/components/schemas/CompiledColumnLineage'
+          example:
+            - build_id: example
+              function: example
+              model_name: example
+              partial: true
+              project_name: example
+              sensitivity:
+                partial: true
+                reasons:
+                  - example
+                source_fields:
+                  - catalog: example
+                    column: example
+                    kind: example
+                    model_name: example
+                    schema: example
+                    table: example
+                status: example
+              sources:
+                - catalog: example
+                  column: example
+                  kind: example
+                  model_name: example
+                  schema: example
+                  table: example
+              target_catalog: example
+              target_column: example
+              target_schema: example
+              target_table: example
+              transform_type: DIRECT
+        impacted_tests:
+          type: array
+          items:
+            type: string
+          example:
+            - example
+        impacted_products:
+          type: array
+          items:
+            type: string
+          example:
+            - example
+        partial:
+          type: boolean
+          example: true
+      example:
+        build_id: example
+        impacted_columns:
+          - build_id: example
+            function: example
+            model_name: example
+            partial: true
+            project_name: example
+            sensitivity:
+              partial: true
+              reasons:
+                - example
+              source_fields:
+                - catalog: example
+                  column: example
+                  kind: example
+                  model_name: example
+                  schema: example
+                  table: example
+              status: example
+            sources:
+              - catalog: example
+                column: example
+                kind: example
+                model_name: example
+                schema: example
+                table: example
+            target_catalog: example
+            target_column: example
+            target_schema: example
+            target_table: example
+            transform_type: DIRECT
+        impacted_models:
+          - example
+        impacted_products:
+          - example
+        impacted_tests:
+          - example
+        key: example
+        kind: example
+        partial: true
+        project_name: example
+    BuildSourceStateSnapshot:
+      type: object
+      properties:
+        source_key:
+          type: string
+          example: example
+        relation_ref:
+          type: string
+          example: example
+        timestamp_column:
+          type: string
+          example: example
+        last_loaded_at:
+          type: string
+          format: date-time
+          example: "2026-01-02T15:04:05Z"
+        max_lag_seconds:
+          type: integer
+          format: int64
+          example: 1
+        freshness_breached:
+          type: boolean
+          example: true
+        stale_since:
+          type: string
+          format: date-time
+          example: "2026-01-02T15:04:05Z"
+      example:
+        freshness_breached: true
+        last_loaded_at: "2026-01-02T15:04:05Z"
+        max_lag_seconds: 1
+        relation_ref: example
+        source_key: example
+        stale_since: "2026-01-02T15:04:05Z"
+        timestamp_column: example
     BuildState:
       type: string
       enum:
@@ -39835,6 +41144,43 @@ components:
         - released
         - superseded
       example: draft
+    BuildStateSnapshot:
+      type: object
+      properties:
+        version:
+          type: integer
+          format: int32
+          example: 1
+        project_name:
+          type: string
+          example: example
+        environment_name:
+          type: string
+          example: example
+        sources:
+          type: array
+          items:
+            $ref: '#/components/schemas/BuildSourceStateSnapshot'
+          example:
+            - freshness_breached: true
+              last_loaded_at: "2026-01-02T15:04:05Z"
+              max_lag_seconds: 1
+              relation_ref: example
+              source_key: example
+              stale_since: "2026-01-02T15:04:05Z"
+              timestamp_column: example
+      example:
+        environment_name: example
+        project_name: example
+        sources:
+          - freshness_breached: true
+            last_loaded_at: "2026-01-02T15:04:05Z"
+            max_lag_seconds: 1
+            relation_ref: example
+            source_key: example
+            stale_since: "2026-01-02T15:04:05Z"
+            timestamp_column: example
+        version: 1
     CancelQueryResponse:
       type: object
       required:
@@ -40385,8 +41731,39 @@ components:
       type: string
       enum:
         - DIRECT
+        - RENAME
         - EXPRESSION
+        - AGGREGATE
+        - UNKNOWN
       example: DIRECT
+    ColumnLineageSourceRef:
+      type: object
+      properties:
+        catalog:
+          type: string
+          example: example
+        schema:
+          type: string
+          example: example
+        table:
+          type: string
+          example: example
+        column:
+          type: string
+          example: example
+        kind:
+          type: string
+          example: example
+        model_name:
+          type: string
+          example: example
+      example:
+        catalog: example
+        column: example
+        kind: example
+        model_name: example
+        schema: example
+        table: example
     ColumnMask:
       type: object
       required:
@@ -40467,6 +41844,44 @@ components:
         principal_id: example
         principal_type: user
         see_original: true
+    ColumnSensitivityInfo:
+      type: object
+      properties:
+        status:
+          type: string
+          example: example
+        partial:
+          type: boolean
+          example: true
+        reasons:
+          type: array
+          items:
+            type: string
+          example:
+            - example
+        source_fields:
+          type: array
+          items:
+            $ref: '#/components/schemas/ColumnLineageSourceRef'
+          example:
+            - catalog: example
+              column: example
+              kind: example
+              model_name: example
+              schema: example
+              table: example
+      example:
+        partial: true
+        reasons:
+          - example
+        source_fields:
+          - catalog: example
+            column: example
+            kind: example
+            model_name: example
+            schema: example
+            table: example
+        status: example
     CommitIngestionRequest:
       type: object
       required:
@@ -40487,6 +41902,164 @@ components:
         s3_keys:
           - landing/orders/2026/04/13/orders_0001.parquet
           - landing/orders/2026/04/13/orders_0002.parquet
+    CompareBuildsRequest:
+      type: object
+      required:
+        - from_build_id
+      properties:
+        project_name:
+          type: string
+          example: example
+        from_build_id:
+          type: string
+          example: example
+        to_build_id:
+          type: string
+          example: example
+        compare_to_head:
+          type: boolean
+          example: true
+      example:
+        compare_to_head: true
+        from_build_id: example
+        project_name: example
+        to_build_id: example
+    CompileDiagnostic:
+      type: object
+      required:
+        - severity
+        - code
+        - message
+      properties:
+        severity:
+          $ref: '#/components/schemas/CompileDiagnosticSeverity'
+        code:
+          type: string
+          example: example
+        message:
+          type: string
+          example: example
+        model_name:
+          type: string
+          example: example
+        column_name:
+          type: string
+          example: example
+        location:
+          $ref: '#/components/schemas/CompileDiagnosticLocation'
+        related_objects:
+          type: array
+          items:
+            type: string
+          example:
+            - example
+      example:
+        code: example
+        column_name: example
+        location:
+          column: 1
+          line: 1
+        message: example
+        model_name: example
+        related_objects:
+          - example
+        severity: INFO
+    CompileDiagnosticLocation:
+      type: object
+      properties:
+        line:
+          type: integer
+          format: int32
+          example: 1
+        column:
+          type: integer
+          format: int32
+          example: 1
+      example:
+        column: 1
+        line: 1
+    CompileDiagnosticSeverity:
+      type: string
+      enum:
+        - INFO
+        - WARNING
+        - ERROR
+      example: INFO
+    CompiledColumnLineage:
+      type: object
+      properties:
+        build_id:
+          type: string
+          example: example
+        project_name:
+          type: string
+          example: example
+        model_name:
+          type: string
+          example: example
+        target_catalog:
+          type: string
+          example: example
+        target_schema:
+          type: string
+          example: example
+        target_table:
+          type: string
+          example: example
+        target_column:
+          type: string
+          example: example
+        transform_type:
+          $ref: '#/components/schemas/ColumnLineageEdgeTransformType'
+        function:
+          type: string
+          example: example
+        partial:
+          type: boolean
+          example: true
+        sources:
+          type: array
+          items:
+            $ref: '#/components/schemas/ColumnLineageSourceRef'
+          example:
+            - catalog: example
+              column: example
+              kind: example
+              model_name: example
+              schema: example
+              table: example
+        sensitivity:
+          $ref: '#/components/schemas/ColumnSensitivityInfo'
+      example:
+        build_id: example
+        function: example
+        model_name: example
+        partial: true
+        project_name: example
+        sensitivity:
+          partial: true
+          reasons:
+            - example
+          source_fields:
+            - catalog: example
+              column: example
+              kind: example
+              model_name: example
+              schema: example
+              table: example
+          status: example
+        sources:
+          - catalog: example
+            column: example
+            kind: example
+            model_name: example
+            schema: example
+            table: example
+        target_catalog: example
+        target_column: example
+        target_schema: example
+        target_table: example
+        transform_type: DIRECT
     ComputeAssignment:
       type: object
       properties:
@@ -40897,6 +42470,9 @@ components:
         compile_diagnostics:
           type: string
           example: example
+        state_snapshot:
+          type: string
+          example: example
       example:
         commit_sha: 8f3d9e2a
         compile_diagnostics: '{...diagnostics json...}'
@@ -40905,6 +42481,7 @@ components:
         git_ref: refs/heads/main
         selector: tag:daily
         source_model_run_id: run_01hzymodel
+        state_snapshot: '{...snapshot json...}'
         target_catalog: analytics
         target_schema: mart
     CreateCatalogRequest:
@@ -45976,6 +47553,21 @@ components:
     ModelRunCompileDiagnostics:
       type: object
       properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/CompileDiagnostic'
+          example:
+            - code: example
+              column_name: example
+              location:
+                column: 1
+                line: 1
+              message: example
+              model_name: example
+              related_objects:
+                - example
+              severity: INFO
         warnings:
           type: array
           items:
@@ -45991,6 +47583,17 @@ components:
       example:
         errors:
           - example
+        items:
+          - code: example
+            column_name: example
+            location:
+              column: 1
+              line: 1
+            message: example
+            model_name: example
+            related_objects:
+              - example
+            severity: INFO
         warnings:
           - example
     ModelRunStep:
@@ -47114,7 +48717,8 @@ components:
             $ref: '#/components/schemas/Build'
           example:
             - commit_sha: 8f3d9e2a
-              compile_diagnostics: '{...diagnostics json...}'
+              compile_diagnostics:
+                items: []
               compile_manifest: '{...manifest json...}'
               created_at: "2026-04-13T07:00:00Z"
               environment_id: env_prod
@@ -47127,6 +48731,8 @@ components:
               selector: tag:daily
               source_model_run_id: run_01hzymodel
               state: released
+              state_snapshot:
+                version: 1
               target_catalog: analytics
               target_schema: mart
         next_page_token:
@@ -47135,7 +48741,8 @@ components:
       example:
         data:
           - commit_sha: 8f3d9e2a
-            compile_diagnostics: '{...diagnostics json...}'
+            compile_diagnostics:
+              items: []
             compile_manifest: '{...manifest json...}'
             created_at: "2026-04-13T07:00:00Z"
             environment_id: env_prod
@@ -47148,6 +48755,8 @@ components:
             selector: tag:daily
             source_model_run_id: run_01hzymodel
             state: released
+            state_snapshot:
+              version: 1
             target_catalog: analytics
             target_schema: mart
         next_page_token: example
@@ -47264,6 +48873,116 @@ components:
             mask_expression: example
             name: example
             table_id: example
+        next_page_token: example
+    PaginatedCompileDiagnostics:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/CompileDiagnostic'
+          example:
+            - code: example
+              column_name: example
+              location:
+                column: 1
+                line: 1
+              message: example
+              model_name: example
+              related_objects:
+                - example
+              severity: INFO
+        next_page_token:
+          type: string
+          example: example
+      example:
+        data:
+          - code: example
+            column_name: example
+            location:
+              column: 1
+              line: 1
+            message: example
+            model_name: example
+            related_objects:
+              - example
+            severity: INFO
+        next_page_token: example
+    PaginatedCompiledColumnLineage:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/CompiledColumnLineage'
+          example:
+            - build_id: example
+              function: example
+              model_name: example
+              partial: true
+              project_name: example
+              sensitivity:
+                partial: true
+                reasons:
+                  - example
+                source_fields:
+                  - catalog: example
+                    column: example
+                    kind: example
+                    model_name: example
+                    schema: example
+                    table: example
+                status: example
+              sources:
+                - catalog: example
+                  column: example
+                  kind: example
+                  model_name: example
+                  schema: example
+                  table: example
+              target_catalog: example
+              target_column: example
+              target_schema: example
+              target_table: example
+              transform_type: DIRECT
+        next_page_token:
+          type: string
+          example: example
+      example:
+        data:
+          - build_id: example
+            function: example
+            model_name: example
+            partial: true
+            project_name: example
+            sensitivity:
+              partial: true
+              reasons:
+                - example
+              source_fields:
+                - catalog: example
+                  column: example
+                  kind: example
+                  model_name: example
+                  schema: example
+                  table: example
+              status: example
+            sources:
+              - catalog: example
+                column: example
+                kind: example
+                model_name: example
+                schema: example
+                table: example
+            target_catalog: example
+            target_column: example
+            target_schema: example
+            target_table: example
+            transform_type: DIRECT
         next_page_token: example
     PaginatedComputeAssignments:
       type: object
@@ -49683,6 +51402,25 @@ components:
         - MANUAL
         - SCHEDULED
       example: MANUAL
+    PlanRebuildRequest:
+      type: object
+      required:
+        - project_name
+        - environment_name
+      properties:
+        project_name:
+          type: string
+          example: example
+        environment_name:
+          type: string
+          example: example
+        selector:
+          type: string
+          example: example
+      example:
+        environment_name: example
+        project_name: example
+        selector: example
     Principal:
       type: object
       required:
@@ -51129,6 +52867,58 @@ components:
             total_amount: 1250.75
           - order_id: ord_1002
             total_amount: 842.1
+    RebuildPlan:
+      type: object
+      properties:
+        project_name:
+          type: string
+          example: example
+        environment_name:
+          type: string
+          example: example
+        baseline_build_id:
+          type: string
+          example: example
+        selected_models:
+          type: array
+          items:
+            $ref: '#/components/schemas/RebuildPlanItem'
+          example:
+            - model_name: example
+              reasons:
+                - example
+        unchanged_models:
+          type: array
+          items:
+            type: string
+          example:
+            - example
+      example:
+        baseline_build_id: example
+        environment_name: example
+        project_name: example
+        selected_models:
+          - model_name: example
+            reasons:
+              - example
+        unchanged_models:
+          - example
+    RebuildPlanItem:
+      type: object
+      properties:
+        model_name:
+          type: string
+          example: example
+        reasons:
+          type: array
+          items:
+            type: string
+          example:
+            - example
+      example:
+        model_name: example
+        reasons:
+          - example
     RecentResource:
       type: object
       required:

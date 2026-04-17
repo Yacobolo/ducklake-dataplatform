@@ -34,6 +34,7 @@ type compileSourceDefinition struct {
 	tableName   string
 	relation    string
 	relationRef string
+	freshness   *domain.SourceFreshnessPolicy
 }
 
 type compileMacroDefinition struct {

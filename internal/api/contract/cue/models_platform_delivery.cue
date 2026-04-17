@@ -19,7 +19,12 @@ schemas_platform_delivery: {
       target_schema:       "mart"
       source_model_run_id: "run_01hzymodel"
       compile_manifest:    "{...manifest json...}"
-      compile_diagnostics: "{...diagnostics json...}"
+      compile_diagnostics: {
+        items: []
+      }
+      state_snapshot: {
+        version: 1
+      }
       created_at:          "2026-04-13T07:00:00Z"
     }
     #fields: {
@@ -37,7 +42,8 @@ schemas_platform_delivery: {
       target_schema: #stringProperty,
       source_model_run_id: #stringProperty,
       compile_manifest: #stringProperty,
-      compile_diagnostics: #stringProperty,
+      compile_diagnostics: #refProperty & {#ref: "ModelRunCompileDiagnostics"},
+      state_snapshot: #refProperty & {#ref: "BuildStateSnapshot"},
       created_at: #createdAtProperty,
     },
     #required: [
@@ -66,6 +72,7 @@ schemas_platform_delivery: {
       source_model_run_id: "run_01hzymodel"
       compile_manifest:    "{...manifest json...}"
       compile_diagnostics: "{...diagnostics json...}"
+      state_snapshot:      "{...snapshot json...}"
     }
     #fields: {
       environment_name: #stringProperty,
@@ -76,7 +83,8 @@ schemas_platform_delivery: {
       target_schema: #stringProperty,
       source_model_run_id: #stringProperty,
       compile_manifest: #stringProperty,
-      compile_diagnostics: #stringProperty
+      compile_diagnostics: #stringProperty,
+      state_snapshot: #stringProperty
     },
     #required: [
       "environment_name",
