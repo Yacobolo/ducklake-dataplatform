@@ -30,12 +30,23 @@ type modelService interface {
 	PromoteNotebook(ctx context.Context, principal string, req domain.PromoteNotebookRequest) (*domain.Model, error)
 	UnpublishNotebook(ctx context.Context, principal, notebookID string) error
 	GetBuildLineage(ctx context.Context, buildID string, modelName *string) ([]domain.CompiledColumnLineage, error)
+	GetCompilationLineage(ctx context.Context, compilationID string, modelName *string) ([]domain.CompiledColumnLineage, error)
 	GetBuildDiagnostics(ctx context.Context, buildID string, filter domain.BuildDiagnosticsFilter) ([]domain.CompileDiagnostic, error)
+	GetCompilationDiagnostics(ctx context.Context, compilationID string, filter domain.BuildDiagnosticsFilter) ([]domain.CompileDiagnostic, error)
 	GetBuildSourceColumnImpact(ctx context.Context, buildID, schema, table, column string) ([]domain.CompiledColumnLineage, error)
+	GetCompilationSourceColumnImpact(ctx context.Context, compilationID, schema, table, column string) ([]domain.CompiledColumnLineage, error)
 	PlanRebuild(ctx context.Context, principal string, req domain.PlanRebuildRequest) (*domain.RebuildPlan, error)
 	CompareBuilds(ctx context.Context, principal string, req domain.CompareBuildsRequest) (*domain.BuildCompareResult, error)
 	GetModelImpact(ctx context.Context, projectName string, buildID *string, modelName string) (*domain.BuildImpactResult, error)
 	GetMacroImpact(ctx context.Context, projectName string, buildID *string, macroName string) (*domain.BuildImpactResult, error)
+	GetCompilation(ctx context.Context, compilationID string) (*domain.Compilation, error)
+	ListCompilationsForEnvironment(ctx context.Context, projectName, environmentName string, page domain.PageRequest) ([]domain.Compilation, int64, error)
+	GetCompilationModelImpact(ctx context.Context, compilationID string, modelName string) (*domain.BuildImpactResult, error)
+	GetCompilationMacroImpact(ctx context.Context, compilationID string, macroName string) (*domain.BuildImpactResult, error)
+	CreateCompilation(ctx context.Context, principal string, projectName string, environmentName string, req domain.CreateCompilationRequest) (*domain.Compilation, error)
+	CreateEnvironmentBuild(ctx context.Context, principal string, projectName string, environmentName string, req domain.CreateCompilationRequest) (*domain.Build, error)
+	ListRunsForBuild(ctx context.Context, buildID string, page domain.PageRequest) ([]domain.ModelRun, int64, error)
+	CreateRunForBuild(ctx context.Context, principal string, build *domain.Build) (*domain.ModelRun, error)
 }
 
 // === Models ===

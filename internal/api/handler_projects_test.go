@@ -78,6 +78,9 @@ func (m *mockProjectControlService) CreateEnvironmentForProject(context.Context,
 func (m *mockProjectControlService) ListEnvironmentsForProject(context.Context, string, bool, string, domain.PageRequest) ([]domain.Environment, int64, error) {
 	panic("not implemented")
 }
+func (m *mockProjectControlService) GetEnvironmentForProject(context.Context, string, bool, string, string) (*domain.Environment, error) {
+	panic("not implemented")
+}
 func (m *mockProjectControlService) UpdateEnvironmentForProject(context.Context, string, bool, string, string, domain.UpdateEnvironmentRequest) (*domain.Environment, error) {
 	panic("not implemented")
 }
@@ -88,6 +91,21 @@ func (m *mockProjectControlService) CreateBuildForProject(context.Context, strin
 	panic("not implemented")
 }
 func (m *mockProjectControlService) ListBuildsForProject(context.Context, string, bool, string, domain.PageRequest) ([]domain.Build, int64, error) {
+	panic("not implemented")
+}
+func (m *mockProjectControlService) ListBuildsForEnvironment(context.Context, string, bool, string, string, domain.PageRequest) ([]domain.Build, int64, error) {
+	panic("not implemented")
+}
+func (m *mockProjectControlService) GetBuildForProject(context.Context, string, bool, string, string) (*domain.Build, error) {
+	panic("not implemented")
+}
+func (m *mockProjectControlService) CreateReleaseForProject(context.Context, string, bool, string, domain.CreateProjectReleaseRequest) (*domain.ProjectRelease, error) {
+	panic("not implemented")
+}
+func (m *mockProjectControlService) ListReleasesForProject(context.Context, string, bool, string, domain.PageRequest) ([]domain.ProjectRelease, int64, error) {
+	panic("not implemented")
+}
+func (m *mockProjectControlService) GetReleaseForProject(context.Context, string, bool, string, string) (*domain.ProjectRelease, error) {
 	panic("not implemented")
 }
 
@@ -108,6 +126,7 @@ func TestHandler_CreateProjectDependency_MapsRequestAndResponse(t *testing.T) {
 				assert.Equal(t, "alice", principal)
 				assert.True(t, isAdmin)
 				assert.Equal(t, "prj-1", projectID)
+				assert.Equal(t, "prj-lib", req.DependencyProjectID)
 				assert.Equal(t, "shared_lib", req.DependencyProject)
 				assert.Equal(t, "library", req.DependencyKind)
 				assert.Equal(t, 3, req.Position)
@@ -126,13 +145,15 @@ func TestHandler_CreateProjectDependency_MapsRequestAndResponse(t *testing.T) {
 	}
 
 	dependencyKind := "library"
+	dependencyProject := "shared_lib"
 	position := int32(3)
 	resp, err := handler.CreateProjectDependency(projectHandlerTestCtx(), GenCreateProjectDependencyRequest{
 		ProjectId: "prj-1",
 		Body: &GenCreateProjectDependencyJSONBody{
-			DependencyProject: "shared_lib",
-			DependencyKind:    &dependencyKind,
-			Position:          &position,
+			DependencyProjectId: "prj-lib",
+			DependencyProject:   &dependencyProject,
+			DependencyKind:      &dependencyKind,
+			Position:            &position,
 		},
 	})
 	require.NoError(t, err)

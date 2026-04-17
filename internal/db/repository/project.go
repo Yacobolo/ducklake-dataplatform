@@ -13,6 +13,8 @@ import (
 var _ domain.ProjectRepository = (*ProjectRepo)(nil)
 var _ domain.EnvironmentRepository = (*EnvironmentRepo)(nil)
 var _ domain.BuildRepository = (*BuildRepo)(nil)
+var _ domain.CompilationRepository = (*CompilationRepo)(nil)
+var _ domain.ProjectReleaseRepository = (*ProjectReleaseRepo)(nil)
 
 // ProjectRepo persists internal authoring projects in SQLite.
 type ProjectRepo struct {
@@ -480,9 +482,9 @@ func (r *BuildRepo) Create(ctx context.Context, b *domain.Build) (*domain.Build,
 	_, err := r.db.ExecContext(ctx, `
 		INSERT INTO builds (
 			id, project_id, product_id, environment_id, state, git_ref, commit_sha, selector,
-			target_catalog, target_schema, source_model_run_id, compile_manifest, compile_diagnostics,
-			state_snapshot, created_by, created_at
-		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+			target_catalog, target_schema, source_model_run_id, resolved_release_id, compile_manifest,
+			compile_diagnostics, state_snapshot, created_by, created_at
+		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 		id,
 		b.ProjectID,
 		nullableStringValue(b.ProductID),
@@ -494,6 +496,7 @@ func (r *BuildRepo) Create(ctx context.Context, b *domain.Build) (*domain.Build,
 		b.TargetCatalog,
 		b.TargetSchema,
 		nullableStringValue(b.SourceModelRunID),
+		nullableStringValue(b.ResolvedReleaseID),
 		b.CompileManifest,
 		nullableStringValue(b.CompileDiagnostics),
 		nullableStringValue(b.StateSnapshot),
@@ -540,6 +543,34 @@ func (r *BuildRepo) ListByProject(ctx context.Context, projectID string, page do
 	return items, total, nil
 }
 
+// ListByEnvironment returns builds for a project/environment pair.
+func (r *BuildRepo) ListByEnvironment(ctx context.Context, projectID, environmentID string, page domain.PageRequest) ([]domain.Build, int64, error) {
+	var total int64
+	if err := r.db.QueryRowContext(ctx, `SELECT COUNT(*) FROM builds WHERE project_id = ? AND environment_id = ?`, projectID, environmentID).Scan(&total); err != nil {
+		return nil, 0, mapDBError(err)
+	}
+	rows, err := r.db.QueryContext(ctx, buildSelectSQL+`
+		WHERE b.project_id = ? AND b.environment_id = ?
+		ORDER BY b.created_at DESC
+		LIMIT ? OFFSET ?`, projectID, environmentID, page.Limit(), page.Offset())
+	if err != nil {
+		return nil, 0, mapDBError(err)
+	}
+	defer func() { _ = rows.Close() }()
+	items := make([]domain.Build, 0)
+	for rows.Next() {
+		item, err := scanBuild(rows)
+		if err != nil {
+			return nil, 0, err
+		}
+		items = append(items, *item)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, 0, err
+	}
+	return items, total, nil
+}
+
 // UpdateState updates the lifecycle state for a build.
 func (r *BuildRepo) UpdateState(ctx context.Context, id string, state string) error {
 	result, err := r.db.ExecContext(ctx, `UPDATE builds SET state = ? WHERE id = ?`, defaultBuildState(state), id)
@@ -560,7 +591,8 @@ const buildSelectSQL = `
 	SELECT
 		b.id, b.project_id, p.name, b.product_id, b.environment_id, e.name, b.state, b.git_ref,
 		b.commit_sha, b.selector, b.target_catalog, b.target_schema, b.source_model_run_id,
-		b.compile_manifest, b.compile_diagnostics, b.state_snapshot, b.created_by, b.created_at
+		b.resolved_release_id, b.compile_manifest, b.compile_diagnostics, b.state_snapshot,
+		b.created_by, b.created_at
 	FROM builds b
 	JOIN projects p ON p.id = b.project_id
 	JOIN environments e ON e.id = b.environment_id`
@@ -570,6 +602,7 @@ func scanBuild(scanner projectRowScanner) (*domain.Build, error) {
 	var productID sql.NullString
 	var commitSHA sql.NullString
 	var sourceModelRunID sql.NullString
+	var resolvedReleaseID sql.NullString
 	var compileDiagnostics sql.NullString
 	var stateSnapshot sql.NullString
 	if err := scanner.Scan(
@@ -586,6 +619,7 @@ func scanBuild(scanner projectRowScanner) (*domain.Build, error) {
 		&item.TargetCatalog,
 		&item.TargetSchema,
 		&sourceModelRunID,
+		&resolvedReleaseID,
 		&item.CompileManifest,
 		&compileDiagnostics,
 		&stateSnapshot,
@@ -603,6 +637,9 @@ func scanBuild(scanner projectRowScanner) (*domain.Build, error) {
 	if sourceModelRunID.Valid {
 		item.SourceModelRunID = &sourceModelRunID.String
 	}
+	if resolvedReleaseID.Valid {
+		item.ResolvedReleaseID = &resolvedReleaseID.String
+	}
 	if compileDiagnostics.Valid {
 		item.CompileDiagnostics = &compileDiagnostics.String
 	}
@@ -619,4 +656,226 @@ func defaultBuildState(state string) string {
 	default:
 		return domain.BuildStateReady
 	}
+}
+
+// CompilationRepo persists immutable compilation artifacts in SQLite.
+type CompilationRepo struct {
+	db *sql.DB
+}
+
+// NewCompilationRepo constructs a compilation repository backed by SQLite.
+func NewCompilationRepo(db *sql.DB) *CompilationRepo {
+	return &CompilationRepo{db: db}
+}
+
+// Create inserts a new compilation.
+func (r *CompilationRepo) Create(ctx context.Context, c *domain.Compilation) (*domain.Compilation, error) {
+	now := time.Now().UTC()
+	id := newID()
+	_, err := r.db.ExecContext(ctx, `
+		INSERT INTO compilations (
+			id, project_id, environment_id, git_ref, commit_sha, selector, target_catalog, target_schema,
+			resolved_release_id, compile_manifest, compile_diagnostics, state_snapshot, created_by, created_at
+		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		id,
+		c.ProjectID,
+		c.EnvironmentID,
+		c.GitRef,
+		nullableStringValue(c.CommitSHA),
+		c.Selector,
+		c.TargetCatalog,
+		c.TargetSchema,
+		nullableStringValue(c.ResolvedReleaseID),
+		c.CompileManifest,
+		nullableStringValue(c.CompileDiagnostics),
+		nullableStringValue(c.StateSnapshot),
+		c.CreatedBy,
+		now.Format(time.RFC3339),
+	)
+	if err != nil {
+		return nil, mapDBError(err)
+	}
+	return r.GetByID(ctx, id)
+}
+
+// GetByID returns a compilation by ID.
+func (r *CompilationRepo) GetByID(ctx context.Context, id string) (*domain.Compilation, error) {
+	row := r.db.QueryRowContext(ctx, compilationSelectSQL+` WHERE c.id = ?`, id)
+	return scanCompilation(row)
+}
+
+// ListByEnvironment returns compilations for a project/environment pair.
+func (r *CompilationRepo) ListByEnvironment(ctx context.Context, projectID, environmentID string, page domain.PageRequest) ([]domain.Compilation, int64, error) {
+	var total int64
+	if err := r.db.QueryRowContext(ctx, `SELECT COUNT(*) FROM compilations WHERE project_id = ? AND environment_id = ?`, projectID, environmentID).Scan(&total); err != nil {
+		return nil, 0, mapDBError(err)
+	}
+	rows, err := r.db.QueryContext(ctx, compilationSelectSQL+`
+		WHERE c.project_id = ? AND c.environment_id = ?
+		ORDER BY c.created_at DESC
+		LIMIT ? OFFSET ?`, projectID, environmentID, page.Limit(), page.Offset())
+	if err != nil {
+		return nil, 0, mapDBError(err)
+	}
+	defer func() { _ = rows.Close() }()
+	items := make([]domain.Compilation, 0)
+	for rows.Next() {
+		item, err := scanCompilation(rows)
+		if err != nil {
+			return nil, 0, err
+		}
+		items = append(items, *item)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, 0, err
+	}
+	return items, total, nil
+}
+
+const compilationSelectSQL = `
+	SELECT
+		c.id, c.project_id, p.name, c.environment_id, e.name, c.git_ref, c.commit_sha, c.selector,
+		c.target_catalog, c.target_schema, c.resolved_release_id, c.compile_manifest, c.compile_diagnostics,
+		c.state_snapshot, c.created_by, c.created_at
+	FROM compilations c
+	JOIN projects p ON p.id = c.project_id
+	JOIN environments e ON e.id = c.environment_id`
+
+func scanCompilation(scanner projectRowScanner) (*domain.Compilation, error) {
+	var item domain.Compilation
+	var commitSHA sql.NullString
+	var resolvedReleaseID sql.NullString
+	var compileDiagnostics sql.NullString
+	var stateSnapshot sql.NullString
+	if err := scanner.Scan(
+		&item.ID,
+		&item.ProjectID,
+		&item.ProjectName,
+		&item.EnvironmentID,
+		&item.EnvironmentName,
+		&item.GitRef,
+		&commitSHA,
+		&item.Selector,
+		&item.TargetCatalog,
+		&item.TargetSchema,
+		&resolvedReleaseID,
+		&item.CompileManifest,
+		&compileDiagnostics,
+		&stateSnapshot,
+		&item.CreatedBy,
+		&item.CreatedAt,
+	); err != nil {
+		return nil, mapDBError(err)
+	}
+	if commitSHA.Valid {
+		item.CommitSHA = &commitSHA.String
+	}
+	if resolvedReleaseID.Valid {
+		item.ResolvedReleaseID = &resolvedReleaseID.String
+	}
+	if compileDiagnostics.Valid {
+		item.CompileDiagnostics = &compileDiagnostics.String
+	}
+	if stateSnapshot.Valid {
+		item.StateSnapshot = &stateSnapshot.String
+	}
+	return &item, nil
+}
+
+// ProjectReleaseRepo persists immutable project releases in SQLite.
+type ProjectReleaseRepo struct {
+	db *sql.DB
+}
+
+// NewProjectReleaseRepo constructs a project release repository backed by SQLite.
+func NewProjectReleaseRepo(db *sql.DB) *ProjectReleaseRepo {
+	return &ProjectReleaseRepo{db: db}
+}
+
+// Create inserts a new project release.
+func (r *ProjectReleaseRepo) Create(ctx context.Context, release *domain.ProjectRelease) (*domain.ProjectRelease, error) {
+	now := time.Now().UTC()
+	id := newID()
+	_, err := r.db.ExecContext(ctx, `
+		INSERT INTO project_releases (
+			id, project_id, version, resolved_build_id, resolved_compilation_id, created_by, created_at
+		) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+		id,
+		release.ProjectID,
+		release.Version,
+		nullableStringValue(release.ResolvedBuildID),
+		nullableStringValue(release.ResolvedCompileID),
+		release.CreatedBy,
+		now.Format(time.RFC3339),
+	)
+	if err != nil {
+		return nil, mapDBError(err)
+	}
+	return r.GetByID(ctx, id)
+}
+
+// GetByID returns a project release by ID.
+func (r *ProjectReleaseRepo) GetByID(ctx context.Context, id string) (*domain.ProjectRelease, error) {
+	row := r.db.QueryRowContext(ctx, projectReleaseSelectSQL+` WHERE pr.id = ?`, id)
+	return scanProjectRelease(row)
+}
+
+// ListByProject returns releases for a project.
+func (r *ProjectReleaseRepo) ListByProject(ctx context.Context, projectID string, page domain.PageRequest) ([]domain.ProjectRelease, int64, error) {
+	var total int64
+	if err := r.db.QueryRowContext(ctx, `SELECT COUNT(*) FROM project_releases WHERE project_id = ?`, projectID).Scan(&total); err != nil {
+		return nil, 0, mapDBError(err)
+	}
+	rows, err := r.db.QueryContext(ctx, projectReleaseSelectSQL+`
+		WHERE pr.project_id = ?
+		ORDER BY pr.created_at DESC
+		LIMIT ? OFFSET ?`, projectID, page.Limit(), page.Offset())
+	if err != nil {
+		return nil, 0, mapDBError(err)
+	}
+	defer func() { _ = rows.Close() }()
+	items := make([]domain.ProjectRelease, 0)
+	for rows.Next() {
+		item, err := scanProjectRelease(rows)
+		if err != nil {
+			return nil, 0, err
+		}
+		items = append(items, *item)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, 0, err
+	}
+	return items, total, nil
+}
+
+const projectReleaseSelectSQL = `
+	SELECT
+		pr.id, pr.project_id, p.name, pr.version, pr.resolved_build_id, pr.resolved_compilation_id,
+		pr.created_by, pr.created_at
+	FROM project_releases pr
+	JOIN projects p ON p.id = pr.project_id`
+
+func scanProjectRelease(scanner projectRowScanner) (*domain.ProjectRelease, error) {
+	var item domain.ProjectRelease
+	var resolvedBuildID sql.NullString
+	var resolvedCompilationID sql.NullString
+	if err := scanner.Scan(
+		&item.ID,
+		&item.ProjectID,
+		&item.ProjectName,
+		&item.Version,
+		&resolvedBuildID,
+		&resolvedCompilationID,
+		&item.CreatedBy,
+		&item.CreatedAt,
+	); err != nil {
+		return nil, mapDBError(err)
+	}
+	if resolvedBuildID.Valid {
+		item.ResolvedBuildID = &resolvedBuildID.String
+	}
+	if resolvedCompilationID.Valid {
+		item.ResolvedCompileID = &resolvedCompilationID.String
+	}
+	return &item, nil
 }

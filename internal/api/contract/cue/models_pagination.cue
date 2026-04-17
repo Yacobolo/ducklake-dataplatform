@@ -30,6 +30,9 @@ schemas_pagination: {
   PaginatedBuilds: #paginatedItemsSchema & {
     #item_ref: "Build"
   },
+  PaginatedCompilations: #paginatedItemsSchema & {
+    #item_ref: "Compilation"
+  },
   PaginatedColumnDetails: #paginatedItemsSchema & {
     #item_ref: "ColumnDetail"
   },
@@ -122,6 +125,9 @@ schemas_pagination: {
   },
   PaginatedProjectDependencies: #paginatedItemsSchema & {
     #item_ref: "ProjectDependency"
+  },
+  PaginatedProjectReleases: #paginatedItemsSchema & {
+    #item_ref: "ProjectRelease"
   },
   PaginatedProjectSeeds: #paginatedItemsSchema & {
     #item_ref: "ProjectSeed"

@@ -18,6 +18,7 @@ type Service struct {
 	sources      domain.SourceDefinitionRepository
 	seeds        domain.SeedRepository
 	builds       domain.BuildRepository
+	releases     domain.ProjectReleaseRepository
 	teams        domain.TeamRepository
 	products     domain.DataProductRepository
 	audit        domain.AuditRepository
@@ -32,6 +33,7 @@ func NewService(
 	sources domain.SourceDefinitionRepository,
 	seeds domain.SeedRepository,
 	builds domain.BuildRepository,
+	releases domain.ProjectReleaseRepository,
 	teams domain.TeamRepository,
 	products domain.DataProductRepository,
 	audit ...domain.AuditRepository,
@@ -48,6 +50,7 @@ func NewService(
 		sources:      sources,
 		seeds:        seeds,
 		builds:       builds,
+		releases:     releases,
 		teams:        teams,
 		products:     products,
 		audit:        auditRepo,
@@ -202,16 +205,32 @@ func (s *Service) CreateDependencyForProject(ctx context.Context, principal stri
 			return nil, err
 		}
 	}
-	if _, err := s.projects.GetByName(ctx, strings.TrimSpace(req.DependencyProject)); err != nil {
-		return nil, err
+	dependencyProjectID := strings.TrimSpace(req.DependencyProjectID)
+	dependencyProjectName := strings.TrimSpace(req.DependencyProject)
+	if dependencyProjectID != "" {
+		dependencyProject, err := s.projects.GetByID(ctx, dependencyProjectID)
+		if err != nil {
+			return nil, err
+		}
+		dependencyProjectID = dependencyProject.ID
+		dependencyProjectName = dependencyProject.Name
+	} else {
+		dependencyProject, err := s.projects.GetByName(ctx, dependencyProjectName)
+		if err != nil {
+			return nil, err
+		}
+		dependencyProjectID = dependencyProject.ID
+		dependencyProjectName = dependencyProject.Name
 	}
 	created, err := s.projectDeps.Create(ctx, &domain.ProjectDependency{
-		ProjectID:         project.ID,
-		ProjectName:       project.Name,
-		DependencyProject: strings.TrimSpace(req.DependencyProject),
-		DependencyKind:    strings.TrimSpace(req.DependencyKind),
-		Position:          req.Position,
-		CreatedBy:         principal,
+		ProjectID:           project.ID,
+		ProjectName:         project.Name,
+		DependencyProjectID: dependencyProjectID,
+		DependencyProject:   dependencyProjectName,
+		DependencyKind:      strings.TrimSpace(req.DependencyKind),
+		VersionConstraint:   strings.TrimSpace(req.VersionConstraint),
+		Position:            req.Position,
+		CreatedBy:           principal,
 	})
 	if err != nil {
 		return nil, err
@@ -236,8 +255,8 @@ func (s *Service) ListDependenciesForProject(ctx context.Context, principal stri
 	return paginateProjectItems(items, page)
 }
 
-// DeleteDependencyForProject deletes a dependency declaration by dependency project name.
-func (s *Service) DeleteDependencyForProject(ctx context.Context, principal string, isAdmin bool, projectID string, dependencyProject string) error {
+// DeleteDependencyForProject deletes a dependency declaration by dependency id.
+func (s *Service) DeleteDependencyForProject(ctx context.Context, principal string, isAdmin bool, projectID string, dependencyID string) error {
 	if s.projectDeps == nil {
 		return domain.ErrNotImplemented("project dependencies are not configured")
 	}
@@ -250,11 +269,74 @@ func (s *Service) DeleteDependencyForProject(ctx context.Context, principal stri
 			return err
 		}
 	}
-	if err := s.projectDeps.Delete(ctx, project.ID, strings.TrimSpace(dependencyProject)); err != nil {
+	if err := s.projectDeps.Delete(ctx, project.ID, strings.TrimSpace(dependencyID)); err != nil {
 		return err
 	}
 	s.logAudit(ctx, principal, "DELETE_PROJECT_DEPENDENCY")
 	return nil
+}
+
+// CreateReleaseForProject creates an immutable release for a project.
+func (s *Service) CreateReleaseForProject(ctx context.Context, principal string, isAdmin bool, projectID string, req domain.CreateProjectReleaseRequest) (*domain.ProjectRelease, error) {
+	if err := req.Validate(); err != nil {
+		return nil, err
+	}
+	if s.releases == nil {
+		return nil, domain.ErrNotImplemented("project releases are not configured")
+	}
+	project, err := s.GetProjectForPrincipal(ctx, principal, isAdmin, projectID)
+	if err != nil {
+		return nil, err
+	}
+	if !isAdmin {
+		if err := s.requireWorkspaceWrite(ctx, principal, project.WorkspaceID); err != nil {
+			return nil, err
+		}
+	}
+	release, err := s.releases.Create(ctx, &domain.ProjectRelease{
+		ProjectID:         project.ID,
+		ProjectName:       project.Name,
+		Version:           strings.TrimSpace(req.Version),
+		ResolvedBuildID:   normalizedStringPtr(req.ResolvedBuildID),
+		ResolvedCompileID: normalizedStringPtr(req.CompilationID),
+		CreatedBy:         principal,
+	})
+	if err != nil {
+		return nil, err
+	}
+	s.logAudit(ctx, principal, "CREATE_PROJECT_RELEASE")
+	return release, nil
+}
+
+// ListReleasesForProject lists immutable releases for a project.
+func (s *Service) ListReleasesForProject(ctx context.Context, principal string, isAdmin bool, projectID string, page domain.PageRequest) ([]domain.ProjectRelease, int64, error) {
+	if s.releases == nil {
+		return nil, 0, domain.ErrNotImplemented("project releases are not configured")
+	}
+	project, err := s.GetProjectForPrincipal(ctx, principal, isAdmin, projectID)
+	if err != nil {
+		return nil, 0, err
+	}
+	return s.releases.ListByProject(ctx, project.ID, page)
+}
+
+// GetReleaseForProject loads one release after verifying project access.
+func (s *Service) GetReleaseForProject(ctx context.Context, principal string, isAdmin bool, projectID string, releaseID string) (*domain.ProjectRelease, error) {
+	if s.releases == nil {
+		return nil, domain.ErrNotImplemented("project releases are not configured")
+	}
+	project, err := s.GetProjectForPrincipal(ctx, principal, isAdmin, projectID)
+	if err != nil {
+		return nil, err
+	}
+	release, err := s.releases.GetByID(ctx, releaseID)
+	if err != nil {
+		return nil, err
+	}
+	if release.ProjectID != project.ID {
+		return nil, domain.ErrValidation("release does not belong to project")
+	}
+	return release, nil
 }
 
 // CreateSourceForProject creates a project-owned source definition.
@@ -650,6 +732,25 @@ func (s *Service) ListBuildsForProject(ctx context.Context, principal string, is
 		return nil, 0, domain.ErrNotImplemented("build listing is not configured")
 	}
 	return s.builds.ListByProject(ctx, project.ID, page)
+}
+
+// ListBuildsForEnvironment returns builds for a specific environment within a project.
+func (s *Service) ListBuildsForEnvironment(ctx context.Context, principal string, isAdmin bool, projectID string, environmentID string, page domain.PageRequest) ([]domain.Build, int64, error) {
+	project, err := s.GetProjectForPrincipal(ctx, principal, isAdmin, projectID)
+	if err != nil {
+		return nil, 0, err
+	}
+	if s.builds == nil {
+		return nil, 0, domain.ErrNotImplemented("build listing is not configured")
+	}
+	environment, err := s.environments.GetByID(ctx, environmentID)
+	if err != nil {
+		return nil, 0, err
+	}
+	if environment.ProjectID != project.ID {
+		return nil, 0, domain.ErrValidation("environment does not belong to project")
+	}
+	return s.builds.ListByEnvironment(ctx, project.ID, environment.ID, page)
 }
 
 // GetBuildForProject loads a single build after verifying project access.

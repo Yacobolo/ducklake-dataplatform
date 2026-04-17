@@ -304,8 +304,11 @@ schemas_security_workspace: {
       id: #idProperty,
       project_id: #stringProperty,
       project_name: #stringProperty,
+      dependency_project_id: #stringProperty,
       dependency_project: #stringProperty,
       dependency_kind: #stringProperty,
+      version_constraint: #stringProperty,
+      resolved_release_id: #stringProperty,
       position: #int32Property,
       created_at: #createdAtProperty,
       updated_at: #updatedAtProperty
@@ -319,6 +322,7 @@ schemas_security_workspace: {
     #values: [
       "personal",
       "shared",
+      "transform",
       "library"
     ]
   },

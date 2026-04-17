@@ -92,13 +92,23 @@ func (r *ColumnLineageRepo) DeleteByEdgeID(ctx context.Context, edgeID string) e
 
 // ReplaceBuildLineage replaces compile-time build lineage rows for a build.
 func (r *ColumnLineageRepo) ReplaceBuildLineage(ctx context.Context, buildID string, items []domain.CompiledColumnLineage) error {
+	return r.replaceLineage(ctx, "build_id", buildID, items)
+}
+
+// ReplaceCompilationLineage replaces compile-time lineage rows for a compilation.
+func (r *ColumnLineageRepo) ReplaceCompilationLineage(ctx context.Context, compilationID string, items []domain.CompiledColumnLineage) error {
+	return r.replaceLineage(ctx, "compilation_id", compilationID, items)
+}
+
+func (r *ColumnLineageRepo) replaceLineage(ctx context.Context, keyColumn, keyID string, items []domain.CompiledColumnLineage) error {
 	tx, err := r.db.BeginTx(ctx, nil)
 	if err != nil {
 		return err
 	}
 	defer func() { _ = tx.Rollback() }()
 
-	if _, err := tx.ExecContext(ctx, `DELETE FROM compiled_column_lineage WHERE build_id = ?`, buildID); err != nil {
+	deleteSQL := compiledColumnLineageDeleteSQL(keyColumn)
+	if _, err := tx.ExecContext(ctx, deleteSQL, keyID); err != nil {
 		return err
 	}
 	for _, item := range items {
@@ -108,12 +118,12 @@ func (r *ColumnLineageRepo) ReplaceBuildLineage(ctx context.Context, buildID str
 		}
 		if len(item.Sources) == 0 {
 			if _, err := tx.ExecContext(ctx, `
-				INSERT INTO compiled_column_lineage (
-					build_id, project_name, model_name, target_catalog, target_schema, target_table, target_column,
+					INSERT INTO compiled_column_lineage (
+					build_id, compilation_id, project_name, model_name, target_catalog, target_schema, target_table, target_column,
 					transform_type, function_name, partial, source_kind, sensitivity_status, sensitivity_partial,
 					sensitivity_reasons_json
-				) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-				buildID, item.ProjectName, item.ModelName, item.TargetCatalog, item.TargetSchema, item.TargetTable, item.TargetColumn,
+				) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+				lineageIDForColumn(keyColumn, keyID, "build_id"), lineageIDForColumn(keyColumn, keyID, "compilation_id"), item.ProjectName, item.ModelName, item.TargetCatalog, item.TargetSchema, item.TargetTable, item.TargetColumn,
 				string(item.TransformType), item.Function, boolIntCompile(item.Partial), "", itemSensitivityStatus(item),
 				boolIntCompile(itemSensitivityPartial(item)), string(reasonsJSON),
 			); err != nil {
@@ -124,11 +134,11 @@ func (r *ColumnLineageRepo) ReplaceBuildLineage(ctx context.Context, buildID str
 		for _, src := range item.Sources {
 			if _, err := tx.ExecContext(ctx, `
 				INSERT INTO compiled_column_lineage (
-					build_id, project_name, model_name, target_catalog, target_schema, target_table, target_column,
+					build_id, compilation_id, project_name, model_name, target_catalog, target_schema, target_table, target_column,
 					transform_type, function_name, partial, source_catalog, source_schema, source_table, source_column,
 					source_kind, source_model_name, sensitivity_status, sensitivity_partial, sensitivity_reasons_json
-				) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-				buildID, item.ProjectName, item.ModelName, item.TargetCatalog, item.TargetSchema, item.TargetTable, item.TargetColumn,
+				) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+				lineageIDForColumn(keyColumn, keyID, "build_id"), lineageIDForColumn(keyColumn, keyID, "compilation_id"), item.ProjectName, item.ModelName, item.TargetCatalog, item.TargetSchema, item.TargetTable, item.TargetColumn,
 				string(item.TransformType), item.Function, boolIntCompile(item.Partial), nullableCompileString(src.Catalog), nullableCompileString(src.Schema),
 				nullableCompileString(src.Table), nullableCompileString(src.Column), src.Kind, nullableCompileString(src.ModelName),
 				itemSensitivityStatus(item), boolIntCompile(itemSensitivityPartial(item)), string(reasonsJSON),
@@ -139,6 +149,17 @@ func (r *ColumnLineageRepo) ReplaceBuildLineage(ctx context.Context, buildID str
 	}
 
 	return tx.Commit()
+}
+
+func compiledColumnLineageDeleteSQL(keyColumn string) string {
+	switch keyColumn {
+	case "build_id":
+		return `DELETE FROM compiled_column_lineage WHERE build_id = ?`
+	case "compilation_id":
+		return `DELETE FROM compiled_column_lineage WHERE compilation_id = ?`
+	default:
+		return `DELETE FROM compiled_column_lineage WHERE build_id = ?`
+	}
 }
 
 // ListBuildLineage returns grouped compile-time lineage rows for a build.
@@ -176,6 +197,41 @@ func (r *ColumnLineageRepo) ListBuildImpactsForSourceColumn(ctx context.Context,
 	return scanCompiledColumnLineage(rows)
 }
 
+// ListCompilationLineage returns grouped compile-time lineage rows for a compilation.
+func (r *ColumnLineageRepo) ListCompilationLineage(ctx context.Context, compilationID string) ([]domain.CompiledColumnLineage, error) {
+	rows, err := r.db.QueryContext(ctx, compiledColumnLineageSelectSQL+` WHERE compilation_id = ? ORDER BY model_name, target_column, id`, compilationID)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = rows.Close() }()
+	return scanCompiledColumnLineage(rows)
+}
+
+// ListCompilationLineageByModel returns grouped compile-time lineage rows for one compilation/model.
+func (r *ColumnLineageRepo) ListCompilationLineageByModel(ctx context.Context, compilationID, modelName string) ([]domain.CompiledColumnLineage, error) {
+	rows, err := r.db.QueryContext(ctx, compiledColumnLineageSelectSQL+` WHERE compilation_id = ? AND model_name = ? ORDER BY target_column, id`, compilationID, modelName)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = rows.Close() }()
+	return scanCompiledColumnLineage(rows)
+}
+
+// ListCompilationImpactsForSourceColumn returns impacted compiled columns for a specific source column.
+func (r *ColumnLineageRepo) ListCompilationImpactsForSourceColumn(ctx context.Context, compilationID, schema, table, column string) ([]domain.CompiledColumnLineage, error) {
+	rows, err := r.db.QueryContext(ctx, compiledColumnLineageSelectSQL+`
+		WHERE compilation_id = ?
+		  AND COALESCE(source_schema, '') = ?
+		  AND COALESCE(source_table, '') = ?
+		  AND COALESCE(source_column, '') = ?
+		ORDER BY model_name, target_column, id`, compilationID, schema, table, column)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = rows.Close() }()
+	return scanCompiledColumnLineage(rows)
+}
+
 // mapColumnLineageEdges converts dbstore rows to domain types.
 func mapColumnLineageEdges(rows []dbstore.ColumnLineageEdge) []domain.ColumnLineageEdge {
 	edges := make([]domain.ColumnLineageEdge, len(rows))
@@ -196,7 +252,7 @@ func mapColumnLineageEdges(rows []dbstore.ColumnLineageEdge) []domain.ColumnLine
 
 const compiledColumnLineageSelectSQL = `
 	SELECT
-		id, build_id, project_name, model_name, target_catalog, target_schema, target_table, target_column,
+		id, build_id, compilation_id, project_name, model_name, target_catalog, target_schema, target_table, target_column,
 		transform_type, function_name, partial, source_catalog, source_schema, source_table, source_column,
 		source_kind, source_model_name, sensitivity_status, sensitivity_partial, sensitivity_reasons_json
 	FROM compiled_column_lineage`
@@ -215,6 +271,7 @@ func scanCompiledColumnLineage(rows *sql.Rows) ([]domain.CompiledColumnLineage, 
 	for rows.Next() {
 		var (
 			buildID            string
+			compilationID      sql.NullString
 			projectName        string
 			modelName          string
 			targetCatalog      sql.NullString
@@ -235,7 +292,7 @@ func scanCompiledColumnLineage(rows *sql.Rows) ([]domain.CompiledColumnLineage, 
 			sensitivityReasons string
 		)
 		if err := rows.Scan(
-			new(int64), &buildID, &projectName, &modelName, &targetCatalog, &targetSchema, &targetTable, &targetColumn,
+			new(int64), &buildID, &compilationID, &projectName, &modelName, &targetCatalog, &targetSchema, &targetTable, &targetColumn,
 			&transformType, &functionName, &partial, &sourceCatalog, &sourceSchema, &sourceTable, &sourceColumn,
 			&sourceKind, &sourceModelName, &sensitivityStatus, &sensitivityPartial, &sensitivityReasons,
 		); err != nil {
@@ -244,8 +301,13 @@ func scanCompiledColumnLineage(rows *sql.Rows) ([]domain.CompiledColumnLineage, 
 		k := key{modelName: modelName, targetSchema: targetSchema, targetTable: targetTable, targetColumn: targetColumn, transformType: transformType, functionName: functionName}
 		item, ok := grouped[k]
 		if !ok {
+			compilationIDValue := ""
+			if compilationID.Valid {
+				compilationIDValue = compilationID.String
+			}
 			item = &domain.CompiledColumnLineage{
 				BuildID:       buildID,
+				CompilationID: compilationIDValue,
 				ProjectName:   projectName,
 				ModelName:     modelName,
 				TargetCatalog: targetCatalog.String,
@@ -285,6 +347,16 @@ func scanCompiledColumnLineage(rows *sql.Rows) ([]domain.CompiledColumnLineage, 
 		out = append(out, *grouped[k])
 	}
 	return out, nil
+}
+
+func lineageIDForColumn(keyColumn, keyID, target string) any {
+	if keyColumn == target {
+		return keyID
+	}
+	if target == "build_id" {
+		return ""
+	}
+	return nil
 }
 
 func boolIntCompile(v bool) int {

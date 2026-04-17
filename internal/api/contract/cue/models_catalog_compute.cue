@@ -143,6 +143,7 @@ schemas_catalog_compute: {
   CompiledColumnLineage: #objectSchema & {
     #fields: {
       build_id: #stringProperty,
+      compilation_id: #stringProperty,
       project_name: #stringProperty,
       model_name: #stringProperty,
       target_catalog: #stringProperty,

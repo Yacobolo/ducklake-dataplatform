@@ -27,6 +27,7 @@ type Service struct {
 	sources       domain.SourceDefinitionRepository
 	seeds         domain.SeedRepository
 	builds        domain.BuildRepository
+	compilations  domain.CompilationRepository
 	tests         domain.ModelTestRepository
 	testResults   domain.ModelTestResultRepository
 	audit         domain.AuditRepository
@@ -53,6 +54,7 @@ type ServiceDeps struct {
 	Sources       domain.SourceDefinitionRepository
 	Seeds         domain.SeedRepository
 	Builds        domain.BuildRepository
+	Compilations  domain.CompilationRepository
 	Tests         domain.ModelTestRepository
 	TestResults   domain.ModelTestResultRepository
 	Audit         domain.AuditRepository
@@ -79,6 +81,7 @@ func NewService(deps ServiceDeps) *Service {
 		sources:       deps.Sources,
 		seeds:         deps.Seeds,
 		builds:        deps.Builds,
+		compilations:  deps.Compilations,
 		tests:         deps.Tests,
 		testResults:   deps.TestResults,
 		audit:         deps.Audit,

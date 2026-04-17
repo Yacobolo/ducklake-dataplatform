@@ -513,6 +513,17 @@ func (s *Service) GetBuildLineage(ctx context.Context, buildID string, modelName
 	return s.colLineage.ListBuildLineage(ctx, buildID)
 }
 
+// GetCompilationLineage returns compile-time column lineage for a compilation, optionally scoped to one model.
+func (s *Service) GetCompilationLineage(ctx context.Context, compilationID string, modelName *string) ([]domain.CompiledColumnLineage, error) {
+	if s.colLineage == nil {
+		return nil, nil
+	}
+	if modelName != nil && strings.TrimSpace(*modelName) != "" {
+		return s.colLineage.ListCompilationLineageByModel(ctx, compilationID, strings.TrimSpace(*modelName))
+	}
+	return s.colLineage.ListCompilationLineage(ctx, compilationID)
+}
+
 // GetBuildDiagnostics returns structured diagnostics for a build with optional filters.
 func (s *Service) GetBuildDiagnostics(ctx context.Context, buildID string, filter domain.BuildDiagnosticsFilter) ([]domain.CompileDiagnostic, error) {
 	if s.builds == nil {
@@ -546,12 +557,53 @@ func (s *Service) GetBuildDiagnostics(ctx context.Context, buildID string, filte
 	return out, nil
 }
 
+// GetCompilationDiagnostics returns structured diagnostics for a compilation with optional filters.
+func (s *Service) GetCompilationDiagnostics(ctx context.Context, compilationID string, filter domain.BuildDiagnosticsFilter) ([]domain.CompileDiagnostic, error) {
+	if s.compilations == nil {
+		return nil, nil
+	}
+	compilation, err := s.compilations.GetByID(ctx, compilationID)
+	if err != nil {
+		return nil, err
+	}
+	diagnostics := diagnosticsFromJSONOrNil(ptrValue(compilation.CompileDiagnostics))
+	if diagnostics == nil {
+		return nil, nil
+	}
+	items := diagnostics.Items
+	if len(items) == 0 {
+		items = diagnosticsToItems(*diagnostics)
+	}
+	out := make([]domain.CompileDiagnostic, 0, len(items))
+	for _, item := range items {
+		if filter.ModelName != nil && strings.TrimSpace(*filter.ModelName) != "" && item.ModelName != strings.TrimSpace(*filter.ModelName) {
+			continue
+		}
+		if filter.Severity != nil && item.Severity != *filter.Severity {
+			continue
+		}
+		if filter.Code != nil && item.Code != strings.TrimSpace(*filter.Code) {
+			continue
+		}
+		out = append(out, item)
+	}
+	return out, nil
+}
+
 // GetBuildSourceColumnImpact returns impacted compiled columns for a source column within a build.
 func (s *Service) GetBuildSourceColumnImpact(ctx context.Context, buildID, schema, table, column string) ([]domain.CompiledColumnLineage, error) {
 	if s.colLineage == nil {
 		return nil, nil
 	}
 	return s.colLineage.ListBuildImpactsForSourceColumn(ctx, buildID, schema, table, column)
+}
+
+// GetCompilationSourceColumnImpact returns impacted compiled columns for a source column within a compilation.
+func (s *Service) GetCompilationSourceColumnImpact(ctx context.Context, compilationID, schema, table, column string) ([]domain.CompiledColumnLineage, error) {
+	if s.colLineage == nil {
+		return nil, nil
+	}
+	return s.colLineage.ListCompilationImpactsForSourceColumn(ctx, compilationID, schema, table, column)
 }
 
 // PlanRebuild returns a code+data-aware rebuild plan for a project/environment.
@@ -795,6 +847,62 @@ func (s *Service) GetMacroImpact(ctx context.Context, projectName string, buildI
 		ImpactedModels:   impacted,
 		ImpactedTests:    s.impactedTests(ctx, impacted),
 		ImpactedProducts: s.impactedProducts(ctx, projectName),
+	}, nil
+}
+
+// GetCompilationModelImpact returns downstream impact for a model within a compilation artifact.
+func (s *Service) GetCompilationModelImpact(ctx context.Context, compilationID string, modelName string) (*domain.BuildImpactResult, error) {
+	if s.compilations == nil {
+		return nil, domain.ErrNotImplemented("compilations are not configured")
+	}
+	compilation, err := s.compilations.GetByID(ctx, compilationID)
+	if err != nil {
+		return nil, err
+	}
+	manifest, err := parseCompileManifest(compilation.CompileManifest)
+	if err != nil {
+		return nil, fmt.Errorf("parse compilation manifest: %w", err)
+	}
+	impacted := downstreamImpactsFromManifest(manifest)[modelName]
+	lineageItems, _ := s.GetCompilationLineage(ctx, compilation.ID, &modelName)
+	return &domain.BuildImpactResult{
+		ProjectName:      compilation.ProjectName,
+		Kind:             "MODEL",
+		Key:              modelName,
+		ImpactedModels:   impacted,
+		ImpactedColumns:  lineageItems,
+		ImpactedTests:    s.impactedTests(ctx, impacted),
+		ImpactedProducts: s.impactedProducts(ctx, compilation.ProjectName),
+	}, nil
+}
+
+// GetCompilationMacroImpact returns model/test/product impact for a macro within a compilation artifact.
+func (s *Service) GetCompilationMacroImpact(ctx context.Context, compilationID string, macroName string) (*domain.BuildImpactResult, error) {
+	if s.compilations == nil {
+		return nil, domain.ErrNotImplemented("compilations are not configured")
+	}
+	compilation, err := s.compilations.GetByID(ctx, compilationID)
+	if err != nil {
+		return nil, err
+	}
+	manifest, err := parseCompileManifest(compilation.CompileManifest)
+	if err != nil {
+		return nil, fmt.Errorf("parse compilation manifest: %w", err)
+	}
+	impacted := make([]string, 0)
+	for modelName, item := range manifest.Models {
+		if containsString(item.MacrosUsed, macroName) {
+			impacted = append(impacted, modelName)
+		}
+	}
+	sort.Strings(impacted)
+	return &domain.BuildImpactResult{
+		ProjectName:      compilation.ProjectName,
+		Kind:             "MACRO",
+		Key:              macroName,
+		ImpactedModels:   impacted,
+		ImpactedTests:    s.impactedTests(ctx, impacted),
+		ImpactedProducts: s.impactedProducts(ctx, compilation.ProjectName),
 	}, nil
 }
 

@@ -6,9 +6,12 @@ import "time"
 type DiagnosticSeverity string
 
 const (
-	DiagnosticSeverityInfo    DiagnosticSeverity = "INFO"
+	// DiagnosticSeverityInfo is an informational diagnostic.
+	DiagnosticSeverityInfo DiagnosticSeverity = "INFO"
+	// DiagnosticSeverityWarning is a warning diagnostic.
 	DiagnosticSeverityWarning DiagnosticSeverity = "WARNING"
-	DiagnosticSeverityError   DiagnosticSeverity = "ERROR"
+	// DiagnosticSeverityError is an error diagnostic.
+	DiagnosticSeverityError DiagnosticSeverity = "ERROR"
 )
 
 // CompileDiagnosticLocation identifies an approximate source location.
@@ -49,6 +52,7 @@ type ColumnSensitivityInfo struct {
 // CompiledColumnLineage describes one analyzed target column for a build/model.
 type CompiledColumnLineage struct {
 	BuildID       string                   `json:"build_id,omitempty"`
+	CompilationID string                   `json:"compilation_id,omitempty"`
 	ProjectName   string                   `json:"project_name,omitempty"`
 	ModelName     string                   `json:"model_name,omitempty"`
 	TargetCatalog string                   `json:"target_catalog,omitempty"`
@@ -85,9 +89,13 @@ type BuildStateSnapshot struct {
 type RebuildReason string
 
 const (
-	RebuildReasonCodeModified        RebuildReason = "CODE_MODIFIED"
+	// RebuildReasonCodeModified indicates the model changed directly.
+	RebuildReasonCodeModified RebuildReason = "CODE_MODIFIED"
+	// RebuildReasonUpstreamDataChanged indicates upstream data changed.
 	RebuildReasonUpstreamDataChanged RebuildReason = "UPSTREAM_DATA_CHANGED"
-	RebuildReasonFreshnessBreached   RebuildReason = "SOURCE_FRESHNESS_BREACHED"
+	// RebuildReasonFreshnessBreached indicates source freshness is breached.
+	RebuildReasonFreshnessBreached RebuildReason = "SOURCE_FRESHNESS_BREACHED"
+	// RebuildReasonUpstreamCodeChanged indicates upstream code changed.
 	RebuildReasonUpstreamCodeChanged RebuildReason = "UPSTREAM_CODE_CHANGED"
 )
 

@@ -293,6 +293,7 @@ func compiledColumnLineageToAPI(item domain.CompiledColumnLineage) CompiledColum
 	}
 	return CompiledColumnLineage{
 		BuildId:       strPtrIfNonEmpty(item.BuildID),
+		CompilationId: strPtrIfNonEmpty(item.CompilationID),
 		ProjectName:   strPtrIfNonEmpty(item.ProjectName),
 		ModelName:     strPtrIfNonEmpty(item.ModelName),
 		TargetCatalog: strPtrIfNonEmpty(item.TargetCatalog),

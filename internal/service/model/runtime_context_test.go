@@ -64,10 +64,17 @@ func (s runtimeEnvironmentRepoStub) Delete(context.Context, string) error {
 }
 
 type runtimeProjectDependencyRepoStub struct {
+	getByIDFn       func(context.Context, string) (*domain.ProjectDependency, error)
 	listByProjectFn func(context.Context, string) ([]domain.ProjectDependency, error)
 }
 
 func (s runtimeProjectDependencyRepoStub) Create(context.Context, *domain.ProjectDependency) (*domain.ProjectDependency, error) {
+	panic("unexpected call")
+}
+func (s runtimeProjectDependencyRepoStub) GetByID(ctx context.Context, id string) (*domain.ProjectDependency, error) {
+	if s.getByIDFn != nil {
+		return s.getByIDFn(ctx, id)
+	}
 	panic("unexpected call")
 }
 func (s runtimeProjectDependencyRepoStub) ListByProject(ctx context.Context, projectID string) ([]domain.ProjectDependency, error) {

@@ -358,6 +358,7 @@ type Build struct {
 	ProductId          *string                     `json:"product_id,omitempty"`
 	ProjectId          *string                     `json:"project_id,omitempty"`
 	ProjectName        *string                     `json:"project_name,omitempty"`
+	ResolvedReleaseId  *string                     `json:"resolved_release_id,omitempty"`
 	Selector           *string                     `json:"selector,omitempty"`
 	SourceModelRunId   *string                     `json:"source_model_run_id,omitempty"`
 	State              *BuildState                 `json:"state,omitempty"`
@@ -626,6 +627,24 @@ type CompareBuildsRequest struct {
 	ToBuildId     *string `json:"to_build_id,omitempty"`
 }
 
+type Compilation struct {
+	CommitSha          *string                     `json:"commit_sha,omitempty"`
+	CompileDiagnostics *ModelRunCompileDiagnostics `json:"compile_diagnostics,omitempty"`
+	CompileManifest    string                      `json:"compile_manifest"`
+	CreatedAt          *string                     `json:"created_at,omitempty"`
+	EnvironmentId      string                      `json:"environment_id"`
+	EnvironmentName    *string                     `json:"environment_name,omitempty"`
+	GitRef             string                      `json:"git_ref"`
+	Id                 string                      `json:"id"`
+	ProjectId          string                      `json:"project_id"`
+	ProjectName        *string                     `json:"project_name,omitempty"`
+	ResolvedReleaseId  *string                     `json:"resolved_release_id,omitempty"`
+	Selector           *string                     `json:"selector,omitempty"`
+	StateSnapshot      *BuildStateSnapshot         `json:"state_snapshot,omitempty"`
+	TargetCatalog      string                      `json:"target_catalog"`
+	TargetSchema       string                      `json:"target_schema"`
+}
+
 type CompileDiagnostic struct {
 	Code           string                     `json:"code"`
 	ColumnName     *string                    `json:"column_name,omitempty"`
@@ -653,6 +672,7 @@ const (
 
 type CompiledColumnLineage struct {
 	BuildId       *string                         `json:"build_id,omitempty"`
+	CompilationId *string                         `json:"compilation_id,omitempty"`
 	Function      *string                         `json:"function,omitempty"`
 	ModelName     *string                         `json:"model_name,omitempty"`
 	Partial       *bool                           `json:"partial,omitempty"`
@@ -801,6 +821,9 @@ type CreateBuildRequest struct {
 	TargetSchema       string  `json:"target_schema"`
 }
 
+type CreateBuildRunRequest struct {
+}
+
 type CreateCatalogRequest struct {
 	Comment       *string        `json:"comment,omitempty"`
 	DataPath      *string        `json:"data_path,omitempty"`
@@ -833,6 +856,14 @@ type CreateColumnRequest struct {
 	Name     string  `json:"name"`
 	Nullable *bool   `json:"nullable,omitempty"`
 	Type     string  `json:"type"`
+}
+
+type CreateCompilationRequest struct {
+	CommitSha     *string `json:"commit_sha,omitempty"`
+	GitRef        string  `json:"git_ref"`
+	Selector      *string `json:"selector,omitempty"`
+	TargetCatalog *string `json:"target_catalog,omitempty"`
+	TargetSchema  *string `json:"target_schema,omitempty"`
 }
 
 type CreateComputeAssignmentRequest struct {
@@ -1055,9 +1086,17 @@ type CreateProductTeamRequest struct {
 }
 
 type CreateProjectDependencyRequest struct {
-	DependencyKind    *string `json:"dependency_kind,omitempty"`
-	DependencyProject string  `json:"dependency_project"`
-	Position          *int32  `json:"position,omitempty"`
+	DependencyKind      *string `json:"dependency_kind,omitempty"`
+	DependencyProject   *string `json:"dependency_project,omitempty"`
+	DependencyProjectId string  `json:"dependency_project_id"`
+	Position            *int32  `json:"position,omitempty"`
+	VersionConstraint   *string `json:"version_constraint,omitempty"`
+}
+
+type CreateProjectReleaseRequest struct {
+	CompilationId   *string `json:"compilation_id,omitempty"`
+	ResolvedBuildId *string `json:"resolved_build_id,omitempty"`
+	Version         string  `json:"version"`
 }
 
 type CreateProjectRequest struct {
@@ -2165,6 +2204,11 @@ type PaginatedColumnMasks struct {
 	NextPageToken *string      `json:"next_page_token,omitempty"`
 }
 
+type PaginatedCompilations struct {
+	Data          []Compilation `json:"data"`
+	NextPageToken *string       `json:"next_page_token,omitempty"`
+}
+
 type PaginatedCompileDiagnostics struct {
 	Data          []CompileDiagnostic `json:"data"`
 	NextPageToken *string             `json:"next_page_token,omitempty"`
@@ -2293,6 +2337,11 @@ type PaginatedProductTeams struct {
 type PaginatedProjectDependencies struct {
 	Data          []ProjectDependency `json:"data"`
 	NextPageToken *string             `json:"next_page_token,omitempty"`
+}
+
+type PaginatedProjectReleases struct {
+	Data          []ProjectRelease `json:"data"`
+	NextPageToken *string          `json:"next_page_token,omitempty"`
 }
 
 type PaginatedProjectSeeds struct {
@@ -2748,23 +2797,37 @@ type Project struct {
 }
 
 type ProjectDependency struct {
-	CreatedAt         *string `json:"created_at,omitempty"`
-	DependencyKind    *string `json:"dependency_kind,omitempty"`
-	DependencyProject string  `json:"dependency_project"`
-	Id                *string `json:"id,omitempty"`
-	Position          *int32  `json:"position,omitempty"`
-	ProjectId         string  `json:"project_id"`
-	ProjectName       *string `json:"project_name,omitempty"`
-	UpdatedAt         *string `json:"updated_at,omitempty"`
+	CreatedAt           *string `json:"created_at,omitempty"`
+	DependencyKind      *string `json:"dependency_kind,omitempty"`
+	DependencyProject   string  `json:"dependency_project"`
+	DependencyProjectId *string `json:"dependency_project_id,omitempty"`
+	Id                  *string `json:"id,omitempty"`
+	Position            *int32  `json:"position,omitempty"`
+	ProjectId           string  `json:"project_id"`
+	ProjectName         *string `json:"project_name,omitempty"`
+	ResolvedReleaseId   *string `json:"resolved_release_id,omitempty"`
+	UpdatedAt           *string `json:"updated_at,omitempty"`
+	VersionConstraint   *string `json:"version_constraint,omitempty"`
 }
 
 type ProjectKind string
 
 const (
-	ProjectKindPersonal ProjectKind = "personal"
-	ProjectKindShared   ProjectKind = "shared"
-	ProjectKindLibrary  ProjectKind = "library"
+	ProjectKindPersonal  ProjectKind = "personal"
+	ProjectKindShared    ProjectKind = "shared"
+	ProjectKindTransform ProjectKind = "transform"
+	ProjectKindLibrary   ProjectKind = "library"
 )
+
+type ProjectRelease struct {
+	CreatedAt             *string `json:"created_at,omitempty"`
+	Id                    string  `json:"id"`
+	ProjectId             string  `json:"project_id"`
+	ProjectName           *string `json:"project_name,omitempty"`
+	ResolvedBuildId       *string `json:"resolved_build_id,omitempty"`
+	ResolvedCompilationId *string `json:"resolved_compilation_id,omitempty"`
+	Version               string  `json:"version"`
+}
 
 type ProjectSeed struct {
 	ColumnTypes *map[string]any `json:"column_types,omitempty"`
@@ -3714,11 +3777,15 @@ type GenericResponse struct {
 
 type CheckMetricFreshnessParams = GenCheckMetricFreshnessParams
 
+type CheckProjectEnvironmentSourceFreshnessParams = GenCheckProjectEnvironmentSourceFreshnessParams
+
 type CheckSourceFreshnessParams = GenCheckSourceFreshnessParams
 
 type DeleteSchemaParams = GenDeleteSchemaParams
 
 type DiffMacroRevisionsParams = GenDiffMacroRevisionsParams
+
+type DiffProjectMacroRevisionsByIDParams = GenDiffProjectMacroRevisionsByIDParams
 
 type GetBuildColumnLineageParams = GenGetBuildColumnLineageParams
 
@@ -3739,6 +3806,18 @@ type GetMacroImpactParams = GenGetMacroImpactParams
 type GetModelDAGParams = GenGetModelDAGParams
 
 type GetModelImpactAnalysisParams = GenGetModelImpactAnalysisParams
+
+type GetProjectEnvironmentBuildColumnLineageParams = GenGetProjectEnvironmentBuildColumnLineageParams
+
+type GetProjectEnvironmentBuildDiagnosticsParams = GenGetProjectEnvironmentBuildDiagnosticsParams
+
+type GetProjectEnvironmentBuildSourceColumnImpactParams = GenGetProjectEnvironmentBuildSourceColumnImpactParams
+
+type GetProjectEnvironmentCompilationColumnLineageParams = GenGetProjectEnvironmentCompilationColumnLineageParams
+
+type GetProjectEnvironmentCompilationDiagnosticsParams = GenGetProjectEnvironmentCompilationDiagnosticsParams
+
+type GetProjectEnvironmentCompilationSourceColumnImpactParams = GenGetProjectEnvironmentCompilationSourceColumnImpactParams
 
 type GetQueryResultsParams = GenGetQueryResultsParams
 
@@ -3824,7 +3903,19 @@ type ListProjectBuildsParams = GenListProjectBuildsParams
 
 type ListProjectDependenciesParams = GenListProjectDependenciesParams
 
+type ListProjectEnvironmentBuildRunsParams = GenListProjectEnvironmentBuildRunsParams
+
+type ListProjectEnvironmentBuildsParams = GenListProjectEnvironmentBuildsParams
+
+type ListProjectEnvironmentCompilationsParams = GenListProjectEnvironmentCompilationsParams
+
 type ListProjectEnvironmentsParams = GenListProjectEnvironmentsParams
+
+type ListProjectMacrosByIDParams = GenListProjectMacrosByIDParams
+
+type ListProjectModelsByIDParams = GenListProjectModelsByIDParams
+
+type ListProjectReleasesParams = GenListProjectReleasesParams
 
 type ListProjectSeedsParams = GenListProjectSeedsParams
 
@@ -3946,7 +4037,25 @@ type CreateProjectBuildJSONRequestBody = GenCreateProjectBuildJSONBody
 
 type CreateProjectDependencyJSONRequestBody = GenCreateProjectDependencyJSONBody
 
+type CreateProjectEnvironmentBuildComparisonJSONRequestBody = GenCreateProjectEnvironmentBuildComparisonJSONBody
+
+type CreateProjectEnvironmentBuildJSONRequestBody = GenCreateProjectEnvironmentBuildJSONBody
+
+type CreateProjectEnvironmentBuildRunJSONRequestBody = GenCreateProjectEnvironmentBuildRunJSONBody
+
+type CreateProjectEnvironmentCompilationJSONRequestBody = GenCreateProjectEnvironmentCompilationJSONBody
+
 type CreateProjectEnvironmentJSONRequestBody = GenCreateProjectEnvironmentJSONBody
+
+type CreateProjectEnvironmentRebuildPlanJSONRequestBody = GenCreateProjectEnvironmentRebuildPlanJSONBody
+
+type CreateProjectMacroByIDJSONRequestBody = GenCreateProjectMacroByIDJSONBody
+
+type CreateProjectModelByIDJSONRequestBody = GenCreateProjectModelByIDJSONBody
+
+type CreateProjectModelTestByIDJSONRequestBody = GenCreateProjectModelTestByIDJSONBody
+
+type CreateProjectReleaseJSONRequestBody = GenCreateProjectReleaseJSONBody
 
 type CreateProjectSeedJSONRequestBody = GenCreateProjectSeedJSONBody
 
@@ -4075,6 +4184,10 @@ type UpdateProductTeamJSONRequestBody = GenUpdateProductTeamJSONBody
 type UpdateProjectEnvironmentJSONRequestBody = GenUpdateProjectEnvironmentJSONBody
 
 type UpdateProjectJSONRequestBody = GenUpdateProjectJSONBody
+
+type UpdateProjectMacroByIDJSONRequestBody = GenUpdateProjectMacroByIDJSONBody
+
+type UpdateProjectModelByIDJSONRequestBody = GenUpdateProjectModelByIDJSONBody
 
 type UpdateProjectSeedJSONRequestBody = GenUpdateProjectSeedJSONBody
 
