@@ -2,6 +2,7 @@ package ir
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 )
 
@@ -30,6 +31,50 @@ func ResolveSchema(doc Document, schemaRef SchemaRef) (Schema, bool) {
 	}
 	schema, ok := doc.Schemas[name]
 	return schema, ok
+}
+
+// ResolveRequestBodySchema returns the concrete request body schema when present.
+func ResolveRequestBodySchema(doc Document, endpoint Endpoint) (Schema, bool) {
+	if endpoint.RequestBody == nil {
+		return Schema{}, false
+	}
+	ref := endpoint.RequestBody.Schema
+	if ref.Ref == "GenericRequest" {
+		name, ok := ResolveGenericRequestBodySchemaName(doc, endpoint.OperationID)
+		if !ok {
+			return Schema{}, false
+		}
+		schema, ok := doc.Schemas[name]
+		return schema, ok
+	}
+	return ResolveSchema(doc, ref)
+}
+
+// SuccessResponse returns the preferred success response for CLI generation.
+func SuccessResponse(endpoint Endpoint) (*Response, bool) {
+	var best *Response
+	for i := range endpoint.Responses {
+		response := &endpoint.Responses[i]
+		if response.StatusCode < 200 || response.StatusCode >= 300 {
+			continue
+		}
+		if best == nil || response.StatusCode < best.StatusCode {
+			best = response
+		}
+	}
+	return best, best != nil
+}
+
+// ResolveResponseBodySchema returns the schema used for the CLI-visible success body.
+func ResolveResponseBodySchema(doc Document, response Response) (Schema, bool) {
+	if shape, ok, _ := ResponseShapeMetadata(response); ok && shape.Kind == "wrapped_json" && shape.BodyType != "" {
+		schema, ok := doc.Schemas[shape.BodyType]
+		return schema, ok
+	}
+	if response.Schema == nil {
+		return Schema{}, false
+	}
+	return ResolveSchema(doc, *response.Schema)
 }
 
 // JoinAPIPath combines a contract base path with an authored endpoint path.
@@ -68,6 +113,92 @@ func ValidateBasePath(basePath string) error {
 		return fmt.Errorf("api.base_path must not end with \"/\" unless it is exactly \"/\"")
 	}
 	return nil
+}
+
+// CLICommandString renders a CLI command path as a space-delimited string.
+func CLICommandString(cli *CLI) string {
+	if cli == nil {
+		return ""
+	}
+	return strings.Join(cli.Command, " ")
+}
+
+// ParseCLICommand splits a legacy x-cli-command string into ordered segments.
+func ParseCLICommand(value string) []string {
+	return strings.Fields(strings.TrimSpace(value))
+}
+
+// CloneCLI returns a deep copy of CLI metadata.
+func CloneCLI(in *CLI) *CLI {
+	if in == nil {
+		return nil
+	}
+	out := *in
+	if len(in.Command) > 0 {
+		out.Command = append([]string(nil), in.Command...)
+	}
+	if len(in.Args) > 0 {
+		out.Args = append([]CLIArg(nil), in.Args...)
+	}
+	if in.Output != nil {
+		output := *in.Output
+		if len(in.Output.TableColumns) > 0 {
+			output.TableColumns = append([]string(nil), in.Output.TableColumns...)
+		}
+		if len(in.Output.QuietFields) > 0 {
+			output.QuietFields = append([]string(nil), in.Output.QuietFields...)
+		}
+		out.Output = &output
+	}
+	if in.Pagination != nil {
+		pagination := *in.Pagination
+		out.Pagination = &pagination
+	}
+	return &out
+}
+
+// PathParameterNames extracts ordered "{param}" names from an endpoint path.
+func PathParameterNames(path string) []string {
+	params := make([]string, 0, strings.Count(path, "{"))
+	for i := 0; i < len(path); i++ {
+		if path[i] != '{' {
+			continue
+		}
+		j := i + 1
+		for j < len(path) && path[j] != '}' {
+			j++
+		}
+		if j >= len(path) || j == i+1 {
+			continue
+		}
+		params = append(params, path[i+1:j])
+		i = j
+	}
+	return params
+}
+
+// OrderedPropertyNames returns a deterministic property order for a schema.
+func OrderedPropertyNames(schema Schema) []string {
+	if len(schema.Properties) == 0 {
+		return nil
+	}
+	if len(schema.PropertyOrder) > 0 {
+		names := make([]string, 0, len(schema.PropertyOrder))
+		for _, name := range schema.PropertyOrder {
+			if _, ok := schema.Properties[name]; ok {
+				names = append(names, name)
+			}
+		}
+		if len(names) > 0 {
+			return names
+		}
+	}
+	names := make([]string, 0, len(schema.Properties))
+	for name := range schema.Properties {
+		names = append(names, name)
+	}
+	sort.Strings(names)
+	return names
 }
 
 // ResolveGenericRequestBodySchemaName returns the concrete schema name backing a

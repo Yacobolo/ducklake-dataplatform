@@ -68,6 +68,32 @@ package api
 	schema: #SchemaRef
 }
 
+#CLIArg: {
+	source: "path" | "query" | "body"
+	name: string
+	display_name?: string
+}
+
+#CLIOutput: {
+	mode: "detail" | "collection" | "empty" | "raw"
+	table_columns?: [...string]
+	quiet_fields?: [...string]
+}
+
+#CLIPagination: {
+	items_field?: string
+	next_page_token_field?: string
+}
+
+#CLI: {
+	command: [...string]
+	args?: [...#CLIArg]
+	body_input?: "none" | "json" | "flags" | "flags_or_json"
+	confirm?: "none" | "always"
+	output?: #CLIOutput
+	pagination?: #CLIPagination
+}
+
 #SecurityRequirement: [string]: [...string]
 
 #SecurityScheme: {
@@ -106,6 +132,7 @@ package api
 	parameters?: [...#Parameter]
 	request_body?: #RequestBody
 	responses: [...#Response]
+	cli?: #CLI
 	extensions?: [string]: _
 }
 

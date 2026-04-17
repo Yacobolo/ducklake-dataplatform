@@ -32441,7 +32441,7 @@ paths:
               $ref: '#/components/schemas/QueryRequest'
             example:
               sql: select order_id, total_amount from analytics.orders order by created_at desc limit 10
-      x-cli-command: query
+      x-cli-command: query execute
   /v1/row-filters:
     get:
       operationId: listRowFilters

@@ -77,8 +77,39 @@ type Endpoint struct {
 	Parameters  []Parameter           `json:"parameters,omitempty"`
 	RequestBody *RequestBody          `json:"request_body,omitempty"`
 	Responses   []Response            `json:"responses"`
+	CLI         *CLI                  `json:"cli,omitempty"`
 	Security    []SecurityRequirement `json:"security,omitempty"`
 	Extensions  map[string]any        `json:"extensions,omitempty"`
+}
+
+// CLI describes APIGen-owned CLI metadata for one operation.
+type CLI struct {
+	Command    []string       `json:"command,omitempty"`
+	Args       []CLIArg       `json:"args,omitempty"`
+	BodyInput  string         `json:"body_input,omitempty"`
+	Confirm    string         `json:"confirm,omitempty"`
+	Output     *CLIOutput     `json:"output,omitempty"`
+	Pagination *CLIPagination `json:"pagination,omitempty"`
+}
+
+// CLIArg binds one positional CLI argument to a request source field.
+type CLIArg struct {
+	Source      string `json:"source"`
+	Name        string `json:"name"`
+	DisplayName string `json:"display_name,omitempty"`
+}
+
+// CLIOutput controls generated response rendering.
+type CLIOutput struct {
+	Mode         string   `json:"mode,omitempty"`
+	TableColumns []string `json:"table_columns,omitempty"`
+	QuietFields  []string `json:"quiet_fields,omitempty"`
+}
+
+// CLIPagination declares the collection envelope used for --all style paging.
+type CLIPagination struct {
+	ItemsField         string `json:"items_field,omitempty"`
+	NextPageTokenField string `json:"next_page_token_field,omitempty"`
 }
 
 // Parameter describes an operation parameter.

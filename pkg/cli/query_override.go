@@ -15,8 +15,15 @@ import (
 	"github.com/Yacobolo/quackstack/pkg/cli/apiruntime"
 )
 
-func init() {
-	apiruntime.RegisterRunOverride("executeQuery", func(client *apiruntime.Client) func(*cobra.Command, []string) error {
+func addQueryRuntimeOptions(opts *apiruntime.RuntimeOptions) {
+	if opts.RunOverrides == nil {
+		opts.RunOverrides = map[string]func(*apiruntime.Client) func(*cobra.Command, []string) error{}
+	}
+	if opts.CommandMutators == nil {
+		opts.CommandMutators = map[string]func(*cobra.Command){}
+	}
+
+	opts.RunOverrides["executeQuery"] = func(client *apiruntime.Client) func(*cobra.Command, []string) error {
 		return func(cmd *cobra.Command, args []string) error {
 			sql, err := readSQLInput(cmd, args)
 			if err != nil {
@@ -29,7 +36,7 @@ func init() {
 
 			body := map[string]interface{}{"sql": sql}
 			addComputeSelectionToBody(cmd, body)
-			resp, err := client.Do("POST", "/query-executions", nil, body)
+			resp, err := client.Do("POST", generatedAPIPath("/query-executions"), nil, body)
 			if err != nil {
 				return err
 			}
@@ -39,13 +46,13 @@ func init() {
 
 			return printQueryResult(cmd, resp)
 		}
-	})
-	apiruntime.RegisterOverride("executeQuery", func(c *cobra.Command) {
+	}
+	opts.CommandMutators["executeQuery"] = func(c *cobra.Command) {
 		c.Args = cobra.MaximumNArgs(1)
 		addComputeSelectionFlags(c)
-	})
+	}
 
-	apiruntime.RegisterRunOverride("submitQuery", func(client *apiruntime.Client) func(*cobra.Command, []string) error {
+	opts.RunOverrides["submitQuery"] = func(client *apiruntime.Client) func(*cobra.Command, []string) error {
 		return func(cmd *cobra.Command, args []string) error {
 			sql, err := readSQLInput(cmd, args)
 			if err != nil {
@@ -62,7 +69,7 @@ func init() {
 				return fmt.Errorf("BYOC_LOCAL is only supported for interactive execution; use `quack query execute` for local queries")
 			}
 
-			resp, err := client.Do("POST", "/queries", nil, body)
+			resp, err := client.Do("POST", generatedAPIPath("/queries"), nil, body)
 			if err != nil {
 				return err
 			}
@@ -112,7 +119,7 @@ func init() {
 			if maxResults > 0 {
 				query.Set("max_results", fmt.Sprintf("%d", maxResults))
 			}
-			resultsResp, err := client.Do("GET", "/queries/"+submit.QueryID+"/results", query, nil)
+			resultsResp, err := client.Do("GET", generatedAPIPath("/queries/"+submit.QueryID+"/results"), query, nil)
 			if err != nil {
 				return err
 			}
@@ -121,14 +128,14 @@ func init() {
 			}
 			return printQueryResult(cmd, resultsResp)
 		}
-	})
+	}
 
-	apiruntime.RegisterRunOverride("getQuery", func(client *apiruntime.Client) func(*cobra.Command, []string) error {
+	opts.RunOverrides["getQuery"] = func(client *apiruntime.Client) func(*cobra.Command, []string) error {
 		return func(cmd *cobra.Command, args []string) error {
 			if len(args) != 1 {
 				return fmt.Errorf("requires query id argument")
 			}
-			resp, err := client.Do("GET", "/queries/"+args[0], nil, nil)
+			resp, err := client.Do("GET", generatedAPIPath("/queries/"+args[0]), nil, nil)
 			if err != nil {
 				return err
 			}
@@ -141,9 +148,9 @@ func init() {
 			}
 			return printAnyResponse(cmd, body)
 		}
-	})
+	}
 
-	apiruntime.RegisterRunOverride("getQueryResults", func(client *apiruntime.Client) func(*cobra.Command, []string) error {
+	opts.RunOverrides["getQueryResults"] = func(client *apiruntime.Client) func(*cobra.Command, []string) error {
 		return func(cmd *cobra.Command, args []string) error {
 			if len(args) != 1 {
 				return fmt.Errorf("requires query id argument")
@@ -157,7 +164,7 @@ func init() {
 			if pageToken != "" {
 				query.Set("page_token", pageToken)
 			}
-			resp, err := client.Do("GET", "/queries/"+args[0]+"/results", query, nil)
+			resp, err := client.Do("GET", generatedAPIPath("/queries/"+args[0]+"/results"), query, nil)
 			if err != nil {
 				return err
 			}
@@ -166,14 +173,14 @@ func init() {
 			}
 			return printQueryResult(cmd, resp)
 		}
-	})
+	}
 
-	apiruntime.RegisterRunOverride("cancelQuery", func(client *apiruntime.Client) func(*cobra.Command, []string) error {
+	opts.RunOverrides["cancelQuery"] = func(client *apiruntime.Client) func(*cobra.Command, []string) error {
 		return func(cmd *cobra.Command, args []string) error {
 			if len(args) != 1 {
 				return fmt.Errorf("requires query id argument")
 			}
-			resp, err := client.Do("POST", "/queries/"+args[0]+"/cancellations", nil, nil)
+			resp, err := client.Do("POST", generatedAPIPath("/queries/"+args[0]+"/cancellations"), nil, nil)
 			if err != nil {
 				return err
 			}
@@ -186,9 +193,9 @@ func init() {
 			}
 			return printAnyResponse(cmd, body)
 		}
-	})
+	}
 
-	apiruntime.RegisterRunOverride("deleteQuery", func(client *apiruntime.Client) func(*cobra.Command, []string) error {
+	opts.RunOverrides["deleteQuery"] = func(client *apiruntime.Client) func(*cobra.Command, []string) error {
 		return func(cmd *cobra.Command, args []string) error {
 			if len(args) != 1 {
 				return fmt.Errorf("requires query id argument")
@@ -198,7 +205,7 @@ func init() {
 					return nil
 				}
 			}
-			resp, err := client.Do("DELETE", "/queries/"+args[0], nil, nil)
+			resp, err := client.Do("DELETE", generatedAPIPath("/queries/"+args[0]), nil, nil)
 			if err != nil {
 				return err
 			}
@@ -212,16 +219,16 @@ func init() {
 			_, _ = fmt.Fprintln(os.Stdout, "Deleted.")
 			return nil
 		}
-	})
+	}
 
-	apiruntime.RegisterOverride("submitQuery", func(c *cobra.Command) {
+	opts.CommandMutators["submitQuery"] = func(c *cobra.Command) {
 		addComputeSelectionFlags(c)
 		c.Flags().Bool("wait", false, "Wait for query completion")
 		c.Flags().Duration("poll-interval", time.Second, "Status polling interval when --wait is enabled")
 		c.Flags().Duration("wait-timeout", 0, "Max wait duration (0 means wait indefinitely)")
 		c.Flags().Bool("results", false, "Fetch first page of results when query succeeds and --wait is enabled")
 		c.Flags().Int64("max-results", 100, "Maximum rows to fetch when --results is enabled")
-	})
+	}
 }
 
 func addComputeSelectionFlags(cmd *cobra.Command) {
@@ -433,7 +440,7 @@ type waitedStatus struct {
 func waitForQuery(client *apiruntime.Client, queryID string, pollInterval, timeout time.Duration) (*waitedStatus, error) {
 	start := time.Now()
 	for {
-		resp, err := client.Do("GET", "/queries/"+queryID, nil, nil)
+		resp, err := client.Do("GET", generatedAPIPath("/queries/"+queryID), nil, nil)
 		if err != nil {
 			return nil, err
 		}

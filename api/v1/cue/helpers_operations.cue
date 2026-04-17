@@ -1,6 +1,7 @@
 package api
 
 import "list"
+import "strings"
 
 #authenticatedSecurity: [
 	{
@@ -698,6 +699,11 @@ import "list"
 				"x-cli-command": spec.cli
 			}
 		}
+		if spec.cli != _|_ {
+			cli: {
+				command: strings.Split(spec.cli, " ")
+			}
+		}
 	}
 }
 
@@ -777,6 +783,9 @@ import "list"
 		}
 		extensions: #authenticatedExtensions & {
 			#cli_command: spec.cli
+		}
+		cli: {
+			command: strings.Split(spec.cli, " ")
 		}
 	}
 }

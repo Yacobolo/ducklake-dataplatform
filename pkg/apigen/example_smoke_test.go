@@ -101,8 +101,8 @@ func TestExampleConsumer_CUEToGeneratedBuild(t *testing.T) {
 			require.Contains(t, serverGenerated, tt.expectedPath)
 
 			cliGenerated := mustReadFile(t, filepath.Join(exampleRoot, "cmd", "cli", "gen", "apigen_registry.gen.go"))
-			require.Contains(t, cliGenerated, `CLICommand: "widgets list"`)
-			require.Contains(t, cliGenerated, `CLICommand: "widgets create"`)
+			require.Contains(t, cliGenerated, `Command: []string{"widgets", "list"}`)
+			require.Contains(t, cliGenerated, `Command: []string{"widgets", "create"}`)
 			require.Contains(t, cliGenerated, `Path: "`+tt.expectedPath+`"`)
 			require.NotContains(t, cliGenerated, "deleteWidget")
 
@@ -128,7 +128,7 @@ func TestExampleConsumer_CUEToGeneratedBuild(t *testing.T) {
 			require.Contains(t, listOutput, "widget-1")
 			require.Contains(t, listOutput, "first")
 
-			createOutput := runCommandOutput(t, exampleRoot, cliBinary, "widgets", "create", "--name", "demo-widget")
+			createOutput := runCommandOutput(t, exampleRoot, cliBinary, "widgets", "create", "demo-widget")
 			require.Contains(t, createOutput, "widget-2")
 			require.Contains(t, createOutput, "created")
 		})

@@ -196,11 +196,20 @@ func operationNode(endpoint ir.Endpoint, examples *exampleResolver) (*yaml.Node,
 	}
 
 	extensionKeys := make([]string, 0, len(endpoint.Extensions))
-	for key := range endpoint.Extensions {
+	extensions := endpoint.Extensions
+	if cliCommand := ir.CLICommandString(endpoint.CLI); cliCommand != "" {
+		if extensions == nil {
+			extensions = map[string]any{}
+		} else {
+			extensions = cloneExtensions(extensions)
+		}
+		extensions["x-cli-command"] = cliCommand
+	}
+	for key := range extensions {
 		if key == "security" {
 			continue
 		}
-		if key == "x-authz" && isAuthenticatedAuthz(endpoint.Extensions[key]) {
+		if key == "x-authz" && isAuthenticatedAuthz(extensions[key]) {
 			continue
 		}
 		extensionKeys = append(extensionKeys, key)
@@ -217,10 +226,18 @@ func operationNode(endpoint ir.Endpoint, examples *exampleResolver) (*yaml.Node,
 		return order[extensionKeys[i]] < order[extensionKeys[j]]
 	})
 	for _, key := range extensionKeys {
-		appendKeyValue(node, key, anyToNode(endpoint.Extensions[key]))
+		appendKeyValue(node, key, anyToNode(extensions[key]))
 	}
 
 	return node, nil
+}
+
+func cloneExtensions(in map[string]any) map[string]any {
+	out := make(map[string]any, len(in))
+	for key, value := range in {
+		out[key] = value
+	}
+	return out
 }
 
 func parameterNode(parameter ir.Parameter, examples *exampleResolver) *yaml.Node {

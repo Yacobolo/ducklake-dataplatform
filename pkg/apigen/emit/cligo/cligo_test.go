@@ -45,12 +45,13 @@ func TestEmit(t *testing.T) {
 
 	b, err := Emit(doc, Options{})
 	require.NoError(t, err)
-	require.Contains(t, string(b), "APIGeneratedEndpoints")
+	require.Contains(t, string(b), "APIGeneratedCommandSpecs")
 	require.Contains(t, string(b), "executeQuery")
 	require.Contains(t, string(b), "Summary: \"Execute a query\"")
 	require.Contains(t, string(b), "Description: \"Runs SQL against the default catalog\"")
 	require.Contains(t, string(b), `Path: "/v1/query"`)
 	require.Contains(t, string(b), "Parameters: []apigencobra.Param{{Name: \"catalogName\", In: \"path\", Type: \"string\", Description: \"Catalog to query\"")
-	require.Contains(t, string(b), "BodyFields: []apigencobra.Field{{Name: \"sql\", Type: \"string\", Description: \"SQL text to execute\"")
-	require.Contains(t, string(b), "CLICommand: \"query execute\"")
+	require.Contains(t, string(b), "RequestBody: &apigencobra.RequestBodySpec")
+	require.Contains(t, string(b), "Fields: []apigencobra.Field{{Name: \"sql\", Type: \"string\", Description: \"SQL text to execute\"")
+	require.Contains(t, string(b), "Command: []string{\"query\", \"execute\"}")
 }

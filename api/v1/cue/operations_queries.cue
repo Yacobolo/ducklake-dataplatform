@@ -103,7 +103,7 @@ package api
 		path:         "/query-executions"
 		summary:      "Execute query"
 		description:  "Executes a SQL statement synchronously and returns the first page of results in the response body. This is the primary API surface for querying catalog tables, including the reserved system.* schema that exposes control-plane tables for admins as read-only objects."
-		cli:          "query"
+		cli:          "query execute"
 		returns:      "QueryResult"
 		error_family: "mutating"
 		body_ref:     "QueryRequest"

@@ -41,7 +41,7 @@ func TestV1FixtureLoadsAndEmits(t *testing.T) {
 	require.NoError(t, err)
 	require.Contains(t, string(cliCode), `import apigencobra "github.com/Yacobolo/quackstack/pkg/apigen/runtime/cobra"`)
 	require.Contains(t, string(cliCode), `Path: "/v1/widgets"`)
-	require.Contains(t, string(cliCode), `CLICommand: "widgets list"`)
-	require.Contains(t, string(cliCode), `CLICommand: "widgets create"`)
+	require.Contains(t, string(cliCode), `Command: []string{"widgets", "list"}`)
+	require.Contains(t, string(cliCode), `Command: []string{"widgets", "create"}`)
 	require.NotContains(t, string(cliCode), "deleteWidget")
 }

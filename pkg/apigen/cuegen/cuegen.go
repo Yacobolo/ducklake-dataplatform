@@ -252,6 +252,7 @@ func cloneEndpoint(in ir.Endpoint) ir.Endpoint {
 		body.Schema = cloneSchemaRef(in.RequestBody.Schema)
 		out.RequestBody = &body
 	}
+	out.CLI = ir.CloneCLI(in.CLI)
 	if len(in.Responses) > 0 {
 		out.Responses = make([]ir.Response, len(in.Responses))
 		for i, response := range in.Responses {
@@ -605,6 +606,32 @@ const schemaFile = `package api
 	schema: #SchemaRef
 }
 
+#CLIArg: {
+	source: "path" | "query" | "body"
+	name: string
+	display_name?: string
+}
+
+#CLIOutput: {
+	mode: "detail" | "collection" | "empty" | "raw"
+	table_columns?: [...string]
+	quiet_fields?: [...string]
+}
+
+#CLIPagination: {
+	items_field?: string
+	next_page_token_field?: string
+}
+
+#CLI: {
+	command: [...string]
+	args?: [...#CLIArg]
+	body_input?: "none" | "json" | "flags" | "flags_or_json"
+	confirm?: "none" | "always"
+	output?: #CLIOutput
+	pagination?: #CLIPagination
+}
+
 #SecurityRequirement: [string]: [...string]
 
 #SecurityScheme: {
@@ -643,6 +670,7 @@ const schemaFile = `package api
 	parameters?: [...#Parameter]
 	request_body?: #RequestBody
 	responses: [...#Response]
+	cli?: #CLI
 	extensions?: [string]: _
 }
 

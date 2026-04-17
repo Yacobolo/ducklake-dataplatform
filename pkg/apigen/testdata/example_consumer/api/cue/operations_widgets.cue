@@ -35,6 +35,18 @@ endpoints_widgets: [
 				}
 			},
 		]
+		cli: {
+			command: ["widgets", "list"]
+			output: {
+				mode: "collection"
+				table_columns: ["id", "name"]
+				quiet_fields: ["id", "name"]
+			}
+			pagination: {
+				items_field: "data"
+				next_page_token_field: "next_page_token"
+			}
+		}
 		extensions: {
 			"x-cli-command": "widgets list"
 		}
@@ -79,6 +91,19 @@ endpoints_widgets: [
 				}
 			},
 		]
+		cli: {
+			command: ["widgets", "create"]
+			body_input: "flags_or_json"
+			args: [{
+				source: "body"
+				name: "name"
+				display_name: "name"
+			}]
+			output: {
+				mode: "detail"
+				quiet_fields: ["id", "name"]
+			}
+		}
 		extensions: {
 			"x-cli-command": "widgets create"
 		}

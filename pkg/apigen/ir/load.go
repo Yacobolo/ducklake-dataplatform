@@ -58,6 +58,8 @@ func Validate(doc Document) error {
 
 	seenOperation := make(map[string]struct{}, len(doc.Endpoints))
 	seenRoute := make(map[string]struct{}, len(doc.Endpoints))
+	seenCLI := make(map[string]string, len(doc.Endpoints))
+	commandPaths := make(map[string][]string, len(doc.Endpoints))
 	for _, endpoint := range doc.Endpoints {
 		if strings.TrimSpace(endpoint.Method) == "" {
 			return fmt.Errorf("endpoint method is required")
@@ -130,6 +132,27 @@ func Validate(doc Document) error {
 					return err
 				}
 			}
+		}
+
+		normalizedCLI, err := normalizeEndpointCLI(doc, endpoint)
+		if err != nil {
+			return err
+		}
+		if err := validateEndpointCLI(doc, endpoint, normalizedCLI); err != nil {
+			return err
+		}
+		if normalizedCLI != nil {
+			command := CLICommandString(normalizedCLI)
+			if existing, ok := seenCLI[command]; ok {
+				return fmt.Errorf("duplicate cli.command %q for operations %q and %q", command, existing, endpoint.OperationID)
+			}
+			for other, otherPath := range commandPaths {
+				if commandPathPrefix(normalizedCLI.Command, otherPath) || commandPathPrefix(otherPath, normalizedCLI.Command) {
+					return fmt.Errorf("cli.command %q for operation %q conflicts with %q for operation %q", command, endpoint.OperationID, other, seenCLI[other])
+				}
+			}
+			seenCLI[command] = endpoint.OperationID
+			commandPaths[command] = append([]string(nil), normalizedCLI.Command...)
 		}
 
 		opKey := endpoint.OperationID
@@ -313,6 +336,10 @@ func Normalize(doc *Document) {
 		return doc.Endpoints[i].Path < doc.Endpoints[j].Path
 	})
 	for i := range doc.Endpoints {
+		normalizedCLI, err := normalizeEndpointCLI(*doc, doc.Endpoints[i])
+		if err == nil {
+			doc.Endpoints[i].CLI = normalizedCLI
+		}
 		if doc.Endpoints[i].RequestBody != nil && strings.TrimSpace(doc.Endpoints[i].RequestBody.ContentType) == "" {
 			doc.Endpoints[i].RequestBody.ContentType = "application/json"
 		}
@@ -334,4 +361,360 @@ func Normalize(doc *Document) {
 			})
 		}
 	}
+}
+
+func validateEndpointCLI(doc Document, endpoint Endpoint, cli *CLI) error {
+	if cli == nil {
+		return nil
+	}
+	if len(cli.Command) == 0 {
+		return fmt.Errorf("endpoint %q cli.command is required when cli is present", endpoint.OperationID)
+	}
+	for _, segment := range cli.Command {
+		if strings.TrimSpace(segment) == "" {
+			return fmt.Errorf("endpoint %q cli.command must not contain empty segments", endpoint.OperationID)
+		}
+	}
+
+	switch cli.BodyInput {
+	case "none", "json", "flags", "flags_or_json":
+	default:
+		return fmt.Errorf("endpoint %q cli.body_input has unsupported value %q", endpoint.OperationID, cli.BodyInput)
+	}
+
+	switch cli.Confirm {
+	case "none", "always":
+	default:
+		return fmt.Errorf("endpoint %q cli.confirm has unsupported value %q", endpoint.OperationID, cli.Confirm)
+	}
+
+	bodySchema, hasBodySchema := ResolveRequestBodySchema(doc, endpoint)
+	if endpoint.RequestBody == nil && cli.BodyInput != "none" {
+		return fmt.Errorf("endpoint %q cli.body_input=%q requires request_body", endpoint.OperationID, cli.BodyInput)
+	}
+	if endpoint.RequestBody != nil && (cli.BodyInput == "flags" || cli.BodyInput == "flags_or_json") && (!hasBodySchema || bodySchema.Type != "object") {
+		return fmt.Errorf("endpoint %q cli.body_input=%q requires an object request_body schema", endpoint.OperationID, cli.BodyInput)
+	}
+
+	parametersByLocation := map[string]map[string]struct{}{
+		"path":  {},
+		"query": {},
+		"body":  {},
+	}
+	for _, parameter := range endpoint.Parameters {
+		parametersByLocation[parameter.In][parameter.Name] = struct{}{}
+	}
+	if hasBodySchema && bodySchema.Type == "object" {
+		for name := range bodySchema.Properties {
+			parametersByLocation["body"][name] = struct{}{}
+		}
+	}
+
+	seenArgs := make(map[string]struct{}, len(cli.Args))
+	for _, arg := range cli.Args {
+		switch arg.Source {
+		case "path", "query", "body":
+		default:
+			return fmt.Errorf("endpoint %q cli.args source %q is unsupported", endpoint.OperationID, arg.Source)
+		}
+		if strings.TrimSpace(arg.Name) == "" {
+			return fmt.Errorf("endpoint %q cli.args name is required", endpoint.OperationID)
+		}
+		key := arg.Source + ":" + arg.Name
+		if _, ok := seenArgs[key]; ok {
+			return fmt.Errorf("endpoint %q cli.args contains duplicate binding %q", endpoint.OperationID, key)
+		}
+		seenArgs[key] = struct{}{}
+		if _, ok := parametersByLocation[arg.Source][arg.Name]; !ok {
+			return fmt.Errorf("endpoint %q cli.args references unknown %s field %q", endpoint.OperationID, arg.Source, arg.Name)
+		}
+		if arg.Source == "body" && !(cli.BodyInput == "flags" || cli.BodyInput == "flags_or_json") {
+			return fmt.Errorf("endpoint %q cli.args body binding %q requires cli.body_input=flags or flags_or_json", endpoint.OperationID, arg.Name)
+		}
+	}
+
+	if cli.Output == nil {
+		return nil
+	}
+	switch cli.Output.Mode {
+	case "detail", "collection", "empty", "raw":
+	default:
+		return fmt.Errorf("endpoint %q cli.output.mode has unsupported value %q", endpoint.OperationID, cli.Output.Mode)
+	}
+
+	successResponse, ok := SuccessResponse(endpoint)
+	if !ok {
+		return fmt.Errorf("endpoint %q cli output requires a success response", endpoint.OperationID)
+	}
+	successSchema, hasSuccessSchema := ResolveResponseBodySchema(doc, *successResponse)
+	switch cli.Output.Mode {
+	case "collection":
+		itemSchema, err := validateCLICollectionSchema(doc, endpoint.OperationID, successSchema, hasSuccessSchema, cli)
+		if err != nil {
+			return err
+		}
+		for _, name := range cli.Output.TableColumns {
+			if _, ok := itemSchema.Properties[name]; !ok {
+				return fmt.Errorf("endpoint %q cli.output.table_columns references unknown item field %q", endpoint.OperationID, name)
+			}
+		}
+		for _, name := range cli.Output.QuietFields {
+			if _, ok := itemSchema.Properties[name]; !ok {
+				return fmt.Errorf("endpoint %q cli.output.quiet_fields references unknown item field %q", endpoint.OperationID, name)
+			}
+		}
+	case "detail":
+		if !hasSuccessSchema || successSchema.Type != "object" {
+			return fmt.Errorf("endpoint %q cli.output.mode=detail requires an object success schema", endpoint.OperationID)
+		}
+		for _, name := range append(append([]string(nil), cli.Output.TableColumns...), cli.Output.QuietFields...) {
+			if _, ok := successSchema.Properties[name]; !ok {
+				return fmt.Errorf("endpoint %q cli.output references unknown response field %q", endpoint.OperationID, name)
+			}
+		}
+	case "empty", "raw":
+		if cli.Pagination != nil {
+			return fmt.Errorf("endpoint %q cli.pagination requires cli.output.mode=collection", endpoint.OperationID)
+		}
+	}
+
+	if cli.Pagination != nil && cli.Output.Mode != "collection" {
+		return fmt.Errorf("endpoint %q cli.pagination requires cli.output.mode=collection", endpoint.OperationID)
+	}
+
+	return nil
+}
+
+func validateCLICollectionSchema(doc Document, operationID string, successSchema Schema, hasSuccessSchema bool, cli *CLI) (Schema, error) {
+	if !hasSuccessSchema || successSchema.Type != "object" {
+		return Schema{}, fmt.Errorf("endpoint %q cli.output.mode=collection requires an object success schema", operationID)
+	}
+	itemsField := "data"
+	if cli.Pagination != nil && strings.TrimSpace(cli.Pagination.ItemsField) != "" {
+		itemsField = cli.Pagination.ItemsField
+	}
+	property, ok := successSchema.Properties[itemsField]
+	if !ok {
+		return Schema{}, fmt.Errorf("endpoint %q cli collection items field %q is missing", operationID, itemsField)
+	}
+	itemSchemaRef := property.Schema
+	itemType := strings.ToLower(strings.TrimSpace(itemSchemaRef.Type))
+	if itemType != "array" {
+		return Schema{}, fmt.Errorf("endpoint %q cli collection items field %q must be an array", operationID, itemsField)
+	}
+	if itemSchemaRef.Items == nil {
+		return Schema{}, fmt.Errorf("endpoint %q cli collection items field %q must declare items", operationID, itemsField)
+	}
+	itemSchema, ok := ResolveSchema(doc, *itemSchemaRef.Items)
+	if !ok {
+		return Schema{}, fmt.Errorf("endpoint %q cli collection item schema could not be resolved", operationID)
+	}
+	itemSchema.Type = strings.ToLower(strings.TrimSpace(itemSchema.Type))
+	return itemSchema, nil
+}
+
+func normalizeEndpointCLI(doc Document, endpoint Endpoint) (*CLI, error) {
+	legacyCommand := legacyCLICommand(endpoint.Extensions)
+	cli := CloneCLI(endpoint.CLI)
+	if cli == nil && legacyCommand == "" {
+		return nil, nil
+	}
+	if cli == nil {
+		cli = &CLI{}
+	}
+	if len(cli.Command) == 0 && legacyCommand != "" {
+		cli.Command = ParseCLICommand(legacyCommand)
+	}
+	if len(cli.Command) > 0 && legacyCommand != "" && strings.Join(cli.Command, " ") != legacyCommand {
+		return nil, fmt.Errorf("endpoint %q cli.command does not match legacy x-cli-command", endpoint.OperationID)
+	}
+	for i := range cli.Command {
+		cli.Command[i] = strings.TrimSpace(cli.Command[i])
+	}
+	if endpoint.RequestBody == nil && cli.BodyInput == "" {
+		cli.BodyInput = "none"
+	}
+	if endpoint.RequestBody != nil && cli.BodyInput == "" {
+		requestBodySchema, ok := ResolveRequestBodySchema(doc, endpoint)
+		if ok && strings.EqualFold(requestBodySchema.Type, "object") {
+			cli.BodyInput = "flags_or_json"
+		} else {
+			cli.BodyInput = "json"
+		}
+	}
+	if cli.Confirm == "" {
+		if strings.EqualFold(endpoint.Method, "DELETE") {
+			cli.Confirm = "always"
+		} else {
+			cli.Confirm = "none"
+		}
+	}
+	if len(cli.Args) == 0 {
+		cli.Args = defaultCLIArgs(doc, endpoint, cli.BodyInput)
+	}
+	output, pagination := deriveDefaultCLIOutput(doc, endpoint)
+	if cli.Output == nil {
+		cli.Output = output
+	} else if output != nil {
+		if cli.Output.Mode == "" {
+			cli.Output.Mode = output.Mode
+		}
+		if len(cli.Output.TableColumns) == 0 {
+			cli.Output.TableColumns = append([]string(nil), output.TableColumns...)
+		}
+		if len(cli.Output.QuietFields) == 0 {
+			cli.Output.QuietFields = append([]string(nil), output.QuietFields...)
+		}
+	}
+	if cli.Pagination == nil {
+		cli.Pagination = pagination
+	}
+	return cli, nil
+}
+
+func legacyCLICommand(extensions map[string]any) string {
+	if len(extensions) == 0 {
+		return ""
+	}
+	for _, key := range []string{"x-cli-command", "cli_command", "x_cli_command"} {
+		raw, ok := extensions[key]
+		if !ok {
+			continue
+		}
+		value, ok := raw.(string)
+		if !ok {
+			continue
+		}
+		return strings.TrimSpace(value)
+	}
+	return ""
+}
+
+func defaultCLIArgs(doc Document, endpoint Endpoint, _ string) []CLIArg {
+	pathArgs := defaultPositionalPathArgs(endpoint)
+	args := make([]CLIArg, 0, len(pathArgs)+1)
+	for _, name := range pathArgs {
+		args = append(args, CLIArg{Source: "path", Name: name, DisplayName: strings.ReplaceAll(name, "_", "-")})
+	}
+	if shouldDefaultBodyNameArg(doc, endpoint) {
+		args = append(args, CLIArg{Source: "body", Name: "name", DisplayName: "name"})
+	}
+	return args
+}
+
+func defaultPositionalPathArgs(endpoint Endpoint) []string {
+	pathParams := PathParameterNames(endpoint.Path)
+	if len(pathParams) == 0 {
+		return nil
+	}
+	if strings.HasPrefix(endpoint.OperationID, "create") {
+		selected := make([]string, 0, len(pathParams))
+		for _, name := range pathParams {
+			if name == "catalog_name" {
+				continue
+			}
+			selected = append(selected, name)
+		}
+		return selected
+	}
+	if strings.HasPrefix(endpoint.OperationID, "list") {
+		return append([]string(nil), pathParams...)
+	}
+	selected := make([]string, 0, len(pathParams))
+	for _, name := range pathParams {
+		if name == "catalog_name" {
+			continue
+		}
+		selected = append(selected, name)
+	}
+	if len(selected) == 0 {
+		selected = append(selected, pathParams[len(pathParams)-1])
+	}
+	return selected
+}
+
+func shouldDefaultBodyNameArg(doc Document, endpoint Endpoint) bool {
+	if !strings.HasPrefix(endpoint.OperationID, "create") {
+		return false
+	}
+	pathParams := PathParameterNames(endpoint.Path)
+	if len(pathParams) == 0 {
+		return false
+	}
+	for _, name := range pathParams {
+		if name != "catalog_name" {
+			return false
+		}
+	}
+	bodySchema, ok := ResolveRequestBodySchema(doc, endpoint)
+	if !ok || bodySchema.Type != "object" {
+		return false
+	}
+	if _, ok := bodySchema.Properties["name"]; !ok {
+		return false
+	}
+	for _, name := range bodySchema.Required {
+		if name == "name" {
+			return true
+		}
+	}
+	return false
+}
+
+func deriveDefaultCLIOutput(doc Document, endpoint Endpoint) (*CLIOutput, *CLIPagination) {
+	successResponse, ok := SuccessResponse(endpoint)
+	if !ok {
+		return nil, nil
+	}
+	if strings.EqualFold(endpoint.Method, "DELETE") || successResponse.StatusCode == 204 {
+		return &CLIOutput{Mode: "empty"}, nil
+	}
+	successSchema, ok := ResolveResponseBodySchema(doc, *successResponse)
+	if !ok {
+		return &CLIOutput{Mode: "raw"}, nil
+	}
+	if successSchema.Type == "object" {
+		if itemsProperty, ok := successSchema.Properties["data"]; ok && strings.EqualFold(itemsProperty.Schema.Type, "array") {
+			output := &CLIOutput{Mode: "collection"}
+			pagination := &CLIPagination{}
+			pagination.ItemsField = "data"
+			if nextProperty, ok := successSchema.Properties["next_page_token"]; ok && strings.EqualFold(nextProperty.Schema.Type, "string") {
+				pagination.NextPageTokenField = "next_page_token"
+			}
+			if itemsProperty.Schema.Items != nil && itemsProperty.Schema.Items.Ref != "" {
+				if itemSchema, ok := ResolveSchema(doc, *itemsProperty.Schema.Items); ok && itemSchema.Type == "object" {
+					output.TableColumns = OrderedPropertyNames(itemSchema)
+					output.QuietFields = defaultQuietFields(itemSchema)
+				}
+			}
+			return output, pagination
+		}
+		return &CLIOutput{
+			Mode:        "detail",
+			QuietFields: defaultQuietFields(successSchema),
+		}, nil
+	}
+	return &CLIOutput{Mode: "raw"}, nil
+}
+
+func defaultQuietFields(schema Schema) []string {
+	fields := make([]string, 0, 3)
+	for _, name := range []string{"id", "name", "key"} {
+		if _, ok := schema.Properties[name]; ok {
+			fields = append(fields, name)
+		}
+	}
+	return fields
+}
+
+func commandPathPrefix(shorter []string, longer []string) bool {
+	if len(shorter) >= len(longer) {
+		return false
+	}
+	for i := range shorter {
+		if shorter[i] != longer[i] {
+			return false
+		}
+	}
+	return true
 }
