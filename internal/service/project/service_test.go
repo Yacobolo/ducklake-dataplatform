@@ -490,7 +490,7 @@ func TestService_CreateProject_DefaultsBranchAndValidatesAttachedProduct(t *test
 			return &domain.DataProduct{ID: id, OwnerTeamID: ownerTeamID}, nil
 		},
 	}
-	svc := NewService(workspaces, projects, &fakeEnvironmentRepo{}, nil, nil, nil, &fakeBuildRepo{}, nil, teams, products)
+	svc := NewService(workspaces, projects, &fakeEnvironmentRepo{}, nil, nil, nil, nil, nil, &fakeBuildRepo{}, nil, teams, products)
 
 	project, err := svc.CreateProject(ctx, "admin", domain.CreateProjectRequest{
 		WorkspaceID: workspaceID,
@@ -519,7 +519,7 @@ func TestService_CreateProject_RejectsWorkspaceKindMismatch(t *testing.T) {
 			return domain.FolderShareRoleManager, nil
 		},
 	}
-	svc := NewService(workspaces, &fakeProjectRepo{}, &fakeEnvironmentRepo{}, nil, nil, nil, &fakeBuildRepo{}, nil, &fakeTeamRepo{}, &fakeDataProductRepo{})
+	svc := NewService(workspaces, &fakeProjectRepo{}, &fakeEnvironmentRepo{}, nil, nil, nil, nil, nil, &fakeBuildRepo{}, nil, &fakeTeamRepo{}, &fakeDataProductRepo{})
 
 	_, err := svc.CreateProject(ctx, "alice", domain.CreateProjectRequest{
 		WorkspaceID: workspaceID,
@@ -545,7 +545,7 @@ func TestService_CreateEnvironment_PersonalProjectRejectsNonDev(t *testing.T) {
 			return nil, nil
 		},
 	}
-	svc := NewService(&fakeWorkspaceRepo{}, projects, envs, nil, nil, nil, &fakeBuildRepo{}, nil, &fakeTeamRepo{}, &fakeDataProductRepo{})
+	svc := NewService(&fakeWorkspaceRepo{}, projects, envs, nil, nil, nil, nil, nil, &fakeBuildRepo{}, nil, &fakeTeamRepo{}, &fakeDataProductRepo{})
 
 	_, err := svc.CreateEnvironment(ctx, "admin", "alice-personal", domain.CreateEnvironmentRequest{
 		Name:          "prod",
@@ -606,7 +606,7 @@ func TestService_CreateBuild_UsesProjectEnvironmentAndProduct(t *testing.T) {
 			return b, nil
 		},
 	}
-	svc := NewService(&fakeWorkspaceRepo{}, projects, environments, nil, nil, nil, builds, nil, &fakeTeamRepo{}, &fakeDataProductRepo{})
+	svc := NewService(&fakeWorkspaceRepo{}, projects, environments, nil, nil, nil, nil, nil, builds, nil, &fakeTeamRepo{}, &fakeDataProductRepo{})
 
 	build, err := svc.CreateBuild(ctx, "admin", "analytics-authoring", domain.CreateBuildRequest{
 		EnvironmentName: "prod",
@@ -637,7 +637,7 @@ func TestService_ListBuilds_ByProject(t *testing.T) {
 			return []domain.Build{{ID: "build-1", ProjectID: projectID, GitRef: "refs/heads/main"}}, 1, nil
 		},
 	}
-	svc := NewService(&fakeWorkspaceRepo{}, projects, &fakeEnvironmentRepo{}, nil, nil, nil, builds, nil, &fakeTeamRepo{}, &fakeDataProductRepo{})
+	svc := NewService(&fakeWorkspaceRepo{}, projects, &fakeEnvironmentRepo{}, nil, nil, nil, nil, nil, builds, nil, &fakeTeamRepo{}, &fakeDataProductRepo{})
 
 	items, total, err := svc.ListBuilds(ctx, project.Name, domain.PageRequest{MaxResults: 10})
 	require.NoError(t, err)
@@ -664,7 +664,7 @@ func TestService_GetEnvironmentForProject_RejectsCrossProjectEnvironment(t *test
 		},
 	}
 
-	svc := NewService(&fakeWorkspaceRepo{}, projects, environments, nil, nil, nil, &fakeBuildRepo{}, nil, &fakeTeamRepo{}, &fakeDataProductRepo{})
+	svc := NewService(&fakeWorkspaceRepo{}, projects, environments, nil, nil, nil, nil, nil, &fakeBuildRepo{}, nil, &fakeTeamRepo{}, &fakeDataProductRepo{})
 
 	_, err := svc.GetEnvironmentForProject(ctx, "admin", true, project.ID, "env-1")
 	require.Error(t, err)
@@ -689,7 +689,7 @@ func TestService_GetBuildForProject_RejectsCrossProjectBuild(t *testing.T) {
 		},
 	}
 
-	svc := NewService(&fakeWorkspaceRepo{}, projects, &fakeEnvironmentRepo{}, nil, nil, nil, builds, nil, &fakeTeamRepo{}, &fakeDataProductRepo{})
+	svc := NewService(&fakeWorkspaceRepo{}, projects, &fakeEnvironmentRepo{}, nil, nil, nil, nil, nil, builds, nil, &fakeTeamRepo{}, &fakeDataProductRepo{})
 
 	_, err := svc.GetBuildForProject(ctx, "admin", true, project.ID, "build-1")
 	require.Error(t, err)
@@ -722,7 +722,7 @@ func TestService_CreateDependencyForProject_PersistsDeclaredDependency(t *testin
 		},
 	}
 
-	svc := NewService(&fakeWorkspaceRepo{}, projects, &fakeEnvironmentRepo{}, deps, nil, nil, &fakeBuildRepo{}, nil, &fakeTeamRepo{}, &fakeDataProductRepo{})
+	svc := NewService(&fakeWorkspaceRepo{}, projects, &fakeEnvironmentRepo{}, deps, nil, nil, nil, nil, &fakeBuildRepo{}, nil, &fakeTeamRepo{}, &fakeDataProductRepo{})
 
 	created, err := svc.CreateDependencyForProject(ctx, "admin", true, project.ID, domain.CreateProjectDependencyRequest{
 		DependencyProject: "shared_lib",
@@ -756,7 +756,7 @@ func TestService_CreateSourceForProject_PersistsSourceDefinition(t *testing.T) {
 		},
 	}
 
-	svc := NewService(&fakeWorkspaceRepo{}, projects, &fakeEnvironmentRepo{}, nil, sources, nil, &fakeBuildRepo{}, nil, &fakeTeamRepo{}, &fakeDataProductRepo{})
+	svc := NewService(&fakeWorkspaceRepo{}, projects, &fakeEnvironmentRepo{}, nil, sources, nil, nil, nil, &fakeBuildRepo{}, nil, &fakeTeamRepo{}, &fakeDataProductRepo{})
 
 	created, err := svc.CreateSourceForProject(ctx, "admin", true, project.ID, domain.CreateSourceDefinitionRequest{
 		SourceName:  "raw",
@@ -795,7 +795,7 @@ func TestService_CreateSeedForProject_DefaultsProjectAndCsvFormat(t *testing.T) 
 		},
 	}
 
-	svc := NewService(&fakeWorkspaceRepo{}, projects, &fakeEnvironmentRepo{}, nil, nil, seeds, &fakeBuildRepo{}, nil, &fakeTeamRepo{}, &fakeDataProductRepo{})
+	svc := NewService(&fakeWorkspaceRepo{}, projects, &fakeEnvironmentRepo{}, nil, nil, seeds, nil, nil, &fakeBuildRepo{}, nil, &fakeTeamRepo{}, &fakeDataProductRepo{})
 
 	created, err := svc.CreateSeedForProject(ctx, "admin", true, project.ID, domain.CreateSeedRequest{
 		Name:        "seed_orders",

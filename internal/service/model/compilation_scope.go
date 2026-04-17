@@ -25,7 +25,7 @@ func (s *Service) loadCompilationModelScope(ctx context.Context, runCtx *resolve
 	warnings := make([]string, 0)
 	scope := make([]domain.Model, 0, len(allModels))
 	for _, model := range allModels {
-		if !projectAllowed(runCtx.allowedRefProjects, model.ProjectName) {
+		if strings.TrimSpace(model.ProjectName) != strings.TrimSpace(runCtx.project.Name) {
 			continue
 		}
 		effective, modelWarnings, err := resolveEffectiveModel(model)
@@ -38,17 +38,48 @@ func (s *Service) loadCompilationModelScope(ctx context.Context, runCtx *resolve
 		}
 		scope = append(scope, effective)
 	}
+	for _, projectName := range runCtx.dependencyProjects {
+		snapshot, ok := runCtx.dependencySnapshots[projectName]
+		if !ok {
+			return nil, nil, domain.ErrValidation("missing dependency snapshot for project %s", projectName)
+		}
+		for _, model := range snapshot.Models {
+			effective, modelWarnings, err := resolveEffectiveModel(model)
+			if err != nil {
+				return nil, nil, fmt.Errorf("resolve dependency model config for %s: %w", model.QualifiedName(), err)
+			}
+			warnings = append(warnings, modelWarnings...)
+			if !modelEnabled(effective) {
+				continue
+			}
+			scope = append(scope, effective)
+		}
+	}
 
 	if s.seeds != nil {
-		for projectName := range runCtx.allowedRefProjects {
-			seeds, err := s.seeds.ListByProject(ctx, projectName)
+		seeds, err := s.seeds.ListByProject(ctx, runCtx.project.Name)
+		if err != nil {
+			return nil, nil, fmt.Errorf("list seeds for project %s: %w", runCtx.project.Name, err)
+		}
+		for _, seed := range seeds {
+			seedModel, err := seedToModel(seed)
 			if err != nil {
-				return nil, nil, fmt.Errorf("list seeds for project %s: %w", projectName, err)
+				return nil, nil, fmt.Errorf("compile seed %s.%s: %w", seed.ProjectName, seed.Name, err)
 			}
-			for _, seed := range seeds {
+			if modelNameTaken(scope, seedModel.QualifiedName()) {
+				return nil, nil, domain.ErrValidation("seed %s conflicts with an existing model in the same project", seedModel.QualifiedName())
+			}
+			scope = append(scope, seedModel)
+		}
+		for _, projectName := range runCtx.dependencyProjects {
+			snapshot, ok := runCtx.dependencySnapshots[projectName]
+			if !ok {
+				return nil, nil, domain.ErrValidation("missing dependency snapshot for project %s", projectName)
+			}
+			for _, seed := range snapshot.Seeds {
 				seedModel, err := seedToModel(seed)
 				if err != nil {
-					return nil, nil, fmt.Errorf("compile seed %s.%s: %w", seed.ProjectName, seed.Name, err)
+					return nil, nil, fmt.Errorf("compile dependency seed %s.%s: %w", seed.ProjectName, seed.Name, err)
 				}
 				if modelNameTaken(scope, seedModel.QualifiedName()) {
 					return nil, nil, domain.ErrValidation("seed %s conflicts with an existing model in the same project", seedModel.QualifiedName())
@@ -194,24 +225,21 @@ func (s *Service) compileMacroLayers(
 		return nil
 	}
 
-	allMacros := make([]domain.Macro, 0)
+	projectMacros := make(map[string][]domain.Macro)
 	if s.macros != nil {
-		allMacros, err = s.macros.ListAll(ctx)
+		allMacros, err := s.macros.ListAll(ctx)
 		if err != nil {
 			return nil, fmt.Errorf("list macros: %w", err)
 		}
-	}
-
-	systemMacros, catalogMacros, projectMacros := partitionMacrosForCompilation(allMacros, projectName, runCtx.targetCatalog)
-	if err := appendLayer("system", systemMacros, filepath.Join(macrosDir, "system")); err != nil {
-		return nil, err
-	}
-	if err := appendLayer("catalog_global", catalogMacros, filepath.Join(macrosDir, "catalog_global")); err != nil {
-		return nil, err
+		projectMacros = partitionProjectMacrosForCompilation(allMacros)
 	}
 	for i := len(projectOrder) - 1; i >= 0; i-- {
 		dependencyProject := projectOrder[i]
-		if err := appendLayer("dependency:"+dependencyProject, projectMacros[dependencyProject], filepath.Join(macrosDir, dependencyProject)); err != nil {
+		snapshot, ok := runCtx.dependencySnapshots[dependencyProject]
+		if !ok {
+			return nil, domain.ErrValidation("missing dependency snapshot for project %s", dependencyProject)
+		}
+		if err := appendLayer("dependency:"+dependencyProject, snapshot.Macros, filepath.Join(macrosDir, dependencyProject)); err != nil {
 			return nil, err
 		}
 	}
@@ -222,13 +250,7 @@ func (s *Service) compileMacroLayers(
 	return layers, nil
 }
 
-func partitionMacrosForCompilation(
-	all []domain.Macro,
-	projectName string,
-	targetCatalog string,
-) ([]domain.Macro, []domain.Macro, map[string][]domain.Macro) {
-	system := make([]domain.Macro, 0)
-	catalogGlobal := make([]domain.Macro, 0)
+func partitionProjectMacrosForCompilation(all []domain.Macro) map[string][]domain.Macro {
 	projectScoped := make(map[string][]domain.Macro)
 
 	for _, macro := range all {
@@ -236,23 +258,14 @@ func partitionMacrosForCompilation(
 		if status != domain.MacroStatusActive && status != domain.MacroStatusDeprecated {
 			continue
 		}
-		switch macro.Visibility {
-		case domain.MacroVisibilitySystem:
-			system = append(system, macro)
-		case domain.MacroVisibilityCatalogGlobal:
-			if strings.TrimSpace(macro.CatalogName) == "" || strings.TrimSpace(macro.CatalogName) == strings.TrimSpace(targetCatalog) {
-				catalogGlobal = append(catalogGlobal, macro)
-			}
-		default:
-			project := strings.TrimSpace(macro.ProjectName)
-			if project == "" {
-				project = projectName
-			}
-			projectScoped[project] = append(projectScoped[project], macro)
+		if strings.TrimSpace(macro.ProjectName) == "" {
+			continue
 		}
+		project := strings.TrimSpace(macro.ProjectName)
+		projectScoped[project] = append(projectScoped[project], macro)
 	}
 
-	return system, catalogGlobal, projectScoped
+	return projectScoped
 }
 
 func macroStatusOrDefault(value string) string {
@@ -282,8 +295,6 @@ func (s *Service) loadStarMacroScopes(projectName string) (map[string]compileMac
 		key string
 		dir string
 	}{
-		{key: "system", dir: filepath.Join(macrosDir, "system")},
-		{key: "catalog_global", dir: filepath.Join(macrosDir, "catalog_global")},
 		{key: "project", dir: filepath.Join(macrosDir, projectName)},
 	}
 

@@ -3,6 +3,7 @@ package project
 
 import (
 	"context"
+	"fmt"
 	"strings"
 
 	"github.com/Yacobolo/quackstack/internal/domain"
@@ -17,6 +18,8 @@ type Service struct {
 	projectDeps  domain.ProjectDependencyRepository
 	sources      domain.SourceDefinitionRepository
 	seeds        domain.SeedRepository
+	models       domain.ModelRepository
+	macros       domain.MacroRepository
 	builds       domain.BuildRepository
 	releases     domain.ProjectReleaseRepository
 	teams        domain.TeamRepository
@@ -32,6 +35,8 @@ func NewService(
 	projectDeps domain.ProjectDependencyRepository,
 	sources domain.SourceDefinitionRepository,
 	seeds domain.SeedRepository,
+	models domain.ModelRepository,
+	macros domain.MacroRepository,
 	builds domain.BuildRepository,
 	releases domain.ProjectReleaseRepository,
 	teams domain.TeamRepository,
@@ -49,6 +54,8 @@ func NewService(
 		projectDeps:  projectDeps,
 		sources:      sources,
 		seeds:        seeds,
+		models:       models,
+		macros:       macros,
 		builds:       builds,
 		releases:     releases,
 		teams:        teams,
@@ -212,12 +219,18 @@ func (s *Service) CreateDependencyForProject(ctx context.Context, principal stri
 		if err != nil {
 			return nil, err
 		}
+		if normalizedProjectKind(dependencyProject.Kind) != domain.ProjectKindLibrary {
+			return nil, domain.ErrValidation("dependency project must be a library project")
+		}
 		dependencyProjectID = dependencyProject.ID
 		dependencyProjectName = dependencyProject.Name
 	} else {
 		dependencyProject, err := s.projects.GetByName(ctx, dependencyProjectName)
 		if err != nil {
 			return nil, err
+		}
+		if normalizedProjectKind(dependencyProject.Kind) != domain.ProjectKindLibrary {
+			return nil, domain.ErrValidation("dependency project must be a library project")
 		}
 		dependencyProjectID = dependencyProject.ID
 		dependencyProjectName = dependencyProject.Name
@@ -293,12 +306,32 @@ func (s *Service) CreateReleaseForProject(ctx context.Context, principal string,
 			return nil, err
 		}
 	}
+	snapshot, err := s.buildReleaseSnapshot(ctx, project)
+	if err != nil {
+		return nil, err
+	}
+	if req.ResolvedBuildID != nil {
+		build, err := s.builds.GetByID(ctx, strings.TrimSpace(*req.ResolvedBuildID))
+		if err != nil {
+			return nil, err
+		}
+		if build.ProjectID != project.ID {
+			return nil, domain.ErrValidation("resolved_build_id must belong to the project")
+		}
+	}
+	if req.CompilationID != nil && s.releases != nil {
+		// compilation validation is deferred to the model runtime when resolving releases.
+		if strings.TrimSpace(*req.CompilationID) == "" {
+			return nil, domain.ErrValidation("compilation_id must not be empty")
+		}
+	}
 	release, err := s.releases.Create(ctx, &domain.ProjectRelease{
 		ProjectID:         project.ID,
 		ProjectName:       project.Name,
 		Version:           strings.TrimSpace(req.Version),
 		ResolvedBuildID:   normalizedStringPtr(req.ResolvedBuildID),
 		ResolvedCompileID: normalizedStringPtr(req.CompilationID),
+		Snapshot:          snapshot,
 		CreatedBy:         principal,
 	})
 	if err != nil {
@@ -306,6 +339,53 @@ func (s *Service) CreateReleaseForProject(ctx context.Context, principal string,
 	}
 	s.logAudit(ctx, principal, "CREATE_PROJECT_RELEASE")
 	return release, nil
+}
+
+func (s *Service) buildReleaseSnapshot(ctx context.Context, project *domain.Project) (*domain.ProjectReleaseSnapshot, error) {
+	if project == nil {
+		return nil, domain.ErrValidation("project is required")
+	}
+	snapshot := &domain.ProjectReleaseSnapshot{
+		ProjectName: project.Name,
+		Kind:        project.Kind,
+	}
+	if s.models != nil {
+		models, err := s.models.ListAll(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("list models for release snapshot: %w", err)
+		}
+		for _, item := range models {
+			if strings.TrimSpace(item.ProjectName) == strings.TrimSpace(project.Name) {
+				snapshot.Models = append(snapshot.Models, item)
+			}
+		}
+	}
+	if s.macros != nil {
+		macros, err := s.macros.ListAll(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("list macros for release snapshot: %w", err)
+		}
+		for _, item := range macros {
+			if strings.TrimSpace(item.ProjectName) == strings.TrimSpace(project.Name) {
+				snapshot.Macros = append(snapshot.Macros, item)
+			}
+		}
+	}
+	if s.sources != nil {
+		sources, err := s.sources.ListByProject(ctx, project.Name)
+		if err != nil {
+			return nil, fmt.Errorf("list sources for release snapshot: %w", err)
+		}
+		snapshot.Sources = append(snapshot.Sources, sources...)
+	}
+	if s.seeds != nil {
+		seeds, err := s.seeds.ListByProject(ctx, project.Name)
+		if err != nil {
+			return nil, fmt.Errorf("list seeds for release snapshot: %w", err)
+		}
+		snapshot.Seeds = append(snapshot.Seeds, seeds...)
+	}
+	return snapshot, nil
 }
 
 // ListReleasesForProject lists immutable releases for a project.

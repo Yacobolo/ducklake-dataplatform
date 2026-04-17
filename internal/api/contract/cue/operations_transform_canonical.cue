@@ -201,7 +201,7 @@ import "list"
 		success_status:   201
 		error_family:     "mutating"
 		params:           #projectPathParameters
-		body_ref:         "CreateModelRequest"
+		body_ref:         "CreateProjectModelRequest"
 		body_description: "Request payload"
 	},
 	#plainProjectOperation & {
@@ -295,7 +295,7 @@ import "list"
 		success_status:   201
 		error_family:     "mutating"
 		params:           #projectPathParameters
-		body_ref:         "CreateMacroRequest"
+		body_ref:         "CreateProjectMacroRequest"
 		body_description: "Request payload"
 	},
 	#plainProjectOperation & {
@@ -319,7 +319,7 @@ import "list"
 		returns:          "Macro"
 		error_family:     "mutating"
 		params:           #canonicalProjectMacroPathParameters
-		body_ref:         "UpdateMacroRequest"
+		body_ref:         "UpdateProjectMacroRequest"
 		body_description: "Request payload"
 	},
 	#plainProjectOperation & {

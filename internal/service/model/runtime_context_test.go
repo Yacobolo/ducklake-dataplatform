@@ -84,6 +84,21 @@ func (s runtimeProjectDependencyRepoStub) Delete(context.Context, string, string
 	panic("unexpected call")
 }
 
+type runtimeProjectReleaseRepoStub struct {
+	getByIDFn       func(context.Context, string) (*domain.ProjectRelease, error)
+	listByProjectFn func(context.Context, string, domain.PageRequest) ([]domain.ProjectRelease, int64, error)
+}
+
+func (s runtimeProjectReleaseRepoStub) Create(context.Context, *domain.ProjectRelease) (*domain.ProjectRelease, error) {
+	panic("unexpected call")
+}
+func (s runtimeProjectReleaseRepoStub) GetByID(ctx context.Context, id string) (*domain.ProjectRelease, error) {
+	return s.getByIDFn(ctx, id)
+}
+func (s runtimeProjectReleaseRepoStub) ListByProject(ctx context.Context, projectID string, page domain.PageRequest) ([]domain.ProjectRelease, int64, error) {
+	return s.listByProjectFn(ctx, projectID, page)
+}
+
 func TestResolveExecutionContext_MergesDeferredEnvironmentAndRequestOverrides(t *testing.T) {
 	project := &domain.Project{ID: "proj-1", Name: "analytics"}
 	deferredName := "prod"
@@ -132,7 +147,35 @@ func TestResolveExecutionContext_MergesDeferredEnvironmentAndRequestOverrides(t 
 		projectDeps: runtimeProjectDependencyRepoStub{
 			listByProjectFn: func(_ context.Context, projectID string) ([]domain.ProjectDependency, error) {
 				require.Equal(t, project.ID, projectID)
-				return []domain.ProjectDependency{{DependencyProject: "shared_lib"}}, nil
+				return []domain.ProjectDependency{{DependencyProjectID: "lib-1", DependencyProject: "shared_lib", VersionConstraint: ">= 1.0.0"}}, nil
+			},
+		},
+		releases: runtimeProjectReleaseRepoStub{
+			listByProjectFn: func(_ context.Context, projectID string, _ domain.PageRequest) ([]domain.ProjectRelease, int64, error) {
+				require.Equal(t, "lib-1", projectID)
+				return []domain.ProjectRelease{{
+					ID:          "rel-1",
+					ProjectID:   "lib-1",
+					ProjectName: "shared_lib",
+					Version:     "1.0.0",
+					Snapshot: &domain.ProjectReleaseSnapshot{
+						ProjectName: "shared_lib",
+						Kind:        domain.ProjectKindLibrary,
+					},
+				}}, 1, nil
+			},
+			getByIDFn: func(_ context.Context, id string) (*domain.ProjectRelease, error) {
+				require.Equal(t, "rel-1", id)
+				return &domain.ProjectRelease{
+					ID:          "rel-1",
+					ProjectID:   "lib-1",
+					ProjectName: "shared_lib",
+					Version:     "1.0.0",
+					Snapshot: &domain.ProjectReleaseSnapshot{
+						ProjectName: "shared_lib",
+						Kind:        domain.ProjectKindLibrary,
+					},
+				}, nil
 			},
 		},
 	}

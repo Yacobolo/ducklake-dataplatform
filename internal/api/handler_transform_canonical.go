@@ -382,9 +382,6 @@ func (h *APIHandler) CreateProjectMacroByID(ctx context.Context, req GenCreatePr
 	if req.Body.CatalogName != nil {
 		domReq.CatalogName = *req.Body.CatalogName
 	}
-	if req.Body.Visibility != nil {
-		domReq.Visibility = string(*req.Body.Visibility)
-	}
 	if req.Body.Owner != nil {
 		domReq.Owner = *req.Body.Owner
 	}
@@ -449,7 +446,6 @@ func (h *APIHandler) UpdateProjectMacroByID(ctx context.Context, req GenUpdatePr
 		Description: req.Body.Description,
 		CatalogName: req.Body.CatalogName,
 		ProjectName: &projectName,
-		Visibility:  stringEnumPtr(req.Body.Visibility),
 		Owner:       req.Body.Owner,
 		Properties:  derefStringMap(anyMapPtrToStringMap(req.Body.Properties)),
 		Tags:        derefStringSlice(req.Body.Tags),

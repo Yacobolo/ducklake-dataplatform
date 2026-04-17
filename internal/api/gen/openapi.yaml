@@ -3588,6 +3588,801 @@ paths:
       x-authz:
         mode: admin_only
       x-apigen-manual: true
+  /catalog/lineage/columns/{schema_name}/{table_name}:
+    get:
+      operationId: getCatalogColumnLineage
+      summary: Get catalog column lineage
+      parameters:
+        - name: schema_name
+          in: path
+          required: true
+          schema:
+            type: string
+          example: example
+        - name: table_name
+          in: path
+          required: true
+          schema:
+            type: string
+          example: example
+        - name: max_results
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+          example: 1
+          explode: false
+        - name: page_token
+          in: query
+          required: false
+          schema:
+            type: string
+          example: example
+          explode: false
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedColumnLineageEdges'
+              example:
+                data:
+                  - function: example
+                    id: 1
+                    lineage_edge_id: example
+                    source_column: example
+                    source_schema: example
+                    source_table: example
+                    target_column: example
+                    transform_type: DIRECT
+                next_page_token: example
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '404':
+          description: The server cannot find the requested resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+      tags:
+        - Lineage
+      x-cli-command: catalog lineage columns get
+  /catalog/lineage/columns/{schema_name}/{table_name}/{column_name}/impacts:
+    get:
+      operationId: getCatalogColumnImpact
+      summary: Get catalog column impact
+      parameters:
+        - name: schema_name
+          in: path
+          required: true
+          schema:
+            type: string
+          example: example
+        - name: table_name
+          in: path
+          required: true
+          schema:
+            type: string
+          example: example
+        - name: column_name
+          in: path
+          required: true
+          schema:
+            type: string
+          example: example
+        - name: max_results
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+          example: 1
+          explode: false
+        - name: page_token
+          in: query
+          required: false
+          schema:
+            type: string
+          example: example
+          explode: false
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedColumnLineageEdges'
+              example:
+                data:
+                  - function: example
+                    id: 1
+                    lineage_edge_id: example
+                    source_column: example
+                    source_schema: example
+                    source_table: example
+                    target_column: example
+                    transform_type: DIRECT
+                next_page_token: example
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '404':
+          description: The server cannot find the requested resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+      tags:
+        - Lineage
+      x-cli-command: catalog lineage impact get
+  /catalog/lineage/edges/{edge_id}:
+    delete:
+      operationId: deleteCatalogLineageEdge
+      summary: Delete catalog lineage edge
+      parameters:
+        - name: edge_id
+          in: path
+          required: true
+          schema:
+            type: string
+          example: example
+      responses:
+        '204':
+          description: 'There is no content to send for this request, but the headers may be useful. '
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+      tags:
+        - Lineage
+      x-cli-command: catalog lineage edges delete
+  /catalog/lineage/purges:
+    post:
+      operationId: purgeCatalogLineage
+      summary: Purge catalog lineage
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PurgeLineageResponse'
+              example:
+                deleted_count: 1
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+      tags:
+        - Lineage
+      requestBody:
+        required: true
+        description: Request payload
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PurgeLineageRequest'
+            example:
+              older_than_days: 30
+      x-cli-command: catalog lineage purge
+  /catalog/lineage/tables/{schema_name}/{table_name}:
+    get:
+      operationId: getCatalogTableLineage
+      summary: Get catalog table lineage
+      parameters:
+        - name: schema_name
+          in: path
+          required: true
+          schema:
+            type: string
+          example: example
+        - name: table_name
+          in: path
+          required: true
+          schema:
+            type: string
+          example: example
+        - name: max_results
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+          example: 1
+          explode: false
+        - name: page_token
+          in: query
+          required: false
+          schema:
+            type: string
+          example: example
+          explode: false
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LineageNode'
+              example:
+                downstream: []
+                table_name: mart.orders_daily
+                upstream:
+                  - created_at: "2026-04-13T08:00:00Z"
+                    edge_type: transforms_into
+                    id: edge_01hzylineage
+                    principal_name: alice@example.com
+                    source_schema: staging
+                    source_table: stg_orders
+                    target_schema: mart
+                    target_table: mart_orders_daily
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '404':
+          description: The server cannot find the requested resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+      tags:
+        - Lineage
+      x-cli-command: catalog lineage tables get
+  /catalog/lineage/tables/{schema_name}/{table_name}/downstream:
+    get:
+      operationId: getCatalogDownstreamLineage
+      summary: Get catalog downstream lineage
+      parameters:
+        - name: schema_name
+          in: path
+          required: true
+          schema:
+            type: string
+          example: example
+        - name: table_name
+          in: path
+          required: true
+          schema:
+            type: string
+          example: example
+        - name: max_results
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+          example: 1
+          explode: false
+        - name: page_token
+          in: query
+          required: false
+          schema:
+            type: string
+          example: example
+          explode: false
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedLineageEdges'
+              example:
+                data:
+                  - created_at: "2026-04-13T08:00:00Z"
+                    edge_type: transforms_into
+                    id: edge_01hzylineage
+                    principal_name: alice@example.com
+                    source_schema: staging
+                    source_table: stg_orders
+                    target_schema: mart
+                    target_table: mart_orders_daily
+                next_page_token: example
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '404':
+          description: The server cannot find the requested resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+      tags:
+        - Lineage
+      x-cli-command: catalog lineage tables downstream
+  /catalog/lineage/tables/{schema_name}/{table_name}/upstream:
+    get:
+      operationId: getCatalogUpstreamLineage
+      summary: Get catalog upstream lineage
+      parameters:
+        - name: schema_name
+          in: path
+          required: true
+          schema:
+            type: string
+          example: example
+        - name: table_name
+          in: path
+          required: true
+          schema:
+            type: string
+          example: example
+        - name: max_results
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+          example: 1
+          explode: false
+        - name: page_token
+          in: query
+          required: false
+          schema:
+            type: string
+          example: example
+          explode: false
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedLineageEdges'
+              example:
+                data:
+                  - created_at: "2026-04-13T08:00:00Z"
+                    edge_type: transforms_into
+                    id: edge_01hzylineage
+                    principal_name: alice@example.com
+                    source_schema: staging
+                    source_table: stg_orders
+                    target_schema: mart
+                    target_table: mart_orders_daily
+                next_page_token: example
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '404':
+          description: The server cannot find the requested resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                details:
+                  field: name
+                  reason: must not be empty
+                message: validation failed
+      tags:
+        - Lineage
+      x-cli-command: catalog lineage tables upstream
   /catalogs:
     get:
       operationId: listCatalogs
@@ -19269,7 +20064,6 @@ paths:
               from_build_id: example
               project_name: example
               to_build_id: example
-      x-cli-command:
   /lineage/builds/{build_id}/columns:
     get:
       operationId: getBuildColumnLineage
@@ -19417,7 +20211,6 @@ paths:
                 message: validation failed
       tags:
         - Lineage
-      x-cli-command:
   /lineage/builds/{build_id}/diagnostics:
     get:
       operationId: getBuildDiagnostics
@@ -19559,7 +20352,6 @@ paths:
                 message: validation failed
       tags:
         - Lineage
-      x-cli-command:
   /lineage/builds/{build_id}/impacts/sources/{schema_name}/{table_name}/{column_name}:
     get:
       operationId: getBuildSourceColumnImpact
@@ -19718,7 +20510,6 @@ paths:
                 message: validation failed
       tags:
         - Lineage
-      x-cli-command:
   /lineage/columns/{schema_name}/{table_name}:
     get:
       operationId: getColumnLineage
@@ -19843,7 +20634,6 @@ paths:
                 message: validation failed
       tags:
         - Lineage
-      x-cli-command: lineage columns get
   /lineage/columns/{schema_name}/{table_name}/{column_name}/impacts:
     get:
       operationId: getColumnImpact
@@ -19974,7 +20764,6 @@ paths:
                 message: validation failed
       tags:
         - Lineage
-      x-cli-command: lineage impact get
   /lineage/edges/{edge_id}:
     delete:
       operationId: deleteLineageEdge
@@ -20051,7 +20840,6 @@ paths:
                 message: validation failed
       tags:
         - Lineage
-      x-cli-command: lineage edges delete
   /lineage/impacts/macros/{project_name}/{macro_name}:
     get:
       operationId: getMacroImpactAnalysis
@@ -20200,7 +20988,6 @@ paths:
                 message: validation failed
       tags:
         - Lineage
-      x-cli-command:
   /lineage/impacts/models/{project_name}/{model_name}:
     get:
       operationId: getModelImpactAnalysis
@@ -20349,7 +21136,6 @@ paths:
                 message: validation failed
       tags:
         - Lineage
-      x-cli-command:
   /lineage/plans/rebuild:
     post:
       operationId: planRebuild
@@ -20445,7 +21231,6 @@ paths:
               environment_name: example
               project_name: example
               selector: example
-      x-cli-command:
   /lineage/purges:
     post:
       operationId: purgeLineage
@@ -20531,7 +21316,6 @@ paths:
               $ref: '#/components/schemas/PurgeLineageRequest'
             example:
               older_than_days: 30
-      x-cli-command: lineage purge
   /lineage/tables/{schema_name}/{table_name}:
     get:
       operationId: getTableLineage
@@ -20657,7 +21441,6 @@ paths:
                 message: validation failed
       tags:
         - Lineage
-      x-cli-command: lineage tables get
   /lineage/tables/{schema_name}/{table_name}/downstream:
     get:
       operationId: getDownstreamLineage
@@ -20782,7 +21565,6 @@ paths:
                 message: validation failed
       tags:
         - Lineage
-      x-cli-command: lineage tables downstream
   /lineage/tables/{schema_name}/{table_name}/upstream:
     get:
       operationId: getUpstreamLineage
@@ -20907,11 +21689,11 @@ paths:
                 message: validation failed
       tags:
         - Lineage
-      x-cli-command: lineage tables upstream
   /macros:
     get:
       operationId: listMacros
       summary: List macros
+      description: Deprecated migration alias. Use canonical project-scoped transformation routes.
       parameters:
         - name: max_results
           in: query
@@ -21009,10 +21791,10 @@ paths:
                 message: validation failed
       tags:
         - Models
-      x-cli-command: models macros list
     post:
       operationId: createMacro
       summary: Create macro
+      description: Deprecated migration alias. Use canonical project-scoped transformation routes.
       parameters: []
       responses:
         '201':
@@ -21128,11 +21910,11 @@ paths:
               tags:
                 - example
               visibility: project
-      x-cli-command: models macros create
   /macros/{macro_name}:
     delete:
       operationId: deleteMacro
       summary: Delete macro
+      description: Deprecated migration alias. Use canonical project-scoped transformation routes.
       parameters:
         - name: macro_name
           in: path
@@ -21205,10 +21987,10 @@ paths:
                 message: validation failed
       tags:
         - Models
-      x-cli-command: models macros delete
     get:
       operationId: getMacro
       summary: Get macro
+      description: Deprecated migration alias. Use canonical project-scoped transformation routes.
       parameters:
         - name: macro_name
           in: path
@@ -21319,10 +22101,10 @@ paths:
                 message: validation failed
       tags:
         - Models
-      x-cli-command: models macros get
     patch:
       operationId: updateMacro
       summary: Update macro
+      description: Deprecated migration alias. Use canonical project-scoped transformation routes.
       parameters:
         - name: macro_name
           in: path
@@ -21442,11 +22224,11 @@ paths:
               tags:
                 - example
               visibility: project
-      x-cli-command: models macros update
   /macros/{macro_name}/impacts:
     get:
       operationId: getMacroImpact
       summary: Get macro impact
+      description: Deprecated migration alias. Use canonical project-scoped transformation routes.
       parameters:
         - name: macro_name
           in: path
@@ -21557,11 +22339,11 @@ paths:
                 message: validation failed
       tags:
         - Models
-      x-cli-command: models impact get
   /macros/{macro_name}/revision-diffs:
     get:
       operationId: diffMacroRevisions
       summary: Diff macro revisions
+      description: Deprecated migration alias. Use canonical project-scoped transformation routes.
       parameters:
         - name: macro_name
           in: path
@@ -21703,11 +22485,11 @@ paths:
                 message: validation failed
       tags:
         - Models
-      x-cli-command: models revisions diff
   /macros/{macro_name}/revisions:
     get:
       operationId: listMacroRevisions
       summary: List macro revisions
+      description: Deprecated migration alias. Use canonical project-scoped transformation routes.
       parameters:
         - name: macro_name
           in: path
@@ -21809,7 +22591,6 @@ paths:
                 message: validation failed
       tags:
         - Models
-      x-cli-command: models revisions list
   /me/recent-resources:
     get:
       operationId: listRecentResources
@@ -22198,6 +22979,7 @@ paths:
     get:
       operationId: listModelRuns
       summary: List model runs
+      description: Deprecated migration alias. Use canonical project-scoped transformation routes.
       parameters:
         - name: status
           in: query
@@ -22300,10 +23082,10 @@ paths:
                 message: validation failed
       tags:
         - Models
-      x-cli-command: models runs list
     post:
       operationId: triggerModelRun
       summary: Trigger model run
+      description: Deprecated migration alias. Use canonical project-scoped transformation routes.
       parameters: []
       responses:
         '201':
@@ -22408,11 +23190,11 @@ paths:
                 - fct_daily_revenue
                 - dim_customer
               project_name: finance-platform
-      x-cli-command: models runs trigger
   /model-runs/{run_id}:
     get:
       operationId: getModelRun
       summary: Get model run
+      description: Deprecated migration alias. Use canonical project-scoped transformation routes.
       parameters:
         - name: run_id
           in: path
@@ -22521,11 +23303,11 @@ paths:
                 message: validation failed
       tags:
         - Models
-      x-cli-command: models runs get
   /model-runs/{run_id}/cancellations:
     post:
       operationId: cancelModelRun
       summary: Cancel model run
+      description: Deprecated migration alias. Use canonical project-scoped transformation routes.
       parameters:
         - name: run_id
           in: path
@@ -22622,11 +23404,11 @@ paths:
                 message: validation failed
       tags:
         - Models
-      x-cli-command: models runs cancel
   /model-runs/{run_id}/steps:
     get:
       operationId: listModelRunSteps
       summary: List model run steps
+      description: Deprecated migration alias. Use canonical project-scoped transformation routes.
       parameters:
         - name: run_id
           in: path
@@ -22734,11 +23516,11 @@ paths:
                 message: validation failed
       tags:
         - Models
-      x-cli-command: models steps list
   /model-runs/{run_id}/steps/{step_id}/test-results:
     get:
       operationId: listModelTestResults
       summary: List model test results
+      description: Deprecated migration alias. Use canonical project-scoped transformation routes.
       parameters:
         - name: run_id
           in: path
@@ -22843,11 +23625,11 @@ paths:
                 message: validation failed
       tags:
         - Models
-      x-cli-command: models test-results list
   /models:
     get:
       operationId: listModels
       summary: List models
+      description: Deprecated migration alias. Use canonical project-scoped transformation routes.
       parameters:
         - name: project_name
           in: query
@@ -22963,10 +23745,10 @@ paths:
                 message: validation failed
       tags:
         - Models
-      x-cli-command: models list
     post:
       operationId: createModel
       summary: Create model
+      description: Deprecated migration alias. Use canonical project-scoped transformation routes.
       parameters: []
       responses:
         '201':
@@ -23103,11 +23885,11 @@ paths:
               tags:
                 - finance
                 - gold
-      x-cli-command: models create
   /models/dag:
     get:
       operationId: getModelDAG
       summary: Get model DAG
+      description: Deprecated migration alias. Use canonical project-scoped transformation routes.
       parameters:
         - name: project_name
           in: query
@@ -23182,11 +23964,11 @@ paths:
                 message: validation failed
       tags:
         - Models
-      x-cli-command: models dag get
   /models/{project_name}/{model_name}:
     delete:
       operationId: deleteModel
       summary: Delete model
+      description: Deprecated migration alias. Use canonical project-scoped transformation routes.
       parameters:
         - name: project_name
           in: path
@@ -23265,10 +24047,10 @@ paths:
                 message: validation failed
       tags:
         - Models
-      x-cli-command: models delete
     get:
       operationId: getModel
       summary: Get model
+      description: Deprecated migration alias. Use canonical project-scoped transformation routes.
       parameters:
         - name: project_name
           in: path
@@ -23396,10 +24178,10 @@ paths:
                 message: validation failed
       tags:
         - Models
-      x-cli-command: models get
     patch:
       operationId: updateModel
       summary: Update model
+      description: Deprecated migration alias. Use canonical project-scoped transformation routes.
       parameters:
         - name: project_name
           in: path
@@ -23542,11 +24324,11 @@ paths:
               sql: example
               tags:
                 - example
-      x-cli-command: models update
   /models/{project_name}/{model_name}/freshness:
     get:
       operationId: checkModelFreshness
       summary: Check model freshness
+      description: Deprecated migration alias. Use canonical project-scoped transformation routes.
       parameters:
         - name: project_name
           in: path
@@ -23646,11 +24428,11 @@ paths:
                 message: validation failed
       tags:
         - Models
-      x-cli-command: models freshness check
   /models/{project_name}/{model_name}/tests:
     get:
       operationId: listModelTests
       summary: List model tests
+      description: Deprecated migration alias. Use canonical project-scoped transformation routes.
       parameters:
         - name: project_name
           in: path
@@ -23759,10 +24541,10 @@ paths:
                 message: validation failed
       tags:
         - Models
-      x-cli-command: models tests list
     post:
       operationId: createModelTest
       summary: Create model test
+      description: Deprecated migration alias. Use canonical project-scoped transformation routes.
       parameters:
         - name: project_name
           in: path
@@ -23875,11 +24657,11 @@ paths:
                   - example
               name: example
               test_type: not_null
-      x-cli-command: models tests create
   /models/{project_name}/{model_name}/tests/{test_id}:
     delete:
       operationId: deleteModelTest
       summary: Delete model test
+      description: Deprecated migration alias. Use canonical project-scoped transformation routes.
       parameters:
         - name: project_name
           in: path
@@ -23964,7 +24746,6 @@ paths:
                 message: validation failed
       tags:
         - Models
-      x-cli-command: models tests delete
   /notebooks:
     get:
       operationId: listNotebooks
@@ -35350,7 +36131,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CreateMacroRequest'
+              $ref: '#/components/schemas/CreateProjectMacroRequest'
             example:
               body: example
               catalog_name: example
@@ -35360,13 +36141,11 @@ paths:
               owner: example
               parameters:
                 - example
-              project_name: example
               properties:
                 key: example
               status: ACTIVE
               tags:
                 - example
-              visibility: project
       x-cli-command: projects macros create
   /projects/{project_id}/macros/{macro_name}:
     delete:
@@ -35684,7 +36463,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/UpdateMacroRequest'
+              $ref: '#/components/schemas/UpdateProjectMacroRequest'
             example:
               body: example
               catalog_name: example
@@ -35692,13 +36471,11 @@ paths:
               owner: example
               parameters:
                 - example
-              project_name: example
               properties:
                 key: example
               status: ACTIVE
               tags:
                 - example
-              visibility: project
       x-cli-command: projects macros update
   /projects/{project_id}/macros/{macro_name}/revision-diffs:
     get:
@@ -36225,33 +37002,28 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CreateModelRequest'
+              $ref: '#/components/schemas/CreateProjectModelRequest'
             example:
               config:
-                incremental_strategy: merge
-                on_schema_change: fail
+                incremental_strategy: example
+                on_schema_change: ignore
                 unique_key:
-                  - order_date
+                  - example
               contract:
                 columns:
-                  - name: order_date
-                    nullable: false
-                    type: DATE
-                  - name: daily_revenue
-                    nullable: false
-                    type: DOUBLE
+                  - name: example
+                    nullable: true
+                    type: example
                 enforce: true
-              description: Daily revenue fact model.
+              description: example
               freshness_policy:
-                cron_schedule: 0 */6 * * *
-                max_lag_seconds: 21600
-              materialization: TABLE
-              name: fct_daily_revenue
-              project_name: revenue
-              sql: select order_date, sum(net_revenue) as daily_revenue from stg_orders group by 1
+                cron_schedule: example
+                max_lag_seconds: 1
+              materialization: VIEW
+              name: example
+              sql: example
               tags:
-                - finance
-                - gold
+                - example
       x-cli-command: projects models create
   /projects/{project_id}/models/{model_name}:
     delete:
@@ -40235,6 +41007,7 @@ paths:
     get:
       operationId: checkSourceFreshness
       summary: Check source freshness
+      description: Deprecated migration alias. Use project environment source freshness endpoints.
       parameters:
         - name: source_schema
           in: path
@@ -40352,7 +41125,6 @@ paths:
                 message: validation failed
       tags:
         - Semantic Layer
-      x-cli-command: models sources freshness
   /storage-credentials:
     get:
       operationId: listStorageCredentials
@@ -49578,6 +50350,113 @@ components:
         dependency_project_id: example
         position: 1
         version_constraint: example
+    CreateProjectMacroRequest:
+      type: object
+      required:
+        - name
+        - body
+      properties:
+        name:
+          type: string
+          example: example
+        body:
+          type: string
+          example: example
+        macro_type:
+          $ref: '#/components/schemas/MacroType'
+        parameters:
+          type: array
+          items:
+            type: string
+          example:
+            - example
+        description:
+          type: string
+          example: example
+        catalog_name:
+          type: string
+          example: example
+        owner:
+          type: string
+          example: example
+        properties:
+          type: object
+          additionalProperties:
+            type: string
+          example:
+            key: example
+        tags:
+          type: array
+          items:
+            type: string
+          example:
+            - example
+        status:
+          $ref: '#/components/schemas/MacroStatus'
+      example:
+        body: example
+        catalog_name: example
+        description: example
+        macro_type: SCALAR
+        name: example
+        owner: example
+        parameters:
+          - example
+        properties:
+          key: example
+        status: ACTIVE
+        tags:
+          - example
+    CreateProjectModelRequest:
+      type: object
+      required:
+        - name
+        - sql
+      properties:
+        name:
+          type: string
+          example: example
+        sql:
+          type: string
+          example: example
+        materialization:
+          $ref: '#/components/schemas/ModelMaterialization'
+        description:
+          type: string
+          example: example
+        tags:
+          type: array
+          items:
+            type: string
+          example:
+            - example
+        config:
+          $ref: '#/components/schemas/ModelConfig'
+        contract:
+          $ref: '#/components/schemas/ModelContract'
+        freshness_policy:
+          $ref: '#/components/schemas/FreshnessPolicy'
+      example:
+        config:
+          incremental_strategy: example
+          on_schema_change: ignore
+          unique_key:
+            - example
+        contract:
+          columns:
+            - name: example
+              nullable: true
+              type: example
+          enforce: true
+        description: example
+        freshness_policy:
+          cron_schedule: example
+          max_lag_seconds: 1
+        materialization: VIEW
+        name: example
+        sql: example
+        tags:
+          - example
     CreateProjectReleaseRequest:
       type: object
       required:
@@ -52980,8 +53859,6 @@ components:
       type: string
       enum:
         - project
-        - catalog_global
-        - system
       example: project
     ManifestColumn:
       type: object
@@ -61215,6 +62092,53 @@ components:
           example: example
       example:
         contact_channel: example
+    UpdateProjectMacroRequest:
+      type: object
+      properties:
+        body:
+          type: string
+          example: example
+        description:
+          type: string
+          example: example
+        parameters:
+          type: array
+          items:
+            type: string
+          example:
+            - example
+        status:
+          $ref: '#/components/schemas/MacroStatus'
+        catalog_name:
+          type: string
+          example: example
+        owner:
+          type: string
+          example: example
+        properties:
+          type: object
+          additionalProperties:
+            type: string
+          example:
+            key: example
+        tags:
+          type: array
+          items:
+            type: string
+          example:
+            - example
+      example:
+        body: example
+        catalog_name: example
+        description: example
+        owner: example
+        parameters:
+          - example
+        properties:
+          key: example
+        status: ACTIVE
+        tags:
+          - example
     UpdateProjectRequest:
       type: object
       properties:

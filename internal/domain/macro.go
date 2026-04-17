@@ -7,9 +7,7 @@ const (
 	MacroTypeScalar = "SCALAR"
 	MacroTypeTable  = "TABLE"
 
-	MacroVisibilityProject       = "project"
-	MacroVisibilityCatalogGlobal = "catalog_global"
-	MacroVisibilitySystem        = "system"
+	MacroVisibilityProject = "project"
 
 	MacroStatusActive     = "ACTIVE"
 	MacroStatusDeprecated = "DEPRECATED"
@@ -105,10 +103,11 @@ func (r *CreateMacroRequest) Validate() error {
 	if r.Visibility == "" {
 		r.Visibility = MacroVisibilityProject
 	}
-	switch r.Visibility {
-	case MacroVisibilityProject, MacroVisibilityCatalogGlobal, MacroVisibilitySystem:
-	default:
-		return ErrValidation("visibility must be project, catalog_global, or system")
+	if r.Visibility != MacroVisibilityProject {
+		return ErrValidation("visibility must be project")
+	}
+	if r.ProjectName == "" {
+		return ErrValidation("project_name is required")
 	}
 	if r.Status == "" {
 		r.Status = MacroStatusActive

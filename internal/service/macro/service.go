@@ -25,6 +25,13 @@ func (s *Service) Create(ctx context.Context, principal string, req domain.Creat
 	if err := req.Validate(); err != nil {
 		return nil, err
 	}
+	if strings.TrimSpace(req.ProjectName) == "" {
+		return nil, domain.ErrValidation("project_name is required")
+	}
+	if visibility := strings.TrimSpace(req.Visibility); visibility != "" && visibility != domain.MacroVisibilityProject {
+		return nil, domain.ErrValidation("macros must use project visibility")
+	}
+	req.Visibility = domain.MacroVisibilityProject
 
 	m := &domain.Macro{
 		Name:        req.Name,
@@ -109,9 +116,9 @@ func (s *Service) Update(ctx context.Context, principal, name string, req domain
 	}
 	if req.Visibility != nil {
 		switch *req.Visibility {
-		case domain.MacroVisibilityProject, domain.MacroVisibilityCatalogGlobal, domain.MacroVisibilitySystem:
+		case domain.MacroVisibilityProject:
 		default:
-			return nil, domain.ErrValidation("visibility must be project, catalog_global, or system")
+			return nil, domain.ErrValidation("visibility must be project")
 		}
 	}
 	result, err := s.macros.Update(ctx, name, req)

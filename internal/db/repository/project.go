@@ -798,13 +798,14 @@ func (r *ProjectReleaseRepo) Create(ctx context.Context, release *domain.Project
 	id := newID()
 	_, err := r.db.ExecContext(ctx, `
 		INSERT INTO project_releases (
-			id, project_id, version, resolved_build_id, resolved_compilation_id, created_by, created_at
-		) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+			id, project_id, version, resolved_build_id, resolved_compilation_id, snapshot_json, created_by, created_at
+		) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
 		id,
 		release.ProjectID,
 		release.Version,
 		nullableStringValue(release.ResolvedBuildID),
 		nullableStringValue(release.ResolvedCompileID),
+		jsonTextOrEmpty(release.Snapshot),
 		release.CreatedBy,
 		now.Format(time.RFC3339),
 	)
@@ -850,7 +851,7 @@ func (r *ProjectReleaseRepo) ListByProject(ctx context.Context, projectID string
 
 const projectReleaseSelectSQL = `
 	SELECT
-		pr.id, pr.project_id, p.name, pr.version, pr.resolved_build_id, pr.resolved_compilation_id,
+		pr.id, pr.project_id, p.name, pr.version, pr.resolved_build_id, pr.resolved_compilation_id, pr.snapshot_json,
 		pr.created_by, pr.created_at
 	FROM project_releases pr
 	JOIN projects p ON p.id = pr.project_id`
@@ -859,6 +860,7 @@ func scanProjectRelease(scanner projectRowScanner) (*domain.ProjectRelease, erro
 	var item domain.ProjectRelease
 	var resolvedBuildID sql.NullString
 	var resolvedCompilationID sql.NullString
+	var snapshotJSON sql.NullString
 	if err := scanner.Scan(
 		&item.ID,
 		&item.ProjectID,
@@ -866,6 +868,7 @@ func scanProjectRelease(scanner projectRowScanner) (*domain.ProjectRelease, erro
 		&item.Version,
 		&resolvedBuildID,
 		&resolvedCompilationID,
+		&snapshotJSON,
 		&item.CreatedBy,
 		&item.CreatedAt,
 	); err != nil {
@@ -877,5 +880,23 @@ func scanProjectRelease(scanner projectRowScanner) (*domain.ProjectRelease, erro
 	if resolvedCompilationID.Valid {
 		item.ResolvedCompileID = &resolvedCompilationID.String
 	}
+	if snapshotJSON.Valid && snapshotJSON.String != "" {
+		var snapshot domain.ProjectReleaseSnapshot
+		if err := json.Unmarshal([]byte(snapshotJSON.String), &snapshot); err != nil {
+			return nil, fmt.Errorf("unmarshal project release snapshot: %w", err)
+		}
+		item.Snapshot = &snapshot
+	}
 	return &item, nil
+}
+
+func jsonTextOrEmpty(v any) string {
+	if v == nil {
+		return ""
+	}
+	b, err := json.Marshal(v)
+	if err != nil {
+		panic(fmt.Sprintf("marshal json text: %v", err))
+	}
+	return string(b)
 }

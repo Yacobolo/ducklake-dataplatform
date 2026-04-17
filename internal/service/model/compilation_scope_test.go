@@ -141,6 +141,14 @@ func TestLoadSourceRegistry_UsesPersistedSourcesAndOverrides(t *testing.T) {
 		project:            &domain.Project{Name: "analytics"},
 		sourceOverrides:    map[string]string{"raw.orders": "sandbox.raw_orders"},
 		dependencyProjects: []string{"shared_lib"},
+		dependencySnapshots: map[string]domain.ProjectReleaseSnapshot{
+			"shared_lib": {
+				ProjectName: "shared_lib",
+				Sources: []domain.SourceDefinition{
+					{ProjectName: "shared_lib", SourceName: "calendar", TableName: "dates", RelationRef: "foundation.calendar_dates"},
+				},
+			},
+		},
 	})
 	require.NoError(t, err)
 	assert.Empty(t, warnings)

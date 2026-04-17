@@ -366,7 +366,8 @@ package api
 		op:           "checkSourceFreshness"
 		path:         "/semantic-sources/{source_schema}/{source_table}/freshness"
 		summary:      "Check source freshness"
-		cli:          "models sources freshness"
+		description:  "Deprecated migration alias. Use project environment source freshness endpoints."
+		deprecated:   true
 		returns:      "SourceFreshnessStatus"
 		error_family: "resource"
 		params:       #sourceFreshnessParameters

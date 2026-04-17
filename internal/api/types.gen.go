@@ -1093,6 +1093,30 @@ type CreateProjectDependencyRequest struct {
 	VersionConstraint   *string `json:"version_constraint,omitempty"`
 }
 
+type CreateProjectMacroRequest struct {
+	Body        string          `json:"body"`
+	CatalogName *string         `json:"catalog_name,omitempty"`
+	Description *string         `json:"description,omitempty"`
+	MacroType   *MacroType      `json:"macro_type,omitempty"`
+	Name        string          `json:"name"`
+	Owner       *string         `json:"owner,omitempty"`
+	Parameters  *[]string       `json:"parameters,omitempty"`
+	Properties  *map[string]any `json:"properties,omitempty"`
+	Status      *MacroStatus    `json:"status,omitempty"`
+	Tags        *[]string       `json:"tags,omitempty"`
+}
+
+type CreateProjectModelRequest struct {
+	Config          *ModelConfig          `json:"config,omitempty"`
+	Contract        *ModelContract        `json:"contract,omitempty"`
+	Description     *string               `json:"description,omitempty"`
+	FreshnessPolicy *FreshnessPolicy      `json:"freshness_policy,omitempty"`
+	Materialization *ModelMaterialization `json:"materialization,omitempty"`
+	Name            string                `json:"name"`
+	Sql             string                `json:"sql"`
+	Tags            *[]string             `json:"tags,omitempty"`
+}
+
 type CreateProjectReleaseRequest struct {
 	CompilationId   *string `json:"compilation_id,omitempty"`
 	ResolvedBuildId *string `json:"resolved_build_id,omitempty"`
@@ -1735,9 +1759,7 @@ const (
 type MacroVisibility string
 
 const (
-	MacroVisibilityProject       MacroVisibility = "project"
-	MacroVisibilityCatalogGlobal MacroVisibility = "catalog_global"
-	MacroVisibilitySystem        MacroVisibility = "system"
+	MacroVisibilityProject MacroVisibility = "project"
 )
 
 type ManifestColumn struct {
@@ -3489,6 +3511,17 @@ type UpdateProductTeamRequest struct {
 	ContactChannel *string `json:"contact_channel,omitempty"`
 }
 
+type UpdateProjectMacroRequest struct {
+	Body        *string         `json:"body,omitempty"`
+	CatalogName *string         `json:"catalog_name,omitempty"`
+	Description *string         `json:"description,omitempty"`
+	Owner       *string         `json:"owner,omitempty"`
+	Parameters  *[]string       `json:"parameters,omitempty"`
+	Properties  *map[string]any `json:"properties,omitempty"`
+	Status      *MacroStatus    `json:"status,omitempty"`
+	Tags        *[]string       `json:"tags,omitempty"`
+}
+
 type UpdateProjectRequest struct {
 	DefaultBranch *string `json:"default_branch,omitempty"`
 	Description   *string `json:"description,omitempty"`
@@ -3792,6 +3825,16 @@ type GetBuildColumnLineageParams = GenGetBuildColumnLineageParams
 type GetBuildDiagnosticsParams = GenGetBuildDiagnosticsParams
 
 type GetBuildSourceColumnImpactParams = GenGetBuildSourceColumnImpactParams
+
+type GetCatalogColumnImpactParams = GenGetCatalogColumnImpactParams
+
+type GetCatalogColumnLineageParams = GenGetCatalogColumnLineageParams
+
+type GetCatalogDownstreamLineageParams = GenGetCatalogDownstreamLineageParams
+
+type GetCatalogTableLineageParams = GenGetCatalogTableLineageParams
+
+type GetCatalogUpstreamLineageParams = GenGetCatalogUpstreamLineageParams
 
 type GetColumnImpactParams = GenGetColumnImpactParams
 
@@ -4112,6 +4155,8 @@ type MoveNotebookJSONRequestBody = GenMoveNotebookJSONBody
 type PlanRebuildJSONRequestBody = GenPlanRebuildJSONBody
 
 type PromoteNotebookToModelJSONRequestBody = GenPromoteNotebookToModelJSONBody
+
+type PurgeCatalogLineageJSONRequestBody = GenPurgeCatalogLineageJSONBody
 
 type PurgeLineageJSONRequestBody = GenPurgeLineageJSONBody
 

@@ -3,6 +3,7 @@ package api
 // Authored model operations.
 
 #modelsTag: "Models"
+#legacyTransformationAliasDescription: "Deprecated migration alias. Use canonical project-scoped transformation routes."
 
 #projectNamePathParameter: #pathStringParameter & {
 	#name: "project_name"
@@ -110,7 +111,8 @@ package api
 		op:           "listModels"
 		path:         "/models"
 		summary:      "List models"
-		cli:          "models list"
+		description:  #legacyTransformationAliasDescription
+		deprecated:   true
 		returns:      "PaginatedModels"
 		error_family: "standard"
 		params:       #listModelsParameters
@@ -121,7 +123,8 @@ package api
 		op:             "createModel"
 		path:           "/models"
 		summary:        "Create model"
-		cli:            "models create"
+		description:    #legacyTransformationAliasDescription
+		deprecated:     true
 		returns:        "Model"
 		success_status: 201
 		error_family:   "mutating"
@@ -134,7 +137,8 @@ package api
 		op:           "getModelDAG"
 		path:         "/models/dag"
 		summary:      "Get model DAG"
-		cli:          "models dag get"
+		description:  #legacyTransformationAliasDescription
+		deprecated:   true
 		returns:      "ModelDAG"
 		error_family: "standard"
 		params: [
@@ -147,7 +151,8 @@ package api
 		op:           "getModel"
 		path:         "/models/{project_name}/{model_name}"
 		summary:      "Get model"
-		cli:          "models get"
+		description:  #legacyTransformationAliasDescription
+		deprecated:   true
 		returns:      "Model"
 		error_family: "resource"
 		params:       #modelPathParameters
@@ -158,7 +163,8 @@ package api
 		op:           "updateModel"
 		path:         "/models/{project_name}/{model_name}"
 		summary:      "Update model"
-		cli:          "models update"
+		description:  #legacyTransformationAliasDescription
+		deprecated:   true
 		returns:      "Model"
 		error_family: "mutating"
 		params:       #modelPathParameters
@@ -171,7 +177,8 @@ package api
 		op:           "deleteModel"
 		path:         "/models/{project_name}/{model_name}"
 		summary:      "Delete model"
-		cli:          "models delete"
+		description:  #legacyTransformationAliasDescription
+		deprecated:   true
 		error_family: "mutating"
 		params:       #modelPathParameters
 	},
@@ -181,7 +188,8 @@ package api
 		op:             "createModelTest"
 		path:           "/models/{project_name}/{model_name}/tests"
 		summary:        "Create model test"
-		cli:            "models tests create"
+		description:    #legacyTransformationAliasDescription
+		deprecated:     true
 		returns:        "ModelTest"
 		success_status: 201
 		error_family:   "mutating"
@@ -195,7 +203,8 @@ package api
 		op:           "listModelTests"
 		path:         "/models/{project_name}/{model_name}/tests"
 		summary:      "List model tests"
-		cli:          "models tests list"
+		description:  #legacyTransformationAliasDescription
+		deprecated:   true
 		returns:      "ModelTestList"
 		error_family: "resource"
 		params:       #modelPathParameters
@@ -206,7 +215,8 @@ package api
 		op:           "deleteModelTest"
 		path:         "/models/{project_name}/{model_name}/tests/{test_id}"
 		summary:      "Delete model test"
-		cli:          "models tests delete"
+		description:  #legacyTransformationAliasDescription
+		deprecated:   true
 		error_family: "mutating"
 		params:       #modelTestPathParameters
 	},
@@ -216,7 +226,8 @@ package api
 		op:           "checkModelFreshness"
 		path:         "/models/{project_name}/{model_name}/freshness"
 		summary:      "Check model freshness"
-		cli:          "models freshness check"
+		description:  #legacyTransformationAliasDescription
+		deprecated:   true
 		returns:      "FreshnessStatus"
 		error_family: "resource"
 		params:       #modelPathParameters
@@ -227,7 +238,8 @@ package api
 		op:             "triggerModelRun"
 		path:           "/model-runs"
 		summary:        "Trigger model run"
-		cli:            "models runs trigger"
+		description:    #legacyTransformationAliasDescription
+		deprecated:     true
 		returns:        "ModelRun"
 		success_status: 201
 		error_family:   "mutating"
@@ -240,7 +252,8 @@ package api
 		op:           "listModelRuns"
 		path:         "/model-runs"
 		summary:      "List model runs"
-		cli:          "models runs list"
+		description:  #legacyTransformationAliasDescription
+		deprecated:   true
 		returns:      "PaginatedModelRuns"
 		error_family: "standard"
 		params:       #listModelRunsParameters
@@ -251,7 +264,8 @@ package api
 		op:           "getModelRun"
 		path:         "/model-runs/{run_id}"
 		summary:      "Get model run"
-		cli:          "models runs get"
+		description:  #legacyTransformationAliasDescription
+		deprecated:   true
 		returns:      "ModelRun"
 		error_family: "resource"
 		params: [
@@ -264,7 +278,8 @@ package api
 		op:           "cancelModelRun"
 		path:         "/model-runs/{run_id}/cancellations"
 		summary:      "Cancel model run"
-		cli:          "models runs cancel"
+		description:  #legacyTransformationAliasDescription
+		deprecated:   true
 		returns:      "ModelRun"
 		error_family: "mutating"
 		params: [
@@ -277,7 +292,8 @@ package api
 		op:           "listModelRunSteps"
 		path:         "/model-runs/{run_id}/steps"
 		summary:      "List model run steps"
-		cli:          "models steps list"
+		description:  #legacyTransformationAliasDescription
+		deprecated:   true
 		returns:      "ModelRunStepList"
 		error_family: "resource"
 		params: [
@@ -290,7 +306,8 @@ package api
 		op:           "listModelTestResults"
 		path:         "/model-runs/{run_id}/steps/{step_id}/test-results"
 		summary:      "List model test results"
-		cli:          "models test-results list"
+		description:  #legacyTransformationAliasDescription
+		deprecated:   true
 		returns:      "ModelTestResultList"
 		error_family: "resource"
 		params:       #modelRunStepResultPathParameters
@@ -328,7 +345,8 @@ package api
 		op:           "listMacros"
 		path:         "/macros"
 		summary:      "List macros"
-		cli:          "models macros list"
+		description:  #legacyTransformationAliasDescription
+		deprecated:   true
 		returns:      "PaginatedMacros"
 		error_family: "standard"
 		params:       #listMacrosParameters
@@ -339,7 +357,8 @@ package api
 		op:             "createMacro"
 		path:           "/macros"
 		summary:        "Create macro"
-		cli:            "models macros create"
+		description:    #legacyTransformationAliasDescription
+		deprecated:     true
 		returns:        "Macro"
 		success_status: 201
 		error_family:   "mutating"
@@ -352,7 +371,8 @@ package api
 		op:           "getMacro"
 		path:         "/macros/{macro_name}"
 		summary:      "Get macro"
-		cli:          "models macros get"
+		description:  #legacyTransformationAliasDescription
+		deprecated:   true
 		returns:      "Macro"
 		error_family: "resource"
 		params: [
@@ -365,7 +385,8 @@ package api
 		op:           "updateMacro"
 		path:         "/macros/{macro_name}"
 		summary:      "Update macro"
-		cli:          "models macros update"
+		description:  #legacyTransformationAliasDescription
+		deprecated:   true
 		returns:      "Macro"
 		error_family: "mutating"
 		params: [
@@ -380,7 +401,8 @@ package api
 		op:           "deleteMacro"
 		path:         "/macros/{macro_name}"
 		summary:      "Delete macro"
-		cli:          "models macros delete"
+		description:  #legacyTransformationAliasDescription
+		deprecated:   true
 		error_family: "mutating"
 		params: [
 			#macroNamePathParameter,
@@ -392,7 +414,8 @@ package api
 		op:           "listMacroRevisions"
 		path:         "/macros/{macro_name}/revisions"
 		summary:      "List macro revisions"
-		cli:          "models revisions list"
+		description:  #legacyTransformationAliasDescription
+		deprecated:   true
 		returns:      "MacroRevisionList"
 		error_family: "resource"
 		params: [
@@ -405,7 +428,8 @@ package api
 		op:           "getMacroImpact"
 		path:         "/macros/{macro_name}/impacts"
 		summary:      "Get macro impact"
-		cli:          "models impact get"
+		description:  #legacyTransformationAliasDescription
+		deprecated:   true
 		returns:      "MacroImpactList"
 		error_family: "resource"
 		params:       #macroImpactParameters
@@ -416,7 +440,8 @@ package api
 		op:           "diffMacroRevisions"
 		path:         "/macros/{macro_name}/revision-diffs"
 		summary:      "Diff macro revisions"
-		cli:          "models revisions diff"
+		description:  #legacyTransformationAliasDescription
+		deprecated:   true
 		returns:      "MacroRevisionDiff"
 		error_family: "resource"
 		params:       #diffMacroRevisionsParameters

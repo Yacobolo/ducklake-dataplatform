@@ -30,7 +30,9 @@ import "list"
 	op:      string
 	path:    string
 	summary: string
-	cli:     string
+	description?: string
+	cli?:    string
+	deprecated?: *false | true
 	returns: string
 	params:  [...#Parameter]
 }
@@ -42,7 +44,9 @@ import "list"
 	op:               string
 	path:             string
 	summary:          string
-	cli:              string
+	description?:     string
+	cli?:             string
+	deprecated?:      *false | true
 	returns:          string
 	body_ref:         string
 	body_required:    *true | false
@@ -56,7 +60,9 @@ import "list"
 	op:      string
 	path:    string
 	summary: string
-	cli:     string
+	description?: string
+	cli?:    string
+	deprecated?: *false | true
 	params:  [...#Parameter]
 }
 
@@ -355,6 +361,7 @@ import "list"
 	authz_default:  *true | false
 	authz?:         _
 	security?:      _
+	deprecated?:    *false | true
 }
 
 #endpointFromGenericOperation: {
@@ -367,6 +374,11 @@ import "list"
 		operation_id: spec.op
 		summary:      spec.summary
 		tags:         [tag]
+		deprecated:   spec.deprecated
+		if spec.description != _|_ {
+			description: spec.description
+		}
+		deprecated:   spec.deprecated
 		if spec.description != _|_ {
 			description: spec.description
 		}
@@ -775,8 +787,14 @@ import "list"
 				#mutatingErrorResponses,
 			])
 		}
-		extensions: #authenticatedExtensions & {
-			#cli_command: spec.cli
+		extensions: {
+			"security": #authenticatedSecurity
+			"x-authz": {
+				mode: "authenticated"
+			}
+			if spec.cli != _|_ {
+				"x-cli-command": spec.cli
+			}
 		}
 	}
 }

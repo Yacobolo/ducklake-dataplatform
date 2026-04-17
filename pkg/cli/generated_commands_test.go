@@ -111,9 +111,7 @@ func TestAllAPIEndpoints_AddsTransformationProjectCLICommands(t *testing.T) {
 	commands := map[string]string{}
 	for _, ep := range endpoints {
 		switch ep.OperationID {
-		case "createWorkspaceProject", "listProjectEnvironments", "createProjectDependency", "getProjectSource", "updateProjectSeed", "createProjectBuild":
-			commands[ep.OperationID] = ep.CLICommand
-		case "createModel", "listMacros", "triggerModelRun":
+		case "createWorkspaceProject", "listProjectEnvironments", "createProjectDependency", "getProjectSource", "updateProjectSeed", "createProjectBuild", "createProjectModelByID", "listProjectMacrosByID", "createProjectEnvironmentBuildRun", "getCatalogTableLineage":
 			commands[ep.OperationID] = ep.CLICommand
 		}
 	}
@@ -124,8 +122,8 @@ func TestAllAPIEndpoints_AddsTransformationProjectCLICommands(t *testing.T) {
 	assert.Equal(t, "projects sources get", commands["getProjectSource"])
 	assert.Equal(t, "projects seeds update", commands["updateProjectSeed"])
 	assert.Equal(t, "projects builds create", commands["createProjectBuild"])
-
-	assert.Equal(t, "models create", commands["createModel"])
-	assert.Equal(t, "models macros list", commands["listMacros"])
-	assert.Equal(t, "models runs trigger", commands["triggerModelRun"])
+	assert.Equal(t, "projects models create", commands["createProjectModelByID"])
+	assert.Equal(t, "projects macros list", commands["listProjectMacrosByID"])
+	assert.Equal(t, "projects environments builds runs create", commands["createProjectEnvironmentBuildRun"])
+	assert.Equal(t, "catalog lineage tables get", commands["getCatalogTableLineage"])
 }

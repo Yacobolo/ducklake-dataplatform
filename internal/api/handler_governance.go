@@ -186,6 +186,22 @@ func (h *APIHandler) GetTableLineage(ctx context.Context, req GenGetTableLineage
 	}, nil
 }
 
+// GetCatalogTableLineage implements the canonical catalog lineage endpoint for a table.
+func (h *APIHandler) GetCatalogTableLineage(ctx context.Context, req GenGetCatalogTableLineageRequest) (GenGetCatalogTableLineageResponse, error) {
+	resp, err := h.GetTableLineage(ctx, GenGetTableLineageRequest{SchemaName: req.SchemaName, TableName: req.TableName, Params: GenGetTableLineageParams(req.Params)})
+	if err != nil {
+		return nil, err
+	}
+	switch typed := resp.(type) {
+	case GenGetTableLineage200JSONResponse:
+		return GenGetCatalogTableLineage200JSONResponse{Body: typed.Body, Headers: GenGetCatalogTableLineage200ResponseHeaders(typed.Headers)}, nil
+	case GenGetTableLineage400JSONResponse:
+		return GenGetCatalogTableLineage400JSONResponse(typed), nil
+	default:
+		return nil, domain.ErrValidation("unexpected response type for catalog table lineage")
+	}
+}
+
 // GetUpstreamLineage implements the endpoint for retrieving upstream lineage edges.
 func (h *APIHandler) GetUpstreamLineage(ctx context.Context, req GenGetUpstreamLineageRequest) (GenGetUpstreamLineageResponse, error) {
 	page := pageFromParams(req.Params.MaxResults, req.Params.PageToken)
@@ -206,6 +222,22 @@ func (h *APIHandler) GetUpstreamLineage(ctx context.Context, req GenGetUpstreamL
 		Body:    PaginatedLineageEdges{Data: data, NextPageToken: optStr(npt)},
 		Headers: GenGetUpstreamLineage200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
+}
+
+// GetCatalogUpstreamLineage implements the canonical catalog upstream lineage endpoint.
+func (h *APIHandler) GetCatalogUpstreamLineage(ctx context.Context, req GenGetCatalogUpstreamLineageRequest) (GenGetCatalogUpstreamLineageResponse, error) {
+	resp, err := h.GetUpstreamLineage(ctx, GenGetUpstreamLineageRequest{SchemaName: req.SchemaName, TableName: req.TableName, Params: GenGetUpstreamLineageParams(req.Params)})
+	if err != nil {
+		return nil, err
+	}
+	switch typed := resp.(type) {
+	case GenGetUpstreamLineage200JSONResponse:
+		return GenGetCatalogUpstreamLineage200JSONResponse{Body: typed.Body, Headers: GenGetCatalogUpstreamLineage200ResponseHeaders(typed.Headers)}, nil
+	case GenGetUpstreamLineage400JSONResponse:
+		return GenGetCatalogUpstreamLineage400JSONResponse(typed), nil
+	default:
+		return nil, domain.ErrValidation("unexpected response type for catalog upstream lineage")
+	}
 }
 
 // GetDownstreamLineage implements the endpoint for retrieving downstream lineage edges.
@@ -230,6 +262,22 @@ func (h *APIHandler) GetDownstreamLineage(ctx context.Context, req GenGetDownstr
 	}, nil
 }
 
+// GetCatalogDownstreamLineage implements the canonical catalog downstream lineage endpoint.
+func (h *APIHandler) GetCatalogDownstreamLineage(ctx context.Context, req GenGetCatalogDownstreamLineageRequest) (GenGetCatalogDownstreamLineageResponse, error) {
+	resp, err := h.GetDownstreamLineage(ctx, GenGetDownstreamLineageRequest{SchemaName: req.SchemaName, TableName: req.TableName, Params: GenGetDownstreamLineageParams(req.Params)})
+	if err != nil {
+		return nil, err
+	}
+	switch typed := resp.(type) {
+	case GenGetDownstreamLineage200JSONResponse:
+		return GenGetCatalogDownstreamLineage200JSONResponse{Body: typed.Body, Headers: GenGetCatalogDownstreamLineage200ResponseHeaders(typed.Headers)}, nil
+	case GenGetDownstreamLineage400JSONResponse:
+		return GenGetCatalogDownstreamLineage400JSONResponse(typed), nil
+	default:
+		return nil, domain.ErrValidation("unexpected response type for catalog downstream lineage")
+	}
+}
+
 // DeleteLineageEdge implements the endpoint for deleting a lineage edge by ID.
 func (h *APIHandler) DeleteLineageEdge(ctx context.Context, req GenDeleteLineageEdgeRequest) (GenDeleteLineageEdgeResponse, error) {
 	if err := h.lineage.DeleteEdge(ctx, req.EdgeId); err != nil {
@@ -243,6 +291,22 @@ func (h *APIHandler) DeleteLineageEdge(ctx context.Context, req GenDeleteLineage
 		return nil, err
 	}
 	return GenDeleteLineageEdge204Response{}, nil
+}
+
+// DeleteCatalogLineageEdge implements the canonical catalog lineage edge deletion endpoint.
+func (h *APIHandler) DeleteCatalogLineageEdge(ctx context.Context, req GenDeleteCatalogLineageEdgeRequest) (GenDeleteCatalogLineageEdgeResponse, error) {
+	resp, err := h.DeleteLineageEdge(ctx, GenDeleteLineageEdgeRequest(req))
+	if err != nil {
+		return nil, err
+	}
+	switch typed := resp.(type) {
+	case GenDeleteLineageEdge204Response:
+		return GenDeleteCatalogLineageEdge204Response{Headers: GenDeleteCatalogLineageEdge204ResponseHeaders(typed.Headers)}, nil
+	case DeleteLineageEdge404JSONResponse:
+		return DeleteCatalogLineageEdge404JSONResponse(typed), nil
+	default:
+		return nil, domain.ErrValidation("unexpected response type for catalog lineage edge deletion")
+	}
 }
 
 // PurgeLineage implements the endpoint for purging lineage data older than a threshold.
@@ -271,6 +335,24 @@ func (h *APIHandler) PurgeLineage(ctx context.Context, req GenPurgeLineageReques
 	}, nil
 }
 
+// PurgeCatalogLineage implements the canonical catalog lineage purge endpoint.
+func (h *APIHandler) PurgeCatalogLineage(ctx context.Context, req GenPurgeCatalogLineageRequest) (GenPurgeCatalogLineageResponse, error) {
+	resp, err := h.PurgeLineage(ctx, GenPurgeLineageRequest(req))
+	if err != nil {
+		return nil, err
+	}
+	switch typed := resp.(type) {
+	case PurgeLineage200JSONResponse:
+		return PurgeCatalogLineage200JSONResponse{Body: typed.Body, Headers: PurgeCatalogLineage200ResponseHeaders(typed.Headers)}, nil
+	case PurgeLineage403JSONResponse:
+		return PurgeCatalogLineage403JSONResponse(typed), nil
+	case GenPurgeLineage500JSONResponse:
+		return GenPurgeCatalogLineage500JSONResponse(typed), nil
+	default:
+		return nil, domain.ErrValidation("unexpected response type for catalog lineage purge")
+	}
+}
+
 // === Column Lineage ===
 
 // GetColumnLineage implements the endpoint for retrieving column-level lineage for a table.
@@ -291,6 +373,20 @@ func (h *APIHandler) GetColumnLineage(ctx context.Context, req GenGetColumnLinea
 	}, nil
 }
 
+// GetCatalogColumnLineage implements the canonical catalog column lineage endpoint.
+func (h *APIHandler) GetCatalogColumnLineage(ctx context.Context, req GenGetCatalogColumnLineageRequest) (GenGetCatalogColumnLineageResponse, error) {
+	resp, err := h.GetColumnLineage(ctx, GenGetColumnLineageRequest{SchemaName: req.SchemaName, TableName: req.TableName, Params: GenGetColumnLineageParams(req.Params)})
+	if err != nil {
+		return nil, err
+	}
+	switch typed := resp.(type) {
+	case GenGetColumnLineage200JSONResponse:
+		return GenGetCatalogColumnLineage200JSONResponse{Body: typed.Body, Headers: GenGetCatalogColumnLineage200ResponseHeaders(typed.Headers)}, nil
+	default:
+		return nil, domain.ErrValidation("unexpected response type for catalog column lineage")
+	}
+}
+
 // GetColumnImpact implements the endpoint for impact analysis on a source column.
 func (h *APIHandler) GetColumnImpact(ctx context.Context, req GenGetColumnImpactRequest) (GenGetColumnImpactResponse, error) {
 	edges, err := h.lineage.GetColumnLineageForSourceColumn(ctx, req.SchemaName, req.TableName, req.ColumnName)
@@ -307,6 +403,20 @@ func (h *APIHandler) GetColumnImpact(ctx context.Context, req GenGetColumnImpact
 		Body:    PaginatedColumnLineageEdges{Data: data},
 		Headers: GenGetColumnImpact200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
+}
+
+// GetCatalogColumnImpact implements the canonical catalog column impact endpoint.
+func (h *APIHandler) GetCatalogColumnImpact(ctx context.Context, req GenGetCatalogColumnImpactRequest) (GenGetCatalogColumnImpactResponse, error) {
+	resp, err := h.GetColumnImpact(ctx, GenGetColumnImpactRequest{SchemaName: req.SchemaName, TableName: req.TableName, ColumnName: req.ColumnName, Params: GenGetColumnImpactParams(req.Params)})
+	if err != nil {
+		return nil, err
+	}
+	switch typed := resp.(type) {
+	case GenGetColumnImpact200JSONResponse:
+		return GenGetCatalogColumnImpact200JSONResponse{Body: typed.Body, Headers: GenGetCatalogColumnImpact200ResponseHeaders(typed.Headers)}, nil
+	default:
+		return nil, domain.ErrValidation("unexpected response type for catalog column impact")
+	}
 }
 
 // GetBuildColumnLineage implements compile-time column lineage retrieval for a build.

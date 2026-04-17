@@ -600,7 +600,7 @@ func TestCLI_CommandTree(t *testing.T) {
 	expectedCommands := []string{
 		"catalog", "security", "query", "compute", "storage",
 		"assets", "notebooks", "governance", "audit",
-		"lineage", "ingestion", "project", "server",
+		"models", "ingestion", "project", "projects", "server",
 		"version", "auth",
 		"plan", "apply", "export", "validate", "summary", "schema", "adopt",
 		"commands", "api", "discover", "docs", "find", "describe",
@@ -823,16 +823,16 @@ func TestCLI_ModelCommandsRejectMalformedConfigJSON(t *testing.T) {
 		args []string
 	}{
 		{
-			name: "models create",
-			args: []string{"models", "create", "--project-name", "cfg-proj", "--name", "cfg-model", "--sql", "SELECT 1", "--config", "{target_catalog:main}"},
+			name: "projects models create",
+			args: []string{"projects", "models", "create", "cfg-proj", "--name", "cfg-model", "--sql", "SELECT 1", "--config", "{target_catalog:main}"},
 		},
 		{
-			name: "models tests create",
-			args: []string{"models", "tests", "create", "cfg-proj", "cfg-model", "--name", "cfg-test", "--test-type", "not_null", "--column", "id", "--config", "{strict:true}"},
+			name: "projects models tests create",
+			args: []string{"projects", "models", "tests", "create", "cfg-proj", "cfg-model", "--name", "cfg-test", "--test-type", "not_null", "--column", "id", "--config", "{strict:true}"},
 		},
 		{
-			name: "models update",
-			args: []string{"models", "update", "cfg-proj", "cfg-model", "--config", "{owner:ops}"},
+			name: "projects models update",
+			args: []string{"projects", "models", "update", "cfg-proj", "cfg-model", "--config", "{owner:ops}"},
 		},
 	}
 
@@ -1188,7 +1188,7 @@ func TestCLI_CatalogSetDefault_SendsEmptyJSONObject(t *testing.T) {
 	assert.JSONEq(t, `{}`, captured.Body)
 }
 
-func TestCLI_ModelsCreateRequiresNameOrJSON(t *testing.T) {
+func TestCLI_ProjectModelsCreateRequiresNameOrJSON(t *testing.T) {
 	rec := &requestRecorder{}
 	srv := httptest.NewServer(jsonHandler(rec, 201, `{"id":"m1"}`))
 	defer srv.Close()
@@ -1196,7 +1196,7 @@ func TestCLI_ModelsCreateRequiresNameOrJSON(t *testing.T) {
 	rootCmd := newTestRootCmd(t, srv)
 	rootCmd.SetArgs([]string{
 		"--host", srv.URL,
-		"models", "create",
+		"projects", "models", "create", "proj-1",
 	})
 
 	err := rootCmd.Execute()

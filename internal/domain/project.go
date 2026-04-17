@@ -221,11 +221,11 @@ type Compilation struct {
 
 // CreateCompilationRequest defines the input for creating a compilation artifact.
 type CreateCompilationRequest struct {
-	GitRef       string
-	CommitSHA    *string
-	Selector     string
+	GitRef        string
+	CommitSHA     *string
+	Selector      string
 	TargetCatalog string
-	TargetSchema string
+	TargetSchema  string
 }
 
 // ProjectRelease is an immutable published snapshot for dependency resolution.
@@ -236,8 +236,19 @@ type ProjectRelease struct {
 	Version           string
 	ResolvedBuildID   *string
 	ResolvedCompileID *string
+	Snapshot          *ProjectReleaseSnapshot
 	CreatedBy         string
 	CreatedAt         time.Time
+}
+
+// ProjectReleaseSnapshot captures immutable authoring resources for a released project.
+type ProjectReleaseSnapshot struct {
+	ProjectName string             `json:"project_name,omitempty"`
+	Kind        string             `json:"kind,omitempty"`
+	Models      []Model            `json:"models,omitempty"`
+	Macros      []Macro            `json:"macros,omitempty"`
+	Sources     []SourceDefinition `json:"sources,omitempty"`
+	Seeds       []Seed             `json:"seeds,omitempty"`
 }
 
 // CreateProjectReleaseRequest defines the input for creating a project release.
