@@ -31,6 +31,9 @@ const (
 	PrivManageAssetDefinitions      = "MANAGE_ASSET_DEFINITIONS"
 	PrivExecuteAssetMaterialization = "EXECUTE_ASSET_MATERIALIZATION"
 	PrivManageAssetPolicies         = "MANAGE_ASSET_POLICIES"
+	PrivViewPipeline                = "VIEW_PIPELINE"
+	PrivRunPipeline                 = "RUN_PIPELINE"
+	PrivManagePipeline              = "MANAGE_PIPELINE"
 )
 
 // Securable type constants.
@@ -44,6 +47,7 @@ const (
 	SecurableStorageCredential = "storage_credential"
 	SecurableVolume            = "volume"
 	SecurableComputeEndpoint   = "compute_endpoint"
+	SecurablePipeline          = "pipeline"
 )
 
 // CatalogID is the sentinel securable_id for catalog-level grants.

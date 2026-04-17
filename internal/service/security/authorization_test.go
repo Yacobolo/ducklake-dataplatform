@@ -1457,3 +1457,23 @@ func TestFolderPrivilege_GroupGrant(t *testing.T) {
 	require.NoError(t, err)
 	require.True(t, ok, "group ALL_PRIVILEGES on folder should grant folder SELECT")
 }
+
+func TestPipelinePrivilege_DirectGrant(t *testing.T) {
+	svc, q, ctx := setupTestService(t)
+
+	user, err := q.CreatePrincipal(ctx, dbstore.CreatePrincipalParams{
+		ID: uuid.New().String(), Name: "analyst", Type: "user", IsAdmin: 0,
+	})
+	require.NoError(t, err)
+
+	_, err = q.GrantPrivilege(ctx, dbstore.GrantPrivilegeParams{
+		ID: uuid.New().String(), PrincipalID: user.ID, PrincipalType: "user",
+		SecurableType: SecurablePipeline, SecurableID: "pipeline-1",
+		Privilege: PrivViewPipeline,
+	})
+	require.NoError(t, err)
+
+	ok, err := svc.CheckPrivilege(ctx, "analyst", SecurablePipeline, "pipeline-1", PrivViewPipeline)
+	require.NoError(t, err)
+	require.True(t, ok, "direct pipeline VIEW grant should be allowed")
+}

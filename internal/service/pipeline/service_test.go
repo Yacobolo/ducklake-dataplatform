@@ -1065,7 +1065,7 @@ func TestPipelineService_CancelRun(t *testing.T) {
 						{ID: "jr2", RunID: runID, Status: domain.PipelineJobRunStatusRunning},
 					}, nil
 				}
-				repo.UpdateJobRunFinishedFn = func(ctx context.Context, id string, status string, errMsg *string) error {
+				repo.UpdateJobRunFinishedFn = func(ctx context.Context, id string, status string, errMsg *string, lastErrorCode *string, attemptCount int) error {
 					// Only PENDING job runs should be cancelled.
 					assert.Equal(t, "jr1", id)
 					assert.Equal(t, domain.PipelineJobRunStatusCancelled, status)
@@ -1108,7 +1108,12 @@ func TestPipelineService_CancelRun(t *testing.T) {
 				tt.setupRun(runRepo)
 			}
 
-			svc := newTestService(&testutil.MockPipelineRepo{}, runRepo, auditRepo, &testutil.MockNotebookProvider{})
+			pipelineRepo := &testutil.MockPipelineRepo{
+				GetPipelineByIDFn: func(ctx context.Context, id string) (*domain.Pipeline, error) {
+					return &domain.Pipeline{ID: id, Name: "pipe", CreatedBy: tt.principal}, nil
+				},
+			}
+			svc := newTestService(pipelineRepo, runRepo, auditRepo, &testutil.MockNotebookProvider{})
 
 			err := svc.CancelRun(context.Background(), tt.principal, tt.runID)
 

@@ -164,7 +164,7 @@ func findNotebookByOwnerAndName(ctx context.Context, client *apiruntime.Client, 
 	return nil, fmt.Errorf("seed notebook %q owned by %q not found", name, owner)
 }
 
-func ensurePipeline(ctx context.Context, client *apiruntime.Client, pipelineName, description string, folderID *string) (*apitypes.Pipeline, error) {
+func ensurePipeline(_ context.Context, client *apiruntime.Client, pipelineName, description string, folderID *string) (*apitypes.Pipeline, error) {
 	var pipelineResource apitypes.Pipeline
 	err := apiRequest(client, http.MethodGet, "/pipelines/"+url.PathEscape(pipelineName), nil, nil, &pipelineResource)
 	if err == nil {
@@ -188,7 +188,7 @@ func ensurePipeline(ctx context.Context, client *apiruntime.Client, pipelineName
 	return &pipelineResource, nil
 }
 
-func ensurePipelineJob(ctx context.Context, client *apiruntime.Client, pipelineName string, notebook *apitypes.Notebook, jobName string) (*apitypes.PipelineJob, error) {
+func ensurePipelineJob(_ context.Context, client *apiruntime.Client, pipelineName string, notebook *apitypes.Notebook, jobName string) (*apitypes.PipelineJob, error) {
 	var jobs apitypes.PipelineJobList
 	if err := apiRequest(client, http.MethodGet, "/pipelines/"+url.PathEscape(pipelineName)+"/jobs", nil, nil, &jobs); err != nil {
 		return nil, fmt.Errorf("list pipeline jobs for %q: %w", pipelineName, err)
@@ -216,7 +216,7 @@ func ensurePipelineJob(ctx context.Context, client *apiruntime.Client, pipelineN
 	return &job, nil
 }
 
-func ensureInitialRun(ctx context.Context, client *apiruntime.Client, pipelineName string) (*apitypes.PipelineRun, error) {
+func ensureInitialRun(_ context.Context, client *apiruntime.Client, pipelineName string) (*apitypes.PipelineRun, error) {
 	query := url.Values{}
 	query.Set("max_results", "1")
 

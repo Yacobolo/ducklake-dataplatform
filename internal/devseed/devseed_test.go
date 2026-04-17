@@ -125,7 +125,10 @@ profiles:
 	runCreated := false
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		require.Equal(t, "Bearer seed-token", r.Header.Get("Authorization"))
+		if !assert.Equal(t, "Bearer seed-token", r.Header.Get("Authorization")) {
+			http.Error(w, "unexpected authorization header", http.StatusUnauthorized)
+			return
+		}
 
 		switch {
 		case r.Method == http.MethodGet && r.URL.Path == "/v1/notebooks":
@@ -150,9 +153,18 @@ profiles:
 			})
 		case r.Method == http.MethodPost && r.URL.Path == "/v1/pipelines":
 			var req apitypes.CreatePipelineRequest
-			require.NoError(t, json.NewDecoder(r.Body).Decode(&req))
-			require.Equal(t, "nyc_taxi_demo", req.Name)
-			require.Equal(t, folderID, derefString(req.FolderId))
+			if !assert.NoError(t, json.NewDecoder(r.Body).Decode(&req)) {
+				http.Error(w, "invalid pipeline payload", http.StatusBadRequest)
+				return
+			}
+			if !assert.Equal(t, "nyc_taxi_demo", req.Name) {
+				http.Error(w, "unexpected pipeline name", http.StatusBadRequest)
+				return
+			}
+			if !assert.Equal(t, folderID, derefString(req.FolderId)) {
+				http.Error(w, "unexpected pipeline folder", http.StatusBadRequest)
+				return
+			}
 			pipelineCreated = true
 			writeJSON(t, w, apitypes.Pipeline{
 				Id:       strPtr(pipelineID),
@@ -171,9 +183,18 @@ profiles:
 			}}})
 		case r.Method == http.MethodPost && r.URL.Path == "/v1/pipelines/nyc_taxi_demo/jobs":
 			var req apitypes.CreatePipelineJobRequest
-			require.NoError(t, json.NewDecoder(r.Body).Decode(&req))
-			require.Equal(t, "run_nyc_taxi_explore", req.Name)
-			require.Equal(t, notebookID, derefString(req.NotebookId))
+			if !assert.NoError(t, json.NewDecoder(r.Body).Decode(&req)) {
+				http.Error(w, "invalid pipeline job payload", http.StatusBadRequest)
+				return
+			}
+			if !assert.Equal(t, "run_nyc_taxi_explore", req.Name) {
+				http.Error(w, "unexpected pipeline job name", http.StatusBadRequest)
+				return
+			}
+			if !assert.Equal(t, notebookID, derefString(req.NotebookId)) {
+				http.Error(w, "unexpected pipeline notebook", http.StatusBadRequest)
+				return
+			}
 			jobCreated = true
 			writeJSON(t, w, apitypes.PipelineJob{
 				Id:         strPtr(jobID),

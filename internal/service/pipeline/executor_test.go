@@ -5,6 +5,8 @@ import (
 	"database/sql"
 	"fmt"
 	"log/slog"
+	"net/http"
+	"net/http/httptest"
 	"strings"
 	"sync/atomic"
 	"testing"
@@ -165,7 +167,7 @@ func TestExecuteJobAttempt_InvalidParamName(t *testing.T) {
 	job := domain.PipelineJob{ID: "j1", Name: "test", NotebookID: "nb1"}
 
 	// Invalid param name should return a validation error.
-	err := svc.executeJobAttempt(context.Background(), job,
+	err := svc.executeJobAttempt(context.Background(), nil, job,
 		map[string]string{"bad;key": "val"}, "alice", logger)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "invalid variable name")
@@ -190,7 +192,7 @@ func TestExecuteJobAttempt_QuoteEscaping(t *testing.T) {
 
 	job := domain.PipelineJob{ID: "j1", Name: "test", NotebookID: "nb1"}
 
-	err := svc.executeJobAttempt(context.Background(), job,
+	err := svc.executeJobAttempt(context.Background(), nil, job,
 		map[string]string{"name": "O'Brien"}, "alice", logger)
 	require.NoError(t, err)
 
@@ -217,9 +219,14 @@ func TestCancelRun_SignalsCancelFunc(t *testing.T) {
 			return nil, nil
 		},
 	}
+	pipelineRepo := &testutil.MockPipelineRepo{
+		GetPipelineByIDFn: func(ctx context.Context, id string) (*domain.Pipeline, error) {
+			return &domain.Pipeline{ID: id, Name: "pipe", CreatedBy: "alice"}, nil
+		},
+	}
 
 	logger := slog.New(slog.DiscardHandler)
-	svc := NewService(nil, runRepo, &testutil.MockAuditRepo{}, &testutil.MockNotebookProvider{}, nil, nil, logger)
+	svc := NewService(pipelineRepo, runRepo, &testutil.MockAuditRepo{}, &testutil.MockNotebookProvider{}, nil, nil, logger)
 
 	// Simulate a running run by storing a cancel func.
 	_, cancel := context.WithCancel(context.Background())
@@ -247,10 +254,10 @@ func TestExecuteJob_RetryInterruptedByCancellation(t *testing.T) {
 	engine := connEngine()
 
 	runRepo := &testutil.MockPipelineRunRepo{
-		UpdateJobRunStartedFn: func(ctx context.Context, id string) error {
+		UpdateJobRunStartedFn: func(ctx context.Context, id string, effectiveComputeEndpointID *string, attemptCount int) error {
 			return nil
 		},
-		UpdateJobRunFinishedFn: func(ctx context.Context, id string, status string, errMsg *string) error {
+		UpdateJobRunFinishedFn: func(ctx context.Context, id string, status string, errMsg *string, lastErrorCode *string, attemptCount int) error {
 			return nil
 		},
 	}
@@ -281,10 +288,78 @@ func TestExecuteJob_RetryInterruptedByCancellation(t *testing.T) {
 		cancel()
 	}()
 
-	err := svc.executeJob(ctx, job, "jr1", map[string]string{}, "alice", logger)
+	err := svc.executeJob(ctx, nil, job, "run1", "jr1", map[string]string{}, "alice", logger)
 	require.Error(t, err)
 
 	// Should not have run all 6 attempts — cancellation should have interrupted retry loop.
 	attempts := attemptCount.Load()
 	assert.Less(t, attempts, int32(6), "should not exhaust all retry attempts when cancelled; got %d", attempts)
+}
+
+func TestExecuteRemoteNotebookJob_CompilesSingleScript(t *testing.T) {
+	db := testDB(t)
+	var queries []string
+	engine := &testutil.MockSessionEngine{
+		QueryFn: func(ctx context.Context, principalName, sqlQuery string) (*sql.Rows, error) {
+			queries = append(queries, sqlQuery)
+			return db.QueryContext(ctx, "SELECT 1 WHERE 0")
+		},
+	}
+
+	svc := NewService(nil, nil, &testutil.MockAuditRepo{}, &testutil.MockNotebookProvider{}, engine, db, slog.New(slog.DiscardHandler))
+	err := svc.executeRemoteNotebookJob(
+		context.Background(),
+		domain.ComputeEndpoint{ID: "cmp-1", Name: "warehouse", Type: "REMOTE"},
+		[]domain.NotebookExecutableCell{
+			{SQL: "SELECT getvariable('city')", Role: domain.CellRoleTransform},
+			{SQL: "SELECT * FROM failures", Role: domain.CellRoleTest, Test: &domain.NotebookCellTestConfig{Severity: domain.NotebookTestSeverityError}},
+			{SQL: "SELECT * FROM warnings", Role: domain.CellRoleTest, Test: &domain.NotebookCellTestConfig{Severity: domain.NotebookTestSeverityWarn}},
+		},
+		map[string]string{"city": "Copenhagen"},
+		"alice",
+		slog.New(slog.DiscardHandler),
+	)
+	require.NoError(t, err)
+	require.Len(t, queries, 1, "remote execution should compile into a single routed query")
+	assert.Contains(t, queries[0], "SET VARIABLE city = 'Copenhagen';")
+	assert.Contains(t, queries[0], "SELECT getvariable('city');")
+	assert.Contains(t, queries[0], "error-severity notebook test failed")
+	assert.Contains(t, queries[0], "SELECT COUNT(*) FROM (SELECT * FROM warnings) AS __pipeline_test_warn;")
+}
+
+func TestNotifyRunEvent_IgnoresCancelledCallerContext(t *testing.T) {
+	delivered := make(chan *http.Request, 1)
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		delivered <- r
+		w.WriteHeader(http.StatusAccepted)
+	}))
+	defer server.Close()
+
+	svc := NewService(nil, nil, &testutil.MockAuditRepo{}, &testutil.MockNotebookProvider{}, nil, nil, slog.New(slog.DiscardHandler))
+	svc.SetHTTPClient(server.Client())
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	svc.notifyRunEvent(ctx, &domain.Pipeline{
+		ID:   "pipe-1",
+		Name: "demo",
+		NotificationWebhooks: []domain.PipelineNotificationWebhook{{
+			URL:    server.URL,
+			Events: []string{domain.PipelineRunEventFailed},
+		}},
+	}, &domain.PipelineRun{
+		ID:                 "run-1",
+		PipelineID:         "pipe-1",
+		Status:             domain.PipelineRunStatusFailed,
+		TriggerType:        domain.TriggerTypeManual,
+		TriggeredBy:        "alice",
+		EffectivePrincipal: "alice",
+	}, domain.PipelineRunEventFailed)
+
+	select {
+	case <-delivered:
+	case <-time.After(2 * time.Second):
+		t.Fatal("expected webhook delivery despite cancelled caller context")
+	}
 }

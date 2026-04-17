@@ -409,7 +409,12 @@ func New(ctx context.Context, deps Deps) (*App, error) {
 		deps.Logger.With("component", "pipeline"),
 	)
 	pipelineSvc.SetFolderRepository(folderRepo)
+	pipelineSvc.SetAuthorization(authSvc)
+	pipelineSvc.SetGrantRepository(grantRepo)
+	pipelineSvc.SetPrincipalRepository(principalRepo)
 	pipelineSvc.SetComputeEndpointRepository(computeEndpointRepo)
+	pipelineSvc.SetNotebookRepository(notebookRepo)
+	pipelineSvc.SetGitRepoRepository(gitRepoRepo)
 	pipelineScheduler := pipeline.NewScheduler(pipelineSvc, pipelineRepo, deps.Logger.With("component", "pipeline-scheduler"))
 	pipelineSvc.SetScheduleReloader(pipelineScheduler)
 	notebookSvc.SetProjectRepositories(projectRepo, environmentRepo)
@@ -480,6 +485,7 @@ func New(ctx context.Context, deps Deps) (*App, error) {
 		Logger:        deps.Logger.With("component", "model"),
 	})
 	pipelineSvc.SetModelRunner(modelSvc)
+	pipelineSvc.SetModelRepository(modelRepo)
 	notebookSvc.SetPublishRepositories(modelRepo, notebookModelLinkRepo)
 	gitSvc.SetPublishDependencies(modelSvc, notebookModelLinkRepo)
 	if err := pipelineSvc.SyncPipelinesToAssets(ctx); err != nil {

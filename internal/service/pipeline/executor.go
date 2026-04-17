@@ -23,34 +23,54 @@ func isValidVariableName(name string) bool {
 }
 
 // executeJob executes a single pipeline job on a pinned DuckDB connection.
-func (s *Service) executeJob(ctx context.Context, job domain.PipelineJob,
-	jobRunID string, params map[string]string, principal string, logger *slog.Logger) error {
+func (s *Service) executeJob(ctx context.Context, pipelineDef *domain.Pipeline, job domain.PipelineJob,
+	runID string, jobRunID string, params map[string]string, principal string, logger *slog.Logger) error {
 
 	logger = logger.With("job_id", job.ID, "job_name", job.Name)
 	persistCtx := context.Background()
+	effectiveComputeEndpointID := effectiveComputeEndpointID(pipelineDef, job)
+	retryCount := effectiveJobRetryCount(pipelineDef, job)
+	maxAttempts := retryCount + 1
+
+	runCtx := ctx
+	if timeoutSeconds := effectiveJobTimeoutSeconds(pipelineDef, job); timeoutSeconds != nil && *timeoutSeconds > 0 {
+		timeoutCtx, cancel := context.WithTimeout(ctx, time.Duration(*timeoutSeconds)*time.Second)
+		defer cancel()
+		runCtx = timeoutCtx
+	}
 
 	if jobRunID != "" {
-		if err := s.runs.UpdateJobRunStarted(persistCtx, jobRunID); err != nil {
+		if err := s.runs.UpdateJobRunStarted(persistCtx, jobRunID, effectiveComputeEndpointID, 1); err != nil {
 			return fmt.Errorf("mark job run started: %w", err)
 		}
+		s.logJobRunEvent(persistCtx, runID, jobRunID, domain.PipelineRunEventStarted, pipelineMessagePtr("job started"), nil, map[string]any{"job_id": job.ID})
 	}
 
 	var lastErr error
-	maxAttempts := job.RetryCount + 1
-
+	attemptCount := 0
 	for attempt := 0; attempt < maxAttempts; attempt++ {
 		if attempt > 0 {
 			// Exponential backoff: 1s, 2s, 4s... — interruptible by cancellation.
 			backoff := time.Duration(1<<uint(attempt-1)) * time.Second //nolint:gosec // attempt is always >= 1 here
 			select {
-			case <-ctx.Done():
-				return ctx.Err()
+			case <-runCtx.Done():
+				lastErr = runCtx.Err()
+				attemptCount = attempt
+				break
 			case <-time.After(backoff):
 			}
+			if lastErr != nil {
+				break
+			}
 			logger.Info("retrying job", "attempt", attempt+1)
+			if jobRunID != "" {
+				msg := fmt.Sprintf("retrying job attempt %d", attempt+1)
+				s.logJobRunEvent(persistCtx, runID, jobRunID, domain.PipelineRunEventRetried, &msg, classifyPipelineErrorCode(lastErr), map[string]any{"attempt": attempt + 1})
+			}
 		}
 
-		lastErr = s.executeJobAttempt(ctx, job, params, principal, logger)
+		attemptCount = attempt + 1
+		lastErr = s.executeJobAttempt(runCtx, pipelineDef, job, params, principal, logger)
 		if lastErr == nil {
 			break
 		}
@@ -64,19 +84,22 @@ func (s *Service) executeJob(ctx context.Context, job domain.PipelineJob,
 			if errors.Is(lastErr, context.Canceled) {
 				status = domain.PipelineJobRunStatusCancelled
 			}
-			_ = s.runs.UpdateJobRunFinished(persistCtx, jobRunID, status, &errMsg)
+			errorCode := classifyPipelineErrorCode(lastErr)
+			_ = s.runs.UpdateJobRunFinished(persistCtx, jobRunID, status, &errMsg, errorCode, attemptCount)
+			s.logJobRunEvent(persistCtx, runID, jobRunID, eventTypeForJobStatus(status), &errMsg, errorCode, map[string]any{"attempt_count": attemptCount})
 		}
 		return lastErr
 	}
 
 	if jobRunID != "" {
-		_ = s.runs.UpdateJobRunFinished(persistCtx, jobRunID, domain.PipelineJobRunStatusSuccess, nil)
+		_ = s.runs.UpdateJobRunFinished(persistCtx, jobRunID, domain.PipelineJobRunStatusSuccess, nil, nil, attemptCount)
+		s.logJobRunEvent(persistCtx, runID, jobRunID, domain.PipelineRunEventSucceeded, pipelineMessagePtr("job completed successfully"), nil, map[string]any{"attempt_count": attemptCount})
 	}
 	return nil
 }
 
 // executeJobAttempt runs one attempt of a job on a fresh pinned connection.
-func (s *Service) executeJobAttempt(ctx context.Context, job domain.PipelineJob,
+func (s *Service) executeJobAttempt(ctx context.Context, pipelineDef *domain.Pipeline, job domain.PipelineJob,
 	params map[string]string, principal string, logger *slog.Logger) error {
 
 	// Handle MODEL_RUN jobs via the model runner.
@@ -84,7 +107,7 @@ func (s *Service) executeJobAttempt(ctx context.Context, job domain.PipelineJob,
 		return s.executeModelRunJob(ctx, job, params, principal, logger)
 	}
 
-	endpoint, err := s.jobComputeEndpoint(ctx, job)
+	endpoint, err := s.jobComputeEndpoint(ctx, effectiveComputeEndpointID(pipelineDef, job))
 	if err != nil {
 		return err
 	}
@@ -163,14 +186,14 @@ func (s *Service) loadExecutableCells(ctx context.Context, notebookID string) ([
 	return execCells, nil
 }
 
-func (s *Service) jobComputeEndpoint(ctx context.Context, job domain.PipelineJob) (*domain.ComputeEndpoint, error) {
-	if job.ComputeEndpointID == nil || strings.TrimSpace(*job.ComputeEndpointID) == "" {
+func (s *Service) jobComputeEndpoint(ctx context.Context, computeEndpointID *string) (*domain.ComputeEndpoint, error) {
+	if computeEndpointID == nil || strings.TrimSpace(*computeEndpointID) == "" {
 		return nil, nil
 	}
 	if s.computeRepo == nil {
 		return nil, domain.ErrValidation("compute_endpoint_id is configured but compute endpoint repository is unavailable")
 	}
-	endpoint, err := s.computeRepo.GetByID(ctx, strings.TrimSpace(*job.ComputeEndpointID))
+	endpoint, err := s.computeRepo.GetByID(ctx, strings.TrimSpace(*computeEndpointID))
 	if err != nil {
 		return nil, fmt.Errorf("resolve compute endpoint: %w", err)
 	}
@@ -188,32 +211,12 @@ func (s *Service) executeRemoteNotebookJob(ctx context.Context, endpoint domain.
 		FallbackLocal:         false,
 	})
 
-	for k, v := range params {
-		if !isValidVariableName(k) {
-			return fmt.Errorf("set variable: %w", domain.ErrValidation("invalid variable name: %s", k))
-		}
-		escaped := strings.ReplaceAll(v, "'", "''")
-		setSQL := fmt.Sprintf("SET VARIABLE %s = '%s'", k, escaped)
-		if err := s.execQuery(execCtx, principal, setSQL); err != nil {
-			return fmt.Errorf("set variable %s on compute endpoint %s: %w", k, endpoint.Name, err)
-		}
+	script, err := compileRemoteNotebookScript(execCells, params)
+	if err != nil {
+		return err
 	}
-
-	for i, cell := range execCells {
-		sqlToRun := cell.SQL
-		if cell.Role == domain.CellRoleTest {
-			severity := domain.NotebookTestSeverityError
-			if cell.Test != nil && cell.Test.Severity != "" {
-				severity = cell.Test.Severity
-			}
-			if severity == domain.NotebookTestSeverityError {
-				sqlToRun = remoteNotebookTestFailureSQL(cell.SQL)
-			}
-		}
-
-		if err := s.execQuery(execCtx, principal, sqlToRun); err != nil {
-			return fmt.Errorf("execute cell %d on compute endpoint %s: %w", i+1, endpoint.Name, err)
-		}
+	if err := s.execQuery(execCtx, principal, script); err != nil {
+		return fmt.Errorf("execute notebook job on compute endpoint %s: %w", endpoint.Name, err)
 	}
 
 	logger.Info("remote notebook job completed successfully", "compute_endpoint", endpoint.Name)
@@ -291,4 +294,86 @@ func remoteNotebookTestFailureSQL(query string) string {
 		"SELECT CAST(COUNT(*) || ' error-severity notebook test failed' AS INTEGER) AS __pipeline_test_failure FROM (%s) AS __pipeline_test_result HAVING COUNT(*) > 0",
 		query,
 	)
+}
+
+func compileRemoteNotebookScript(execCells []domain.NotebookExecutableCell, params map[string]string) (string, error) {
+	var builder strings.Builder
+	for key, value := range params {
+		if !isValidVariableName(key) {
+			return "", fmt.Errorf("set variable: %w", domain.ErrValidation("invalid variable name: %s", key))
+		}
+		escaped := strings.ReplaceAll(value, "'", "''")
+		appendSQLStatement(&builder, fmt.Sprintf("SET VARIABLE %s = '%s'", key, escaped))
+	}
+
+	for _, cell := range execCells {
+		sqlToRun := cell.SQL
+		if cell.Role == domain.CellRoleTest {
+			severity := domain.NotebookTestSeverityError
+			if cell.Test != nil && cell.Test.Severity != "" {
+				severity = cell.Test.Severity
+			}
+			if severity == domain.NotebookTestSeverityError {
+				sqlToRun = remoteNotebookTestFailureSQL(cell.SQL)
+			} else {
+				sqlToRun = fmt.Sprintf("SELECT COUNT(*) FROM (%s) AS __pipeline_test_warn", cell.SQL)
+			}
+		}
+		appendSQLStatement(&builder, sqlToRun)
+	}
+
+	return strings.TrimSpace(builder.String()), nil
+}
+
+func appendSQLStatement(builder *strings.Builder, sqlText string) {
+	trimmed := strings.TrimSpace(sqlText)
+	if trimmed == "" {
+		return
+	}
+	builder.WriteString(trimmed)
+	if !strings.HasSuffix(trimmed, ";") {
+		builder.WriteString(";")
+	}
+	builder.WriteString("\n")
+}
+
+func effectiveComputeEndpointID(pipelineDef *domain.Pipeline, job domain.PipelineJob) *string {
+	if job.ComputeEndpointID != nil && strings.TrimSpace(*job.ComputeEndpointID) != "" {
+		return job.ComputeEndpointID
+	}
+	if pipelineDef != nil {
+		return pipelineDef.DefaultComputeEndpointID
+	}
+	return nil
+}
+
+func effectiveJobTimeoutSeconds(pipelineDef *domain.Pipeline, job domain.PipelineJob) *int64 {
+	if job.TimeoutSeconds != nil {
+		return job.TimeoutSeconds
+	}
+	if pipelineDef != nil {
+		return pipelineDef.DefaultTimeoutSeconds
+	}
+	return nil
+}
+
+func effectiveJobRetryCount(pipelineDef *domain.Pipeline, job domain.PipelineJob) int {
+	if job.RetryCount > 0 {
+		return job.RetryCount
+	}
+	if pipelineDef != nil && pipelineDef.DefaultRetryCount != nil && *pipelineDef.DefaultRetryCount > 0 {
+		return *pipelineDef.DefaultRetryCount
+	}
+	return job.RetryCount
+}
+
+func eventTypeForJobStatus(status string) string {
+	switch status {
+	case domain.PipelineJobRunStatusCancelled:
+		return domain.PipelineRunEventCancelled
+	case domain.PipelineJobRunStatusFailed:
+		return domain.PipelineRunEventFailed
+	default:
+		return domain.PipelineRunEventSucceeded
+	}
 }

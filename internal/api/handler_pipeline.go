@@ -21,6 +21,8 @@ type pipelineService interface {
 	TriggerRun(ctx context.Context, principal string, pipelineName string, params map[string]string, triggerType string) (*domain.PipelineRun, error)
 	ListRuns(ctx context.Context, pipelineName string, filter domain.PipelineRunFilter) ([]domain.PipelineRun, int64, error)
 	GetRun(ctx context.Context, runID string) (*domain.PipelineRun, error)
+	ListRunEvents(ctx context.Context, runID string, page domain.PageRequest) ([]domain.PipelineRunEvent, int64, error)
+	RepairRun(ctx context.Context, principal string, runID string, req domain.RepairPipelineRunRequest) (*domain.PipelineRun, error)
 	CancelRun(ctx context.Context, principal string, runID string) error
 	ListJobRuns(ctx context.Context, runID string) ([]domain.PipelineJobRun, error)
 }
@@ -63,6 +65,29 @@ func (h *APIHandler) CreatePipeline(ctx context.Context, req GenCreatePipelineRe
 	if req.Body.ConcurrencyLimit != nil {
 		domReq.ConcurrencyLimit = int(*req.Body.ConcurrencyLimit)
 	}
+	if req.Body.RunAsPrincipal != nil {
+		domReq.RunAsPrincipal = req.Body.RunAsPrincipal
+	}
+	if req.Body.AdmissionMode != nil {
+		value := string(*req.Body.AdmissionMode)
+		domReq.AdmissionMode = value
+	}
+	if req.Body.MaxRunDurationSeconds != nil {
+		domReq.MaxRunDurationSeconds = int32PtrToInt64Ptr(req.Body.MaxRunDurationSeconds)
+	}
+	if req.Body.NotificationWebhooks != nil {
+		domReq.NotificationWebhooks = notificationHooksToDomain(*req.Body.NotificationWebhooks)
+	}
+	if req.Body.DefaultRetryCount != nil {
+		value := int(*req.Body.DefaultRetryCount)
+		domReq.DefaultRetryCount = &value
+	}
+	if req.Body.DefaultTimeoutSeconds != nil {
+		domReq.DefaultTimeoutSeconds = int32PtrToInt64Ptr(req.Body.DefaultTimeoutSeconds)
+	}
+	if req.Body.DefaultComputeEndpointId != nil {
+		domReq.DefaultComputeEndpointID = req.Body.DefaultComputeEndpointId
+	}
 	domReq.FolderID = req.Body.FolderId
 
 	cp, _ := domain.PrincipalFromContext(ctx)
@@ -91,6 +116,9 @@ func (h *APIHandler) GetPipeline(ctx context.Context, req GenGetPipelineRequest)
 	result, err := h.pipelines.GetPipeline(ctx, req.PipelineName)
 	if err != nil {
 		if resp, ok := respondDomainErrorForOperation[GenGetPipelineResponse]("getPipeline", err, domainErrorResponder[GenGetPipelineResponse]{
+			Forbidden: func(resp ForbiddenJSONResponse) GenGetPipelineResponse {
+				return GenGetPipeline403JSONResponse{GenForbiddenJSONResponse(resp)}
+			},
 			NotFound: func(resp NotFoundJSONResponse) GenGetPipelineResponse {
 				return GenGetPipeline404JSONResponse{GenNotFoundJSONResponse(resp)}
 			},
@@ -117,6 +145,26 @@ func (h *APIHandler) UpdatePipeline(ctx context.Context, req GenUpdatePipelineRe
 		v := int(*req.Body.ConcurrencyLimit)
 		domReq.ConcurrencyLimit = &v
 	}
+	domReq.RunAsPrincipal = req.Body.RunAsPrincipal
+	if req.Body.AdmissionMode != nil {
+		value := string(*req.Body.AdmissionMode)
+		domReq.AdmissionMode = &value
+	}
+	if req.Body.MaxRunDurationSeconds != nil {
+		domReq.MaxRunDurationSeconds = int32PtrToInt64Ptr(req.Body.MaxRunDurationSeconds)
+	}
+	if req.Body.NotificationWebhooks != nil {
+		value := notificationHooksToDomain(*req.Body.NotificationWebhooks)
+		domReq.NotificationWebhooks = &value
+	}
+	if req.Body.DefaultRetryCount != nil {
+		value := int(*req.Body.DefaultRetryCount)
+		domReq.DefaultRetryCount = &value
+	}
+	if req.Body.DefaultTimeoutSeconds != nil {
+		domReq.DefaultTimeoutSeconds = int32PtrToInt64Ptr(req.Body.DefaultTimeoutSeconds)
+	}
+	domReq.DefaultComputeEndpointID = req.Body.DefaultComputeEndpointId
 
 	cp, _ := domain.PrincipalFromContext(ctx)
 	principal := cp.Name
@@ -161,6 +209,9 @@ func (h *APIHandler) ListPipelineJobs(ctx context.Context, req GenListPipelineJo
 	jobs, err := h.pipelines.ListJobs(ctx, req.PipelineName)
 	if err != nil {
 		if resp, ok := respondDomainErrorForOperation[GenListPipelineJobsResponse]("listPipelineJobs", err, domainErrorResponder[GenListPipelineJobsResponse]{
+			Forbidden: func(resp ForbiddenJSONResponse) GenListPipelineJobsResponse {
+				return GenListPipelineJobs403JSONResponse{GenForbiddenJSONResponse(resp)}
+			},
 			NotFound: func(resp NotFoundJSONResponse) GenListPipelineJobsResponse {
 				return GenListPipelineJobs404JSONResponse{GenNotFoundJSONResponse(resp)}
 			},
@@ -243,6 +294,9 @@ func (h *APIHandler) GetPipelineJob(ctx context.Context, req GenGetPipelineJobRe
 	result, err := h.pipelines.GetJob(ctx, req.PipelineName, req.JobId)
 	if err != nil {
 		if resp, ok := respondDomainErrorForOperation[GenGetPipelineJobResponse]("getPipelineJob", err, domainErrorResponder[GenGetPipelineJobResponse]{
+			Forbidden: func(resp ForbiddenJSONResponse) GenGetPipelineJobResponse {
+				return GenGetPipelineJob403JSONResponse{GenForbiddenJSONResponse(resp)}
+			},
 			NotFound: func(resp NotFoundJSONResponse) GenGetPipelineJobResponse {
 				return GenGetPipelineJob404JSONResponse{GenNotFoundJSONResponse(resp)}
 			},
@@ -382,6 +436,9 @@ func (h *APIHandler) ListPipelineRuns(ctx context.Context, req GenListPipelineRu
 	runs, total, err := h.pipelines.ListRuns(ctx, req.PipelineName, filter)
 	if err != nil {
 		if resp, ok := respondDomainErrorForOperation[GenListPipelineRunsResponse]("listPipelineRuns", err, domainErrorResponder[GenListPipelineRunsResponse]{
+			Forbidden: func(resp ForbiddenJSONResponse) GenListPipelineRunsResponse {
+				return GenListPipelineRuns403JSONResponse{GenForbiddenJSONResponse(resp)}
+			},
 			NotFound: func(resp NotFoundJSONResponse) GenListPipelineRunsResponse {
 				return GenListPipelineRuns404JSONResponse{GenNotFoundJSONResponse(resp)}
 			},
@@ -407,6 +464,9 @@ func (h *APIHandler) GetPipelineRun(ctx context.Context, req GenGetPipelineRunRe
 	result, err := h.pipelines.GetRun(ctx, req.RunId)
 	if err != nil {
 		if resp, ok := respondDomainErrorForOperation[GenGetPipelineRunResponse]("getPipelineRun", err, domainErrorResponder[GenGetPipelineRunResponse]{
+			Forbidden: func(resp ForbiddenJSONResponse) GenGetPipelineRunResponse {
+				return GenGetPipelineRun403JSONResponse{GenForbiddenJSONResponse(resp)}
+			},
 			NotFound: func(resp NotFoundJSONResponse) GenGetPipelineRunResponse {
 				return GenGetPipelineRun404JSONResponse{GenNotFoundJSONResponse(resp)}
 			},
@@ -418,6 +478,64 @@ func (h *APIHandler) GetPipelineRun(ctx context.Context, req GenGetPipelineRunRe
 	return GenGetPipelineRun200JSONResponse{
 		Body:    pipelineRunToAPI(*result),
 		Headers: GenGetPipelineRun200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+	}, nil
+}
+
+// ListPipelineRunEvents implements the endpoint for listing durable run events.
+func (h *APIHandler) ListPipelineRunEvents(ctx context.Context, req GenListPipelineRunEventsRequest) (GenListPipelineRunEventsResponse, error) {
+	events, _, err := h.pipelines.ListRunEvents(ctx, req.RunId, domain.PageRequest{MaxResults: 500})
+	if err != nil {
+		if resp, ok := respondDomainErrorForOperation[GenListPipelineRunEventsResponse]("listPipelineRunEvents", err, domainErrorResponder[GenListPipelineRunEventsResponse]{
+			Forbidden: func(resp ForbiddenJSONResponse) GenListPipelineRunEventsResponse {
+				return GenListPipelineRunEvents403JSONResponse{GenForbiddenJSONResponse(resp)}
+			},
+			NotFound: func(resp NotFoundJSONResponse) GenListPipelineRunEventsResponse {
+				return GenListPipelineRunEvents404JSONResponse{GenNotFoundJSONResponse(resp)}
+			},
+		}); ok {
+			return resp, nil
+		}
+		return nil, err
+	}
+	data := make([]PipelineRunEvent, len(events))
+	for i, event := range events {
+		data[i] = pipelineRunEventToAPI(event)
+	}
+	return GenListPipelineRunEvents200JSONResponse{
+		Body:    PipelineRunEventList{Data: data},
+		Headers: GenListPipelineRunEvents200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+	}, nil
+}
+
+// RepairPipelineRun implements the endpoint for creating a repair run.
+func (h *APIHandler) RepairPipelineRun(ctx context.Context, req GenRepairPipelineRunRequest) (GenRepairPipelineRunResponse, error) {
+	cp, _ := domain.PrincipalFromContext(ctx)
+	result, err := h.pipelines.RepairRun(ctx, cp.Name, req.RunId, domain.RepairPipelineRunRequest{
+		Mode:      req.Body.Mode,
+		FromJobID: req.Body.FromJobId,
+	})
+	if err != nil {
+		if resp, ok := respondDomainErrorForOperation[GenRepairPipelineRunResponse]("repairPipelineRun", err, domainErrorResponder[GenRepairPipelineRunResponse]{
+			BadRequest: func(resp BadRequestJSONResponse) GenRepairPipelineRunResponse {
+				return RepairPipelineRun400JSONResponse{resp}
+			},
+			Forbidden: func(resp ForbiddenJSONResponse) GenRepairPipelineRunResponse {
+				return RepairPipelineRun403JSONResponse{resp}
+			},
+			NotFound: func(resp NotFoundJSONResponse) GenRepairPipelineRunResponse {
+				return RepairPipelineRun404JSONResponse{resp}
+			},
+			Conflict: func(resp ConflictJSONResponse) GenRepairPipelineRunResponse {
+				return RepairPipelineRun409JSONResponse{resp}
+			},
+		}); ok {
+			return resp, nil
+		}
+		return nil, err
+	}
+	return GenRepairPipelineRun201JSONResponse{
+		Body:    pipelineRunToAPI(*result),
+		Headers: GenRepairPipelineRun201ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
@@ -463,6 +581,9 @@ func (h *APIHandler) ListPipelineJobRuns(ctx context.Context, req GenListPipelin
 	jobRuns, err := h.pipelines.ListJobRuns(ctx, req.RunId)
 	if err != nil {
 		if resp, ok := respondDomainErrorForOperation[GenListPipelineJobRunsResponse]("listPipelineJobRuns", err, domainErrorResponder[GenListPipelineJobRunsResponse]{
+			Forbidden: func(resp ForbiddenJSONResponse) GenListPipelineJobRunsResponse {
+				return GenListPipelineJobRuns403JSONResponse{GenForbiddenJSONResponse(resp)}
+			},
 			NotFound: func(resp NotFoundJSONResponse) GenListPipelineJobRunsResponse {
 				return GenListPipelineJobRuns404JSONResponse{GenNotFoundJSONResponse(resp)}
 			},
@@ -488,16 +609,23 @@ func pipelineToAPI(p domain.Pipeline) Pipeline {
 	isPaused := p.IsPaused
 	concLimit := int32(p.ConcurrencyLimit) //nolint:gosec // ConcurrencyLimit is validated to be non-negative and small
 	return Pipeline{
-		Id:               &p.ID,
-		Name:             &p.Name,
-		Description:      &p.Description,
-		ScheduleCron:     p.ScheduleCron,
-		IsPaused:         &isPaused,
-		ConcurrencyLimit: &concLimit,
-		CreatedBy:        &p.CreatedBy,
-		FolderId:         optStr(p.FolderID),
-		CreatedAt:        formatTimePtr(&p.CreatedAt),
-		UpdatedAt:        formatTimePtr(&p.UpdatedAt),
+		Id:                       &p.ID,
+		Name:                     &p.Name,
+		Description:              &p.Description,
+		ScheduleCron:             p.ScheduleCron,
+		IsPaused:                 &isPaused,
+		ConcurrencyLimit:         &concLimit,
+		CreatedBy:                &p.CreatedBy,
+		RunAsPrincipal:           p.RunAsPrincipal,
+		AdmissionMode:            pipelineAdmissionModeToAPI(p.AdmissionMode),
+		MaxRunDurationSeconds:    safeInt64ToInt32Ptr(p.MaxRunDurationSeconds),
+		NotificationWebhooks:     pipelineNotificationHooksToAPI(p.NotificationWebhooks),
+		DefaultRetryCount:        safeIntPtrToInt32Ptr(p.DefaultRetryCount),
+		DefaultTimeoutSeconds:    safeInt64ToInt32Ptr(p.DefaultTimeoutSeconds),
+		DefaultComputeEndpointId: p.DefaultComputeEndpointID,
+		FolderId:                 optStr(p.FolderID),
+		CreatedAt:                formatTimePtr(&p.CreatedAt),
+		UpdatedAt:                formatTimePtr(&p.UpdatedAt),
 	}
 }
 
@@ -538,12 +666,13 @@ func pipelineRunToAPI(r domain.PipelineRun) PipelineRun {
 	status := PipelineRunStatus(r.Status)
 	triggerType := PipelineRunTriggerType(r.TriggerType)
 	resp := PipelineRun{
-		Id:          &r.ID,
-		PipelineId:  &r.PipelineID,
-		Status:      &status,
-		TriggerType: &triggerType,
-		TriggeredBy: &r.TriggeredBy,
-		CreatedAt:   formatTimePtr(&r.CreatedAt),
+		Id:                 &r.ID,
+		PipelineId:         &r.PipelineID,
+		Status:             &status,
+		TriggerType:        &triggerType,
+		TriggeredBy:        &r.TriggeredBy,
+		EffectivePrincipal: optStr(r.EffectivePrincipal),
+		CreatedAt:          formatTimePtr(&r.CreatedAt),
 	}
 	if len(r.Parameters) > 0 {
 		resp.Parameters = stringMapToAnyMap(r.Parameters)
@@ -554,8 +683,20 @@ func pipelineRunToAPI(r domain.PipelineRun) PipelineRun {
 	if r.StartedAt != nil {
 		resp.StartedAt = formatTimePtr(r.StartedAt)
 	}
+	if r.QueuedAt != nil {
+		resp.QueuedAt = formatTimePtr(r.QueuedAt)
+	}
+	if r.QueueStartedAt != nil {
+		resp.QueueStartedAt = formatTimePtr(r.QueueStartedAt)
+	}
 	if r.FinishedAt != nil {
 		resp.FinishedAt = formatTimePtr(r.FinishedAt)
+	}
+	if r.RepairedFromRunID != nil {
+		resp.RepairedFromRunId = r.RepairedFromRunID
+	}
+	if r.Provenance != nil {
+		resp.Provenance = pipelineRunProvenanceToAPI(r.Provenance)
 	}
 	if r.ErrorMessage != nil {
 		resp.ErrorMessage = r.ErrorMessage
@@ -584,5 +725,118 @@ func pipelineJobRunToAPI(jr domain.PipelineJobRun) PipelineJobRun {
 	if jr.ErrorMessage != nil {
 		resp.ErrorMessage = jr.ErrorMessage
 	}
+	if jr.EffectiveComputeEndpointID != nil {
+		resp.EffectiveComputeEndpointId = jr.EffectiveComputeEndpointID
+	}
+	if jr.AttemptCount > 0 {
+		value := safeIntToInt32(jr.AttemptCount)
+		resp.AttemptCount = &value
+	}
+	if jr.LastErrorCode != nil {
+		resp.LastErrorCode = jr.LastErrorCode
+	}
 	return resp
+}
+
+func pipelineRunEventToAPI(event domain.PipelineRunEvent) PipelineRunEvent {
+	resp := PipelineRunEvent{
+		Id:        &event.ID,
+		RunId:     &event.RunID,
+		EventType: &event.EventType,
+		CreatedAt: formatTimePtr(&event.CreatedAt),
+	}
+	if event.JobRunID != nil {
+		resp.JobRunId = event.JobRunID
+	}
+	if event.Message != nil {
+		resp.Message = event.Message
+	}
+	if event.ErrorCode != nil {
+		resp.ErrorCode = event.ErrorCode
+	}
+	if len(event.Metadata) > 0 {
+		resp.Metadata = &event.Metadata
+	}
+	return resp
+}
+
+func pipelineAdmissionModeToAPI(mode string) *PipelineAdmissionMode {
+	if mode == "" {
+		return nil
+	}
+	value := PipelineAdmissionMode(mode)
+	return &value
+}
+
+func pipelineNotificationHooksToAPI(hooks []domain.PipelineNotificationWebhook) *[]PipelineNotificationWebhook {
+	if len(hooks) == 0 {
+		return nil
+	}
+	items := make([]PipelineNotificationWebhook, len(hooks))
+	for i, hook := range hooks {
+		items[i] = PipelineNotificationWebhook{
+			Url: hook.URL,
+		}
+		if len(hook.Events) > 0 {
+			events := append([]string(nil), hook.Events...)
+			items[i].Events = &events
+		}
+	}
+	return &items
+}
+
+func notificationHooksToDomain(hooks []PipelineNotificationWebhook) []domain.PipelineNotificationWebhook {
+	items := make([]domain.PipelineNotificationWebhook, 0, len(hooks))
+	for _, hook := range hooks {
+		item := domain.PipelineNotificationWebhook{URL: hook.Url}
+		if hook.Events != nil {
+			item.Events = append([]string(nil), (*hook.Events)...)
+		}
+		items = append(items, item)
+	}
+	return items
+}
+
+func pipelineRunProvenanceToAPI(provenance *domain.PipelineRunProvenance) *PipelineRunProvenance {
+	if provenance == nil {
+		return nil
+	}
+	resp := &PipelineRunProvenance{
+		TriggerType:               optStr(provenance.TriggerType),
+		TriggeredBy:               optStr(provenance.TriggeredBy),
+		EffectivePrincipal:        optStr(provenance.EffectivePrincipal),
+		PipelineDefinitionVersion: optStr(provenance.PipelineDefinitionVersion),
+	}
+	if len(provenance.Notebooks) > 0 {
+		items := make([]PipelineNotebookProvenance, len(provenance.Notebooks))
+		for i, notebook := range provenance.Notebooks {
+			items[i] = PipelineNotebookProvenance{
+				NotebookId:    notebook.NotebookID,
+				GitRepoId:     notebook.GitRepoID,
+				GitCommitSha:  notebook.GitCommitSHA,
+				LastUpdatedAt: formatTimePtr(notebook.LastUpdatedAt),
+			}
+		}
+		resp.Notebooks = &items
+	}
+	if len(provenance.Models) > 0 {
+		items := make([]PipelineModelProvenance, len(provenance.Models))
+		for i, model := range provenance.Models {
+			items[i] = PipelineModelProvenance{
+				Selector:      model.Selector,
+				ModelId:       model.ModelID,
+				LastUpdatedAt: formatTimePtr(model.LastUpdatedAt),
+			}
+		}
+		resp.Models = &items
+	}
+	return resp
+}
+
+func safeIntPtrToInt32Ptr(value *int) *int32 {
+	if value == nil {
+		return nil
+	}
+	v := safeIntToInt32(*value)
+	return &v
 }
