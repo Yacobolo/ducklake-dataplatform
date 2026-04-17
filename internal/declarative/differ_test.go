@@ -1362,7 +1362,7 @@ func TestDiff_UpdateModelDeepFields(t *testing.T) {
 				SQL:             "SELECT 2",
 				Config: &ModelConfigSpec{
 					UniqueKey:           []string{"order_id"},
-					IncrementalStrategy: "delete+insert",
+					IncrementalStrategy: "delete_insert",
 					OnSchemaChange:      "fail",
 				},
 				Contract: &ContractSpec{

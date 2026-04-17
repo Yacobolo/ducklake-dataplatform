@@ -142,6 +142,9 @@ func New(ctx context.Context, deps Deps) (*App, error) {
 	catalogRegRepo := repository.NewCatalogRegistrationRepo(deps.WriteDB)
 	dataProductRepo := repository.NewDataProductRepo(deps.WriteDB)
 	workspaceRepo := repository.NewWorkspaceRepo(deps.WriteDB)
+	projectDependencyRepo := repository.NewProjectDependencyRepo(deps.WriteDB)
+	sourceDefinitionRepo := repository.NewSourceDefinitionRepo(deps.WriteDB)
+	seedRepo := repository.NewSeedRepo(deps.WriteDB)
 	queryJobRepo := repository.NewQueryJobRepo(deps.WriteDB)
 	authIdentityRepo := repository.NewAuthIdentityRepo(deps.WriteDB)
 	localCredentialRepo := repository.NewLocalCredentialRepo(deps.WriteDB)
@@ -393,7 +396,7 @@ func New(ctx context.Context, deps Deps) (*App, error) {
 	projectRepo := repository.NewProjectRepo(deps.WriteDB)
 	environmentRepo := repository.NewEnvironmentRepo(deps.WriteDB)
 	workspaceSvc := workspacesvc.NewService(workspaceRepo, folderRepo, projectRepo, environmentRepo, teamRepo, auditRepo)
-	projectSvc := projectsvc.NewService(workspaceRepo, projectRepo, environmentRepo, buildRepo, teamRepo, dataProductRepo, auditRepo)
+	projectSvc := projectsvc.NewService(workspaceRepo, projectRepo, environmentRepo, projectDependencyRepo, sourceDefinitionRepo, seedRepo, buildRepo, teamRepo, dataProductRepo, auditRepo)
 	orchEventRepo := repository.NewOrchestrationEventRepo(deps.WriteDB)
 	backfillRepo := repository.NewBackfillRepo(deps.WriteDB)
 	notebookProvider := pipeline.NewDBNotebookProvider(notebookRepo)
@@ -471,6 +474,9 @@ func New(ctx context.Context, deps Deps) (*App, error) {
 		Runs:          modelRunRepo,
 		Projects:      projectRepo,
 		Environments:  environmentRepo,
+		ProjectDeps:   projectDependencyRepo,
+		Sources:       sourceDefinitionRepo,
+		Seeds:         seedRepo,
 		Builds:        buildRepo,
 		Tests:         modelTestRepo,
 		TestResults:   modelTestResultRepo,

@@ -94,6 +94,9 @@ func Bootstrap(ctx context.Context, controlDB, duckDB *sql.DB, logger *slog.Logg
 	if _, err := ensureAsset(paths.assetsPath, "SOURCE.md"); err != nil {
 		return err
 	}
+	if _, err := ensureAsset(paths.assetsPath, "zone_priority_overrides.csv"); err != nil {
+		return err
+	}
 
 	extRepo := repository.NewExternalTableRepo(controlDB)
 	viewRepo := repository.NewViewRepo(controlDB)
@@ -152,6 +155,9 @@ func Bootstrap(ctx context.Context, controlDB, duckDB *sql.DB, logger *slog.Logg
 	dashboardService := dashboardsvc.NewService(dashboardRepo, widgetRepo, nil, sampleAuditRepo{}, nil, semanticSvc)
 	if err := ensureSampleDashboards(ctx, dashboardService); err != nil {
 		return fmt.Errorf("ensure sample dashboards: %w", err)
+	}
+	if err := ensureSampleAuthoringResources(ctx, controlDB, paths.assetsPath); err != nil {
+		return fmt.Errorf("ensure sample authoring resources: %w", err)
 	}
 
 	logger.Info("sample data ready", "catalog", domain.SampleDataCatalogName, "schema", nycTaxiSchemaName)

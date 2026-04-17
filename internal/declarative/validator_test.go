@@ -848,7 +848,7 @@ func TestValidate_ModelValid(t *testing.T) {
 				Tags:            []string{"finance"},
 				Config: &ModelConfigSpec{
 					UniqueKey:           []string{"order_id"},
-					IncrementalStrategy: "delete+insert",
+					IncrementalStrategy: "delete_insert",
 					OnSchemaChange:      "fail",
 				},
 			}},

@@ -123,27 +123,46 @@ func TestCompileModelSQL_ValidationErrors(t *testing.T) {
 	})
 
 	t.Run("unknown source", func(t *testing.T) {
-		ctx.sources = map[string]string{"raw.orders": `"raw"."orders"`}
+		ctx.sources = map[string]compileSourceDefinition{
+			sourceLookupKey("analytics", "raw", "orders"): {
+				relation:    `"raw"."orders"`,
+				relationRef: "raw.orders",
+				sourceName:  "raw",
+				tableName:   "orders",
+			},
+		}
 		_, err := compileModelSQL(`select * from {{ source('raw', 'missing') }}`, ctx)
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "unknown source")
 	})
 
-	t.Run("source fallback without registry", func(t *testing.T) {
+	t.Run("source fails without registry", func(t *testing.T) {
 		ctx.sources = nil
-		ctx.strictSources = false
-		compiled, err := compileModelSQL(`select * from {{ source('raw', 'missing') }}`, ctx)
-		require.NoError(t, err)
-		assert.Contains(t, compiled.sql, `"raw"."missing"`)
-	})
-
-	t.Run("source fails without registry in strict mode", func(t *testing.T) {
-		ctx.sources = nil
-		ctx.strictSources = true
 		_, err := compileModelSQL(`select * from {{ source('raw', 'missing') }}`, ctx)
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "unknown source")
 	})
+}
+
+func TestCompileModelSQL_CrossProjectRefRequiresDependency(t *testing.T) {
+	ctx := compileContext{
+		targetSchema: "analytics",
+		projectName:  "analytics",
+		modelName:    "fct_orders",
+		materialize:  domain.MaterializationTable,
+		models: map[string]domain.Model{
+			"shared.dim_dates": {ProjectName: "shared", Name: "dim_dates"},
+		},
+	}
+
+	_, err := compileModelSQL(`select * from {{ ref('shared', 'dim_dates') }}`, ctx)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), `requires project dependency`)
+
+	ctx.allowedRefs = map[string]struct{}{"analytics": {}, "shared": {}}
+	compiled, err := compileModelSQL(`select * from {{ ref('shared', 'dim_dates') }}`, ctx)
+	require.NoError(t, err)
+	assert.Contains(t, compiled.sql, `"analytics"."dim_dates"`)
 }
 
 func TestCompileModelSQL_CapturesMacros(t *testing.T) {

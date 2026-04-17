@@ -59,7 +59,7 @@ func (s *Service) executeTests(ctx context.Context, conn *sql.Conn,
 
 	anyFailed := false
 	for _, test := range tests {
-		testSQL, err := generateTestSQL(test, config.TargetSchema, model.Name)
+		testSQL, err := generateTestSQL(test, effectiveSchema(config.TargetSchema, model.Config.Schema), model.Name)
 		if err != nil {
 			// Record error result
 			s.recordTestResult(ctx, stepID, test, domain.TestResultError, nil, err.Error())

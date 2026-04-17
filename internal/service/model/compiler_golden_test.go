@@ -86,7 +86,13 @@ func TestBuildCompileManifest_Golden(t *testing.T) {
 		},
 	}
 
-	manifest, err := buildCompileManifest(selected, artifacts)
+	manifest, err := buildCompileManifest(selected, artifacts, &resolvedRunContext{
+		project:            &domain.Project{Name: "analytics"},
+		environment:        &domain.Environment{Name: "dev"},
+		targetCatalog:      "memory",
+		targetSchema:       "analytics",
+		dependencyProjects: []string{"shared_lib"},
+	})
 	require.NoError(t, err)
 
 	expected, err := os.ReadFile(filepath.Join("testdata", "compile_manifest.golden.json"))

@@ -59,11 +59,66 @@ type Model struct {
 	UpdatedAt       time.Time
 }
 
+// Seed represents a project-owned input resource that materializes as a SEED model at runtime.
+type Seed struct {
+	ID          string
+	ProjectName string
+	Name        string
+	Description string
+	InputRef    string
+	Format      string
+	Delimiter   string
+	HasHeader   bool
+	ColumnTypes map[string]string
+	Tags        []string
+	CreatedBy   string
+	CreatedAt   time.Time
+	UpdatedAt   time.Time
+}
+
+// QualifiedName returns "project.name" for a seed.
+func (s *Seed) QualifiedName() string {
+	return s.ProjectName + "." + s.Name
+}
+
+// CreateSeedRequest holds parameters for creating a seed resource.
+type CreateSeedRequest struct {
+	ProjectName string
+	Name        string
+	Description string
+	InputRef    string
+	Format      string
+	Delimiter   *string
+	HasHeader   *bool
+	ColumnTypes map[string]string
+	Tags        []string
+}
+
+// UpdateSeedRequest holds partial-update parameters for seeds.
+type UpdateSeedRequest struct {
+	Description *string
+	InputRef    *string
+	Format      *string
+	Delimiter   *string
+	HasHeader   *bool
+	ColumnTypes *map[string]string
+	Tags        []string
+}
+
 // ModelConfig holds materialization-specific configuration.
 type ModelConfig struct {
+	// Canonical materialization resolved for the model. This may be set from
+	// persisted config or inline config() blocks.
+	Materialized string `json:"materialized,omitempty"`
+	// Optional schema override for the model relation.
+	Schema string `json:"schema,omitempty"`
+	// Optional tags declared inline via config().
+	Tags []string `json:"tags,omitempty"`
+	// Enabled controls whether the model participates in selection/compilation.
+	Enabled *bool `json:"enabled,omitempty"`
 	// For INCREMENTAL: the unique key columns for MERGE.
 	UniqueKey []string `json:"unique_key,omitempty"`
-	// For INCREMENTAL: the strategy (merge, delete+insert).
+	// For INCREMENTAL: the strategy (merge, delete_insert).
 	IncrementalStrategy string `json:"incremental_strategy,omitempty"`
 	// For INCREMENTAL: schema-change policy (ignore, fail).
 	OnSchemaChange string `json:"on_schema_change,omitempty"`
@@ -134,9 +189,47 @@ func (r *UpdateModelRequest) Validate() error {
 	validMat := map[string]bool{
 		MaterializationView: true, MaterializationTable: true,
 		MaterializationIncremental: true, MaterializationEphemeral: true,
+		MaterializationSeed: true, MaterializationSnapshot: true,
 	}
 	if !validMat[*r.Materialization] {
-		return ErrValidation("materialization must be VIEW, TABLE, INCREMENTAL, or EPHEMERAL")
+		return ErrValidation("materialization must be VIEW, TABLE, INCREMENTAL, EPHEMERAL, SEED, or SNAPSHOT")
+	}
+	return nil
+}
+
+// Validate checks that the seed creation payload is well-formed.
+func (r *CreateSeedRequest) Validate() error {
+	if strings.TrimSpace(r.ProjectName) == "" {
+		return ErrValidation("project_name is required")
+	}
+	if strings.TrimSpace(r.Name) == "" {
+		return ErrValidation("name is required")
+	}
+	if utf8.RuneCountInString(r.Name) > MaxModelNameLength {
+		return ErrValidation("name must be <= %d characters", MaxModelNameLength)
+	}
+	if strings.TrimSpace(r.InputRef) == "" {
+		return ErrValidation("input_ref is required")
+	}
+	switch normalizeSeedFormat(r.Format) {
+	case "csv", "parquet", "json":
+	default:
+		return ErrValidation("format must be csv, parquet, or json")
+	}
+	return nil
+}
+
+// Validate checks that the seed update payload is well-formed.
+func (r *UpdateSeedRequest) Validate() error {
+	if r.InputRef != nil && strings.TrimSpace(*r.InputRef) == "" {
+		return ErrValidation("input_ref cannot be empty")
+	}
+	if r.Format != nil {
+		switch normalizeSeedFormat(*r.Format) {
+		case "csv", "parquet", "json":
+		default:
+			return ErrValidation("format must be csv, parquet, or json")
+		}
 	}
 	return nil
 }
@@ -268,6 +361,19 @@ func (r *TriggerModelRunRequest) Validate() error {
 		return ErrValidation("project_name is required")
 	}
 	return nil
+}
+
+// NormalizeSeedFormat canonicalizes supported seed file formats.
+func NormalizeSeedFormat(value string) string {
+	value = strings.ToLower(strings.TrimSpace(value))
+	if value == "" {
+		return "csv"
+	}
+	return value
+}
+
+func normalizeSeedFormat(value string) string {
+	return NormalizeSeedFormat(value)
 }
 
 // ModelTest defines a test assertion for a model's output.

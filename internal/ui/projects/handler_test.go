@@ -672,7 +672,7 @@ func setupProjectsHandler(t *testing.T) projectsHandlerFixture {
 	audit := testAuditRepo{}
 
 	workspaceSvc := workspacesvc.NewService(workspaceRepo, nil, projectRepo, environmentRepo, nil, audit)
-	projectSvc := projectsvc.NewService(workspaceRepo, projectRepo, environmentRepo, buildRepo, nil, nil, audit)
+	projectSvc := projectsvc.NewService(workspaceRepo, projectRepo, environmentRepo, nil, nil, nil, buildRepo, nil, nil, audit)
 	modelService := modelsvc.NewService(modelsvc.ServiceDeps{
 		Models:       modelRepo,
 		Projects:     projectRepo,

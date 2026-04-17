@@ -1526,11 +1526,7 @@ func formatStringSlice(s []string) string {
 }
 
 func normalizeIncrementalStrategy(strategy string) string {
-	value := strings.ToLower(strings.TrimSpace(strategy))
-	if value == "delete+insert" {
-		return "delete_insert"
-	}
-	return value
+	return strings.ToLower(strings.TrimSpace(strategy))
 }
 
 func normalizeOnSchemaChange(value string) string {

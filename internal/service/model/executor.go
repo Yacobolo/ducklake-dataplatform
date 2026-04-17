@@ -268,9 +268,10 @@ func (s *Service) materializeSeed(ctx context.Context, conn *sql.Conn,
 
 func (s *Service) injectVariables(ctx context.Context, conn *sql.Conn,
 	config ExecutionConfig, model *domain.Model, principal string) error {
+	targetSchema := effectiveSchema(config.TargetSchema, model.Config.Schema)
 	vars := map[string]string{
 		"target_catalog": config.TargetCatalog,
-		"target_schema":  config.TargetSchema,
+		"target_schema":  targetSchema,
 		"model_name":     model.Name,
 		"project_name":   model.ProjectName,
 	}
@@ -293,14 +294,14 @@ func (s *Service) injectVariables(ctx context.Context, conn *sql.Conn,
 
 func (s *Service) materializeView(ctx context.Context, conn *sql.Conn,
 	model *domain.Model, config ExecutionConfig, principal string) error {
-	relation := relationFQN(config.TargetCatalog, config.TargetSchema, model.Name)
+	relation := relationFQN(config.TargetCatalog, effectiveSchema(config.TargetSchema, model.Config.Schema), model.Name)
 	ddl := fmt.Sprintf("CREATE OR REPLACE VIEW %s AS (%s)", relation, model.SQL)
 	return s.execOnConn(ctx, conn, principal, ddl)
 }
 
 func (s *Service) materializeTable(ctx context.Context, conn *sql.Conn,
 	model *domain.Model, config ExecutionConfig, principal string) (int64, error) {
-	relation := relationFQN(config.TargetCatalog, config.TargetSchema, model.Name)
+	relation := relationFQN(config.TargetCatalog, effectiveSchema(config.TargetSchema, model.Config.Schema), model.Name)
 	ddl := fmt.Sprintf("CREATE OR REPLACE TABLE %s AS (%s)", relation, model.SQL)
 	// Execute and count rows via a separate count query
 	if err := s.execOnConn(ctx, conn, principal, ddl); err != nil {
@@ -377,10 +378,11 @@ func (s *Service) materializeIncremental(ctx context.Context, conn *sql.Conn,
 		return s.materializeTable(ctx, conn, model, config, principal)
 	}
 
-	targetFQN := relationFQN(config.TargetCatalog, config.TargetSchema, model.Name)
+	targetSchema := effectiveSchema(config.TargetSchema, model.Config.Schema)
+	targetFQN := relationFQN(config.TargetCatalog, targetSchema, model.Name)
 
 	// Check if target table exists
-	exists, err := s.tableExists(ctx, conn, config.TargetCatalog, config.TargetSchema, model.Name, principal)
+	exists, err := s.tableExists(ctx, conn, config.TargetCatalog, targetSchema, model.Name, principal)
 	if err != nil {
 		return 0, fmt.Errorf("check table existence: %w", err)
 	}
@@ -418,7 +420,7 @@ func (s *Service) materializeIncremental(ctx context.Context, conn *sql.Conn,
 		if err := s.execOnConn(ctx, conn, principal, mergeSQL); err != nil {
 			return 0, err
 		}
-	case "delete_insert", "delete+insert":
+	case "delete_insert":
 		deleteSQL := fmt.Sprintf(
 			"DELETE FROM %s AS target USING (%s) AS source WHERE %s",
 			targetFQN, model.SQL, onClause,
@@ -440,8 +442,9 @@ func (s *Service) materializeIncremental(ctx context.Context, conn *sql.Conn,
 
 func (s *Service) materializeSnapshot(ctx context.Context, conn *sql.Conn,
 	model *domain.Model, config ExecutionConfig, principal string) (int64, error) {
-	targetFQN := relationFQN(config.TargetCatalog, config.TargetSchema, model.Name)
-	exists, err := s.tableExists(ctx, conn, config.TargetCatalog, config.TargetSchema, model.Name, principal)
+	targetSchema := effectiveSchema(config.TargetSchema, model.Config.Schema)
+	targetFQN := relationFQN(config.TargetCatalog, targetSchema, model.Name)
+	exists, err := s.tableExists(ctx, conn, config.TargetCatalog, targetSchema, model.Name, principal)
 	if err != nil {
 		return 0, fmt.Errorf("check snapshot table existence: %w", err)
 	}
@@ -551,9 +554,6 @@ func resolveIncrementalStrategy(strategy string) string {
 	if norm == "" {
 		return "merge"
 	}
-	if norm == "delete+insert" {
-		return "delete_insert"
-	}
 	return norm
 }
 
@@ -607,7 +607,7 @@ func (s *Service) targetTableColumns(
 ) ([]string, error) {
 	query := fmt.Sprintf(
 		"SELECT column_name FROM information_schema.columns WHERE table_schema = '%s' AND table_name = '%s' ORDER BY ordinal_position",
-		strings.ReplaceAll(config.TargetSchema, "'", "''"),
+		strings.ReplaceAll(effectiveSchema(config.TargetSchema, model.Config.Schema), "'", "''"),
 		strings.ReplaceAll(model.Name, "'", "''"),
 	)
 	rows, err := s.engine.QueryOnConn(ctx, conn, principal, query)

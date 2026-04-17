@@ -2270,7 +2270,6 @@ var validIncrementalStrategies = map[string]bool{
 	"":              true,
 	"merge":         true,
 	"delete_insert": true,
-	"delete+insert": true,
 }
 
 // Valid on_schema_change values for model config.
@@ -2327,7 +2326,7 @@ func validateModels(models []ModelResource, macroNames map[string]bool, errs *[]
 		if m.Spec.Config != nil {
 			strategy := strings.ToLower(strings.TrimSpace(m.Spec.Config.IncrementalStrategy))
 			if !validIncrementalStrategies[strategy] {
-				addErr(errs, path, "config.incremental_strategy must be one of [merge, delete_insert, delete+insert], got %q", m.Spec.Config.IncrementalStrategy)
+				addErr(errs, path, "config.incremental_strategy must be one of [merge, delete_insert], got %q", m.Spec.Config.IncrementalStrategy)
 			}
 
 			onSchemaChange := strings.ToLower(strings.TrimSpace(m.Spec.Config.OnSchemaChange))

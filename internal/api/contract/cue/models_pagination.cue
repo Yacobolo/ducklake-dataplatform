@@ -114,6 +114,15 @@ schemas_pagination: {
   PaginatedProjects: #paginatedItemsSchema & {
     #item_ref: "Project"
   },
+  PaginatedProjectDependencies: #paginatedItemsSchema & {
+    #item_ref: "ProjectDependency"
+  },
+  PaginatedProjectSeeds: #paginatedItemsSchema & {
+    #item_ref: "ProjectSeed"
+  },
+  PaginatedProjectSources: #paginatedItemsSchema & {
+    #item_ref: "SourceDefinition"
+  },
   PaginatedQueryHistoryEntries: #paginatedItemsSchema & {
     #item_ref: "QueryHistoryEntry"
   },

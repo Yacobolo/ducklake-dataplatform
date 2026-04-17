@@ -299,11 +299,49 @@ schemas_security_workspace: {
       "kind"
     ]
   },
+  ProjectDependency: #objectSchema & {
+    #fields: {
+      id: #idProperty,
+      project_id: #stringProperty,
+      project_name: #stringProperty,
+      dependency_project: #stringProperty,
+      dependency_kind: #stringProperty,
+      position: #int32Property,
+      created_at: #createdAtProperty,
+      updated_at: #updatedAtProperty
+    },
+    #required: [
+      "project_id",
+      "dependency_project"
+    ]
+  },
   ProjectKind: #enumSchema & {
     #values: [
       "personal",
       "shared",
       "library"
+    ]
+  },
+  ProjectSeed: #objectSchema & {
+    #fields: {
+      id: #idProperty,
+      project_name: #stringProperty,
+      name: #nameProperty,
+      description: #descriptionProperty,
+      input_ref: #stringProperty,
+      format: #refProperty & {#ref: "SeedFormat"},
+      delimiter: #stringProperty,
+      has_header: #boolProperty,
+      column_types: #stringMapProperty,
+      tags: #stringArrayProperty,
+      created_by: #stringProperty,
+      created_at: #createdAtProperty,
+      updated_at: #updatedAtProperty
+    },
+    #required: [
+      "project_name",
+      "name",
+      "input_ref"
     ]
   },
   RecentResource: #objectSchema & {
@@ -320,6 +358,13 @@ schemas_security_workspace: {
       "resource_type",
       "resource_key",
       "display_name"
+    ]
+  },
+  SeedFormat: #enumSchema & {
+    #values: [
+      "csv",
+      "parquet",
+      "json"
     ]
   },
   RowFilter: #objectSchema & {
@@ -372,6 +417,33 @@ schemas_security_workspace: {
       "resource_key",
       "display_name"
     ]
+  },
+  SourceDefinition: #objectSchema & {
+    #fields: {
+      id: #idProperty,
+      project_name: #stringProperty,
+      source_name: #stringProperty,
+      table_name: #stringProperty,
+      relation_ref: #stringProperty,
+      description: #descriptionProperty,
+      freshness_policy: #refProperty & {#ref: "SourceFreshnessPolicy"},
+      created_by: #stringProperty,
+      created_at: #createdAtProperty,
+      updated_at: #updatedAtProperty
+    },
+    #required: [
+      "id",
+      "project_name",
+      "source_name",
+      "table_name",
+      "relation_ref"
+    ]
+  },
+  SourceFreshnessPolicy: #objectSchema & {
+    #fields: {
+      timestamp_column: #stringProperty,
+      max_lag_seconds: #int64Property
+    }
   },
   SearchResult: #objectSchema & {
     #fields: {

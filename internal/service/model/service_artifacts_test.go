@@ -28,9 +28,15 @@ func TestBuildCompileManifest_DeterministicOrdering(t *testing.T) {
 		},
 	}
 
-	one, err := buildCompileManifest(selected, artifacts)
+	runCtx := &resolvedRunContext{
+		project:       &domain.Project{Name: "analytics"},
+		environment:   &domain.Environment{Name: "dev"},
+		targetCatalog: "memory",
+		targetSchema:  "analytics",
+	}
+	one, err := buildCompileManifest(selected, artifacts, runCtx)
 	require.NoError(t, err)
-	two, err := buildCompileManifest(selected, artifacts)
+	two, err := buildCompileManifest(selected, artifacts, runCtx)
 	require.NoError(t, err)
 
 	assert.Equal(t, one, two)
