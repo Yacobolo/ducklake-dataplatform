@@ -16,7 +16,6 @@ type compileContext struct {
 	targetSchema  string
 	vars          map[string]string
 	fullRefresh   bool
-	strictSources bool
 	projectName   string
 	modelName     string
 	materialize   string
@@ -183,11 +182,7 @@ func renderTemplate(sqlText string, ctx compileContext) (string, []string, []str
 				sourcesSet[key] = struct{}{}
 				return sourceDef.relation, nil
 			}
-			if ctx.strictSources || len(ctx.sources) > 0 {
-				return "", domain.ErrValidation("unknown source(%q,%q)", sourceName, tableName)
-			}
-			sourcesSet[key] = struct{}{}
-			return renderRelationParts(sourceName, tableName), nil
+			return "", domain.ErrValidation("unknown source(%q,%q)", sourceName, tableName)
 		case "var":
 			if len(args) != 1 && len(args) != 2 {
 				return "", domain.ErrValidation("var() expects one required argument and optional default")

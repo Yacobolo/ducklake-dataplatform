@@ -727,7 +727,6 @@ func (s *Service) compileSelectedModels(
 			targetSchema:  effectiveSchema(req.TargetSchema, m.Config.Schema),
 			vars:          req.Variables,
 			fullRefresh:   req.FullRefresh,
-			strictSources: true,
 			projectName:   m.ProjectName,
 			modelName:     m.Name,
 			materialize:   m.Materialization,
@@ -978,14 +977,10 @@ func (s *Service) loadSourceRegistry(ctx context.Context, runCtx *resolvedRunCon
 	}
 
 	projects := append([]string{runCtx.project.Name}, runCtx.dependencyProjects...)
-	currentProjectAuthoredSources := 0
 	for _, projectName := range projects {
 		sources, err := s.sources.ListByProject(ctx, projectName)
 		if err != nil {
 			return nil, nil, fmt.Errorf("list sources for project %s: %w", projectName, err)
-		}
-		if projectName == runCtx.project.Name {
-			currentProjectAuthoredSources += len(sources)
 		}
 		for _, source := range sources {
 			relationRef := strings.TrimSpace(source.RelationRef)
@@ -1010,64 +1005,7 @@ func (s *Service) loadSourceRegistry(ctx context.Context, runCtx *resolvedRunCon
 		}
 	}
 
-	if currentProjectAuthoredSources == 0 {
-		legacyRegistry, legacyWarnings, err := s.loadLegacyLiveSourceRegistry(ctx, runCtx.project.Name)
-		if err != nil {
-			return nil, nil, fmt.Errorf("load legacy live source registry: %w", err)
-		}
-		for key, source := range legacyRegistry {
-			if _, exists := registry[key]; !exists {
-				registry[key] = source
-			}
-		}
-		warnings = append(warnings, legacyWarnings...)
-	}
-
 	return registry, dedupeSorted(warnings), nil
-}
-
-func (s *Service) loadLegacyLiveSourceRegistry(ctx context.Context, projectName string) (map[string]compileSourceDefinition, []string, error) {
-	registry := make(map[string]compileSourceDefinition)
-	warnings := make([]string, 0)
-	if s.duckDB == nil {
-		return registry, warnings, nil
-	}
-
-	rows, err := s.duckDB.QueryContext(ctx, `
-		SELECT table_schema, table_name
-		FROM information_schema.tables
-		WHERE table_schema NOT IN ('information_schema', 'pg_catalog')
-		ORDER BY table_schema, table_name`)
-	if err != nil {
-		return nil, nil, err
-	}
-	defer func() { _ = rows.Close() }()
-
-	count := 0
-	for rows.Next() {
-		var schemaName string
-		var tableName string
-		if err := rows.Scan(&schemaName, &tableName); err != nil {
-			return nil, nil, err
-		}
-		key := sourceLookupKey(projectName, schemaName, tableName)
-		registry[key] = compileSourceDefinition{
-			key:         key,
-			projectName: projectName,
-			sourceName:  schemaName,
-			tableName:   tableName,
-			relation:    renderRelationParts(schemaName, tableName),
-			relationRef: schemaName + "." + tableName,
-		}
-		count++
-	}
-	if err := rows.Err(); err != nil {
-		return nil, nil, err
-	}
-	if count > 0 {
-		warnings = append(warnings, fmt.Sprintf("project %s is using legacy live source resolution; define project sources for deterministic compilation", projectName))
-	}
-	return registry, warnings, nil
 }
 
 func (s *Service) syncCompiledArtifacts(selected []domain.Model, artifacts map[string]compileResult, req domain.TriggerModelRunRequest) error {

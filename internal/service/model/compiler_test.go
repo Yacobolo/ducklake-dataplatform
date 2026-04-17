@@ -136,17 +136,8 @@ func TestCompileModelSQL_ValidationErrors(t *testing.T) {
 		assert.Contains(t, err.Error(), "unknown source")
 	})
 
-	t.Run("source fallback without registry", func(t *testing.T) {
+	t.Run("source fails without registry", func(t *testing.T) {
 		ctx.sources = nil
-		ctx.strictSources = false
-		compiled, err := compileModelSQL(`select * from {{ source('raw', 'missing') }}`, ctx)
-		require.NoError(t, err)
-		assert.Contains(t, compiled.sql, `"raw"."missing"`)
-	})
-
-	t.Run("source fails without registry in strict mode", func(t *testing.T) {
-		ctx.sources = nil
-		ctx.strictSources = true
 		_, err := compileModelSQL(`select * from {{ source('raw', 'missing') }}`, ctx)
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "unknown source")

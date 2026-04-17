@@ -3,6 +3,7 @@
 package integration
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"strings"
@@ -11,11 +12,28 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/Yacobolo/quackstack/internal/db/repository"
+	"github.com/Yacobolo/quackstack/internal/domain"
 )
 
 // ---------------------------------------------------------------------------
 // Model CRUD
 // ---------------------------------------------------------------------------
+
+func registerProjectSource(t *testing.T, env *httpTestEnv, projectName, sourceName, tableName, relationRef string) {
+	t.Helper()
+
+	sourceRepo := repository.NewSourceDefinitionRepo(env.MetaDB)
+	_, err := sourceRepo.Create(context.Background(), &domain.SourceDefinition{
+		ProjectName: projectName,
+		SourceName:  sourceName,
+		TableName:   tableName,
+		RelationRef: relationRef,
+		CreatedBy:   "admin",
+	})
+	require.NoError(t, err)
+}
 
 // TestHTTP_ModelCRUD exercises the full model lifecycle via the HTTP API:
 // create → get → list → update → delete, with error cases interspersed.
@@ -909,6 +927,7 @@ func TestHTTP_ModelRun_IncrementalBackfillSemantics(t *testing.T) {
 			(1, TIMESTAMP '2024-01-01 00:00:00'),
 			(2, TIMESTAMP '2024-01-02 00:00:00')`)
 	require.NoError(t, err)
+	registerProjectSource(t, env, "analytics", "raw", "orders", "raw.orders")
 
 	createModel := func(name, materialization, sqlBody string, config map[string]interface{}) {
 		payload := map[string]interface{}{
@@ -1035,6 +1054,7 @@ func TestHTTP_ModelRun_IncrementalIdempotency(t *testing.T) {
 					(1, 100, TIMESTAMP '2024-01-01 00:00:00'),
 					(2, 250, TIMESTAMP '2024-01-02 00:00:00')`)
 			require.NoError(t, err)
+			registerProjectSource(t, env, "analytics", "raw", "orders", "raw.orders")
 
 			createModel := func(name, materialization, sqlBody string, config map[string]interface{}) {
 				payload := map[string]interface{}{
@@ -1261,6 +1281,7 @@ func TestHTTP_ModelRun_RepresentativeDAG(t *testing.T) {
 	require.NoError(t, err)
 	_, err = env.DuckDB.ExecContext(ctx, `INSERT INTO raw.orders VALUES (1, 100, CURRENT_TIMESTAMP), (2, 250, CURRENT_TIMESTAMP)`)
 	require.NoError(t, err)
+	registerProjectSource(t, env, "analytics", "raw", "orders", "raw.orders")
 
 	createModel := func(name, materialization, sqlBody string, config map[string]interface{}) {
 		payload := map[string]interface{}{

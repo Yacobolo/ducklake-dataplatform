@@ -1163,7 +1163,7 @@ spec:
     enforce: false
   config:
     unique_key: [order_id]
-    incremental_strategy: delete+insert
+    incremental_strategy: delete_insert
     on_schema_change: fail
   tests:
     - name: not_null_order_id

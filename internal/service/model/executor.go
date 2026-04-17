@@ -420,7 +420,7 @@ func (s *Service) materializeIncremental(ctx context.Context, conn *sql.Conn,
 		if err := s.execOnConn(ctx, conn, principal, mergeSQL); err != nil {
 			return 0, err
 		}
-	case "delete_insert", "delete+insert":
+	case "delete_insert":
 		deleteSQL := fmt.Sprintf(
 			"DELETE FROM %s AS target USING (%s) AS source WHERE %s",
 			targetFQN, model.SQL, onClause,
@@ -553,9 +553,6 @@ func resolveIncrementalStrategy(strategy string) string {
 	norm := strings.ToLower(strings.TrimSpace(strategy))
 	if norm == "" {
 		return "merge"
-	}
-	if norm == "delete+insert" {
-		return "delete_insert"
 	}
 	return norm
 }

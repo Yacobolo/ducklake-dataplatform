@@ -118,7 +118,7 @@ type ModelConfig struct {
 	Enabled *bool `json:"enabled,omitempty"`
 	// For INCREMENTAL: the unique key columns for MERGE.
 	UniqueKey []string `json:"unique_key,omitempty"`
-	// For INCREMENTAL: the strategy (merge, delete+insert).
+	// For INCREMENTAL: the strategy (merge, delete_insert).
 	IncrementalStrategy string `json:"incremental_strategy,omitempty"`
 	// For INCREMENTAL: schema-change policy (ignore, fail).
 	OnSchemaChange string `json:"on_schema_change,omitempty"`

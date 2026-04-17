@@ -151,7 +151,6 @@ func TestResolveIncrementalStrategy(t *testing.T) {
 	}{
 		{name: "default merge", in: "", want: "merge"},
 		{name: "normalized merge", in: " MERGE ", want: "merge"},
-		{name: "delete insert alias", in: "delete+insert", want: "delete_insert"},
 		{name: "delete insert canonical", in: "delete_insert", want: "delete_insert"},
 	}
 
