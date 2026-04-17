@@ -491,6 +491,10 @@ func (r *AssetRunRepo) ListRuns(ctx context.Context, filter domain.AssetRunFilte
 		w += " AND asset_id = ?"
 		args = append(args, *filter.AssetID)
 	}
+	if filter.RunGroupID != nil {
+		w += " AND run_group_id = ?"
+		args = append(args, *filter.RunGroupID)
+	}
 	if filter.Status != nil {
 		w += " AND status = ?"
 		args = append(args, *filter.Status)

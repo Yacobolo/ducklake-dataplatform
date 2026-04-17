@@ -99,7 +99,8 @@ type AssetCheckResult struct {
 }
 
 type AssetRunFilter struct {
-	AssetID *string
-	Status  *string
-	Page    PageRequest
+	AssetID    *string
+	RunGroupID *string
+	Status     *string
+	Page       PageRequest
 }

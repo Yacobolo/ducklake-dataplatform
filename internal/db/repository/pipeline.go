@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log/slog"
+	"strings"
 	"time"
 
 	"github.com/Yacobolo/quackstack/internal/db/dbstore"
@@ -28,15 +29,30 @@ func NewPipelineRepo(db *sql.DB) *PipelineRepo {
 
 // CreatePipeline inserts a new pipeline.
 func (r *PipelineRepo) CreatePipeline(ctx context.Context, p *domain.Pipeline) (*domain.Pipeline, error) {
+	webhooksJSON, err := json.Marshal(p.NotificationWebhooks)
+	if err != nil {
+		return nil, fmt.Errorf("marshal notification_webhooks: %w", err)
+	}
+	admissionMode := p.AdmissionMode
+	if admissionMode == "" {
+		admissionMode = domain.PipelineAdmissionModeReject
+	}
 	row, err := r.q.CreatePipeline(ctx, dbstore.CreatePipelineParams{
-		ID:               newID(),
-		Name:             p.Name,
-		Description:      p.Description,
-		ScheduleCron:     nullStringPtr(p.ScheduleCron),
-		IsPaused:         boolToInt(p.IsPaused),
-		ConcurrencyLimit: int64(p.ConcurrencyLimit),
-		CreatedBy:        p.CreatedBy,
-		FolderID:         nullStringPtr(stringPtr(p.FolderID)),
+		ID:                       defaultString(p.ID, newID()),
+		Name:                     p.Name,
+		Description:              p.Description,
+		ScheduleCron:             nullStringPtr(p.ScheduleCron),
+		IsPaused:                 boolToInt(p.IsPaused),
+		ConcurrencyLimit:         int64(p.ConcurrencyLimit),
+		RunAsPrincipal:           nullStringPtr(p.RunAsPrincipal),
+		AdmissionMode:            admissionMode,
+		MaxRunDurationSeconds:    nullInt64Ptr(p.MaxRunDurationSeconds),
+		NotificationWebhooks:     string(webhooksJSON),
+		DefaultRetryCount:        nullIntPtr(p.DefaultRetryCount),
+		DefaultTimeoutSeconds:    nullInt64Ptr(p.DefaultTimeoutSeconds),
+		DefaultComputeEndpointID: nullStringPtr(p.DefaultComputeEndpointID),
+		CreatedBy:                p.CreatedBy,
+		FolderID:                 nullStringPtr(stringPtr(p.FolderID)),
 	})
 	if err != nil {
 		return nil, mapDBError(err)
@@ -123,18 +139,62 @@ func (r *PipelineRepo) UpdatePipeline(ctx context.Context, id string, req domain
 	if req.ConcurrencyLimit != nil {
 		concLimit = *req.ConcurrencyLimit
 	}
+	runAsPrincipal := current.RunAsPrincipal
+	if req.RunAsPrincipal != nil {
+		runAsPrincipal = req.RunAsPrincipal
+	}
+	admissionMode := current.AdmissionMode
+	if req.AdmissionMode != nil {
+		admissionMode = *req.AdmissionMode
+	}
+	maxRunDurationSeconds := current.MaxRunDurationSeconds
+	if req.MaxRunDurationSeconds != nil {
+		maxRunDurationSeconds = req.MaxRunDurationSeconds
+	}
+	notificationWebhooks := current.NotificationWebhooks
+	if req.NotificationWebhooks != nil {
+		notificationWebhooks = *req.NotificationWebhooks
+	}
+	notificationWebhooksJSON, err := json.Marshal(notificationWebhooks)
+	if err != nil {
+		return nil, fmt.Errorf("marshal notification_webhooks: %w", err)
+	}
+	defaultRetryCount := current.DefaultRetryCount
+	if req.DefaultRetryCount != nil {
+		defaultRetryCount = req.DefaultRetryCount
+	}
+	defaultTimeoutSeconds := current.DefaultTimeoutSeconds
+	if req.DefaultTimeoutSeconds != nil {
+		defaultTimeoutSeconds = req.DefaultTimeoutSeconds
+	}
+	defaultComputeEndpointID := current.DefaultComputeEndpointID
+	if req.DefaultComputeEndpointID != nil {
+		defaultComputeEndpointID = req.DefaultComputeEndpointID
+	}
 	sched := nullStringPtr(current.ScheduleCron)
 	if req.ScheduleCron != nil {
 		sched = sql.NullString{String: *req.ScheduleCron, Valid: *req.ScheduleCron != ""}
 	}
 
+	folderID := current.FolderID
+	if req.FolderID != nil {
+		folderID = *req.FolderID
+	}
+
 	err = r.q.UpdatePipeline(ctx, dbstore.UpdatePipelineParams{
-		Description:      desc,
-		ScheduleCron:     sched,
-		IsPaused:         boolToInt(paused),
-		ConcurrencyLimit: int64(concLimit),
-		FolderID:         nullStringPtr(req.FolderID),
-		ID:               id,
+		Description:              desc,
+		ScheduleCron:             sched,
+		IsPaused:                 boolToInt(paused),
+		ConcurrencyLimit:         int64(concLimit),
+		RunAsPrincipal:           nullStringPtr(runAsPrincipal),
+		AdmissionMode:            admissionMode,
+		MaxRunDurationSeconds:    nullInt64Ptr(maxRunDurationSeconds),
+		NotificationWebhooks:     string(notificationWebhooksJSON),
+		DefaultRetryCount:        nullIntPtr(defaultRetryCount),
+		DefaultTimeoutSeconds:    nullInt64Ptr(defaultTimeoutSeconds),
+		DefaultComputeEndpointID: nullStringPtr(defaultComputeEndpointID),
+		FolderID:                 nullStringPtr(stringPtr(folderID)),
+		ID:                       id,
 	})
 	if err != nil {
 		return nil, mapDBError(err)
@@ -319,16 +379,23 @@ func pipelineFromDB(row dbstore.Pipeline) *domain.Pipeline {
 	}
 
 	return &domain.Pipeline{
-		ID:               row.ID,
-		Name:             row.Name,
-		Description:      row.Description,
-		ScheduleCron:     sched,
-		IsPaused:         row.IsPaused != 0,
-		ConcurrencyLimit: int(row.ConcurrencyLimit),
-		CreatedBy:        row.CreatedBy,
-		FolderID:         row.FolderID.String,
-		CreatedAt:        createdAt,
-		UpdatedAt:        updatedAt,
+		ID:                       row.ID,
+		Name:                     row.Name,
+		Description:              row.Description,
+		ScheduleCron:             sched,
+		IsPaused:                 row.IsPaused != 0,
+		ConcurrencyLimit:         int(row.ConcurrencyLimit),
+		RunAsPrincipal:           ptrFromNullString(row.RunAsPrincipal),
+		AdmissionMode:            defaultString(row.AdmissionMode, domain.PipelineAdmissionModeReject),
+		MaxRunDurationSeconds:    int64PtrFromNull(row.MaxRunDurationSeconds),
+		NotificationWebhooks:     pipelineWebhooksFromJSON(row.NotificationWebhooks),
+		DefaultRetryCount:        intPtrFromNull(row.DefaultRetryCount),
+		DefaultTimeoutSeconds:    int64PtrFromNull(row.DefaultTimeoutSeconds),
+		DefaultComputeEndpointID: ptrFromNullString(row.DefaultComputeEndpointID),
+		CreatedBy:                row.CreatedBy,
+		FolderID:                 row.FolderID.String,
+		CreatedAt:                createdAt,
+		UpdatedAt:                updatedAt,
 	}
 }
 
@@ -375,4 +442,34 @@ func nullStringPtr(s *string) sql.NullString {
 		return sql.NullString{}
 	}
 	return sql.NullString{String: *s, Valid: true}
+}
+
+func nullIntPtr(v *int) sql.NullInt64 {
+	if v == nil {
+		return sql.NullInt64{}
+	}
+	return sql.NullInt64{Int64: int64(*v), Valid: true}
+}
+
+func intPtrFromNull(v sql.NullInt64) *int {
+	if !v.Valid {
+		return nil
+	}
+	value := int(v.Int64)
+	return &value
+}
+
+func pipelineWebhooksFromJSON(raw string) []domain.PipelineNotificationWebhook {
+	if strings.TrimSpace(raw) == "" {
+		return []domain.PipelineNotificationWebhook{}
+	}
+	var hooks []domain.PipelineNotificationWebhook
+	if err := json.Unmarshal([]byte(raw), &hooks); err != nil {
+		slog.Default().Warn("failed to parse pipeline notification_webhooks", "value", raw, "error", err)
+		return []domain.PipelineNotificationWebhook{}
+	}
+	if hooks == nil {
+		return []domain.PipelineNotificationWebhook{}
+	}
+	return hooks
 }

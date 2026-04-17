@@ -105,4 +105,5 @@ That is the real value of asset orchestration. It turns a vague complaint like â
 ## Related Reference
 
 - [Assets API](/reference/generated/api/endpoints/assets)
+- [Pipelines API](/reference/generated/api/endpoints/pipelines)
 - [Declarative Reference](/reference/generated/declarative/)

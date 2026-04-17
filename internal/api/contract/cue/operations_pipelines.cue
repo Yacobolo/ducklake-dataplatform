@@ -138,6 +138,7 @@ package api
 		op:           "getPipelineJob"
 		path:         "/pipelines/{pipeline_name}/jobs/{job_id}"
 		summary:      "Get pipeline job"
+		cli:          "pipelines jobs get"
 		returns:      "PipelineJob"
 		error_family: "resource"
 		params:       #pipelineJobPathParameters
@@ -148,6 +149,7 @@ package api
 		op:           "updatePipelineJob"
 		path:         "/pipelines/{pipeline_name}/jobs/{job_id}"
 		summary:      "Update pipeline job"
+		cli:          "pipelines jobs update"
 		returns:      "PipelineJob"
 		error_family: "mutating"
 		params:       #pipelineJobPathParameters
@@ -199,6 +201,31 @@ package api
 		returns:      "PipelineRun"
 		error_family: "resource"
 		params:       #pipelineRunPathParameters
+	},
+	#wrappedPipelineOperation & {
+		kind:         "response"
+		method:       "get"
+		op:           "listPipelineRunEvents"
+		path:         "/pipelines/runs/{run_id}/events"
+		summary:      "List pipeline run events"
+		cli:          "pipelines runs list-events"
+		returns:      "PipelineRunEventList"
+		error_family: "resource"
+		params:       #pipelineRunPathParameters
+	},
+	#wrappedPipelineOperation & {
+		kind:         "response"
+		method:       "post"
+		op:           "repairPipelineRun"
+		path:         "/pipelines/runs/{run_id}/repairs"
+		summary:      "Repair pipeline run"
+		cli:          "pipelines runs repair"
+		success_status: 201
+		returns:      "PipelineRun"
+		error_family: "mutating"
+		params:       #pipelineRunPathParameters
+		body_ref:     "RepairPipelineRunRequest"
+		body_description: "Request payload"
 	},
 	#wrappedPipelineOperation & {
 		kind:         "response"

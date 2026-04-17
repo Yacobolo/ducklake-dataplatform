@@ -97,11 +97,12 @@ type Services struct {
 // App holds the fully-wired application: engine, services, and the
 // repositories needed for router setup (APIKeyRepo for auth middleware).
 type App struct {
-	Services      Services
-	Engine        *engine.SecureEngine
-	APIKeyRepo    *repository.APIKeyRepo
-	PrincipalRepo *repository.PrincipalRepo
-	Reconciler    *orchestration.Reconciler
+	Services          Services
+	Engine            *engine.SecureEngine
+	APIKeyRepo        *repository.APIKeyRepo
+	PrincipalRepo     *repository.PrincipalRepo
+	Reconciler        *orchestration.Reconciler
+	PipelineScheduler *pipeline.Scheduler
 }
 
 // New wires all repositories, services, and engine from the provided deps.
@@ -408,6 +409,14 @@ func New(ctx context.Context, deps Deps) (*App, error) {
 		deps.Logger.With("component", "pipeline"),
 	)
 	pipelineSvc.SetFolderRepository(folderRepo)
+	pipelineSvc.SetAuthorization(authSvc)
+	pipelineSvc.SetGrantRepository(grantRepo)
+	pipelineSvc.SetPrincipalRepository(principalRepo)
+	pipelineSvc.SetComputeEndpointRepository(computeEndpointRepo)
+	pipelineSvc.SetNotebookRepository(notebookRepo)
+	pipelineSvc.SetGitRepoRepository(gitRepoRepo)
+	pipelineScheduler := pipeline.NewScheduler(pipelineSvc, pipelineRepo, deps.Logger.With("component", "pipeline-scheduler"))
+	pipelineSvc.SetScheduleReloader(pipelineScheduler)
 	notebookSvc.SetProjectRepositories(projectRepo, environmentRepo)
 	folderSvc.SetProjectRepositories(projectRepo, environmentRepo)
 	notebookSvc.SetContextInvalidator(notebook.NewOrchestrationEventEnqueuer(orchEventRepo))
@@ -434,6 +443,11 @@ func New(ctx context.Context, deps Deps) (*App, error) {
 	if err != nil {
 		return nil, fmt.Errorf("ensure runtime model product: %w", err)
 	}
+	pipelineProduct, err := productSvc.EnsureManagedRuntimeProduct(ctx, productsvc.ManagedRuntimeProductPipelines)
+	if err != nil {
+		return nil, fmt.Errorf("ensure runtime pipeline product: %w", err)
+	}
+	pipelineSvc.SetAssetOrchestration(assetRepo, assetDepRepo, assetRunRepo, pipelineProduct.Product.ID)
 	if err := pipeline.SyncNotebooksToAssets(ctx, notebookRepo, assetRepo, assetDepRepo, notebookProduct.Product.ID); err != nil {
 		return nil, fmt.Errorf("sync notebooks to assets: %w", err)
 	}
@@ -470,8 +484,16 @@ func New(ctx context.Context, deps Deps) (*App, error) {
 		DuckDB:        deps.DuckDB,
 		Logger:        deps.Logger.With("component", "model"),
 	})
+	pipelineSvc.SetModelRunner(modelSvc)
+	pipelineSvc.SetModelRepository(modelRepo)
 	notebookSvc.SetPublishRepositories(modelRepo, notebookModelLinkRepo)
 	gitSvc.SetPublishDependencies(modelSvc, notebookModelLinkRepo)
+	if err := pipelineSvc.SyncPipelinesToAssets(ctx); err != nil {
+		return nil, fmt.Errorf("sync pipelines to assets: %w", err)
+	}
+	if err := pipelineSvc.ReconcileActiveRuns(ctx); err != nil {
+		return nil, fmt.Errorf("reconcile pipeline runs: %w", err)
+	}
 
 	// === Semantic ===
 	semanticModelRepo := repository.NewSemanticModelRepo(deps.WriteDB)
@@ -579,10 +601,11 @@ func New(ctx context.Context, deps Deps) (*App, error) {
 			ResourceAccess:      resourceAccessSvc,
 			SavedResource:       savedResourceSvc,
 		},
-		Engine:        eng,
-		APIKeyRepo:    apiKeyRepo,
-		PrincipalRepo: principalRepo,
-		Reconciler:    reconciler,
+		Engine:            eng,
+		APIKeyRepo:        apiKeyRepo,
+		PrincipalRepo:     principalRepo,
+		Reconciler:        reconciler,
+		PipelineScheduler: pipelineScheduler,
 	}, nil
 }
 

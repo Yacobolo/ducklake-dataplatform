@@ -27,6 +27,8 @@ type mockPipelineService struct {
 	triggerRunFn     func(ctx context.Context, principal string, pipelineName string, params map[string]string, triggerType string) (*domain.PipelineRun, error)
 	listRunsFn       func(ctx context.Context, pipelineName string, filter domain.PipelineRunFilter) ([]domain.PipelineRun, int64, error)
 	getRunFn         func(ctx context.Context, runID string) (*domain.PipelineRun, error)
+	listRunEventsFn  func(ctx context.Context, runID string, page domain.PageRequest) ([]domain.PipelineRunEvent, int64, error)
+	repairRunFn      func(ctx context.Context, principal string, runID string, req domain.RepairPipelineRunRequest) (*domain.PipelineRun, error)
 	cancelRunFn      func(ctx context.Context, principal string, runID string) error
 	listJobRunsFn    func(ctx context.Context, runID string) ([]domain.PipelineJobRun, error)
 }
@@ -120,6 +122,20 @@ func (m *mockPipelineService) GetRun(ctx context.Context, runID string) (*domain
 		panic("mockPipelineService.GetRun called but not configured")
 	}
 	return m.getRunFn(ctx, runID)
+}
+
+func (m *mockPipelineService) ListRunEvents(ctx context.Context, runID string, page domain.PageRequest) ([]domain.PipelineRunEvent, int64, error) {
+	if m.listRunEventsFn == nil {
+		return []domain.PipelineRunEvent{}, 0, nil
+	}
+	return m.listRunEventsFn(ctx, runID, page)
+}
+
+func (m *mockPipelineService) RepairRun(ctx context.Context, principal string, runID string, req domain.RepairPipelineRunRequest) (*domain.PipelineRun, error) {
+	if m.repairRunFn == nil {
+		panic("mockPipelineService.RepairRun called but not configured")
+	}
+	return m.repairRunFn(ctx, principal, runID, req)
 }
 
 func (m *mockPipelineService) CancelRun(ctx context.Context, principal string, runID string) error {
