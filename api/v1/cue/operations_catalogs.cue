@@ -231,7 +231,9 @@ package api
 		op:           "searchCatalog"
 		path:         #catalogsPath + "/search"
 		summary:      "Search catalog"
-		cli:          "catalog search"
+		cli: {
+			command: ["catalog", "search"]
+		}
 		returns:      "PaginatedSearchResults"
 		error_family: "standard"
 		params:       #searchCatalogParameters
@@ -242,7 +244,9 @@ package api
 		op:              "registerCatalog"
 		path:            #catalogsPath
 		summary:         "Register catalog"
-		cli:             "catalog registrations create"
+		cli: {
+			command: ["catalog", "registrations", "create"]
+		}
 		returns:         "CatalogRegistration"
 		success_status:  201
 		error_family:    "mutating"
@@ -256,7 +260,9 @@ package api
 		path:         #catalogsPath
 		summary:      "List catalog registrations"
 		description:  "Lists registered catalogs and returns a paginated catalog registration view for management clients."
-		cli:          "catalog registrations list"
+		cli: {
+			command: ["catalog", "registrations", "list"]
+		}
 		returns:      "CatalogRegistrationList"
 		error_family: "guarded_read"
 		params:       #listCatalogsParameters
@@ -269,7 +275,9 @@ package api
 		op:           "getCatalog"
 		path:         #catalogsPath + "/{catalog_name}"
 		summary:      "Get catalog"
-		cli:          "catalog registrations get"
+		cli: {
+			command: ["catalog", "registrations", "get"]
+		}
 		returns:      "CatalogRegistration"
 		error_family: "resource"
 		params:       #catalogPathParameters
@@ -280,7 +288,9 @@ package api
 		op:              "updateCatalogRegistration"
 		path:            #catalogsPath + "/{catalog_name}"
 		summary:         "Update catalog registration"
-		cli:             "catalog registrations update"
+		cli: {
+			command: ["catalog", "registrations", "update"]
+		}
 		returns:         "CatalogRegistration"
 		error_family:    "resource"
 		params:          #catalogPathParameters
@@ -293,7 +303,9 @@ package api
 		op:           "deleteCatalogRegistration"
 		path:         #catalogsPath + "/{catalog_name}"
 		summary:      "Delete catalog registration"
-		cli:          "catalog registrations delete"
+		cli: {
+			command: ["catalog", "registrations", "delete"]
+		}
 		error_family: "resource"
 		params:       #catalogPathParameters
 	},
@@ -303,7 +315,9 @@ package api
 		op:              "setDefaultCatalog"
 		path:            #catalogsPath + "/{catalog_name}/default"
 		summary:         "Set default catalog"
-		cli:             "catalog registrations set-default"
+		cli: {
+			command: ["catalog", "registrations", "set-default"]
+		}
 		returns:         "CatalogRegistration"
 		error_family:    "mutating"
 		params:          #catalogPathParameters
@@ -316,7 +330,9 @@ package api
 		op:           "getMetastoreSummary"
 		path:         #catalogsPath + "/{catalog_name}/metastore/summary"
 		summary:      "Get metastore summary"
-		cli:          "catalog metastore summary"
+		cli: {
+			command: ["catalog", "metastore", "summary"]
+		}
 		returns:      "MetastoreSummary"
 		error_family: "resource"
 		params:       #catalogPathParameters
@@ -350,7 +366,9 @@ package api
 		path:         #catalogsPath + "/{catalog_name}/schemas"
 		summary:      "List schemas"
 		description:  "Lists schemas for a catalog, including reserved read-only system schemas such as system when visible to the caller. The system schema exposes control-plane application tables and is admin-only."
-		cli:          "catalog schemas list"
+		cli: {
+			command: ["catalog", "schemas", "list"]
+		}
 		returns:      "PaginatedSchemaDetails"
 		error_family: "resource"
 		params:       #catalogSchemaPaginationParameters
@@ -361,7 +379,9 @@ package api
 		op:              "createSchema"
 		path:            #catalogsPath + "/{catalog_name}/schemas"
 		summary:         "Create schema"
-		cli:             "catalog schemas create"
+		cli: {
+			command: ["catalog", "schemas", "create"]
+		}
 		returns:         "SchemaDetail"
 		success_status:  201
 		error_family:    "mutating"
@@ -378,7 +398,9 @@ package api
 		path:         #catalogsPath + "/{catalog_name}/schemas/{schema_name}"
 		summary:      "Get schema"
 		description:  "Returns schema metadata for a catalog schema. Reserved system schemas such as system are surfaced as read-only, system-managed objects."
-		cli:          "catalog schemas get"
+		cli: {
+			command: ["catalog", "schemas", "get"]
+		}
 		returns:      "SchemaDetail"
 		error_family: "resource"
 		params:       #catalogSchemaPathParameters
@@ -389,7 +411,9 @@ package api
 		op:              "updateSchema"
 		path:            #catalogsPath + "/{catalog_name}/schemas/{schema_name}"
 		summary:         "Update schema"
-		cli:             "catalog schemas update"
+		cli: {
+			command: ["catalog", "schemas", "update"]
+		}
 		returns:         "SchemaDetail"
 		error_family:    "mutating"
 		params:          #catalogSchemaPathParameters
@@ -404,7 +428,9 @@ package api
 		op:           "deleteSchema"
 		path:         #catalogsPath + "/{catalog_name}/schemas/{schema_name}"
 		summary:      "Delete schema"
-		cli:          "catalog schemas delete"
+		cli: {
+			command: ["catalog", "schemas", "delete"]
+		}
 		error_family: "mutating"
 		params:       #deleteSchemaParameters
 		authz_default: false
@@ -417,7 +443,9 @@ package api
 		path:         #catalogsPath + "/{catalog_name}/schemas/{schema_name}/tables"
 		summary:      "List tables"
 		description:  "Lists tables in a schema. For the reserved system schema, this returns admin-visible, read-only control-plane tables that can be queried through the normal SQL query APIs."
-		cli:          "catalog tables list"
+		cli: {
+			command: ["catalog", "tables", "list"]
+		}
 		returns:      "PaginatedTableDetails"
 		error_family: "resource"
 		params:       #catalogSchemaPathPaginationParameters
@@ -428,7 +456,9 @@ package api
 		op:              "createTable"
 		path:            #catalogsPath + "/{catalog_name}/schemas/{schema_name}/tables"
 		summary:         "Create table"
-		cli:             "catalog tables create"
+		cli: {
+			command: ["catalog", "tables", "create"]
+		}
 		returns:         "TableDetail"
 		success_status:  201
 		error_family:    "mutating"
@@ -445,7 +475,9 @@ package api
 		path:         #catalogsPath + "/{catalog_name}/schemas/{schema_name}/tables/{table_name}"
 		summary:      "Get table"
 		description:  "Returns metadata for a table in the catalog. Tables in the reserved system schema are flagged as system-managed and read-only."
-		cli:          "catalog tables get"
+		cli: {
+			command: ["catalog", "tables", "get"]
+		}
 		returns:      "TableDetail"
 		error_family: "resource"
 		params:       #catalogSchemaTablePathParameters
@@ -456,7 +488,9 @@ package api
 		op:              "updateTable"
 		path:            #catalogsPath + "/{catalog_name}/schemas/{schema_name}/tables/{table_name}"
 		summary:         "Update table"
-		cli:             "catalog tables update"
+		cli: {
+			command: ["catalog", "tables", "update"]
+		}
 		returns:         "TableDetail"
 		error_family:    "mutating"
 		params:          #catalogSchemaTablePathParameters
@@ -471,7 +505,9 @@ package api
 		op:           "deleteTable"
 		path:         #catalogsPath + "/{catalog_name}/schemas/{schema_name}/tables/{table_name}"
 		summary:      "Delete table"
-		cli:          "catalog tables delete"
+		cli: {
+			command: ["catalog", "tables", "delete"]
+		}
 		error_family: "mutating"
 		params:       #catalogSchemaTablePathParameters
 		authz_default: false
@@ -484,7 +520,9 @@ package api
 		path:         #catalogsPath + "/{catalog_name}/schemas/{schema_name}/tables/{table_name}/columns"
 		summary:      "List table columns"
 		description:  "Lists columns for a table, including reserved read-only system tables when the caller has access."
-		cli:          "catalog columns list"
+		cli: {
+			command: ["catalog", "columns", "list"]
+		}
 		returns:      "PaginatedColumnDetails"
 		error_family: "resource"
 		params:       #catalogSchemaTablePaginationParameters
@@ -495,7 +533,9 @@ package api
 		op:              "updateColumn"
 		path:            #catalogsPath + "/{catalog_name}/schemas/{schema_name}/tables/{table_name}/columns/{column_name}"
 		summary:         "Update column"
-		cli:             "catalog columns update"
+		cli: {
+			command: ["catalog", "columns", "update"]
+		}
 		returns:         "ColumnDetail"
 		error_family:    "mutating"
 		params:          #catalogSchemaColumnPathParameters
@@ -510,7 +550,9 @@ package api
 		op:           "profileTable"
 		path:         #catalogsPath + "/{catalog_name}/schemas/{schema_name}/tables/{table_name}/profiles"
 		summary:      "Profile table"
-		cli:          "catalog tables profile"
+		cli: {
+			command: ["catalog", "tables", "profile"]
+		}
 		returns:      "TableStatistics"
 		error_family: "mutating"
 		params:       #catalogSchemaTablePathParameters
@@ -521,7 +563,9 @@ package api
 		op:           "createManifest"
 		path:         #catalogsPath + "/{catalog_name}/schemas/{schema_name}/tables/{table_name}/manifest"
 		summary:      "Get table manifest"
-		cli:          "catalog tables manifest get"
+		cli: {
+			command: ["catalog", "tables", "manifest", "get"]
+		}
 		returns:      "ManifestResponse"
 		error_family: "resource"
 		params:       #catalogSchemaTablePathParameters
@@ -532,7 +576,9 @@ package api
 		op:              "createUploadUrl"
 		path:            #catalogsPath + "/{catalog_name}/schemas/{schema_name}/tables/{table_name}/upload-urls"
 		summary:         "Create upload URL"
-		cli:             "ingestion upload-url"
+		cli: {
+			command: ["ingestion", "upload-url"]
+		}
 		returns:         "UploadUrlResponse"
 		error_family:    "mutating"
 		params:          #catalogSchemaTablePathParameters
@@ -547,7 +593,9 @@ package api
 		op:              "commitTableIngestion"
 		path:            #catalogsPath + "/{catalog_name}/schemas/{schema_name}/tables/{table_name}/ingestion-commits"
 		summary:         "Commit table ingestion"
-		cli:             "ingestion commit"
+		cli: {
+			command: ["ingestion", "commit"]
+		}
 		returns:         "IngestionResult"
 		error_family:    "mutating"
 		params:          #catalogSchemaTablePathParameters
@@ -562,7 +610,9 @@ package api
 		op:              "loadTableExternalFiles"
 		path:            #catalogsPath + "/{catalog_name}/schemas/{schema_name}/tables/{table_name}/ingestion-loads"
 		summary:         "Load table external files"
-		cli:             "ingestion load"
+		cli: {
+			command: ["ingestion", "load"]
+		}
 		returns:         "IngestionResult"
 		error_family:    "mutating"
 		params:          #catalogSchemaTablePathParameters
@@ -577,7 +627,9 @@ package api
 		op:           "listViews"
 		path:         #catalogsPath + "/{catalog_name}/schemas/{schema_name}/views"
 		summary:      "List views"
-		cli:          "catalog views list"
+		cli: {
+			command: ["catalog", "views", "list"]
+		}
 		returns:      "PaginatedViewDetails"
 		error_family: "resource"
 		params:       #catalogSchemaPathPaginationParameters
@@ -588,7 +640,9 @@ package api
 		op:              "createView"
 		path:            #catalogsPath + "/{catalog_name}/schemas/{schema_name}/views"
 		summary:         "Create view"
-		cli:             "catalog views create"
+		cli: {
+			command: ["catalog", "views", "create"]
+		}
 		returns:         "ViewDetail"
 		success_status:  201
 		error_family:    "mutating"
@@ -604,7 +658,9 @@ package api
 		op:           "getView"
 		path:         #catalogsPath + "/{catalog_name}/schemas/{schema_name}/views/{view_name}"
 		summary:      "Get view"
-		cli:          "catalog views get"
+		cli: {
+			command: ["catalog", "views", "get"]
+		}
 		returns:      "ViewDetail"
 		error_family: "resource"
 		params:       #catalogSchemaViewPathParameters
@@ -615,7 +671,9 @@ package api
 		op:              "updateView"
 		path:            #catalogsPath + "/{catalog_name}/schemas/{schema_name}/views/{view_name}"
 		summary:         "Update view"
-		cli:             "catalog views update"
+		cli: {
+			command: ["catalog", "views", "update"]
+		}
 		returns:         "ViewDetail"
 		error_family:    "mutating"
 		params:          #catalogSchemaViewPathParameters
@@ -630,7 +688,9 @@ package api
 		op:           "deleteView"
 		path:         #catalogsPath + "/{catalog_name}/schemas/{schema_name}/views/{view_name}"
 		summary:      "Delete view"
-		cli:          "catalog views delete"
+		cli: {
+			command: ["catalog", "views", "delete"]
+		}
 		error_family: "mutating"
 		params:       #catalogSchemaViewPathParameters
 		authz_default: false
@@ -642,7 +702,9 @@ package api
 		op:           "listVolumes"
 		path:         #catalogsPath + "/{catalog_name}/schemas/{schema_name}/volumes"
 		summary:      "List volumes"
-		cli:          "catalog volumes list"
+		cli: {
+			command: ["catalog", "volumes", "list"]
+		}
 		returns:      "PaginatedVolumes"
 		error_family: "resource"
 		params:       #catalogSchemaPathPaginationParameters
@@ -653,7 +715,9 @@ package api
 		op:              "createVolume"
 		path:            #catalogsPath + "/{catalog_name}/schemas/{schema_name}/volumes"
 		summary:         "Create volume"
-		cli:             "catalog volumes create"
+		cli: {
+			command: ["catalog", "volumes", "create"]
+		}
 		returns:         "VolumeDetail"
 		success_status:  201
 		error_family:    "mutating"
@@ -669,7 +733,9 @@ package api
 		op:           "getVolume"
 		path:         #catalogsPath + "/{catalog_name}/schemas/{schema_name}/volumes/{volume_name}"
 		summary:      "Get volume"
-		cli:          "catalog volumes get"
+		cli: {
+			command: ["catalog", "volumes", "get"]
+		}
 		returns:      "VolumeDetail"
 		error_family: "resource"
 		params:       #catalogSchemaVolumePathParameters
@@ -680,7 +746,9 @@ package api
 		op:              "updateVolume"
 		path:            #catalogsPath + "/{catalog_name}/schemas/{schema_name}/volumes/{volume_name}"
 		summary:         "Update volume"
-		cli:             "catalog volumes update"
+		cli: {
+			command: ["catalog", "volumes", "update"]
+		}
 		returns:         "VolumeDetail"
 		error_family:    "mutating"
 		params:          #catalogSchemaVolumePathParameters
@@ -695,7 +763,9 @@ package api
 		op:           "deleteVolume"
 		path:         #catalogsPath + "/{catalog_name}/schemas/{schema_name}/volumes/{volume_name}"
 		summary:      "Delete volume"
-		cli:          "catalog volumes delete"
+		cli: {
+			command: ["catalog", "volumes", "delete"]
+		}
 		error_family: "mutating"
 		params:       #catalogSchemaVolumePathParameters
 		authz_default: false

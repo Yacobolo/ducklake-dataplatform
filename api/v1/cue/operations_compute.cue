@@ -77,7 +77,9 @@ import "list"
 		op:            "listComputeEndpoints"
 		path:          "/compute-endpoints"
 		summary:       "List compute endpoints"
-		cli:           "compute endpoints list"
+		cli: {
+			command: ["compute", "endpoints", "list"]
+		}
 		returns:       "PaginatedComputeEndpoints"
 		error_family:  "guarded_read"
 		params:        #paginationParameters
@@ -91,7 +93,9 @@ import "list"
 		path:           "/compute-endpoints"
 		summary:        "Create compute endpoint"
 		description:    "Registers a compute endpoint that can execute remote workloads and accept assignment-based routing."
-		cli:            "compute endpoints create"
+		cli: {
+			command: ["compute", "endpoints", "create"]
+		}
 		returns:        "ComputeEndpoint"
 		success_status: 201
 		error_family:   "resource"
@@ -109,7 +113,9 @@ import "list"
 		op:            "getComputeEndpoint"
 		path:          "/compute-endpoints/{endpoint_name}"
 		summary:       "Get compute endpoint"
-		cli:           "compute endpoints get"
+		cli: {
+			command: ["compute", "endpoints", "get"]
+		}
 		returns:       "ComputeEndpoint"
 		error_family:  "resource"
 		params:        #computeEndpointPathParameters
@@ -121,7 +127,9 @@ import "list"
 		op:            "updateComputeEndpoint"
 		path:          "/compute-endpoints/{endpoint_name}"
 		summary:       "Update compute endpoint"
-		cli:           "compute endpoints update"
+		cli: {
+			command: ["compute", "endpoints", "update"]
+		}
 		returns:       "ComputeEndpoint"
 		error_family:  "resource"
 		params:        #computeEndpointPathParameters
@@ -137,7 +145,9 @@ import "list"
 		op:            "deleteComputeEndpoint"
 		path:          "/compute-endpoints/{endpoint_name}"
 		summary:       "Delete compute endpoint"
-		cli:           "compute endpoints delete"
+		cli: {
+			command: ["compute", "endpoints", "delete"]
+		}
 		error_family:  "resource"
 		params:        #computeEndpointPathParameters
 		authz_default: false
@@ -149,7 +159,9 @@ import "list"
 		op:            "listComputeAssignments"
 		path:          "/compute-endpoints/{endpoint_name}/assignments"
 		summary:       "List compute assignments"
-		cli:           "compute assignments list"
+		cli: {
+			command: ["compute", "assignments", "list"]
+		}
 		returns:       "PaginatedComputeAssignments"
 		error_family:  "resource"
 		params:        #computeAssignmentListParameters
@@ -161,7 +173,9 @@ import "list"
 		op:             "createComputeAssignment"
 		path:           "/compute-endpoints/{endpoint_name}/assignments"
 		summary:        "Create compute assignment"
-		cli:            "compute assignments create"
+		cli: {
+			command: ["compute", "assignments", "create"]
+		}
 		returns:        "ComputeAssignment"
 		success_status: 201
 		error_family:   "resource"
@@ -181,7 +195,9 @@ import "list"
 		op:            "deleteComputeAssignment"
 		path:          "/compute-endpoints/{endpoint_name}/assignments/{assignment_id}"
 		summary:       "Delete compute assignment"
-		cli:           "compute assignments delete"
+		cli: {
+			command: ["compute", "assignments", "delete"]
+		}
 		error_family:  "resource"
 		params:        #computeAssignmentPathParameters
 		authz_default: false
@@ -261,8 +277,9 @@ endpoints_compute: list.Concat([
 					},
 				],
 			])
-			extensions: #authenticatedExtensions & {
-				#cli_command: "compute endpoints health"
+			extensions: #authenticatedExtensions
+			cli: {
+				command: ["compute", "endpoints", "health"]
 			}
 		},
 	],

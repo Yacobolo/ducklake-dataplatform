@@ -110,7 +110,9 @@ package api
 		op:           "listModels"
 		path:         "/models"
 		summary:      "List models"
-		cli:          "models list"
+		cli: {
+			command: ["models", "list"]
+		}
 		returns:      "PaginatedModels"
 		error_family: "standard"
 		params:       #listModelsParameters
@@ -121,7 +123,9 @@ package api
 		op:             "createModel"
 		path:           "/models"
 		summary:        "Create model"
-		cli:            "models create"
+		cli: {
+			command: ["models", "create"]
+		}
 		returns:        "Model"
 		success_status: 201
 		error_family:   "mutating"
@@ -134,7 +138,9 @@ package api
 		op:           "getModelDAG"
 		path:         "/models/dag"
 		summary:      "Get model DAG"
-		cli:          "models dag get"
+		cli: {
+			command: ["models", "dag", "get"]
+		}
 		returns:      "ModelDAG"
 		error_family: "standard"
 		params: [
@@ -147,7 +153,9 @@ package api
 		op:           "getModel"
 		path:         "/models/{project_name}/{model_name}"
 		summary:      "Get model"
-		cli:          "models get"
+		cli: {
+			command: ["models", "get"]
+		}
 		returns:      "Model"
 		error_family: "resource"
 		params:       #modelPathParameters
@@ -158,7 +166,9 @@ package api
 		op:           "updateModel"
 		path:         "/models/{project_name}/{model_name}"
 		summary:      "Update model"
-		cli:          "models update"
+		cli: {
+			command: ["models", "update"]
+		}
 		returns:      "Model"
 		error_family: "mutating"
 		params:       #modelPathParameters
@@ -171,7 +181,9 @@ package api
 		op:           "deleteModel"
 		path:         "/models/{project_name}/{model_name}"
 		summary:      "Delete model"
-		cli:          "models delete"
+		cli: {
+			command: ["models", "delete"]
+		}
 		error_family: "mutating"
 		params:       #modelPathParameters
 	},
@@ -181,7 +193,9 @@ package api
 		op:             "createModelTest"
 		path:           "/models/{project_name}/{model_name}/tests"
 		summary:        "Create model test"
-		cli:            "models tests create"
+		cli: {
+			command: ["models", "tests", "create"]
+		}
 		returns:        "ModelTest"
 		success_status: 201
 		error_family:   "mutating"
@@ -195,7 +209,9 @@ package api
 		op:           "listModelTests"
 		path:         "/models/{project_name}/{model_name}/tests"
 		summary:      "List model tests"
-		cli:          "models tests list"
+		cli: {
+			command: ["models", "tests", "list"]
+		}
 		returns:      "ModelTestList"
 		error_family: "resource"
 		params:       #modelPathParameters
@@ -206,7 +222,9 @@ package api
 		op:           "deleteModelTest"
 		path:         "/models/{project_name}/{model_name}/tests/{test_id}"
 		summary:      "Delete model test"
-		cli:          "models tests delete"
+		cli: {
+			command: ["models", "tests", "delete"]
+		}
 		error_family: "mutating"
 		params:       #modelTestPathParameters
 	},
@@ -216,7 +234,9 @@ package api
 		op:           "checkModelFreshness"
 		path:         "/models/{project_name}/{model_name}/freshness"
 		summary:      "Check model freshness"
-		cli:          "models freshness check"
+		cli: {
+			command: ["models", "freshness", "check"]
+		}
 		returns:      "FreshnessStatus"
 		error_family: "resource"
 		params:       #modelPathParameters
@@ -227,7 +247,9 @@ package api
 		op:             "triggerModelRun"
 		path:           "/model-runs"
 		summary:        "Trigger model run"
-		cli:            "models runs trigger"
+		cli: {
+			command: ["models", "runs", "trigger"]
+		}
 		returns:        "ModelRun"
 		success_status: 201
 		error_family:   "mutating"
@@ -240,7 +262,9 @@ package api
 		op:           "listModelRuns"
 		path:         "/model-runs"
 		summary:      "List model runs"
-		cli:          "models runs list"
+		cli: {
+			command: ["models", "runs", "list"]
+		}
 		returns:      "PaginatedModelRuns"
 		error_family: "standard"
 		params:       #listModelRunsParameters
@@ -251,7 +275,9 @@ package api
 		op:           "getModelRun"
 		path:         "/model-runs/{run_id}"
 		summary:      "Get model run"
-		cli:          "models runs get"
+		cli: {
+			command: ["models", "runs", "get"]
+		}
 		returns:      "ModelRun"
 		error_family: "resource"
 		params: [
@@ -264,7 +290,9 @@ package api
 		op:           "cancelModelRun"
 		path:         "/model-runs/{run_id}/cancellations"
 		summary:      "Cancel model run"
-		cli:          "models runs cancel"
+		cli: {
+			command: ["models", "runs", "cancel"]
+		}
 		returns:      "ModelRun"
 		error_family: "mutating"
 		params: [
@@ -277,7 +305,9 @@ package api
 		op:           "listModelRunSteps"
 		path:         "/model-runs/{run_id}/steps"
 		summary:      "List model run steps"
-		cli:          "models steps list"
+		cli: {
+			command: ["models", "steps", "list"]
+		}
 		returns:      "ModelRunStepList"
 		error_family: "resource"
 		params: [
@@ -290,7 +320,9 @@ package api
 		op:           "listModelTestResults"
 		path:         "/model-runs/{run_id}/steps/{step_id}/test-results"
 		summary:      "List model test results"
-		cli:          "models test-results list"
+		cli: {
+			command: ["models", "test-results", "list"]
+		}
 		returns:      "ModelTestResultList"
 		error_family: "resource"
 		params:       #modelRunStepResultPathParameters
@@ -301,7 +333,9 @@ package api
 		op:             "promoteNotebookToModel"
 		path:           "/notebooks/{notebook_id}/model-promotions"
 		summary:        "Promote notebook to model"
-		cli:            "models from-notebook promote"
+		cli: {
+			command: ["models", "from-notebook", "promote"]
+		}
 		returns:        "Model"
 		success_status: 201
 		error_family:   "mutating"
@@ -328,7 +362,9 @@ package api
 		op:           "listMacros"
 		path:         "/macros"
 		summary:      "List macros"
-		cli:          "models macros list"
+		cli: {
+			command: ["models", "macros", "list"]
+		}
 		returns:      "PaginatedMacros"
 		error_family: "standard"
 		params:       #listMacrosParameters
@@ -339,7 +375,9 @@ package api
 		op:             "createMacro"
 		path:           "/macros"
 		summary:        "Create macro"
-		cli:            "models macros create"
+		cli: {
+			command: ["models", "macros", "create"]
+		}
 		returns:        "Macro"
 		success_status: 201
 		error_family:   "mutating"
@@ -352,7 +390,9 @@ package api
 		op:           "getMacro"
 		path:         "/macros/{macro_name}"
 		summary:      "Get macro"
-		cli:          "models macros get"
+		cli: {
+			command: ["models", "macros", "get"]
+		}
 		returns:      "Macro"
 		error_family: "resource"
 		params: [
@@ -365,7 +405,9 @@ package api
 		op:           "updateMacro"
 		path:         "/macros/{macro_name}"
 		summary:      "Update macro"
-		cli:          "models macros update"
+		cli: {
+			command: ["models", "macros", "update"]
+		}
 		returns:      "Macro"
 		error_family: "mutating"
 		params: [
@@ -380,7 +422,9 @@ package api
 		op:           "deleteMacro"
 		path:         "/macros/{macro_name}"
 		summary:      "Delete macro"
-		cli:          "models macros delete"
+		cli: {
+			command: ["models", "macros", "delete"]
+		}
 		error_family: "mutating"
 		params: [
 			#macroNamePathParameter,
@@ -392,7 +436,9 @@ package api
 		op:           "listMacroRevisions"
 		path:         "/macros/{macro_name}/revisions"
 		summary:      "List macro revisions"
-		cli:          "models revisions list"
+		cli: {
+			command: ["models", "revisions", "list"]
+		}
 		returns:      "MacroRevisionList"
 		error_family: "resource"
 		params: [
@@ -405,7 +451,9 @@ package api
 		op:           "getMacroImpact"
 		path:         "/macros/{macro_name}/impacts"
 		summary:      "Get macro impact"
-		cli:          "models impact get"
+		cli: {
+			command: ["models", "impact", "get"]
+		}
 		returns:      "MacroImpactList"
 		error_family: "resource"
 		params:       #macroImpactParameters
@@ -416,7 +464,9 @@ package api
 		op:           "diffMacroRevisions"
 		path:         "/macros/{macro_name}/revision-diffs"
 		summary:      "Diff macro revisions"
-		cli:          "models revisions diff"
+		cli: {
+			command: ["models", "revisions", "diff"]
+		}
 		returns:      "MacroRevisionDiff"
 		error_family: "resource"
 		params:       #diffMacroRevisionsParameters

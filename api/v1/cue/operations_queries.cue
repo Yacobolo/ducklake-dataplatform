@@ -86,7 +86,9 @@ package api
 	op:      "deleteQuery"
 	path:    "/queries/{query_id}"
 	summary: "Delete query"
-	cli:     "query delete"
+	cli: {
+		command: ["query", "delete"]
+	}
 	error_family: "mutating"
 	params:  #queryPathParameters
 }
@@ -103,7 +105,9 @@ package api
 		path:         "/query-executions"
 		summary:      "Execute query"
 		description:  "Executes a SQL statement synchronously and returns the first page of results in the response body. This is the primary API surface for querying catalog tables, including the reserved system.* schema that exposes control-plane tables for admins as read-only objects."
-		cli:          "query execute"
+		cli: {
+			command: ["query", "execute"]
+		}
 		returns:      "QueryResult"
 		error_family: "mutating"
 		body_ref:     "QueryRequest"
@@ -116,7 +120,9 @@ package api
 		path:           "/queries"
 		summary:        "Submit query"
 		description:    "Submits a SQL query for asynchronous execution and returns a query job identifier for polling and result retrieval. Use this endpoint for longer-running SQL over catalog tables or the admin-only system.* schema."
-		cli:            "query submit"
+		cli: {
+			command: ["query", "submit"]
+		}
 		returns:        "SubmitQueryResponse"
 		success_status: 202
 		error_family:   "mutating"
@@ -140,7 +146,9 @@ package api
 		op:           "getQuery"
 		path:         "/queries/{query_id}"
 		summary:      "Get query"
-		cli:          "query status"
+		cli: {
+			command: ["query", "status"]
+		}
 		returns:      "QueryJob"
 		error_family: "resource"
 		params:       #queryPathParameters
@@ -153,7 +161,9 @@ package api
 		path:         "/queries/{query_id}/results"
 		summary:      "Get query results"
 		description:  "Returns a page of rows for a previously submitted query using the stored query job identifier."
-		cli:          "query results"
+		cli: {
+			command: ["query", "results"]
+		}
 		returns:      "QueryResult"
 		error_family: "resource"
 		params:       #queryResultParameters
@@ -164,7 +174,9 @@ package api
 		op:             "cancelQuery"
 		path:           "/queries/{query_id}/cancellations"
 		summary:        "Cancel query"
-		cli:            "query cancel"
+		cli: {
+			command: ["query", "cancel"]
+		}
 		returns:        "CancelQueryResponse"
 		success_status: 202
 		error_family:   "resource"
@@ -177,7 +189,9 @@ package api
 		path:         "/queries/history"
 		summary:      "List query history"
 		description:  "Lists recorded query execution history and supports filtering by principal, decision status, and time window."
-		cli:          "query history list"
+		cli: {
+			command: ["query", "history", "list"]
+		}
 		returns:      "PaginatedQueryHistoryEntries"
 		error_family: "guarded_read"
 		params:       #queryHistoryParameters

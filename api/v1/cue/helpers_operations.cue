@@ -1,7 +1,6 @@
 package api
 
 import "list"
-import "strings"
 
 #authenticatedSecurity: [
 	{
@@ -13,13 +12,10 @@ import "strings"
 ]
 
 #authenticatedExtensions: {
-	#cli_command: string
-
 	"security": #authenticatedSecurity
 	"x-authz": {
 		mode: "authenticated"
 	}
-	"x-cli-command": #cli_command
 }
 
 // High-level authored operation specs. These stay close to API intent and are
@@ -31,7 +27,7 @@ import "strings"
 	op:      string
 	path:    string
 	summary: string
-	cli:     string
+	cli:     #CLI
 	returns: string
 	params:  [...#Parameter]
 }
@@ -43,7 +39,7 @@ import "strings"
 	op:               string
 	path:             string
 	summary:          string
-	cli:              string
+	cli:              #CLI
 	returns:          string
 	body_ref:         string
 	body_required:    *true | false
@@ -57,7 +53,7 @@ import "strings"
 	op:      string
 	path:    string
 	summary: string
-	cli:     string
+	cli:     #CLI
 	params:  [...#Parameter]
 }
 
@@ -129,7 +125,7 @@ import "strings"
 ]
 
 // Shared error/response building blocks used by both the generic DSL and the
-// smaller legacy helper path that still powers lineage-style authored specs.
+// smaller lineage-oriented helper path.
 #errorResponse: {
 	#status_code: int
 	#description: string
@@ -342,7 +338,7 @@ import "strings"
 	path:           string
 	summary:        string
 	description?:   string
-	cli?:           string
+	cli?:           #CLI
 	returns?:       string
 	success_schema?: #SchemaRef
 	success_status: *200 | 201 | 202
@@ -695,19 +691,14 @@ import "strings"
 			if spec.authz == _|_ && spec.authz_default {
 				"x-authz": #authenticatedAuthz
 			}
-			if spec.cli != _|_ {
-				"x-cli-command": spec.cli
-			}
 		}
 		if spec.cli != _|_ {
-			cli: {
-				command: strings.Split(spec.cli, " ")
-			}
+			cli: spec.cli
 		}
 	}
 }
 
-// Legacy compact helpers retained for lineage-style authored specs. These are
+// Compact helpers retained for lineage-style authored specs. These are
 // intentionally smaller than the generic operation DSL, but they lower through
 // the same shared response/auth conventions.
 #endpointFromOperation: {
@@ -781,12 +772,8 @@ import "strings"
 				#mutatingErrorResponses,
 			])
 		}
-		extensions: #authenticatedExtensions & {
-			#cli_command: spec.cli
-		}
-		cli: {
-			command: strings.Split(spec.cli, " ")
-		}
+		extensions: #authenticatedExtensions
+		cli:        spec.cli
 	}
 }
 

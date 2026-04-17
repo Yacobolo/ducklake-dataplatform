@@ -82,7 +82,9 @@ package api
 		op:           "listPrincipals"
 		path:         "/principals"
 		summary:      "List principals"
-		cli:          "security principals list"
+		cli: {
+			command: ["security", "principals", "list"]
+		}
 		returns:      "PaginatedPrincipals"
 		error_family: "guarded_read"
 		params:       #paginationParameters
@@ -94,7 +96,9 @@ package api
 		op:             "createPrincipal"
 		path:           "/principals"
 		summary:        "Create principal"
-		cli:            "security principals create"
+		cli: {
+			command: ["security", "principals", "create"]
+		}
 		returns:        "Principal"
 		success_status: 201
 		error_family:   "mutating"
@@ -107,7 +111,9 @@ package api
 		op:           "getPrincipal"
 		path:         "/principals/{principal_id}"
 		summary:      "Get principal"
-		cli:          "security principals get"
+		cli: {
+			command: ["security", "principals", "get"]
+		}
 		returns:      "Principal"
 		error_family: "resource"
 		params:       #principalPathParameters
@@ -118,7 +124,9 @@ package api
 		op:           "deletePrincipal"
 		path:         "/principals/{principal_id}"
 		summary:      "Delete principal"
-		cli:          "security principals delete"
+		cli: {
+			command: ["security", "principals", "delete"]
+		}
 		error_family: "mutating"
 		params:       #principalPathParameters
 	},
@@ -128,7 +136,9 @@ package api
 		op:           "updatePrincipal"
 		path:         "/principals/{principal_id}"
 		summary:      "Update principal"
-		cli:          "security principals set-admin"
+		cli: {
+			command: ["security", "principals", "set-admin"]
+		}
 		returns:      "Principal"
 		error_family: "mutating"
 		params:       #principalPathParameters
@@ -141,7 +151,9 @@ package api
 		op:           "listGroups"
 		path:         "/groups"
 		summary:      "List groups"
-		cli:          "security groups list"
+		cli: {
+			command: ["security", "groups", "list"]
+		}
 		returns:      "PaginatedGroups"
 		error_family: "guarded_read"
 		params:       #paginationParameters
@@ -153,7 +165,9 @@ package api
 		op:             "createGroup"
 		path:           "/groups"
 		summary:        "Create group"
-		cli:            "security groups create"
+		cli: {
+			command: ["security", "groups", "create"]
+		}
 		returns:        "Group"
 		success_status: 201
 		error_family:   "mutating"
@@ -166,7 +180,9 @@ package api
 		op:           "getGroup"
 		path:         "/groups/{group_id}"
 		summary:      "Get group"
-		cli:          "security groups get"
+		cli: {
+			command: ["security", "groups", "get"]
+		}
 		returns:      "Group"
 		error_family: "resource"
 		params:       #groupPathParameters
@@ -195,7 +211,9 @@ package api
 		op:           "deleteGroup"
 		path:         "/groups/{group_id}"
 		summary:      "Delete group"
-		cli:          "security groups delete"
+		cli: {
+			command: ["security", "groups", "delete"]
+		}
 		error_family: "mutating"
 		params:       #groupPathParameters
 	},
@@ -205,7 +223,9 @@ package api
 		op:           "listGroupMembers"
 		path:         "/groups/{group_id}/members"
 		summary:      "List group members"
-		cli:          "security members list"
+		cli: {
+			command: ["security", "members", "list"]
+		}
 		returns:      "PaginatedGroupMembers"
 		error_family: "resource"
 		params:       #groupMemberListParameters
@@ -216,7 +236,9 @@ package api
 		op:             "createGroupMember"
 		path:           "/groups/{group_id}/members"
 		summary:        "Create group member"
-		cli:            "security members add"
+		cli: {
+			command: ["security", "members", "add"]
+		}
 		error_family:   "mutating"
 		params:         #groupPathParameters
 		body_ref:       "CreateGroupMemberRequest"
@@ -228,7 +250,9 @@ package api
 		op:           "deleteGroupMember"
 		path:         "/groups/{group_id}/members/{member_type}/{member_id}"
 		summary:      "Delete group member"
-		cli:          "security members remove"
+		cli: {
+			command: ["security", "members", "remove"]
+		}
 		error_family: "mutating"
 		params:       #groupMemberPathParameters
 	},
@@ -238,7 +262,9 @@ package api
 		op:           "listAPIKeys"
 		path:         "/api-keys"
 		summary:      "List API keys"
-		cli:          "security api-keys list"
+		cli: {
+			command: ["security", "api-keys", "list"]
+		}
 		returns:      "PaginatedAPIKeys"
 		error_family: "standard"
 		params:       #listAPIKeysParameters
@@ -249,7 +275,9 @@ package api
 		op:             "createAPIKey"
 		path:           "/api-keys"
 		summary:        "Create API key"
-		cli:            "security api-keys create"
+		cli: {
+			command: ["security", "api-keys", "create"]
+		}
 		returns:        "CreateAPIKeyResponse"
 		success_status: 201
 		error_family:   "mutating"
@@ -262,7 +290,9 @@ package api
 		op:           "deleteAPIKey"
 		path:         "/api-keys/{api_key_id}"
 		summary:      "Delete API key"
-		cli:          "security api-keys delete"
+		cli: {
+			command: ["security", "api-keys", "delete"]
+		}
 		error_family: "mutating"
 		params:       #apiKeyPathParameters
 	},
@@ -272,7 +302,9 @@ package api
 		op:           "cleanupExpiredAPIKeys"
 		path:         "/api-key-cleanup-runs"
 		summary:      "Clean up expired API keys"
-		cli:          "security api-keys cleanup"
+		cli: {
+			command: ["security", "api-keys", "cleanup"]
+		}
 		returns:      "CleanupAPIKeysResponse"
 		error_family: "mutating"
 	},
