@@ -20,7 +20,7 @@ func TestCorpus_Search_PrioritizesCommandThenOperation(t *testing.T) {
 			{OperationID: "createSchema", Path: "/catalogs/{catalog_name}/schemas", Summary: "Create a schema", CLICommand: "catalog schemas create"},
 		},
 		Links: []gen.ReferenceLink{
-			{SourceKind: "operation", SourceID: "createSchema", TargetKind: "command", TargetID: "catalog schemas create", Reason: "x-cli-command", Confidence: 100},
+			{SourceKind: "operation", SourceID: "createSchema", TargetKind: "command", TargetID: "catalog schemas create", Reason: "apigen-command-spec", Confidence: 100},
 			{SourceKind: "operation", SourceID: "createSchema", TargetKind: "doc", TargetID: "build/register-source-data", Reason: "keyword-match", Confidence: 80},
 			{SourceKind: "doc", SourceID: "build/register-source-data", TargetKind: "operation", TargetID: "createSchema", Reason: "keyword-match", Confidence: 80},
 		},

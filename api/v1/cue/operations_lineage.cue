@@ -46,7 +46,9 @@ import "list"
 		op:      "getTableLineage"
 		path:    #tableLineagePath
 		summary: "Get table lineage"
-		cli:     "lineage tables get"
+		cli: {
+			command: ["lineage", "tables", "get"]
+		}
 		returns: "LineageNode"
 		params:  #tableLineageParameters
 	},
@@ -54,7 +56,9 @@ import "list"
 		op:      "getUpstreamLineage"
 		path:    #tableLineagePath + "/upstream"
 		summary: "Get upstream lineage"
-		cli:     "lineage tables upstream"
+		cli: {
+			command: ["lineage", "tables", "upstream"]
+		}
 		returns: "PaginatedLineageEdges"
 		params:  #tableLineageParameters
 	},
@@ -62,7 +66,9 @@ import "list"
 		op:      "getDownstreamLineage"
 		path:    #tableLineagePath + "/downstream"
 		summary: "Get downstream lineage"
-		cli:     "lineage tables downstream"
+		cli: {
+			command: ["lineage", "tables", "downstream"]
+		}
 		returns: "PaginatedLineageEdges"
 		params:  #tableLineageParameters
 	},
@@ -70,7 +76,9 @@ import "list"
 		op:      "deleteLineageEdge"
 		path:    "/lineage/edges/{edge_id}"
 		summary: "Delete lineage edge"
-		cli:     "lineage edges delete"
+		cli: {
+			command: ["lineage", "edges", "delete"]
+		}
 		params: [
 			#edgeIDPathParameter,
 		]
@@ -79,7 +87,9 @@ import "list"
 		op:      "getColumnLineage"
 		path:    #columnLineagePath
 		summary: "Get column lineage"
-		cli:     "lineage columns get"
+		cli: {
+			command: ["lineage", "columns", "get"]
+		}
 		returns: "PaginatedColumnLineageEdges"
 		params:  #tableLineageParameters
 	},
@@ -87,7 +97,9 @@ import "list"
 		op:      "getColumnImpact"
 		path:    #columnLineagePath + "/{column_name}/impacts"
 		summary: "Get column impact"
-		cli:     "lineage impact get"
+		cli: {
+			command: ["lineage", "impact", "get"]
+		}
 		returns: "PaginatedColumnLineageEdges"
 		params:  #columnImpactParameters
 	},
@@ -95,7 +107,9 @@ import "list"
 		op:               "purgeLineage"
 		path:             "/lineage/purges"
 		summary:          "Purge lineage"
-		cli:              "lineage purge"
+		cli: {
+			command: ["lineage", "purge"]
+		}
 		returns:          "PurgeLineageResponse"
 		body_ref:         "PurgeLineageRequest"
 		body_description: "Request payload"

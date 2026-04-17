@@ -2,6 +2,10 @@ package api
 
 schema_version: "v1"
 
+api: {
+	base_path: "/"
+}
+
 info: {
 	title:       "APIGen Example API"
 	version:     "0.1.0"

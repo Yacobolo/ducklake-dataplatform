@@ -22,6 +22,7 @@ import (
 // Source is the parity-first CUE representation for the APIGen contract.
 type Source struct {
 	SchemaVersion string               `json:"schema_version"`
+	API           ir.API               `json:"api"`
 	Info          ir.Info              `json:"info"`
 	OpenAPI       ir.OpenAPI           `json:"openapi,omitempty"`
 	Servers       []ir.Server          `json:"servers,omitempty"`
@@ -62,6 +63,7 @@ func CompileDir(dir string) (Bundle, error) {
 
 	fullDoc := ir.Document{
 		SchemaVersion: source.SchemaVersion,
+		API:           source.API,
 		Info:          source.Info,
 		OpenAPI:       source.OpenAPI,
 		Servers:       source.Servers,
@@ -72,6 +74,7 @@ func CompileDir(dir string) (Bundle, error) {
 	}
 	doc := ir.Document{
 		SchemaVersion: source.SchemaVersion,
+		API:           source.API,
 		Info:          source.Info,
 		OpenAPI:       source.OpenAPI,
 		Servers:       source.Servers,
@@ -83,11 +86,15 @@ func CompileDir(dir string) (Bundle, error) {
 	if err := ir.Validate(doc); err != nil {
 		return Bundle{}, fmt.Errorf("validate cue-derived ir: %w", err)
 	}
-	ir.Normalize(&doc)
+	if err := ir.Normalize(&doc); err != nil {
+		return Bundle{}, fmt.Errorf("normalize cue-derived ir: %w", err)
+	}
 	if err := ir.Validate(fullDoc); err != nil {
 		return Bundle{}, fmt.Errorf("validate cue-derived canonical doc: %w", err)
 	}
-	ir.Normalize(&fullDoc)
+	if err := ir.Normalize(&fullDoc); err != nil {
+		return Bundle{}, fmt.Errorf("normalize cue-derived canonical doc: %w", err)
+	}
 
 	canonicalOpenAPI, err := openapiemit.EmitYAML(fullDoc, openapiemit.Options{})
 	if err != nil {
@@ -249,6 +256,7 @@ func cloneEndpoint(in ir.Endpoint) ir.Endpoint {
 		body.Schema = cloneSchemaRef(in.RequestBody.Schema)
 		out.RequestBody = &body
 	}
+	out.CLI = ir.CloneCLI(in.CLI)
 	if len(in.Responses) > 0 {
 		out.Responses = make([]ir.Response, len(in.Responses))
 		for i, response := range in.Responses {
@@ -357,6 +365,9 @@ func Bootstrap(doc ir.Document, outDir string) error {
 		return err
 	}
 	if err := writeFieldFile(filepath.Join(outDir, "metadata.cue"), "schema_version", doc.SchemaVersion); err != nil {
+		return err
+	}
+	if err := appendFieldFile(filepath.Join(outDir, "metadata.cue"), "api", doc.API); err != nil {
 		return err
 	}
 	if err := appendFieldFile(filepath.Join(outDir, "metadata.cue"), "info", doc.Info); err != nil {
@@ -599,6 +610,32 @@ const schemaFile = `package api
 	schema: #SchemaRef
 }
 
+#CLIArg: {
+	source: "path" | "query" | "body"
+	name: string
+	display_name?: string
+}
+
+#CLIOutput: {
+	mode: "detail" | "collection" | "empty" | "raw"
+	table_columns?: [...string]
+	quiet_fields?: [...string]
+}
+
+#CLIPagination: {
+	items_field?: string
+	next_page_token_field?: string
+}
+
+#CLI: {
+	command: [...string]
+	args?: [...#CLIArg]
+	body_input?: "none" | "json" | "flags" | "flags_or_json"
+	confirm?: "none" | "always"
+	output?: #CLIOutput
+	pagination?: #CLIPagination
+}
+
 #SecurityRequirement: [string]: [...string]
 
 #SecurityScheme: {
@@ -637,11 +674,15 @@ const schemaFile = `package api
 	parameters?: [...#Parameter]
 	request_body?: #RequestBody
 	responses: [...#Response]
+	cli?: #CLI
 	extensions?: [string]: _
 }
 
 #Source: {
 	schema_version: string
+	api: {
+		base_path: string
+	}
 	info: {
 		title: string
 		version: string

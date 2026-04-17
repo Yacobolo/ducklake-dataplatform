@@ -52,9 +52,7 @@ func TestAPIGenRoutes_MountUnderV1_NoDoublePrefix(t *testing.T) {
 
 	gen := &recordingGenServer{}
 	r := chi.NewRouter()
-	r.Route("/v1", func(r chi.Router) {
-		api.RegisterAPIGenRoutes(r, gen)
-	})
+	api.RegisterAPIGenRoutes(r, gen)
 
 	tests := []struct {
 		name       string
@@ -95,9 +93,7 @@ func TestAPIGenStrictRoutes_DispatchesExecuteQueryOnV1Route(t *testing.T) {
 
 	strict := &executeQueryStrictStub{}
 	r := chi.NewRouter()
-	r.Route("/v1", func(r chi.Router) {
-		api.RegisterAPIGenStrictRoutes(r, strict)
-	})
+	api.RegisterAPIGenStrictRoutes(r, strict)
 
 	req := httptest.NewRequest(http.MethodPost, "/v1/query-executions", strings.NewReader(`{"sql":"select 1"}`))
 	rr := httptest.NewRecorder()
@@ -112,9 +108,7 @@ func TestAPIGenStrictRoutes_HandlesGetHealthOnV1Route(t *testing.T) {
 
 	strict := &executeQueryStrictStub{}
 	r := chi.NewRouter()
-	r.Route("/v1", func(r chi.Router) {
-		api.RegisterAPIGenStrictRoutes(r, strict)
-	})
+	api.RegisterAPIGenStrictRoutes(r, strict)
 
 	req := httptest.NewRequest(http.MethodGet, "/v1/healthz", nil)
 	rr := httptest.NewRecorder()

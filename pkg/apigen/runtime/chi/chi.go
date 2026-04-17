@@ -49,7 +49,7 @@ func BindPathParameter(name string, value string, required bool, dest any) error
 		return nil
 	}
 
-	if err := bindParameterValue(dest, value); err != nil {
+	if err := bindParameterValues(dest, []string{value}); err != nil {
 		return fmt.Errorf("invalid path parameter %q: %w", name, err)
 	}
 
@@ -66,7 +66,7 @@ func BindQueryParameter(values url.Values, name string, required bool, dest any)
 		return nil
 	}
 
-	if err := bindParameterValue(dest, rawValues[0]); err != nil {
+	if err := bindParameterValues(dest, rawValues); err != nil {
 		return fmt.Errorf("invalid query parameter %q: %w", name, err)
 	}
 
@@ -84,25 +84,45 @@ func SafeIntToInt32(v int) int32 {
 	return int32(v)
 }
 
-func bindParameterValue(dest any, raw string) error {
+func bindParameterValues(dest any, rawValues []string) error {
 	destValue := reflect.ValueOf(dest)
 	if !destValue.IsValid() || destValue.Kind() != reflect.Ptr || destValue.IsNil() {
 		return fmt.Errorf("destination must be a non-nil pointer")
 	}
+	if len(rawValues) == 0 {
+		return nil
+	}
 
-	return assignBoundValue(destValue.Elem(), raw)
+	return assignBoundValues(destValue.Elem(), rawValues)
 }
 
-func assignBoundValue(target reflect.Value, raw string) error {
+func assignBoundValues(target reflect.Value, rawValues []string) error {
 	if target.Kind() == reflect.Ptr {
 		bound := reflect.New(target.Type().Elem())
-		if err := assignBoundValue(bound.Elem(), raw); err != nil {
+		if err := assignBoundValues(bound.Elem(), rawValues); err != nil {
 			return err
 		}
 		target.Set(bound)
 		return nil
 	}
 
+	if target.Kind() == reflect.Slice {
+		slice := reflect.MakeSlice(target.Type(), 0, len(rawValues))
+		for _, raw := range rawValues {
+			item := reflect.New(target.Type().Elem()).Elem()
+			if err := assignBoundScalar(item, raw); err != nil {
+				return err
+			}
+			slice = reflect.Append(slice, item)
+		}
+		target.Set(slice)
+		return nil
+	}
+
+	return assignBoundScalar(target, rawValues[0])
+}
+
+func assignBoundScalar(target reflect.Value, raw string) error {
 	if target.Type() == timeType {
 		parsed, err := time.Parse(time.RFC3339, raw)
 		if err != nil {

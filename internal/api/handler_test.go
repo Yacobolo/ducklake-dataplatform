@@ -13,6 +13,7 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/go-chi/chi/v5"
@@ -184,7 +185,7 @@ func TestAPI_ListPrincipals(t *testing.T) {
 	srv := setupTestServer(t, "admin_user")
 	defer srv.Close()
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, srv.URL+"/principals", nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, apiURL(t, srv.URL, "/principals"), nil)
 	require.NoError(t, err)
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
@@ -209,7 +210,7 @@ func TestAPI_ExecuteQuery_Admin(t *testing.T) {
 	defer srv.Close()
 
 	body := `{"sql": "SELECT count(*) FROM titanic"}`
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, srv.URL+"/query-executions", bytes.NewBufferString(body))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, apiURL(t, srv.URL, "/query-executions"), bytes.NewBufferString(body))
 	require.NoError(t, err)
 	req.Header.Set("Content-Type", "application/json")
 	resp, err := http.DefaultClient.Do(req)
@@ -235,7 +236,7 @@ func TestAPI_ExecuteQuery_NoAccess(t *testing.T) {
 	defer srv.Close()
 
 	body := `{"sql": "SELECT * FROM titanic LIMIT 5"}`
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, srv.URL+"/query-executions", bytes.NewBufferString(body))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, apiURL(t, srv.URL, "/query-executions"), bytes.NewBufferString(body))
 	require.NoError(t, err)
 	req.Header.Set("Content-Type", "application/json")
 	resp, err := http.DefaultClient.Do(req)
@@ -255,7 +256,7 @@ func TestAPI_CreateAndDeletePrincipal(t *testing.T) {
 
 	// Create
 	body := `{"name": "test_user", "type": "user"}`
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, srv.URL+"/principals", bytes.NewBufferString(body))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, apiURL(t, srv.URL, "/principals"), bytes.NewBufferString(body))
 	require.NoError(t, err)
 	req.Header.Set("Content-Type", "application/json")
 	resp, err := http.DefaultClient.Do(req)
@@ -275,7 +276,7 @@ func TestAPI_CreateAndDeletePrincipal(t *testing.T) {
 	}
 
 	// Delete
-	req, err = http.NewRequestWithContext(ctx, "DELETE", srv.URL+"/principals/"+p.Id, nil)
+	req, err = http.NewRequestWithContext(ctx, "DELETE", apiURL(t, srv.URL, "/principals/"+p.Id), nil)
 	require.NoError(t, err)
 	resp2, err := http.DefaultClient.Do(req)
 	if err != nil {
@@ -294,7 +295,7 @@ func TestAPI_AuditLogs(t *testing.T) {
 
 	// Execute a query first to generate audit entries
 	body := `{"sql": "SELECT 1"}`
-	postReq, err := http.NewRequestWithContext(ctx, http.MethodPost, srv.URL+"/query-executions", bytes.NewBufferString(body))
+	postReq, err := http.NewRequestWithContext(ctx, http.MethodPost, apiURL(t, srv.URL, "/query-executions"), bytes.NewBufferString(body))
 	require.NoError(t, err)
 	postReq.Header.Set("Content-Type", "application/json")
 	postResp, err := http.DefaultClient.Do(postReq)
@@ -302,7 +303,7 @@ func TestAPI_AuditLogs(t *testing.T) {
 	_ = postResp.Body.Close()
 
 	// List audit logs
-	getReq, err := http.NewRequestWithContext(ctx, http.MethodGet, srv.URL+"/audit-entries", nil)
+	getReq, err := http.NewRequestWithContext(ctx, http.MethodGet, apiURL(t, srv.URL, "/audit-entries"), nil)
 	require.NoError(t, err)
 	resp, err := http.DefaultClient.Do(getReq)
 	if err != nil {
@@ -479,7 +480,7 @@ func doRequest(t *testing.T, method, url string, body string) *http.Response {
 	} else {
 		reqBody = bytes.NewBuffer(nil)
 	}
-	req, err := http.NewRequestWithContext(ctx, method, url, reqBody)
+	req, err := http.NewRequestWithContext(ctx, method, apiURL(t, "", url), reqBody)
 	if err != nil {
 		t.Fatalf("create request: %v", err)
 	}
@@ -491,6 +492,21 @@ func doRequest(t *testing.T, method, url string, body string) *http.Response {
 		t.Fatalf("execute request: %v", err)
 	}
 	return resp
+}
+
+func apiURL(t *testing.T, baseURL, rawURL string) string {
+	t.Helper()
+	target := rawURL
+	if baseURL != "" {
+		target = baseURL + rawURL
+	}
+
+	parsed, err := url.Parse(target)
+	require.NoError(t, err)
+	if !strings.HasPrefix(parsed.Path, "/v1/") && parsed.Path != "/v1" {
+		parsed.Path = "/v1" + parsed.Path
+	}
+	return parsed.String()
 }
 
 // decodeJSON is a test helper that decodes a JSON response body.

@@ -56,17 +56,18 @@ Generated reference under `site/content/reference/generated` is derived from tha
 The API authoring and generation flow is now:
 
 ```bash
-internal/api/contract/cue/*.cue
-  -> go run ./cmd/apigen cue-compile
+api/v1/cue/*.cue
+  -> (cd pkg/apigen && go run ./cmd/apigen cue-compile -manifest ../../apigen.targets.yaml -target v1)
   -> internal/api/gen/json-ir.json
   -> internal/api/gen/openapi.yaml
-  -> go run ./cmd/apigen all
+  -> (cd pkg/apigen && go run ./cmd/apigen all -manifest ../../apigen.targets.yaml -target v1)
   -> internal/api/*.gen.go + pkg/cli/gen/apigen_registry.gen.go
 ```
 
 Notes:
 
-- `internal/api/contract/cue` is the authored source of truth for this application.
+- `api/v1/cue` is the authored source of truth for this application.
+- `apigen.targets.yaml` is the repo-local APIGen manifest that maps versioned contracts to generated outputs.
 - `internal/api/gen/openapi.yaml` is the canonical generated contract artifact for this application.
 - `internal/api/gen/json-ir.json` is the APIGen compiler boundary consumed by the Go emitters.
 - Generated server code embeds the canonical OpenAPI contract for `/openapi.json` and `/docs`.

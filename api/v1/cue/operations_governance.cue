@@ -125,7 +125,9 @@ package api
 		op:            "listGrants"
 		path:          "/grants"
 		summary:       "List grants"
-		cli:           "security grants list"
+		cli: {
+			command: ["security", "grants", "list"]
+		}
 		returns:       "PaginatedGrants"
 		error_family:  "guarded_read"
 		params:        #listGrantsParameters
@@ -138,7 +140,9 @@ package api
 		op:             "createGrant"
 		path:           "/grants"
 		summary:        "Create grant"
-		cli:            "security grants create"
+		cli: {
+			command: ["security", "grants", "create"]
+		}
 		returns:        "PrivilegeGrant"
 		success_status: 201
 		error_family:   "resource"
@@ -156,7 +160,9 @@ package api
 		op:            "deleteGrant"
 		path:          "/grants/{grant_id}"
 		summary:       "Delete grant"
-		cli:           "security grants revoke"
+		cli: {
+			command: ["security", "grants", "revoke"]
+		}
 		error_family:  "mutating"
 		params: [
 			#grantIDPathParameter,
@@ -170,7 +176,9 @@ package api
 		op:            "listRowFilters"
 		path:          "/row-filters"
 		summary:       "List row filters"
-		cli:           "security row-filters list"
+		cli: {
+			command: ["security", "row-filters", "list"]
+		}
 		returns:       "PaginatedRowFilters"
 		error_family:  "resource"
 		params:        #tableScopedListParameters
@@ -182,7 +190,9 @@ package api
 		op:             "createRowFilter"
 		path:           "/row-filters"
 		summary:        "Create row filter"
-		cli:            "security row-filters create"
+		cli: {
+			command: ["security", "row-filters", "create"]
+		}
 		returns:        "RowFilter"
 		success_status: 201
 		error_family:   "mutating"
@@ -224,7 +234,9 @@ package api
 		op:            "deleteRowFilter"
 		path:          "/row-filters/{row_filter_id}"
 		summary:       "Delete row filter"
-		cli:           "security row-filters delete"
+		cli: {
+			command: ["security", "row-filters", "delete"]
+		}
 		error_family:  "mutating"
 		params: [
 			#rowFilterIDPathParameter,
@@ -248,7 +260,9 @@ package api
 		op:             "bindRowFilter"
 		path:           "/row-filters/{row_filter_id}/bindings"
 		summary:        "Bind row filter"
-		cli:            "security row-filters bind"
+		cli: {
+			command: ["security", "row-filters", "bind"]
+		}
 		error_family:   "mutating"
 		params: [
 			#rowFilterIDPathParameter,
@@ -263,7 +277,9 @@ package api
 		op:            "unbindRowFilter"
 		path:          "/row-filters/{row_filter_id}/bindings/{principal_type}/{principal_id}"
 		summary:       "Unbind row filter"
-		cli:           "security row-filters unbind"
+		cli: {
+			command: ["security", "row-filters", "unbind"]
+		}
 		error_family:  "mutating"
 		params:        #rowFilterBindingPathParameters
 		authz_default: false
@@ -274,7 +290,9 @@ package api
 		op:            "listColumnMasks"
 		path:          "/column-masks"
 		summary:       "List column masks"
-		cli:           "security column-masks list"
+		cli: {
+			command: ["security", "column-masks", "list"]
+		}
 		returns:       "PaginatedColumnMasks"
 		error_family:  "resource"
 		params:        #tableScopedListParameters
@@ -286,7 +304,9 @@ package api
 		op:             "createColumnMask"
 		path:           "/column-masks"
 		summary:        "Create column mask"
-		cli:            "security column-masks create"
+		cli: {
+			command: ["security", "column-masks", "create"]
+		}
 		returns:        "ColumnMask"
 		success_status: 201
 		error_family:   "mutating"
@@ -328,7 +348,9 @@ package api
 		op:            "deleteColumnMask"
 		path:          "/column-masks/{column_mask_id}"
 		summary:       "Delete column mask"
-		cli:           "security column-masks delete"
+		cli: {
+			command: ["security", "column-masks", "delete"]
+		}
 		error_family:  "mutating"
 		params: [
 			#columnMaskIDPathParameter,
@@ -352,7 +374,9 @@ package api
 		op:             "bindColumnMask"
 		path:           "/column-masks/{column_mask_id}/bindings"
 		summary:        "Bind column mask"
-		cli:            "security column-masks bind"
+		cli: {
+			command: ["security", "column-masks", "bind"]
+		}
 		error_family:   "mutating"
 		params: [
 			#columnMaskIDPathParameter,
@@ -367,7 +391,9 @@ package api
 		op:            "unbindColumnMask"
 		path:          "/column-masks/{column_mask_id}/bindings/{principal_type}/{principal_id}"
 		summary:       "Unbind column mask"
-		cli:           "security column-masks unbind"
+		cli: {
+			command: ["security", "column-masks", "unbind"]
+		}
 		error_family:  "mutating"
 		params:        #columnMaskBindingPathParameters
 		authz_default: false
@@ -378,7 +404,9 @@ package api
 		op:            "listTags"
 		path:          "/tags"
 		summary:       "List tags"
-		cli:           "governance tags list"
+		cli: {
+			command: ["governance", "tags", "list"]
+		}
 		returns:       "PaginatedTags"
 		error_family:  "standard"
 		params:        #tagListParameters
@@ -390,7 +418,9 @@ package api
 		op:             "createTag"
 		path:           "/tags"
 		summary:        "Create tag"
-		cli:            "governance tags create"
+		cli: {
+			command: ["governance", "tags", "create"]
+		}
 		returns:        "Tag"
 		success_status: 201
 		error_family:   "mutating"
@@ -432,7 +462,9 @@ package api
 		op:            "deleteTag"
 		path:          "/tags/{tag_id}"
 		summary:       "Delete tag"
-		cli:           "governance tags delete"
+		cli: {
+			command: ["governance", "tags", "delete"]
+		}
 		error_family:  "mutating"
 		params: [
 			#tagIDPathParameter,
@@ -456,7 +488,9 @@ package api
 		op:             "createTagAssignment"
 		path:           "/tags/{tag_id}/assignments"
 		summary:        "Create tag assignment"
-		cli:            "governance tags assignments create"
+		cli: {
+			command: ["governance", "tags", "assignments", "create"]
+		}
 		returns:        "TagAssignment"
 		success_status: 201
 		error_family:   "resource"
@@ -476,7 +510,9 @@ package api
 		op:            "deleteTagAssignment"
 		path:          "/tags/{tag_id}/assignments/{assignment_id}"
 		summary:       "Delete tag assignment"
-		cli:           "governance tags assignments delete"
+		cli: {
+			command: ["governance", "tags", "assignments", "delete"]
+		}
 		error_family:  "mutating"
 		params:        #tagAssignmentPathParameters
 		authz_default: false
@@ -487,7 +523,9 @@ package api
 		op:            "listClassifications"
 		path:          "/classifications"
 		summary:       "List classifications"
-		cli:           "governance classifications list"
+		cli: {
+			command: ["governance", "classifications", "list"]
+		}
 		returns:       "PaginatedTags"
 		error_family:  "standard"
 		params:        #tagListParameters

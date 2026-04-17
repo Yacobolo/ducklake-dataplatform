@@ -1,7 +1,6 @@
 package cli
 
 import (
-	"strings"
 	"testing"
 
 	cobraruntime "github.com/Yacobolo/quackstack/pkg/apigen/runtime/cobra"
@@ -9,17 +8,16 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/Yacobolo/quackstack/pkg/cli/gen"
 )
 
 func TestBuildGeneratedCommandSpecsFromEndpoints_DetectsDuplicateCommands(t *testing.T) {
 	t.Helper()
 
 	root := &cobra.Command{Use: "quack"}
-	err := cobraruntime.AddGeneratedCommands(root, nil, generatedRuntimeEndpoints([]gen.ReferenceOperation{
-		{OperationID: "listSchemas", CLICommand: "catalog schemas list", Path: "/catalogs/{catalog_name}/schemas"},
-		{OperationID: "listTables", CLICommand: "catalog schemas list", Path: "/catalogs/{catalog_name}/schemas/{schema_name}/tables"},
-	}))
+	err := cobraruntime.AddGeneratedCommands(root, nil, []cobraruntime.CommandSpec{
+		{OperationID: "listSchemas", Command: []string{"catalog", "schemas", "list"}, Path: "/catalogs/{catalog_name}/schemas"},
+		{OperationID: "listTables", Command: []string{"catalog", "schemas", "list"}, Path: "/catalogs/{catalog_name}/schemas/{schema_name}/tables"},
+	}, cobraruntime.RuntimeOptions{})
 
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "duplicate generated CLI command")
@@ -27,27 +25,16 @@ func TestBuildGeneratedCommandSpecsFromEndpoints_DetectsDuplicateCommands(t *tes
 	assert.Contains(t, err.Error(), "listTables")
 }
 
-func TestBuildGeneratedCommandSpecsFromEndpoints_PromotesSingleSegmentRoots(t *testing.T) {
+func TestBuildGeneratedCommandSpecsFromEndpoints_RejectsPrefixConflicts(t *testing.T) {
 	t.Helper()
 
 	root := &cobra.Command{Use: "quack"}
-	err := cobraruntime.AddGeneratedCommands(root, nil, generatedRuntimeEndpoints([]gen.ReferenceOperation{
-		{OperationID: "executeQuery", CLICommand: "query", Path: "/query-executions"},
-		{OperationID: "submitQuery", CLICommand: "query submit", Path: "/queries"},
-	}))
-	require.NoError(t, err)
-
-	var paths []string
-	for _, cmd := range root.Commands() {
-		if cmd.Name() != "query" {
-			continue
-		}
-		for _, sub := range cmd.Commands() {
-			paths = append(paths, strings.Join([]string{cmd.Name(), sub.Name()}, " "))
-		}
-	}
-	assert.Contains(t, paths, "query execute")
-	assert.Contains(t, paths, "query submit")
+	err := cobraruntime.AddGeneratedCommands(root, nil, []cobraruntime.CommandSpec{
+		{OperationID: "executeQuery", Command: []string{"query"}, Path: "/query-executions"},
+		{OperationID: "submitQuery", Command: []string{"query", "submit"}, Path: "/queries"},
+	}, cobraruntime.RuntimeOptions{})
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "conflicts")
 }
 
 func TestAllAPIEndpoints_AddsDashboardCLICommands(t *testing.T) {

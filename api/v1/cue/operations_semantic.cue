@@ -96,7 +96,9 @@ package api
 		op:           "checkMetricFreshness"
 		path:         "/semantic-metrics/{metric_name}/freshness"
 		summary:      "Check metric freshness"
-		cli:          "semantic freshness check"
+		cli: {
+			command: ["semantic", "freshness", "check"]
+		}
 		returns:      "MetricFreshnessStatus"
 		error_family: "resource"
 		params:       #metricFreshnessParameters
@@ -107,7 +109,9 @@ package api
 		op:           "listSemanticModels"
 		path:         "/workspaces/{workspace_id}/semantic-models"
 		summary:      "List semantic models"
-		cli:          "semantic models list"
+		cli: {
+			command: ["semantic", "models", "list"]
+		}
 		returns:      "PaginatedSemanticModels"
 		error_family: "standard"
 		params:       #semanticWorkspaceListParameters
@@ -118,7 +122,9 @@ package api
 		op:             "createSemanticModel"
 		path:           "/workspaces/{workspace_id}/semantic-models"
 		summary:        "Create semantic model"
-		cli:            "semantic models create"
+		cli: {
+			command: ["semantic", "models", "create"]
+		}
 		returns:        "SemanticModel"
 		success_status: 201
 		error_family:   "mutating"
@@ -132,7 +138,9 @@ package api
 		op:           "getSemanticModel"
 		path:         "/workspaces/{workspace_id}/semantic-models/{semantic_model_id}"
 		summary:      "Get semantic model"
-		cli:          "semantic models get"
+		cli: {
+			command: ["semantic", "models", "get"]
+		}
 		returns:      "SemanticModel"
 		error_family: "resource"
 		params:       #semanticModelPathParameters
@@ -143,7 +151,9 @@ package api
 		op:           "updateSemanticModel"
 		path:         "/workspaces/{workspace_id}/semantic-models/{semantic_model_id}"
 		summary:      "Update semantic model"
-		cli:          "semantic models update"
+		cli: {
+			command: ["semantic", "models", "update"]
+		}
 		returns:      "SemanticModel"
 		error_family: "mutating"
 		params:       #semanticModelPathParameters
@@ -156,7 +166,9 @@ package api
 		op:           "deleteSemanticModel"
 		path:         "/workspaces/{workspace_id}/semantic-models/{semantic_model_id}"
 		summary:      "Delete semantic model"
-		cli:          "semantic models delete"
+		cli: {
+			command: ["semantic", "models", "delete"]
+		}
 		error_family: "mutating"
 		params:       #semanticModelPathParameters
 	},
@@ -166,7 +178,9 @@ package api
 		op:           "listSemanticMetrics"
 		path:         "/workspaces/{workspace_id}/semantic-models/{semantic_model_id}/metrics"
 		summary:      "List semantic metrics"
-		cli:          "semantic metrics list"
+		cli: {
+			command: ["semantic", "metrics", "list"]
+		}
 		returns:      "SemanticMetricList"
 		error_family: "resource"
 		params:       #semanticModelPathParameters
@@ -177,7 +191,9 @@ package api
 		op:             "createSemanticMetric"
 		path:           "/workspaces/{workspace_id}/semantic-models/{semantic_model_id}/metrics"
 		summary:        "Create semantic metric"
-		cli:            "semantic metrics create"
+		cli: {
+			command: ["semantic", "metrics", "create"]
+		}
 		returns:        "SemanticMetric"
 		success_status: 201
 		error_family:   "mutating"
@@ -201,7 +217,9 @@ package api
 		op:           "updateSemanticMetric"
 		path:         "/workspaces/{workspace_id}/semantic-models/{semantic_model_id}/metrics/{metric_name}"
 		summary:      "Update semantic metric"
-		cli:          "semantic metrics update"
+		cli: {
+			command: ["semantic", "metrics", "update"]
+		}
 		returns:      "SemanticMetric"
 		error_family: "mutating"
 		params:       #semanticMetricPathParameters
@@ -214,7 +232,9 @@ package api
 		op:           "deleteSemanticMetric"
 		path:         "/workspaces/{workspace_id}/semantic-models/{semantic_model_id}/metrics/{metric_name}"
 		summary:      "Delete semantic metric"
-		cli:          "semantic metrics delete"
+		cli: {
+			command: ["semantic", "metrics", "delete"]
+		}
 		error_family: "mutating"
 		params:       #semanticMetricPathParameters
 	},
@@ -224,7 +244,9 @@ package api
 		op:           "listSemanticPreAggregations"
 		path:         "/workspaces/{workspace_id}/semantic-models/{semantic_model_id}/pre-aggregations"
 		summary:      "List semantic pre aggregations"
-		cli:          "semantic pre-aggregations list"
+		cli: {
+			command: ["semantic", "pre-aggregations", "list"]
+		}
 		returns:      "SemanticPreAggregationList"
 		error_family: "resource"
 		params:       #semanticModelPathParameters
@@ -235,7 +257,9 @@ package api
 		op:             "createSemanticPreAggregation"
 		path:           "/workspaces/{workspace_id}/semantic-models/{semantic_model_id}/pre-aggregations"
 		summary:        "Create semantic pre aggregation"
-		cli:            "semantic pre-aggregations create"
+		cli: {
+			command: ["semantic", "pre-aggregations", "create"]
+		}
 		returns:        "SemanticPreAggregation"
 		success_status: 201
 		error_family:   "mutating"
@@ -259,7 +283,9 @@ package api
 		op:           "updateSemanticPreAggregation"
 		path:         "/workspaces/{workspace_id}/semantic-models/{semantic_model_id}/pre-aggregations/{pre_aggregation_name}"
 		summary:      "Update semantic pre aggregation"
-		cli:          "semantic pre-aggregations update"
+		cli: {
+			command: ["semantic", "pre-aggregations", "update"]
+		}
 		returns:      "SemanticPreAggregation"
 		error_family: "mutating"
 		params:       #semanticPreAggregationPathParameters
@@ -272,7 +298,9 @@ package api
 		op:           "deleteSemanticPreAggregation"
 		path:         "/workspaces/{workspace_id}/semantic-models/{semantic_model_id}/pre-aggregations/{pre_aggregation_name}"
 		summary:      "Delete semantic pre aggregation"
-		cli:          "semantic pre-aggregations delete"
+		cli: {
+			command: ["semantic", "pre-aggregations", "delete"]
+		}
 		error_family: "mutating"
 		params:       #semanticPreAggregationPathParameters
 	},
@@ -282,7 +310,9 @@ package api
 		op:           "listSemanticModelRelationships"
 		path:         "/workspaces/{workspace_id}/semantic-models/{semantic_model_id}/relationships"
 		summary:      "List semantic relationships for a semantic model"
-		cli:          "semantic relationships list"
+		cli: {
+			command: ["semantic", "relationships", "list"]
+		}
 		returns:      "SemanticRelationshipList"
 		error_family: "resource"
 		params:       #semanticModelPathParameters
@@ -293,7 +323,9 @@ package api
 		op:             "createSemanticModelRelationship"
 		path:           "/workspaces/{workspace_id}/semantic-models/{semantic_model_id}/relationships"
 		summary:        "Create semantic relationship for a semantic model"
-		cli:            "semantic relationships create"
+		cli: {
+			command: ["semantic", "relationships", "create"]
+		}
 		returns:        "SemanticRelationship"
 		success_status: 201
 		error_family:   "mutating"
@@ -317,7 +349,9 @@ package api
 		op:           "updateSemanticModelRelationship"
 		path:         "/workspaces/{workspace_id}/semantic-models/{semantic_model_id}/relationships/{relationship_name}"
 		summary:      "Update semantic relationship for a semantic model"
-		cli:          "semantic relationships update"
+		cli: {
+			command: ["semantic", "relationships", "update"]
+		}
 		returns:      "SemanticRelationship"
 		error_family: "mutating"
 		params:       #semanticRelationshipPathParameters
@@ -330,7 +364,9 @@ package api
 		op:           "deleteSemanticModelRelationship"
 		path:         "/workspaces/{workspace_id}/semantic-models/{semantic_model_id}/relationships/{relationship_name}"
 		summary:      "Delete semantic relationship for a semantic model"
-		cli:          "semantic relationships delete"
+		cli: {
+			command: ["semantic", "relationships", "delete"]
+		}
 		error_family: "mutating"
 		params:       #semanticRelationshipPathParameters
 	},
@@ -340,7 +376,9 @@ package api
 		op:           "explainMetricQuery"
 		path:         "/workspaces/{workspace_id}/semantic-models/{semantic_model_id}/query-explanations"
 		summary:      "Explain metric query"
-		cli:          "semantic explain"
+		cli: {
+			command: ["semantic", "explain"]
+		}
 		returns:      "MetricQueryExplainResponse"
 		error_family: "mutating"
 		params:       #semanticModelPathParameters
@@ -353,7 +391,9 @@ package api
 		op:           "runMetricQuery"
 		path:         "/workspaces/{workspace_id}/semantic-models/{semantic_model_id}/query-runs"
 		summary:      "Run metric query"
-		cli:          "semantic run"
+		cli: {
+			command: ["semantic", "run"]
+		}
 		returns:      "MetricQueryRunResponse"
 		error_family: "mutating"
 		params:       #semanticModelPathParameters
@@ -366,7 +406,9 @@ package api
 		op:           "checkSourceFreshness"
 		path:         "/semantic-sources/{source_schema}/{source_table}/freshness"
 		summary:      "Check source freshness"
-		cli:          "models sources freshness"
+		cli: {
+			command: ["models", "sources", "freshness"]
+		}
 		returns:      "SourceFreshnessStatus"
 		error_family: "resource"
 		params:       #sourceFreshnessParameters

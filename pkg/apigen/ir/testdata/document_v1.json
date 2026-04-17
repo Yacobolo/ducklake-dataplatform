@@ -1,5 +1,8 @@
 {
   "schema_version": "v1",
+  "api": {
+    "base_path": "/v1"
+  },
   "info": {
     "title": "APIGen Example API",
     "version": "0.1.0",
@@ -163,8 +166,13 @@
       "extensions": {
         "x-authz": {
           "mode": "admin_only"
-        },
-        "x-cli-command": "widgets list"
+        }
+      },
+      "cli": {
+        "command": [
+          "widgets",
+          "list"
+        ]
       }
     },
     {
@@ -206,8 +214,13 @@
       "extensions": {
         "x-authz": {
           "mode": "admin_only"
-        },
-        "x-cli-command": "widgets create"
+        }
+      },
+      "cli": {
+        "command": [
+          "widgets",
+          "create"
+        ]
       }
     }
   ]

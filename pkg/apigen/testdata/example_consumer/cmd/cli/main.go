@@ -16,7 +16,7 @@ func main() {
 	}
 
 	client := cobraruntime.NewClient("http://127.0.0.1:8081", "", "")
-	if err := cobraruntime.AddGeneratedCommands(root, client, gen.APIGeneratedEndpoints); err != nil {
+	if err := cobraruntime.AddGeneratedCommands(root, client, gen.APIGeneratedCommandSpecs, cobraruntime.RuntimeOptions{}); err != nil {
 		log.Fatal(err)
 	}
 	if err := root.Execute(); err != nil {

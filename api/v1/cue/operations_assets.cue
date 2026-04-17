@@ -76,7 +76,9 @@ package api
 		op:           "listAssets"
 		path:         "/assets"
 		summary:      "List assets"
-		cli:          "assets list"
+		cli: {
+			command: ["assets", "list"]
+		}
 		returns:      "PaginatedAssets"
 		error_family: "standard"
 		params:       #paginationParameters
@@ -88,7 +90,9 @@ package api
 		path:           "/assets"
 		summary:        "Create asset"
 		description:    "Creates a managed asset definition together with its ownership, checks, tags, and upstream lineage metadata."
-		cli:            "assets create"
+		cli: {
+			command: ["assets", "create"]
+		}
 		returns:        "Asset"
 		success_status: 201
 		error_family:   "mutating_conflict"
@@ -103,7 +107,9 @@ package api
 		op:           "getAsset"
 		path:         "/assets/{asset_key}"
 		summary:      "Get asset"
-		cli:          "assets get"
+		cli: {
+			command: ["assets", "get"]
+		}
 		returns:      "Asset"
 		error_family: "resource"
 		params:       #assetPathParameters
@@ -114,7 +120,9 @@ package api
 		op:           "updateAsset"
 		path:         "/assets/{asset_key}"
 		summary:      "Update asset"
-		cli:          "assets update"
+		cli: {
+			command: ["assets", "update"]
+		}
 		returns:      "Asset"
 		error_family: "resource"
 		params:       #assetPathParameters
@@ -129,7 +137,9 @@ package api
 		op:            "deleteAsset"
 		path:          "/assets/{asset_key}"
 		summary:       "Delete asset"
-		cli:           "assets delete"
+		cli: {
+			command: ["assets", "delete"]
+		}
 		error_family:  "resource"
 		params:        #assetPathParameters
 		authz_default: false
@@ -141,7 +151,9 @@ package api
 		op:           "getAssetGraph"
 		path:         "/assets/{asset_key}/graph"
 		summary:      "Get asset graph"
-		cli:          "assets graph get"
+		cli: {
+			command: ["assets", "graph", "get"]
+		}
 		returns:      "AssetGraph"
 		error_family: "resource"
 		params:       #assetPathParameters
@@ -152,7 +164,9 @@ package api
 		op:           "getAssetFreshness"
 		path:         "/assets/{asset_key}/freshness"
 		summary:      "Get asset freshness"
-		cli:          "assets freshness get"
+		cli: {
+			command: ["assets", "freshness", "get"]
+		}
 		returns:      "AssetFreshnessStatus"
 		error_family: "resource"
 		params:       #assetPathParameters
@@ -163,7 +177,9 @@ package api
 		op:           "explainAssetFreshness"
 		path:         "/assets/{asset_key}/freshness/explanation"
 		summary:      "Explain asset freshness"
-		cli:          "assets freshness explain"
+		cli: {
+			command: ["assets", "freshness", "explain"]
+		}
 		returns:      "AssetFreshnessExplanation"
 		error_family: "resource"
 		params:       #assetPathParameters
@@ -174,7 +190,9 @@ package api
 		op:           "listAssetFreshnessRequirements"
 		path:         "/assets/{asset_key}/freshness/requirements"
 		summary:      "List asset freshness requirements"
-		cli:          "assets freshness requirements"
+		cli: {
+			command: ["assets", "freshness", "requirements"]
+		}
 		returns:      "AssetFreshnessRequirementsResponse"
 		error_family: "resource"
 		params:       #assetPathParameters
@@ -185,7 +203,9 @@ package api
 		op:           "listAssetFreshnessBlockers"
 		path:         "/assets/{asset_key}/freshness/blockers"
 		summary:      "List asset freshness blockers"
-		cli:          "assets freshness blockers"
+		cli: {
+			command: ["assets", "freshness", "blockers"]
+		}
 		returns:      "AssetFreshnessBlockersResponse"
 		error_family: "resource"
 		params:       #assetPathParameters
@@ -196,7 +216,9 @@ package api
 		op:             "reconcileAssetFreshness"
 		path:           "/assets/{asset_key}/freshness-reconciliations"
 		summary:        "Reconcile asset freshness"
-		cli:            "assets freshness reconcile"
+		cli: {
+			command: ["assets", "freshness", "reconcile"]
+		}
 		returns:        "AssetFreshnessReconcileResponse"
 		success_status: 202
 		error_family:   "resource"
@@ -208,7 +230,9 @@ package api
 		op:           "listAssetPartitions"
 		path:         "/assets/{asset_key}/partitions"
 		summary:      "List asset partitions"
-		cli:          "assets partitions list"
+		cli: {
+			command: ["assets", "partitions", "list"]
+		}
 		returns:      "PaginatedAssetPartitions"
 		error_family: "resource"
 		params:       #assetPaginationParameters
@@ -219,7 +243,9 @@ package api
 		op:           "listAssetRuns"
 		path:         "/assets/{asset_key}/runs"
 		summary:      "List asset runs"
-		cli:          "assets runs list"
+		cli: {
+			command: ["assets", "runs", "list"]
+		}
 		returns:      "PaginatedAssetRuns"
 		error_family: "resource"
 		params:       #assetStatusPaginationParameters
@@ -231,7 +257,9 @@ package api
 		path:           "/assets/{asset_key}/materializations"
 		summary:        "Trigger asset materialization"
 		description:    "Starts a materialization run for the specified asset and returns the queued execution metadata."
-		cli:            "assets materialize"
+		cli: {
+			command: ["assets", "materialize"]
+		}
 		returns:        "AssetTriggerResponse"
 		success_status: 202
 		error_family:   "resource"
@@ -248,7 +276,9 @@ package api
 		op:           "listAssetMaterializations"
 		path:         "/assets/{asset_key}/materializations"
 		summary:      "List asset materializations"
-		cli:          "assets materializations list"
+		cli: {
+			command: ["assets", "materializations", "list"]
+		}
 		returns:      "PaginatedAssetMaterializations"
 		error_family: "resource"
 		params:       #assetPaginationParameters
@@ -259,7 +289,9 @@ package api
 		op:           "listAssetChecks"
 		path:         "/assets/{asset_key}/checks"
 		summary:      "List asset checks"
-		cli:          "assets checks list"
+		cli: {
+			command: ["assets", "checks", "list"]
+		}
 		returns:      "AssetCheckList"
 		error_family: "resource"
 		params:       #assetPathParameters
@@ -270,7 +302,9 @@ package api
 		op:           "listAssetCheckResults"
 		path:         "/assets/{asset_key}/checks/results"
 		summary:      "List asset check results"
-		cli:          "assets check-results list"
+		cli: {
+			command: ["assets", "check-results", "list"]
+		}
 		returns:      "PaginatedAssetCheckResults"
 		error_family: "resource"
 		params:       #assetPaginationParameters
@@ -281,7 +315,9 @@ package api
 		op:           "listAssetBackfills"
 		path:         "/assets/{asset_key}/backfills"
 		summary:      "List asset backfills"
-		cli:          "assets backfills list"
+		cli: {
+			command: ["assets", "backfills", "list"]
+		}
 		returns:      "PaginatedBackfillRequests"
 		error_family: "resource"
 		params:       #assetStatusPaginationParameters
@@ -292,7 +328,9 @@ package api
 		op:             "createAssetBackfill"
 		path:           "/assets/{asset_key}/backfills"
 		summary:        "Create asset backfill"
-		cli:            "assets backfills create"
+		cli: {
+			command: ["assets", "backfills", "create"]
+		}
 		returns:        "CreateAssetBackfillResponse"
 		success_status: 201
 		error_family:   "resource"
@@ -308,7 +346,9 @@ package api
 		op:           "getAssetBackfill"
 		path:         "/assets/{asset_key}/backfills/{backfill_id}"
 		summary:      "Get asset backfill"
-		cli:          "assets backfills get"
+		cli: {
+			command: ["assets", "backfills", "get"]
+		}
 		returns:      "AssetBackfillDetails"
 		error_family: "resource"
 		params:       #assetBackfillPathParameters

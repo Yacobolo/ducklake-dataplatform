@@ -42,7 +42,9 @@ endpoints_audit: [
 			op:           "listAuditLogs"
 			path:         "/audit-entries"
 			summary:      "List audit entries"
-			cli:          "audit entries list"
+			cli: {
+				command: ["audit", "entries", "list"]
+			}
 			returns:      "PaginatedAuditLogs"
 			error_family: "guarded_read"
 			params:       #auditListParameters

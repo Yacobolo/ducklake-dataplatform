@@ -19,12 +19,12 @@ import (
 
 func TestNewClient_TrailingSlash(t *testing.T) {
 	c := NewClient("http://localhost:8080/", "", "")
-	assert.Equal(t, "http://localhost:8080", c.BaseURL)
+	assert.Equal(t, "http://localhost:8080/v1", c.BaseURL)
 }
 
 func TestNewClient_NoTrailingSlash(t *testing.T) {
 	c := NewClient("http://localhost:8080", "", "")
-	assert.Equal(t, "http://localhost:8080", c.BaseURL)
+	assert.Equal(t, "http://localhost:8080/v1", c.BaseURL)
 }
 
 func TestNewClient_SetsTimeout(t *testing.T) {

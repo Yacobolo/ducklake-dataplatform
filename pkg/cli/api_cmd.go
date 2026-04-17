@@ -347,14 +347,44 @@ func newAPISpecCmd(client *apiruntime.Client) *cobra.Command {
 
 func allAPIEndpoints() []gen.ReferenceOperation {
 	combined := make([]gen.ReferenceOperation, 0, len(gen.CLIReferenceIndex.Operations))
+	byOperation := generatedOperationIndex()
 	seen := make(map[string]struct{}, len(gen.CLIReferenceIndex.Operations))
+
 	for _, generated := range gen.CLIReferenceIndex.Operations {
+		if spec, ok := byOperation[generated.OperationID]; ok {
+			generated.Method = spec.Method
+			generated.Path = spec.Path
+			generated.Tags = append([]string(nil), spec.Tags...)
+			generated.Summary = spec.Summary
+			generated.Description = spec.Description
+			generated.Parameters = convertGeneratedParams(spec.Parameters)
+			generated.BodyFields = convertGeneratedBodyFields(spec.RequestBody)
+			generated.CLICommand = strings.Join(spec.Command, " ")
+		}
 		if _, ok := seen[generated.OperationID]; ok {
 			continue
 		}
 		seen[generated.OperationID] = struct{}{}
 		combined = append(combined, generated)
 	}
+
+	for operationID, spec := range byOperation {
+		if _, ok := seen[operationID]; ok {
+			continue
+		}
+		combined = append(combined, gen.ReferenceOperation{
+			OperationID: operationID,
+			Method:      spec.Method,
+			Path:        spec.Path,
+			Tags:        append([]string(nil), spec.Tags...),
+			Summary:     spec.Summary,
+			Description: spec.Description,
+			Parameters:  convertGeneratedParams(spec.Parameters),
+			BodyFields:  convertGeneratedBodyFields(spec.RequestBody),
+			CLICommand:  strings.Join(spec.Command, " "),
+		})
+	}
+
 	return combined
 }
 
@@ -367,12 +397,57 @@ func apiContentTypes(operationID string) []string {
 	return nil
 }
 
+func generatedOperationIndex() map[string]gen.APIGenCommandSpec {
+	index := make(map[string]gen.APIGenCommandSpec, len(gen.APIGeneratedCommandSpecs))
+	for _, spec := range gen.APIGeneratedCommandSpecs {
+		index[spec.OperationID] = spec
+	}
+	return index
+}
+
+func convertGeneratedParams(params []gen.APIGenParam) []gen.ReferenceParam {
+	if len(params) == 0 {
+		return nil
+	}
+	converted := make([]gen.ReferenceParam, 0, len(params))
+	for _, parameter := range params {
+		converted = append(converted, gen.ReferenceParam{
+			Name:        parameter.Name,
+			In:          parameter.In,
+			Type:        parameter.Type,
+			Description: parameter.Description,
+			Required:    parameter.Required,
+			Enum:        append([]string(nil), parameter.Enum...),
+		})
+	}
+	return converted
+}
+
+func convertGeneratedBodyFields(body *gen.APIGenRequestBody) []gen.ReferenceField {
+	if body == nil || len(body.Fields) == 0 {
+		return nil
+	}
+	converted := make([]gen.ReferenceField, 0, len(body.Fields))
+	for _, field := range body.Fields {
+		converted = append(converted, gen.ReferenceField{
+			Name:        field.Name,
+			Type:        field.Type,
+			Description: field.Description,
+			Required:    field.Required,
+			Enum:        append([]string(nil), field.Enum...),
+		})
+	}
+	return converted
+}
+
 func loadAPISpecBytes(client *apiruntime.Client, source string) ([]byte, error) {
 	switch source {
 	case "", "embedded":
 		return []byte(gen.CLIReferenceIndex.OpenAPISpecYAML), nil
 	case "live":
-		reqURL := strings.TrimRight(client.BaseURL, "/") + "/openapi.json"
+		baseURL := strings.TrimRight(client.BaseURL, "/")
+		baseURL = strings.TrimSuffix(baseURL, quackAPIBasePath)
+		reqURL := baseURL + "/openapi.json"
 		req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, reqURL, nil)
 		if err != nil {
 			return nil, fmt.Errorf("build live openapi request: %w", err)

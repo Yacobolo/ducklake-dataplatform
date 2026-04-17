@@ -85,7 +85,9 @@ package api
 		op:           "listNotebooks"
 		path:         "/notebooks"
 		summary:      "List notebooks"
-		cli:          "notebooks list"
+		cli: {
+			command: ["notebooks", "list"]
+		}
 		returns:      "PaginatedNotebooks"
 		error_family: "standard"
 		params:       #listNotebookParameters
@@ -96,7 +98,9 @@ package api
 		op:             "createNotebook"
 		path:           "/notebooks"
 		summary:        "Create notebook"
-		cli:            "notebooks create"
+		cli: {
+			command: ["notebooks", "create"]
+		}
 		returns:        "Notebook"
 		success_status: 201
 		error_family:   "mutating"
@@ -109,7 +113,9 @@ package api
 		op:           "getNotebook"
 		path:         "/notebooks/{notebook_id}"
 		summary:      "Get notebook"
-		cli:          "notebooks get"
+		cli: {
+			command: ["notebooks", "get"]
+		}
 		returns:      "NotebookDetail"
 		error_family: "resource"
 		params:       #notebookPathParameters
@@ -120,7 +126,9 @@ package api
 		op:           "updateNotebook"
 		path:         "/notebooks/{notebook_id}"
 		summary:      "Update notebook"
-		cli:          "notebooks update"
+		cli: {
+			command: ["notebooks", "update"]
+		}
 		returns:      "Notebook"
 		error_family: "resource"
 		params:       #notebookPathParameters
@@ -189,7 +197,9 @@ package api
 		op:           "deleteNotebook"
 		path:         "/notebooks/{notebook_id}"
 		summary:      "Delete notebook"
-		cli:          "notebooks delete"
+		cli: {
+			command: ["notebooks", "delete"]
+		}
 		error_family: "resource"
 		params:       #notebookPathParameters
 	},
@@ -199,7 +209,9 @@ package api
 		op:             "createCell"
 		path:           "/notebooks/{notebook_id}/cells"
 		summary:        "Create cell"
-		cli:            "notebooks cells create"
+		cli: {
+			command: ["notebooks", "cells", "create"]
+		}
 		returns:        "Cell"
 		success_status: 201
 		error_family:   "resource"
@@ -216,7 +228,9 @@ package api
 		op:           "reorderCells"
 		path:         "/notebooks/{notebook_id}/cells/reorder"
 		summary:      "Reorder cells"
-		cli:          "notebooks cells reorder"
+		cli: {
+			command: ["notebooks", "cells", "reorder"]
+		}
 		returns:      "CellList"
 		error_family: "resource"
 		params:       #notebookPathParameters
@@ -232,7 +246,9 @@ package api
 		op:           "updateCell"
 		path:         "/notebooks/{notebook_id}/cells/{cell_id}"
 		summary:      "Update cell"
-		cli:          "notebooks cells update"
+		cli: {
+			command: ["notebooks", "cells", "update"]
+		}
 		returns:      "Cell"
 		error_family: "resource"
 		params:       #notebookCellPathParameters
@@ -248,7 +264,9 @@ package api
 		op:           "deleteCell"
 		path:         "/notebooks/{notebook_id}/cells/{cell_id}"
 		summary:      "Delete cell"
-		cli:          "notebooks cells delete"
+		cli: {
+			command: ["notebooks", "cells", "delete"]
+		}
 		error_family: "resource"
 		params:       #notebookCellPathParameters
 	},
@@ -258,7 +276,9 @@ package api
 		op:             "createNotebookSession"
 		path:           "/notebooks/{notebook_id}/sessions"
 		summary:        "Create notebook session"
-		cli:            "notebooks sessions create"
+		cli: {
+			command: ["notebooks", "sessions", "create"]
+		}
 		returns:        "NotebookSession"
 		success_status: 201
 		error_family:   "resource"
@@ -270,7 +290,9 @@ package api
 		op:           "closeNotebookSession"
 		path:         "/notebooks/{notebook_id}/sessions/{session_id}"
 		summary:      "Close notebook session"
-		cli:          "notebooks sessions close"
+		cli: {
+			command: ["notebooks", "sessions", "close"]
+		}
 		error_family: "resource"
 		params:       #notebookSessionPathParameters
 	},
@@ -280,7 +302,9 @@ package api
 		op:           "executeCell"
 		path:         "/notebooks/{notebook_id}/sessions/{session_id}/cell-executions/{cell_id}"
 		summary:      "Execute cell"
-		cli:          "notebooks cells execute"
+		cli: {
+			command: ["notebooks", "cells", "execute"]
+		}
 		returns:      "CellExecutionResult"
 		error_family: "resource"
 		params:       #executeCellPathParameters
@@ -294,7 +318,9 @@ package api
 		op:           "runAllCells"
 		path:         "/notebooks/{notebook_id}/sessions/{session_id}/cell-executions"
 		summary:      "Run all cells"
-		cli:          "notebooks sessions run-all"
+		cli: {
+			command: ["notebooks", "sessions", "run-all"]
+		}
 		returns:      "RunAllResult"
 		error_family: "resource"
 		params:       #notebookSessionPathParameters
@@ -305,7 +331,9 @@ package api
 		op:             "runAllCellsAsync"
 		path:           "/notebooks/{notebook_id}/sessions/{session_id}/job-runs"
 		summary:        "Run all cells asynchronously"
-		cli:            "notebooks sessions run-all-async"
+		cli: {
+			command: ["notebooks", "sessions", "run-all-async"]
+		}
 		returns:        "NotebookJob"
 		success_status: 202
 		error_family:   "resource"
@@ -317,7 +345,9 @@ package api
 		op:           "listNotebookJobs"
 		path:         "/notebooks/{notebook_id}/jobs"
 		summary:      "List notebook jobs"
-		cli:          "notebooks jobs list"
+		cli: {
+			command: ["notebooks", "jobs", "list"]
+		}
 		returns:      "PaginatedNotebookJobs"
 		error_family: "resource"
 		params:       #listNotebookJobsParameters
@@ -328,7 +358,9 @@ package api
 		op:           "getNotebookJob"
 		path:         "/notebooks/{notebook_id}/jobs/{job_id}"
 		summary:      "Get notebook job"
-		cli:          "notebooks jobs get"
+		cli: {
+			command: ["notebooks", "jobs", "get"]
+		}
 		returns:      "NotebookJob"
 		error_family: "resource"
 		params:       #notebookJobPathParameters

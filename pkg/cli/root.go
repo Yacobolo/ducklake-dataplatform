@@ -7,6 +7,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	cobraruntime "github.com/Yacobolo/quackstack/pkg/apigen/runtime/cobra"
 	"github.com/Yacobolo/quackstack/pkg/cli/apiruntime"
 )
 
@@ -170,6 +171,7 @@ func newRootCmd() *cobra.Command {
 
 	// Create client using a lazy initializer
 	client := apiruntime.NewClient(host, apiKey, token)
+	generatedClient := cobraruntime.NewClient(host, apiKey, token)
 
 	// Wire PersistentPreRun to update client after config resolution
 	originalPreRun := rootCmd.PersistentPreRunE
@@ -200,13 +202,20 @@ func newRootCmd() *cobra.Command {
 			}
 		}
 		// Update client with resolved values
-		client.BaseURL = host
+		client.BaseURL = apiruntime.NormalizeBaseURL(host)
 		client.APIKey = apiKey
 		client.Token = token
 		client.Debug = debug
 		client.TraceHTTP = traceHTTP
 		client.LogFormat = logFormat
 		client.LogFile = logFile
+		generatedClient.BaseURL = host
+		generatedClient.APIKey = apiKey
+		generatedClient.Token = token
+		generatedClient.Debug = debug
+		generatedClient.TraceHTTP = traceHTTP
+		generatedClient.LogFormat = logFormat
+		generatedClient.LogFile = logFile
 		return nil
 	}
 
@@ -220,7 +229,7 @@ func newRootCmd() *cobra.Command {
 	)
 
 	// Add runtime-generated API commands
-	addRuntimeGeneratedCommands(rootCmd, client)
+	addRuntimeGeneratedCommands(rootCmd, generatedClient)
 
 	// Add hand-written commands
 	addGroupedCommand(rootCmd, newVersionCmd(), groupAPI)

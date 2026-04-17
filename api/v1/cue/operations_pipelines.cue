@@ -55,7 +55,9 @@ package api
 		op:           "listPipelines"
 		path:         "/pipelines"
 		summary:      "List pipelines"
-		cli:          "pipelines list"
+		cli: {
+			command: ["pipelines", "list"]
+		}
 		returns:      "PaginatedPipelines"
 		error_family: "standard"
 		params:       #paginationParameters
@@ -66,7 +68,9 @@ package api
 		op:             "createPipeline"
 		path:           "/pipelines"
 		summary:        "Create pipeline"
-		cli:            "pipelines create"
+		cli: {
+			command: ["pipelines", "create"]
+		}
 		returns:        "Pipeline"
 		success_status: 201
 		error_family:   "mutating"
@@ -79,7 +83,9 @@ package api
 		op:           "getPipeline"
 		path:         "/pipelines/{pipeline_name}"
 		summary:      "Get pipeline"
-		cli:          "pipelines get"
+		cli: {
+			command: ["pipelines", "get"]
+		}
 		returns:      "Pipeline"
 		error_family: "resource"
 		params:       #pipelinePathParameters
@@ -90,7 +96,9 @@ package api
 		op:           "updatePipeline"
 		path:         "/pipelines/{pipeline_name}"
 		summary:      "Update pipeline"
-		cli:          "pipelines update"
+		cli: {
+			command: ["pipelines", "update"]
+		}
 		returns:      "Pipeline"
 		error_family: "mutating"
 		params:       #pipelinePathParameters
@@ -103,7 +111,9 @@ package api
 		op:           "deletePipeline"
 		path:         "/pipelines/{pipeline_name}"
 		summary:      "Delete pipeline"
-		cli:          "pipelines delete"
+		cli: {
+			command: ["pipelines", "delete"]
+		}
 		error_family: "mutating"
 		params:       #pipelinePathParameters
 	},
@@ -113,7 +123,9 @@ package api
 		op:           "listPipelineJobs"
 		path:         "/pipelines/{pipeline_name}/jobs"
 		summary:      "List pipeline jobs"
-		cli:          "pipelines jobs list"
+		cli: {
+			command: ["pipelines", "jobs", "list"]
+		}
 		returns:      "PipelineJobList"
 		error_family: "resource"
 		params:       #pipelinePathParameters
@@ -124,7 +136,9 @@ package api
 		op:             "createPipelineJob"
 		path:           "/pipelines/{pipeline_name}/jobs"
 		summary:        "Create pipeline job"
-		cli:            "pipelines jobs create"
+		cli: {
+			command: ["pipelines", "jobs", "create"]
+		}
 		returns:        "PipelineJob"
 		success_status: 201
 		error_family:   "mutating"
@@ -138,7 +152,9 @@ package api
 		op:           "getPipelineJob"
 		path:         "/pipelines/{pipeline_name}/jobs/{job_id}"
 		summary:      "Get pipeline job"
-		cli:          "pipelines jobs get"
+		cli: {
+			command: ["pipelines", "jobs", "get"]
+		}
 		returns:      "PipelineJob"
 		error_family: "resource"
 		params:       #pipelineJobPathParameters
@@ -149,7 +165,9 @@ package api
 		op:           "updatePipelineJob"
 		path:         "/pipelines/{pipeline_name}/jobs/{job_id}"
 		summary:      "Update pipeline job"
-		cli:          "pipelines jobs update"
+		cli: {
+			command: ["pipelines", "jobs", "update"]
+		}
 		returns:      "PipelineJob"
 		error_family: "mutating"
 		params:       #pipelineJobPathParameters
@@ -162,7 +180,9 @@ package api
 		op:           "deletePipelineJob"
 		path:         "/pipelines/{pipeline_name}/jobs/{job_id}"
 		summary:      "Delete pipeline job"
-		cli:          "pipelines jobs delete"
+		cli: {
+			command: ["pipelines", "jobs", "delete"]
+		}
 		error_family: "mutating"
 		params:       #pipelineJobPathParameters
 	},
@@ -172,7 +192,9 @@ package api
 		op:           "triggerPipelineRun"
 		path:         "/pipelines/{pipeline_name}/runs"
 		summary:      "Trigger pipeline run"
-		cli:          "pipelines runs trigger"
+		cli: {
+			command: ["pipelines", "runs", "trigger"]
+		}
 		returns:      "PipelineRun"
 		error_family: "mutating"
 		params:       #pipelinePathParameters
@@ -186,7 +208,9 @@ package api
 		op:           "listPipelineRuns"
 		path:         "/pipelines/{pipeline_name}/runs"
 		summary:      "List pipeline runs"
-		cli:          "pipelines runs list"
+		cli: {
+			command: ["pipelines", "runs", "list"]
+		}
 		returns:      "PaginatedPipelineRuns"
 		error_family: "resource"
 		params:       #pipelineRunsParameters
@@ -197,7 +221,9 @@ package api
 		op:           "getPipelineRun"
 		path:         "/pipelines/runs/{run_id}"
 		summary:      "Get pipeline run"
-		cli:          "pipelines runs get"
+		cli: {
+			command: ["pipelines", "runs", "get"]
+		}
 		returns:      "PipelineRun"
 		error_family: "resource"
 		params:       #pipelineRunPathParameters
@@ -208,7 +234,9 @@ package api
 		op:           "listPipelineRunEvents"
 		path:         "/pipelines/runs/{run_id}/events"
 		summary:      "List pipeline run events"
-		cli:          "pipelines runs list-events"
+		cli: {
+			command: ["pipelines", "runs", "list-events"]
+		}
 		returns:      "PipelineRunEventList"
 		error_family: "resource"
 		params:       #pipelineRunPathParameters
@@ -219,7 +247,9 @@ package api
 		op:           "repairPipelineRun"
 		path:         "/pipelines/runs/{run_id}/repairs"
 		summary:      "Repair pipeline run"
-		cli:          "pipelines runs repair"
+		cli: {
+			command: ["pipelines", "runs", "repair"]
+		}
 		success_status: 201
 		returns:      "PipelineRun"
 		error_family: "mutating"
@@ -233,7 +263,9 @@ package api
 		op:           "cancelPipelineRun"
 		path:         "/pipelines/runs/{run_id}/cancellations"
 		summary:      "Cancel pipeline run"
-		cli:          "pipelines runs cancel"
+		cli: {
+			command: ["pipelines", "runs", "cancel"]
+		}
 		returns:      "PipelineRun"
 		error_family: "mutating"
 		params:       #pipelineRunPathParameters
@@ -244,7 +276,9 @@ package api
 		op:           "listPipelineJobRuns"
 		path:         "/pipelines/runs/{run_id}/jobs"
 		summary:      "List pipeline job runs"
-		cli:          "pipelines runs list-job-runs"
+		cli: {
+			command: ["pipelines", "runs", "list-job-runs"]
+		}
 		returns:      "PipelineJobRunList"
 		error_family: "resource"
 		params:       #pipelineRunPathParameters

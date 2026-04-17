@@ -39,8 +39,8 @@ type authzContractExpectation struct {
 }
 
 func TestAuthzContractParity_CriticalEndpoints(t *testing.T) {
-	endpointByOperation := make(map[string]gen.APIGenEndpoint, len(gen.APIGeneratedEndpoints))
-	for _, endpoint := range gen.APIGeneratedEndpoints {
+	endpointByOperation := make(map[string]gen.APIGenCommandSpec, len(gen.APIGeneratedCommandSpecs))
+	for _, endpoint := range gen.APIGeneratedCommandSpecs {
 		endpointByOperation[endpoint.OperationID] = endpoint
 	}
 	authzByOperation := loadAuthzByOperation(t)

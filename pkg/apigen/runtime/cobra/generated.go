@@ -8,42 +8,43 @@ import (
 	"sort"
 	"strconv"
 	"strings"
-	"unicode"
 
 	spcobra "github.com/spf13/cobra"
 )
 
-type generatedCommandSpec struct {
-	Endpoint             Endpoint
-	CommandPath          []string
-	PathParamNames       []string
-	PositionalPathParams []string
-	PositionalBodyName   bool
-}
-
-// AddGeneratedCommands builds Cobra commands from generated endpoint metadata.
-func AddGeneratedCommands(rootCmd *spcobra.Command, client *Client, endpoints []Endpoint) error {
-	specs, err := buildGeneratedCommandSpecsFromEndpoints(endpoints)
-	if err != nil {
+// AddGeneratedCommands builds Cobra commands from generated command specs.
+func AddGeneratedCommands(rootCmd *spcobra.Command, client *Client, specs []CommandSpec, opts RuntimeOptions) error {
+	if err := validateCommandSpecs(specs); err != nil {
 		return err
 	}
 
+	sorted := append([]CommandSpec(nil), specs...)
+	sort.Slice(sorted, func(i, j int) bool {
+		left := strings.Join(sorted[i].Command, " ")
+		right := strings.Join(sorted[j].Command, " ")
+		if left == right {
+			return sorted[i].OperationID < sorted[j].OperationID
+		}
+		return left < right
+	})
+
+	ensureGeneratedRootGroups(rootCmd, sorted, opts)
 	groups := map[string]*spcobra.Command{}
 
-	for _, spec := range specs {
-		if len(spec.CommandPath) == 0 {
+	for _, spec := range sorted {
+		if len(spec.Command) == 0 {
 			continue
 		}
 
 		parent := rootCmd
-		for i := 0; i < len(spec.CommandPath)-1; i++ {
-			segment := spec.CommandPath[i]
-			nodePath := strings.Join(spec.CommandPath[:i+1], " ")
+		for i := 0; i < len(spec.Command)-1; i++ {
+			segment := spec.Command[i]
+			nodePath := strings.Join(spec.Command[:i+1], " ")
 			node, ok := groups[nodePath]
 			if !ok {
 				node = &spcobra.Command{
 					Use:   segment,
-					Short: generatedGroupDescription(nodePath),
+					Short: generatedGroupDescription(spec.Command[:i+1], opts),
 					RunE: func(cmd *spcobra.Command, args []string) error {
 						if len(args) == 0 {
 							return cmd.Help()
@@ -53,7 +54,9 @@ func AddGeneratedCommands(rootCmd *spcobra.Command, client *Client, endpoints []
 					},
 				}
 				if i == 0 {
-					node.GroupID = generatedRootGroupID(segment)
+					if group := resolveRootGroup(spec.Command, opts); group != nil {
+						node.GroupID = group.ID
+					}
 				}
 				parent.AddCommand(node)
 				groups[nodePath] = node
@@ -61,252 +64,213 @@ func AddGeneratedCommands(rootCmd *spcobra.Command, client *Client, endpoints []
 			parent = node
 		}
 
-		leaf := newGeneratedLeafCommand(spec, client)
-		parent.AddCommand(leaf)
+		parent.AddCommand(newGeneratedLeafCommand(spec, client, opts))
 	}
 
 	return nil
 }
 
-func buildGeneratedCommandSpecsFromEndpoints(endpoints []Endpoint) ([]generatedCommandSpec, error) {
-	specs := make([]generatedCommandSpec, 0, len(endpoints))
-	seen := make(map[string]string, len(endpoints))
-	parentRoots := map[string]bool{}
-
-	for _, endpoint := range endpoints {
-		parts := strings.Fields(endpoint.CLICommand)
-		if len(parts) > 1 {
-			parentRoots[parts[0]] = true
-		}
-	}
-
-	for _, endpoint := range endpoints {
-		if endpoint.CLICommand == "" {
+func validateCommandSpecs(specs []CommandSpec) error {
+	seen := make(map[string]string, len(specs))
+	paths := make(map[string][]string, len(specs))
+	for _, spec := range specs {
+		if len(spec.Command) == 0 {
 			continue
 		}
-		commandPath := normalizeCommandPath(strings.Fields(endpoint.CLICommand))
-		if len(commandPath) == 1 && parentRoots[commandPath[0]] {
-			commandPath = append(commandPath, "execute")
+		command := strings.Join(spec.Command, " ")
+		if existing, ok := seen[command]; ok {
+			return fmt.Errorf("duplicate generated CLI command %q for operations %q and %q", command, existing, spec.OperationID)
 		}
-
-		normalizedPath := strings.Join(commandPath, " ")
-		if existingOpID, ok := seen[normalizedPath]; ok {
-			return nil, fmt.Errorf("duplicate generated CLI command %q for operations %q and %q", normalizedPath, existingOpID, endpoint.OperationID)
+		for other, otherPath := range paths {
+			if commandPathPrefix(spec.Command, otherPath) || commandPathPrefix(otherPath, spec.Command) {
+				return fmt.Errorf("generated CLI command %q for operation %q conflicts with %q for operation %q", command, spec.OperationID, other, seen[other])
+			}
 		}
-		seen[normalizedPath] = endpoint.OperationID
-
-		pathParams := pathParameterNames(endpoint.Path)
-		positionalPath := selectPositionalPathParams(endpoint, pathParams)
-		positionalBodyName := selectPositionalBodyName(endpoint, pathParams, positionalPath)
-
-		specs = append(specs, generatedCommandSpec{
-			Endpoint:             endpoint,
-			CommandPath:          commandPath,
-			PathParamNames:       pathParams,
-			PositionalPathParams: positionalPath,
-			PositionalBodyName:   positionalBodyName,
-		})
+		seen[command] = spec.OperationID
+		paths[command] = append([]string(nil), spec.Command...)
 	}
-
-	sort.Slice(specs, func(i, j int) bool {
-		left := strings.Join(specs[i].CommandPath, " ")
-		right := strings.Join(specs[j].CommandPath, " ")
-		if left == right {
-			return specs[i].Endpoint.OperationID < specs[j].Endpoint.OperationID
-		}
-		return left < right
-	})
-
-	return specs, nil
+	return nil
 }
 
-func newGeneratedLeafCommand(spec generatedCommandSpec, client *Client) *spcobra.Command {
-	endpoint := spec.Endpoint
-	leaf := spec.CommandPath[len(spec.CommandPath)-1]
-
-	argNames := make([]string, 0, len(spec.PositionalPathParams)+1)
-	for _, p := range spec.PositionalPathParams {
-		argNames = append(argNames, "<"+toArgName(p)+">")
-	}
-	if spec.PositionalBodyName {
-		argNames = append(argNames, "<name>")
+func ensureGeneratedRootGroups(rootCmd *spcobra.Command, specs []CommandSpec, opts RuntimeOptions) {
+	required := map[string]string{}
+	for _, spec := range specs {
+		group := resolveRootGroup(spec.Command, opts)
+		if group == nil {
+			continue
+		}
+		required[group.ID] = group.Title
 	}
 
-	use := leaf
-	if len(argNames) > 0 {
-		use += " " + strings.Join(argNames, " ")
+	for groupID, title := range required {
+		if rootCmd.ContainsGroup(groupID) {
+			continue
+		}
+		rootCmd.AddGroup(&spcobra.Group{ID: groupID, Title: title})
+	}
+}
+
+func resolveRootGroup(commandPath []string, opts RuntimeOptions) *CommandGroup {
+	if opts.RootGroupResolver == nil {
+		return nil
+	}
+	group := opts.RootGroupResolver(commandPath)
+	if group == nil || strings.TrimSpace(group.ID) == "" || strings.TrimSpace(group.Title) == "" {
+		return nil
+	}
+	return group
+}
+
+func generatedGroupDescription(commandPath []string, opts RuntimeOptions) string {
+	if opts.GroupDescriptionResolver != nil {
+		if value := strings.TrimSpace(opts.GroupDescriptionResolver(commandPath)); value != "" {
+			return value
+		}
+	}
+	if len(commandPath) > 0 {
+		return "Manage " + commandPath[len(commandPath)-1]
+	}
+	return "Manage resources"
+}
+
+func newGeneratedLeafCommand(spec CommandSpec, client *Client, opts RuntimeOptions) *spcobra.Command {
+	use := spec.Command[len(spec.Command)-1]
+	if len(spec.Args) > 0 {
+		parts := make([]string, 0, len(spec.Args))
+		for _, arg := range spec.Args {
+			name := arg.DisplayName
+			if strings.TrimSpace(name) == "" {
+				name = strings.ReplaceAll(arg.Name, "_", "-")
+			}
+			parts = append(parts, "<"+name+">")
+		}
+		use += " " + strings.Join(parts, " ")
 	}
 
 	cmd := &spcobra.Command{
 		Use:   use,
-		Short: endpoint.Summary,
-		Long:  endpoint.Description,
-		Args:  spcobra.ExactArgs(len(argNames)),
+		Short: spec.Summary,
+		Long:  spec.Description,
+		Args:  spcobra.ExactArgs(len(spec.Args)),
 		RunE: func(cmd *spcobra.Command, args []string) error {
-			return runGeneratedEndpoint(cmd, client, spec, args)
+			return runGeneratedCommand(cmd, client, spec, args, opts)
 		},
 	}
 
-	pathPositionalSet := make(map[string]struct{}, len(spec.PositionalPathParams))
-	for _, p := range spec.PositionalPathParams {
-		pathPositionalSet[p] = struct{}{}
+	positional := make(map[string]struct{}, len(spec.Args))
+	for _, arg := range spec.Args {
+		positional[arg.Source+":"+arg.Name] = struct{}{}
 	}
 
-	for _, p := range endpoint.Parameters {
-		if p.In == "path" {
-			if _, positional := pathPositionalSet[p.Name]; positional {
-				continue
-			}
-			flagName := toFlagName(p.Name)
-			cmd.Flags().String(flagName, "", buildFlagUsage(p.Name, p.Type, p.Description, p.Enum, false))
-			_ = cmd.MarkFlagRequired(flagName)
+	for _, parameter := range spec.Parameters {
+		if _, ok := positional[parameter.In+":"+parameter.Name]; ok {
 			continue
 		}
+		flagName := toFlagName(parameter.Name)
+		addTypedFlag(cmd, flagName, parameter.Type, parameter.Enum, parameter.Description, parameter.Name, false)
+		if parameter.Required {
+			_ = cmd.MarkFlagRequired(flagName)
+		}
+	}
 
-		if p.In == "query" {
-			flagName := toFlagName(p.Name)
-			addTypedFlag(cmd, flagName, p.Type, p.Required, p.Enum, p.Description, p.Name, false)
-			if p.Required {
-				_ = cmd.MarkFlagRequired(flagName)
+	if spec.RequestBody != nil {
+		if spec.RequestBody.InputMode == "json" || spec.RequestBody.InputMode == "flags_or_json" {
+			cmd.Flags().String("json", "", "JSON input (raw string or @filename or - for stdin)")
+		}
+		if spec.RequestBody.InputMode == "flags" || spec.RequestBody.InputMode == "flags_or_json" {
+			for _, field := range spec.RequestBody.Fields {
+				if _, ok := positional["body:"+field.Name]; ok {
+					continue
+				}
+				flagName := toFlagName(field.Name)
+				addTypedFlag(cmd, flagName, field.Type, field.Enum, field.Description, field.Name, true)
+				if field.Required && spec.RequestBody.InputMode == "flags" {
+					_ = cmd.MarkFlagRequired(flagName)
+				}
 			}
 		}
 	}
 
-	hasBody := len(endpoint.BodyFields) > 0
-	if hasBody {
-		cmd.Flags().String("json", "", "JSON input (raw string or @filename or - for stdin)")
-		for _, field := range endpoint.BodyFields {
-			if spec.PositionalBodyName && field.Name == "name" {
-				continue
-			}
-			addTypedFlag(cmd, toFlagName(field.Name), field.Type, field.Required, field.Enum, field.Description, field.Name, true)
-		}
-	}
-
-	if endpoint.Method == "DELETE" {
+	if spec.Confirm == "always" {
 		cmd.Flags().Bool("yes", false, "Skip confirmation prompt")
 	}
+	if spec.Pagination != nil {
+		cmd.Flags().Bool("all", false, "Fetch all pages")
+	}
 
-	ApplyRunOverride(endpoint.OperationID, cmd, client)
-	ApplyCommandOverride(endpoint.OperationID, cmd)
+	if mutate := opts.CommandMutators[spec.OperationID]; mutate != nil {
+		mutate(cmd)
+	}
 
 	return cmd
 }
 
-func runGeneratedEndpoint(cmd *spcobra.Command, client *Client, spec generatedCommandSpec, args []string) error {
-	endpoint := spec.Endpoint
+func runGeneratedCommand(cmd *spcobra.Command, client *Client, spec CommandSpec, args []string, opts RuntimeOptions) error {
+	if override := opts.RunOverrides[spec.OperationID]; override != nil {
+		return override(client)(cmd, args)
+	}
 
-	if endpoint.Method == "DELETE" && !cmd.Flags().Changed("yes") {
-		if !ConfirmPrompt("Are you sure?") {
+	if spec.Confirm == "always" {
+		yes, _ := cmd.Flags().GetBool("yes")
+		if !yes && !ConfirmPrompt("Are you sure?") {
 			return nil
 		}
 	}
 
-	argIndexByPathParam := make(map[string]int, len(spec.PositionalPathParams))
-	for i, p := range spec.PositionalPathParams {
-		argIndexByPathParam[p] = i
+	argValues := map[string]string{}
+	for i, arg := range spec.Args {
+		argValues[arg.Source+":"+arg.Name] = args[i]
 	}
 
-	urlPath := endpoint.Path
-	for _, name := range spec.PathParamNames {
-		if argIndex, ok := argIndexByPathParam[name]; ok {
-			urlPath = strings.Replace(urlPath, "{"+name+"}", url.PathEscape(args[argIndex]), 1)
+	urlPath := spec.Path
+	for _, parameter := range spec.Parameters {
+		if parameter.In != "path" {
 			continue
 		}
-		v, _ := cmd.Flags().GetString(toFlagName(name))
-		if v != "" {
-			urlPath = strings.Replace(urlPath, "{"+name+"}", url.PathEscape(v), 1)
+		value, err := resolveInputValue(cmd, parameter.Name, "path", argValues)
+		if err != nil {
+			return err
 		}
+		urlPath = strings.Replace(urlPath, "{"+parameter.Name+"}", url.PathEscape(value), 1)
 	}
-
 	if strings.Contains(urlPath, "{") {
 		return fmt.Errorf("unresolved path parameter in URL: %s", urlPath)
 	}
 
 	query := url.Values{}
-	for _, p := range endpoint.Parameters {
-		if p.In != "query" {
+	for _, parameter := range spec.Parameters {
+		if parameter.In != "query" {
 			continue
 		}
-		flagName := toFlagName(p.Name)
-		if !cmd.Flags().Changed(flagName) {
-			continue
-		}
-		if err := setQueryValueFromFlag(cmd, query, p.Name, flagName, p.Type); err != nil {
+		value, ok, err := resolveTypedInputValue(cmd, parameter.Name, parameter.Type, "query", argValues)
+		if err != nil {
 			return err
 		}
-	}
-
-	var body interface{}
-	jsonInput := ""
-	hasBody := len(endpoint.BodyFields) > 0
-	if hasBody {
-		jsonInput, _ = cmd.Flags().GetString("json")
-		if jsonInput != "" {
-			raw, err := readRawJSONInput(jsonInput)
-			if err != nil {
-				return err
-			}
-			body = raw
-		} else {
-			m := map[string]interface{}{}
-			if spec.PositionalBodyName {
-				m["name"] = args[len(spec.PositionalPathParams)]
-			}
-			for _, field := range endpoint.BodyFields {
-				if spec.PositionalBodyName && field.Name == "name" {
-					continue
-				}
-				flagName := toFlagName(field.Name)
-				if !cmd.Flags().Changed(flagName) {
-					continue
-				}
-				value, err := getFlagValue(cmd, flagName, field.Type)
-				if err != nil {
-					return err
-				}
-				m[field.Name] = value
-			}
-			body = m
+		if !ok {
+			continue
 		}
+		addQueryValue(query, parameter.Name, value)
+	}
 
-		if jsonInput == "" {
-			for _, field := range endpoint.BodyFields {
-				if !field.Required || field.Name != "name" {
-					continue
-				}
-				if spec.PositionalBodyName {
-					continue
-				}
-				flagName := toFlagName(field.Name)
-				if !cmd.Flags().Changed(flagName) {
-					return fmt.Errorf("required flag %q not set (or use --json)", flagName)
-				}
-			}
-
-			for _, field := range endpoint.BodyFields {
-				if !field.Required {
-					continue
-				}
-				if field.Name == "name" {
-					continue
-				}
-				if spec.PositionalBodyName && field.Name == "name" {
-					continue
-				}
-				flagName := toFlagName(field.Name)
-				if !cmd.Flags().Changed(flagName) {
-					return fmt.Errorf("required flag %q not set (or use --json)", flagName)
-				}
-			}
+	var body any
+	if spec.RequestBody != nil {
+		built, err := buildRequestBody(cmd, spec, argValues)
+		if err != nil {
+			return err
 		}
+		body = built
 	}
 
-	if endpoint.OperationID == "setDefaultCatalog" {
-		body = map[string]interface{}{}
+	allPages, _ := cmd.Flags().GetBool("all")
+	if allPages && spec.Pagination != nil {
+		bodyBytes, err := fetchAllPages(client, spec, urlPath, query)
+		if err != nil {
+			return err
+		}
+		return renderResponseBody(cmd, spec, bodyBytes, opts)
 	}
 
-	resp, err := client.Do(endpoint.Method, urlPath, query, body)
+	resp, err := client.Do(spec.Method, urlPath, query, body)
 	if err != nil {
 		return err
 	}
@@ -314,7 +278,7 @@ func runGeneratedEndpoint(cmd *spcobra.Command, client *Client, spec generatedCo
 		return err
 	}
 
-	if endpoint.Method == "DELETE" {
+	if spec.Output.Mode == "empty" || resp.StatusCode == 204 {
 		if outputFormat(cmd) == OutputJSON {
 			return PrintJSON(os.Stdout, map[string]string{"status": "ok"})
 		}
@@ -322,185 +286,356 @@ func runGeneratedEndpoint(cmd *spcobra.Command, client *Client, spec generatedCo
 		return nil
 	}
 
-	respBody, err := ReadBody(resp)
+	bodyBytes, err := ReadBody(resp)
 	if err != nil {
 		return fmt.Errorf("read response: %w", err)
 	}
+	return renderResponseBody(cmd, spec, bodyBytes, opts)
+}
 
-	if quietMode(cmd) {
-		var data map[string]interface{}
-		if err := json.Unmarshal(respBody, &data); err == nil {
-			if items, ok := data["data"].([]interface{}); ok {
+func buildRequestBody(cmd *spcobra.Command, spec CommandSpec, argValues map[string]string) (any, error) {
+	requestBody := spec.RequestBody
+	if requestBody == nil {
+		return nil, nil
+	}
+
+	switch requestBody.InputMode {
+	case "none":
+		return nil, nil
+	case "json":
+		jsonInput, _ := cmd.Flags().GetString("json")
+		if strings.TrimSpace(jsonInput) == "" {
+			if requestBody.Required {
+				return nil, fmt.Errorf("request body is required; use --json")
+			}
+			return nil, nil
+		}
+		return readRawJSONInput(jsonInput)
+	case "flags", "flags_or_json":
+		if requestBody.InputMode == "flags_or_json" {
+			jsonInput, _ := cmd.Flags().GetString("json")
+			if strings.TrimSpace(jsonInput) != "" {
+				return readRawJSONInput(jsonInput)
+			}
+		}
+		if requestBody.Required && requestBody.SchemaType == "object" && len(requestBody.Fields) == 0 {
+			return map[string]any{}, nil
+		}
+
+		body := map[string]any{}
+		setCount := 0
+		for _, field := range requestBody.Fields {
+			if value, ok := argValues["body:"+field.Name]; ok {
+				body[field.Name] = castStringValue(value, field.Type)
+				setCount++
+				continue
+			}
+			flagName := toFlagName(field.Name)
+			if !cmd.Flags().Changed(flagName) {
+				if field.Required {
+					return nil, fmt.Errorf("required flag %q not set", flagName)
+				}
+				continue
+			}
+			value, err := getFlagValue(cmd, flagName, field.Type)
+			if err != nil {
+				return nil, err
+			}
+			body[field.Name] = value
+			setCount++
+		}
+
+		if requestBody.Required && setCount == 0 {
+			return nil, fmt.Errorf("request body is required")
+		}
+		return body, nil
+	default:
+		return nil, fmt.Errorf("unsupported request body input mode %q", requestBody.InputMode)
+	}
+}
+
+func fetchAllPages(client *Client, spec CommandSpec, path string, baseQuery url.Values) ([]byte, error) {
+	if spec.Pagination == nil {
+		return nil, fmt.Errorf("pagination is not configured")
+	}
+	itemsField := spec.Pagination.ItemsField
+	if itemsField == "" {
+		itemsField = "data"
+	}
+	nextField := spec.Pagination.NextPageTokenField
+	if nextField == "" {
+		nextField = "next_page_token"
+	}
+
+	var items []any
+	pageToken := ""
+	for {
+		query := cloneQuery(baseQuery)
+		if pageToken != "" {
+			query.Set("page_token", pageToken)
+		}
+
+		resp, err := client.Do(spec.Method, path, query, nil)
+		if err != nil {
+			return nil, err
+		}
+		if err := CheckError(resp); err != nil {
+			return nil, err
+		}
+		bodyBytes, err := ReadBody(resp)
+		if err != nil {
+			return nil, err
+		}
+
+		var payload map[string]any
+		if err := json.Unmarshal(bodyBytes, &payload); err != nil {
+			return nil, fmt.Errorf("parse paginated response: %w", err)
+		}
+		pageItems, ok := payload[itemsField].([]any)
+		if ok {
+			items = append(items, pageItems...)
+		}
+
+		nextValue, _ := payload[nextField].(string)
+		if strings.TrimSpace(nextValue) == "" {
+			payload[itemsField] = items
+			payload[nextField] = ""
+			return json.Marshal(payload)
+		}
+		pageToken = nextValue
+	}
+}
+
+func renderResponseBody(cmd *spcobra.Command, spec CommandSpec, body []byte, opts RuntimeOptions) error {
+	if renderer := opts.ResponseRenderers[spec.OperationID]; renderer != nil {
+		return renderer(cmd, body)
+	}
+	if len(body) == 0 {
+		if outputFormat(cmd) == OutputJSON {
+			return PrintJSON(os.Stdout, map[string]string{"status": "ok"})
+		}
+		_, _ = fmt.Fprintln(os.Stdout, "Done.")
+		return nil
+	}
+
+	if quietMode(cmd) && len(spec.Output.QuietFields) > 0 {
+		return renderQuiet(body, spec)
+	}
+
+	switch spec.Output.Mode {
+	case "collection":
+		return renderCollection(cmd, body, spec)
+	case "detail":
+		return renderDetail(cmd, body)
+	case "raw":
+		return renderRaw(cmd, body)
+	default:
+		return renderRaw(cmd, body)
+	}
+}
+
+func renderCollection(cmd *spcobra.Command, body []byte, spec CommandSpec) error {
+	if outputFormat(cmd) == OutputJSON {
+		var payload any
+		if err := json.Unmarshal(body, &payload); err == nil {
+			return PrintJSON(os.Stdout, payload)
+		}
+		return PrintJSON(os.Stdout, map[string]string{"body": string(body)})
+	}
+
+	var payload map[string]any
+	if err := json.Unmarshal(body, &payload); err != nil {
+		return fmt.Errorf("parse response: %w", err)
+	}
+
+	itemsField := "data"
+	if spec.Pagination != nil && spec.Pagination.ItemsField != "" {
+		itemsField = spec.Pagination.ItemsField
+	}
+	if len(spec.Output.TableColumns) > 0 {
+		rows := extractRows(payload, itemsField, spec.Output.TableColumns)
+		if len(rows) > 0 {
+			PrintTable(os.Stdout, spec.Output.TableColumns, rows)
+			return nil
+		}
+	}
+	return PrintJSON(os.Stdout, payload)
+}
+
+func renderDetail(cmd *spcobra.Command, body []byte) error {
+	if outputFormat(cmd) == OutputJSON {
+		var payload any
+		if err := json.Unmarshal(body, &payload); err == nil {
+			return PrintJSON(os.Stdout, payload)
+		}
+		return PrintJSON(os.Stdout, map[string]string{"body": string(body)})
+	}
+
+	var payload map[string]any
+	if err := json.Unmarshal(body, &payload); err != nil {
+		return fmt.Errorf("parse response: %w", err)
+	}
+	PrintDetail(os.Stdout, payload)
+	return nil
+}
+
+func renderRaw(cmd *spcobra.Command, body []byte) error {
+	if outputFormat(cmd) == OutputJSON {
+		var payload any
+		if err := json.Unmarshal(body, &payload); err == nil {
+			return PrintJSON(os.Stdout, payload)
+		}
+		return PrintJSON(os.Stdout, map[string]string{"body": string(body)})
+	}
+	_, _ = fmt.Fprintln(os.Stdout, string(body))
+	return nil
+}
+
+func renderQuiet(body []byte, spec CommandSpec) error {
+	var payload any
+	if err := json.Unmarshal(body, &payload); err != nil {
+		_, _ = fmt.Fprintln(os.Stdout, string(body))
+		return nil
+	}
+
+	switch typed := payload.(type) {
+	case map[string]any:
+		if spec.Output.Mode == "collection" {
+			itemsField := "data"
+			if spec.Pagination != nil && spec.Pagination.ItemsField != "" {
+				itemsField = spec.Pagination.ItemsField
+			}
+			if items, ok := typed[itemsField].([]any); ok {
 				for _, item := range items {
-					if m, ok := item.(map[string]interface{}); ok {
-						for _, key := range []string{"id", "name", "key"} {
-							if v, ok := m[key]; ok {
-								_, _ = fmt.Fprintln(os.Stdout, v)
-								break
-							}
+					if record, ok := item.(map[string]any); ok {
+						if value, ok := firstMatchingQuietField(record, spec.Output.QuietFields); ok {
+							_, _ = fmt.Fprintln(os.Stdout, FormatValue(value))
 						}
 					}
 				}
 				return nil
 			}
-			for _, key := range []string{"id", "name", "key"} {
-				if v, ok := data[key]; ok {
-					_, _ = fmt.Fprintln(os.Stdout, v)
-					return nil
-				}
-			}
 		}
-		_, _ = fmt.Fprintln(os.Stdout, string(respBody))
-		return nil
+		if value, ok := firstMatchingQuietField(typed, spec.Output.QuietFields); ok {
+			_, _ = fmt.Fprintln(os.Stdout, FormatValue(value))
+			return nil
+		}
 	}
 
-	switch outputFormat(cmd) {
-	case OutputJSON:
-		var pretty interface{}
-		_ = json.Unmarshal(respBody, &pretty)
-		return PrintJSON(os.Stdout, pretty)
-	default:
-		var data map[string]interface{}
-		if err := json.Unmarshal(respBody, &data); err != nil {
-			return fmt.Errorf("parse response: %w", err)
-		}
-		PrintDetail(os.Stdout, data)
-	}
-
+	_, _ = fmt.Fprintln(os.Stdout, string(body))
 	return nil
 }
 
-func selectPositionalPathParams(endpoint Endpoint, pathParams []string) []string {
-	if len(pathParams) == 0 {
+func firstMatchingQuietField(record map[string]any, fields []string) (any, bool) {
+	for _, field := range fields {
+		value, ok := record[field]
+		if ok {
+			return value, true
+		}
+	}
+	return nil, false
+}
+
+func extractRows(payload map[string]any, itemsField string, columns []string) [][]string {
+	items, ok := payload[itemsField].([]any)
+	if !ok {
 		return nil
 	}
-
-	if strings.HasPrefix(endpoint.OperationID, "create") {
-		selected := make([]string, 0, len(pathParams))
-		for _, p := range pathParams {
-			if p == "catalog_name" {
-				continue
-			}
-			selected = append(selected, p)
-		}
-		return selected
-	}
-
-	if strings.HasPrefix(endpoint.OperationID, "list") {
-		return append([]string(nil), pathParams...)
-	}
-
-	selected := make([]string, 0, len(pathParams))
-	for _, p := range pathParams {
-		if p == "catalog_name" {
+	rows := make([][]string, 0, len(items))
+	for _, item := range items {
+		record, ok := item.(map[string]any)
+		if !ok {
 			continue
 		}
-		selected = append(selected, p)
+		row := make([]string, len(columns))
+		for i, column := range columns {
+			row[i] = ExtractField(record, column)
+		}
+		rows = append(rows, row)
 	}
-	if len(selected) == 0 {
-		selected = append(selected, pathParams[len(pathParams)-1])
-	}
-	return selected
+	return rows
 }
 
-func selectPositionalBodyName(endpoint Endpoint, pathParams []string, positionalPath []string) bool {
-	if !strings.HasPrefix(endpoint.OperationID, "create") {
-		return false
+func resolveInputValue(cmd *spcobra.Command, name string, source string, argValues map[string]string) (string, error) {
+	if value, ok := argValues[source+":"+name]; ok {
+		return value, nil
 	}
-	if len(endpoint.BodyFields) == 0 {
-		return false
+	flagName := toFlagName(name)
+	value, err := cmd.Flags().GetString(flagName)
+	if err != nil {
+		return "", err
 	}
-
-	hasRequiredName := false
-	for _, field := range endpoint.BodyFields {
-		if field.Name == "name" && field.Required {
-			hasRequiredName = true
-			break
-		}
+	if strings.TrimSpace(value) == "" {
+		return "", fmt.Errorf("required %s parameter %q is missing", source, name)
 	}
-	if !hasRequiredName {
-		return false
-	}
-
-	if len(pathParams) == 0 {
-		return false
-	}
-
-	if len(positionalPath) > 0 {
-		return false
-	}
-
-	for _, p := range pathParams {
-		if p != "catalog_name" {
-			return false
-		}
-	}
-
-	return true
+	return value, nil
 }
 
-func pathParameterNames(path string) []string {
-	params := make([]string, 0, strings.Count(path, "{"))
-	for i := 0; i < len(path); i++ {
-		if path[i] != '{' {
-			continue
-		}
-		j := i + 1
-		for j < len(path) && path[j] != '}' {
-			j++
-		}
-		if j >= len(path) || j == i+1 {
-			continue
-		}
-		name := path[i+1 : j]
-		valid := true
-		for _, r := range name {
-			if !unicode.IsLetter(r) && !unicode.IsDigit(r) && r != '_' {
-				valid = false
-				break
-			}
-		}
-		if valid {
-			params = append(params, name)
-		}
-		i = j
+func resolveTypedInputValue(cmd *spcobra.Command, name, typ, source string, argValues map[string]string) (any, bool, error) {
+	if value, ok := argValues[source+":"+name]; ok {
+		return castStringValue(value, typ), true, nil
 	}
-	return params
+	flagName := toFlagName(name)
+	if !cmd.Flags().Changed(flagName) {
+		return nil, false, nil
+	}
+	value, err := getFlagValue(cmd, flagName, typ)
+	if err != nil {
+		return nil, false, err
+	}
+	return value, true, nil
+}
+
+func addQueryValue(query url.Values, name string, value any) {
+	switch typed := value.(type) {
+	case string:
+		query.Set(name, typed)
+	case int64:
+		query.Set(name, strconv.FormatInt(typed, 10))
+	case bool:
+		query.Set(name, strconv.FormatBool(typed))
+	case []string:
+		for _, item := range typed {
+			query.Add(name, item)
+		}
+	default:
+		query.Set(name, fmt.Sprintf("%v", typed))
+	}
+}
+
+func cloneQuery(in url.Values) url.Values {
+	out := url.Values{}
+	for key, values := range in {
+		out[key] = append([]string(nil), values...)
+	}
+	return out
 }
 
 func toFlagName(name string) string {
-	var out []rune
+	var out strings.Builder
 	for i, r := range name {
 		if r == '_' {
-			out = append(out, '-')
+			out.WriteRune('-')
 			continue
 		}
 		if r >= 'A' && r <= 'Z' {
 			if i > 0 {
-				out = append(out, '-')
+				out.WriteRune('-')
 			}
-			out = append(out, r+('a'-'A'))
+			out.WriteRune(r + ('a' - 'A'))
 			continue
 		}
-		out = append(out, r)
+		out.WriteRune(r)
 	}
-	return string(out)
+	return out.String()
 }
 
-func toArgName(name string) string {
-	return strings.ReplaceAll(toFlagName(name), "_", "-")
-}
-
-func addTypedFlag(cmd *spcobra.Command, name, typ string, required bool, enum []string, description, fallbackName string, bodyField bool) {
+func addTypedFlag(cmd *spcobra.Command, name, typ string, enum []string, description, fallbackName string, bodyField bool) {
 	usage := buildFlagUsage(fallbackName, typ, description, enum, bodyField)
 
 	switch typ {
 	case "integer", "int", "int32", "int64", "number":
-		defaultValue := int64(0)
-		if name == "max-results" {
-			defaultValue = 100
-		}
-		cmd.Flags().Int64(name, defaultValue, usage)
+		cmd.Flags().Int64(name, 0, usage)
 	case "boolean", "bool":
 		cmd.Flags().Bool(name, false, usage)
 	case "array":
@@ -508,8 +643,6 @@ func addTypedFlag(cmd *spcobra.Command, name, typ string, required bool, enum []
 	default:
 		cmd.Flags().String(name, "", usage)
 	}
-
-	_ = required
 }
 
 func buildFlagUsage(name, typ, description string, enum []string, bodyField bool) string {
@@ -532,11 +665,9 @@ func buildFlagUsage(name, typ, description string, enum []string, bodyField bool
 			usage += " (repeat flag to pass multiple values)"
 		}
 	}
-
 	if len(enum) > 0 {
 		usage += " (one of: " + strings.Join(enum, ", ") + ")"
 	}
-
 	return usage
 }
 
@@ -558,77 +689,48 @@ func humanizeIdentifier(name string) string {
 	return strings.Join(parts, " ")
 }
 
-func setQueryValueFromFlag(cmd *spcobra.Command, query url.Values, queryName, flagName, typ string) error {
-	v, err := getFlagValue(cmd, flagName, typ)
-	if err != nil {
-		return err
-	}
-	if v == nil {
-		return nil
-	}
-
-	switch value := v.(type) {
-	case string:
-		query.Set(queryName, value)
-	case int64:
-		query.Set(queryName, strconv.FormatInt(value, 10))
-	case bool:
-		query.Set(queryName, strconv.FormatBool(value))
-	case []string:
-		for _, item := range value {
-			query.Add(queryName, item)
-		}
-	default:
-		query.Set(queryName, fmt.Sprintf("%v", value))
-	}
-
-	return nil
-}
-
-func getFlagValue(cmd *spcobra.Command, flagName, typ string) (interface{}, error) {
+func getFlagValue(cmd *spcobra.Command, flagName, typ string) (any, error) {
 	switch typ {
 	case "integer", "int", "int32", "int64", "number":
-		v, err := cmd.Flags().GetInt64(flagName)
-		if err != nil {
-			return nil, err
-		}
-		return v, nil
+		return cmd.Flags().GetInt64(flagName)
 	case "boolean", "bool":
-		v, err := cmd.Flags().GetBool(flagName)
-		if err != nil {
-			return nil, err
-		}
-		return v, nil
+		return cmd.Flags().GetBool(flagName)
 	case "array":
-		v, err := cmd.Flags().GetStringSlice(flagName)
-		if err != nil {
-			return nil, err
-		}
-		return v, nil
+		return cmd.Flags().GetStringSlice(flagName)
 	case "object":
-		v, err := cmd.Flags().GetString(flagName)
+		value, err := cmd.Flags().GetString(flagName)
 		if err != nil {
 			return nil, err
 		}
-		if strings.TrimSpace(v) == "" {
-			return map[string]interface{}{}, nil
+		if strings.TrimSpace(value) == "" {
+			return map[string]any{}, nil
 		}
-		var obj map[string]interface{}
-		if err := json.Unmarshal([]byte(v), &obj); err != nil {
+		var payload map[string]any
+		if err := json.Unmarshal([]byte(value), &payload); err != nil {
 			return nil, fmt.Errorf("parse --%s as JSON object: %w", flagName, err)
 		}
-		return obj, nil
+		return payload, nil
 	default:
-		v, err := cmd.Flags().GetString(flagName)
-		if err != nil {
-			return nil, err
-		}
-		return v, nil
+		return cmd.Flags().GetString(flagName)
 	}
 }
 
-func readRawJSONInput(jsonInput string) (interface{}, error) {
-	var raw interface{}
+func castStringValue(value string, typ string) any {
+	switch typ {
+	case "integer", "int", "int32", "int64", "number":
+		if parsed, err := strconv.ParseInt(strings.TrimSpace(value), 10, 64); err == nil {
+			return parsed
+		}
+	case "boolean", "bool":
+		if parsed, err := strconv.ParseBool(strings.TrimSpace(value)); err == nil {
+			return parsed
+		}
+	}
+	return value
+}
+
+func readRawJSONInput(jsonInput string) (any, error) {
+	var raw any
 	jsonData := jsonInput
 
 	if jsonInput == "-" {
@@ -667,76 +769,14 @@ func quietMode(cmd *spcobra.Command) bool {
 	return value
 }
 
-func normalizeCommandPath(parts []string) []string {
-	if len(parts) == 0 {
-		return nil
+func commandPathPrefix(shorter []string, longer []string) bool {
+	if len(shorter) >= len(longer) {
+		return false
 	}
-	normalized := make([]string, 0, len(parts))
-	for _, part := range parts {
-		part = strings.TrimSpace(part)
-		if part == "" {
-			continue
+	for i := range shorter {
+		if shorter[i] != longer[i] {
+			return false
 		}
-		if len(normalized) > 0 && normalized[len(normalized)-1] == part {
-			continue
-		}
-		normalized = append(normalized, part)
 	}
-	return normalized
-}
-
-func generatedGroupDescription(nodePath string) string {
-	if description, ok := generatedGroupDescriptions[nodePath]; ok {
-		return description
-	}
-	if parts := strings.Fields(nodePath); len(parts) > 0 {
-		return "Manage " + parts[len(parts)-1]
-	}
-	return "Manage resources"
-}
-
-func generatedRootGroupID(segment string) string {
-	if groupID, ok := generatedRootGroupIDs[segment]; ok {
-		return groupID
-	}
-	return "platform"
-}
-
-var generatedRootGroupIDs = map[string]string{
-	"catalog":    "platform",
-	"assets":     "platform",
-	"audit":      "server",
-	"compute":    "platform",
-	"dashboards": "platform",
-	"governance": "platform",
-	"ingestion":  "platform",
-	"lineage":    "explore",
-	"me":         "explore",
-	"models":     "platform",
-	"notebooks":  "platform",
-	"pipelines":  "platform",
-	"query":      "platform",
-	"security":   "server",
-	"semantic":   "platform",
-	"storage":    "platform",
-}
-
-var generatedGroupDescriptions = map[string]string{
-	"catalog":               "Manage catalogs, schemas, tables, and registrations",
-	"assets":                "Manage assets, runs, materializations, and freshness",
-	"audit":                 "Inspect audit entries and platform activity",
-	"compute":               "Manage compute endpoints, assignments, and health",
-	"dashboards":            "Manage dashboards and widgets",
-	"governance":            "Manage governance resources such as tags and policies",
-	"ingestion":             "Manage ingestion jobs and commits",
-	"lineage":               "Inspect lineage relationships and impact",
-	"me":                    "Inspect personal saved and recent resources",
-	"models":                "Manage models, macros, tests, and related resources",
-	"notebooks":             "Manage notebooks, sessions, and jobs",
-	"pipelines":             "Manage pipelines and their runs",
-	"query":                 "Run queries and inspect query history",
-	"security":              "Manage principals, groups, grants, and API keys",
-	"semantic":              "Manage semantic models, metrics, and relationships",
-	"storage":               "Manage storage credentials and locations",
-	"catalog registrations": "Manage registered catalogs and defaults",
+	return true
 }

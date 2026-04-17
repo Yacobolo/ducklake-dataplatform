@@ -15,6 +15,7 @@ func TestLoad_Valid(t *testing.T) {
 
 	require.NoError(t, os.WriteFile(path, []byte(`{
   "schema_version": "v1",
+  "api": {"base_path": "/v1"},
   "info": {"title": "Duck", "version": "0.1.0"},
   "endpoints": [
     {"method": "post", "path": "/v1/query", "operation_id": "executeQuery", "responses": [{"status_code": 200, "description": "ok"}]},
@@ -34,6 +35,7 @@ func TestLoad_InvalidVersion(t *testing.T) {
 
 	require.NoError(t, os.WriteFile(path, []byte(`{
   "schema_version": "v0",
+  "api": {"base_path": "/v1"},
   "info": {"title": "Duck", "version": "0.1.0"},
   "endpoints": [{"method": "get", "path": "/healthz", "operation_id": "getHealth", "responses": [{"status_code": 200, "description": "ok"}]}]
 }`), 0o644))
@@ -49,6 +51,7 @@ func TestLoad_DuplicateOperation(t *testing.T) {
 
 	require.NoError(t, os.WriteFile(path, []byte(`{
   "schema_version": "v1",
+  "api": {"base_path": "/v1"},
   "info": {"title": "Duck", "version": "0.1.0"},
   "endpoints": [
     {"method": "get", "path": "/healthz", "operation_id": "dup", "responses": [{"status_code": 200, "description": "ok"}]},
@@ -67,6 +70,7 @@ func TestLoad_NormalizesResponseHeaders(t *testing.T) {
 
 	require.NoError(t, os.WriteFile(path, []byte(`{
   "schema_version": "v1",
+  "api": {"base_path": "/v1"},
   "info": {"title": "Duck", "version": "0.1.0"},
   "endpoints": [{
     "method": "get",
@@ -105,6 +109,7 @@ func TestLoad_RejectsDuplicateResponseHeaders(t *testing.T) {
 
 	require.NoError(t, os.WriteFile(path, []byte(`{
   "schema_version": "v1",
+  "api": {"base_path": "/v1"},
   "info": {"title": "Duck", "version": "0.1.0"},
   "endpoints": [{
     "method": "get",
@@ -133,6 +138,7 @@ func TestLoad_ValidatesResponseShapeMetadata(t *testing.T) {
 
 	require.NoError(t, os.WriteFile(path, []byte(`{
   "schema_version": "v1",
+  "api": {"base_path": "/v1"},
   "info": {"title": "Duck", "version": "0.1.0"},
   "endpoints": [{
     "method": "post",
@@ -153,4 +159,74 @@ func TestLoad_ValidatesResponseShapeMetadata(t *testing.T) {
 	_, err := Load(path)
 	require.Error(t, err)
 	require.ErrorContains(t, err, "wrapped_json body_type is required")
+}
+
+func TestLoad_RejectsMissingBasePath(t *testing.T) {
+	t.Helper()
+
+	dir := t.TempDir()
+	path := filepath.Join(dir, "ir.json")
+
+	require.NoError(t, os.WriteFile(path, []byte(`{
+  "schema_version": "v1",
+  "info": {"title": "Duck", "version": "0.1.0"},
+  "endpoints": [{"method": "get", "path": "/healthz", "operation_id": "getHealth", "responses": [{"status_code": 200, "description": "ok"}]}]
+}`), 0o644))
+
+	_, err := Load(path)
+	require.Error(t, err)
+	require.ErrorContains(t, err, "api.base_path is required")
+}
+
+func TestLoad_RejectsUnknownSchemaRef(t *testing.T) {
+	t.Helper()
+
+	dir := t.TempDir()
+	path := filepath.Join(dir, "ir.json")
+
+	require.NoError(t, os.WriteFile(path, []byte(`{
+  "schema_version": "v1",
+  "api": {"base_path": "/v1"},
+  "info": {"title": "Duck", "version": "0.1.0"},
+  "endpoints": [{
+    "method": "post",
+    "path": "/widgets",
+    "operation_id": "createWidget",
+    "request_body": {"schema": {"ref": "MissingRequest"}},
+    "responses": [{"status_code": 201, "description": "created"}]
+  }]
+}`), 0o644))
+
+	_, err := Load(path)
+	require.Error(t, err)
+	require.ErrorContains(t, err, `references unknown schema "MissingRequest"`)
+}
+
+func TestLoad_RejectsUnsupportedPathArrayParameter(t *testing.T) {
+	t.Helper()
+
+	dir := t.TempDir()
+	path := filepath.Join(dir, "ir.json")
+
+	require.NoError(t, os.WriteFile(path, []byte(`{
+  "schema_version": "v1",
+  "api": {"base_path": "/v1"},
+  "info": {"title": "Duck", "version": "0.1.0"},
+  "endpoints": [{
+    "method": "get",
+    "path": "/widgets/{ids}",
+    "operation_id": "listWidgetsByIDs",
+    "parameters": [{
+      "name": "ids",
+      "in": "path",
+      "required": true,
+      "schema": {"type": "array", "items": {"type": "string"}}
+    }],
+    "responses": [{"status_code": 200, "description": "ok"}]
+  }]
+}`), 0o644))
+
+	_, err := Load(path)
+	require.Error(t, err)
+	require.ErrorContains(t, err, "arrays are only supported in query parameters")
 }

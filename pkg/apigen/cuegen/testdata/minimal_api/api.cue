@@ -2,6 +2,10 @@ package api
 
 schema_version: "v1"
 
+api: {
+	base_path: "/v1"
+}
+
 info: {
 	title:   "Widget API"
 	version: "0.1.0"
@@ -83,8 +87,10 @@ endpoints: [
 				}
 			},
 		]
+		cli: {
+			command: ["widgets", "list"]
+		}
 		extensions: {
-			"x-cli-command": "widgets list"
 			"x-authz": {
 				mode: "authenticated"
 			}

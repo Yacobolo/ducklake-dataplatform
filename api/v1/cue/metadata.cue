@@ -2,6 +2,10 @@ package api
 
 schema_version: "v1"
 
+api: {
+  "base_path": "/v1"
+}
+
 info: {
   "title": "QuackStack API",
   "version": "0.1.0",
@@ -10,7 +14,7 @@ info: {
 
 servers: [
   {
-    "url": "https://localhost:8443/v1",
+    "url": "https://localhost:8443",
     "description": "HTTPS base URL for local and proxied deployments",
     "variables": {}
   }
