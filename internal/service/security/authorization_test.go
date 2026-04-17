@@ -33,11 +33,13 @@ const (
 	PrivCreateVolume            = domain.PrivCreateVolume
 	PrivReadVolume              = domain.PrivReadVolume
 	PrivWriteVolume             = domain.PrivWriteVolume
+	PrivViewPipeline            = domain.PrivViewPipeline
 
 	SecurableCatalog           = domain.SecurableCatalog
 	SecurableSchema            = domain.SecurableSchema
 	SecurableTable             = domain.SecurableTable
 	SecurableFolder            = domain.SecurableFolder
+	SecurablePipeline          = domain.SecurablePipeline
 	SecurableExternalLocation  = domain.SecurableExternalLocation
 	SecurableStorageCredential = domain.SecurableStorageCredential
 	SecurableVolume            = domain.SecurableVolume
