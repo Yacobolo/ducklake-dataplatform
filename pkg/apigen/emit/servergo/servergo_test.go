@@ -64,6 +64,24 @@ func TestEmit_UsesIRPathAsIs(t *testing.T) {
 	require.NotContains(t, content, "{Method: \"POST\", Path: \"/v1/query\", OperationID: \"executeQuery\"}")
 }
 
+func TestEmit_UsesAPIBasePathForRoutes(t *testing.T) {
+	t.Helper()
+
+	doc := ir.Document{
+		SchemaVersion: "v1",
+		API:           ir.API{BasePath: "/v1"},
+		Info:          ir.Info{Title: "t", Version: "1"},
+		Endpoints: []ir.Endpoint{
+			{Method: "post", Path: "/query", OperationID: "executeQuery", Responses: []ir.Response{{StatusCode: 200, Description: "ok"}}},
+		},
+	}
+
+	b, err := Emit(doc, Options{})
+	require.NoError(t, err)
+	content := string(b)
+	require.Contains(t, content, "{Method: \"POST\", Path: \"/v1/query\", OperationID: \"executeQuery\"}")
+}
+
 func TestValidateOperationIDs(t *testing.T) {
 	t.Helper()
 

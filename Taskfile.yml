@@ -219,10 +219,12 @@ tasks:
     deps: [cue:compile]
     cmds:
       - find pkg/cli/gen -maxdepth 1 -type f -name '*.gen.go' ! -name 'apigen_registry.gen.go' ! -name 'discovery_index.gen.go' -delete
-      - go run ./cmd/apigen all -ir internal/api/gen/json-ir.json -compat-types-out internal/api/types.gen.go
+      - cd pkg/apigen && go run ./cmd/apigen all -manifest ../../apigen.targets.yaml -target v1
     sources:
-      - internal/api/contract/cue/**/*.cue
-      - cmd/apigen/**/*.go
+      - apigen.targets.yaml
+      - api/v1/cue/**/*.cue
+      - pkg/apigen/go.mod
+      - pkg/apigen/go.sum
       - pkg/apigen/**/*.go
     generates:
       - internal/api/gen/openapi.yaml
@@ -235,10 +237,12 @@ tasks:
   cue:compile:
     desc: Compile CUE API sources into canonical OpenAPI and JSON IR artifacts
     cmds:
-      - go run ./cmd/apigen cue-compile -cue-dir internal/api/contract/cue -ir-out internal/api/gen/json-ir.json -openapi-out internal/api/gen/openapi.yaml
+      - cd pkg/apigen && go run ./cmd/apigen cue-compile -manifest ../../apigen.targets.yaml -target v1
     sources:
-      - internal/api/contract/cue/**/*.cue
-      - cmd/apigen/**/*.go
+      - apigen.targets.yaml
+      - api/v1/cue/**/*.cue
+      - pkg/apigen/go.mod
+      - pkg/apigen/go.sum
       - pkg/apigen/**/*.go
     generates:
       - internal/api/gen/openapi.yaml
@@ -260,7 +264,7 @@ tasks:
   verify:apigen-cue-parity:
     desc: Verify the CUE pipeline reproduces the checked-in APIGen outputs
     cmds:
-      - go test ./pkg/apigen/... ./cmd/apigen/... -run 'Test(MainRepoCueParity|CompileDir|GenerateArtifacts|ExampleConsumer_CUEToGeneratedBuild)' -count=1
+      - cd pkg/apigen && go test ./... -run 'Test(MainRepoCueParity|CompileDir|GenerateArtifacts|ExampleConsumer_CUEToGeneratedBuild)' -count=1
 
   generate:declarative-reference:
     desc: Generate declarative CUE reference docs

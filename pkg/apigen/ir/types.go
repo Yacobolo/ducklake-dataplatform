@@ -4,6 +4,7 @@ package ir
 // Document is the root JSON IR payload.
 type Document struct {
 	SchemaVersion string            `json:"schema_version"`
+	API           API               `json:"api"`
 	Info          Info              `json:"info"`
 	OpenAPI       OpenAPI           `json:"openapi,omitempty"`
 	Servers       []Server          `json:"servers,omitempty"`
@@ -11,6 +12,11 @@ type Document struct {
 	Schemas       map[string]Schema `json:"schemas,omitempty"`
 	Endpoints     []Endpoint        `json:"endpoints"`
 	Extensions    map[string]any    `json:"extensions,omitempty"`
+}
+
+// API contains APIGen-owned API metadata.
+type API struct {
+	BasePath string `json:"base_path"`
 }
 
 // Info contains API metadata.

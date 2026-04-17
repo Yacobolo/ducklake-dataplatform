@@ -17,6 +17,7 @@ func TestCompileDir(t *testing.T) {
 	require.NoError(t, err)
 
 	require.Equal(t, "v1", bundle.Document.SchemaVersion)
+	require.Equal(t, "/v1", bundle.Document.API.BasePath)
 	require.Equal(t, "Widget API", bundle.Document.Info.Title)
 	require.Len(t, bundle.Document.Endpoints, 1)
 	require.Equal(t, "listWidgets", bundle.Document.Endpoints[0].OperationID)
@@ -44,7 +45,7 @@ func TestBootstrapRoundTrip(t *testing.T) {
 func TestCompileDir_LineageCompactAuthoringParity(t *testing.T) {
 	t.Helper()
 
-	bundle, err := CompileDir(filepath.Join("..", "..", "..", "internal", "api", "contract", "cue"))
+	bundle, err := CompileDir(filepath.Join("..", "..", "..", "api", "v1", "cue"))
 	require.NoError(t, err)
 
 	getTableLineage := requireEndpoint(t, bundle.Document, "getTableLineage")
@@ -77,6 +78,10 @@ func TestCompileDir_PreservesExamples(t *testing.T) {
 	require.NoError(t, os.WriteFile(filepath.Join(dir, "api.cue"), []byte(`package api
 
 schema_version: "v1"
+
+api: {
+	base_path: "/v1"
+}
 
 info: {
 	title:   "Example API"

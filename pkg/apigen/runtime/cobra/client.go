@@ -46,14 +46,14 @@ func NewClient(baseURL, apiKey, token string) *Client {
 	}
 }
 
-// Do issues an authenticated HTTP request against the v1 API surface.
+// Do issues an authenticated HTTP request against the generated API surface.
 func (c *Client) Do(method, path string, query url.Values, body any) (*http.Response, error) {
 	baseURL := strings.TrimRight(c.BaseURL, "/")
 	if baseURL == "" {
 		baseURL = "http://localhost:8080"
 	}
 
-	reqURL := baseURL + "/v1" + path
+	reqURL := baseURL + path
 	if len(query) > 0 {
 		reqURL += "?" + query.Encode()
 	}

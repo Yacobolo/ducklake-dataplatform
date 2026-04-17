@@ -51,9 +51,7 @@ func TestProductRoutes_CreatePublishAndSubscribe(t *testing.T) {
 	handler.SetProductService(productSvc)
 
 	r := chi.NewRouter()
-	r.Route("/v1", func(r chi.Router) {
-		RegisterAPIGenStrictRoutes(r, handler)
-	})
+	RegisterAPIGenStrictRoutes(r, handler)
 
 	createReq := httptest.NewRequest(http.MethodPost, "/v1/data-products", strings.NewReader(`{
 		"slug":"daily-orders",
@@ -203,9 +201,7 @@ func TestProductRoutes_SemanticEntrypoints(t *testing.T) {
 	handler.SetProductService(productSvc)
 
 	r := chi.NewRouter()
-	r.Route("/v1", func(r chi.Router) {
-		RegisterAPIGenStrictRoutes(r, handler)
-	})
+	RegisterAPIGenStrictRoutes(r, handler)
 
 	createReq := httptest.NewRequest(http.MethodPost, "/v1/data-products", strings.NewReader(`{
 		"slug":"orders-semantic",
@@ -268,9 +264,7 @@ func TestProductRoutes_PortfolioReport(t *testing.T) {
 	handler.SetProductService(productSvc)
 
 	r := chi.NewRouter()
-	r.Route("/v1", func(r chi.Router) {
-		RegisterAPIGenStrictRoutes(r, handler)
-	})
+	RegisterAPIGenStrictRoutes(r, handler)
 
 	createReq := httptest.NewRequest(http.MethodPost, "/v1/data-products", strings.NewReader(`{
 		"slug":"orders",

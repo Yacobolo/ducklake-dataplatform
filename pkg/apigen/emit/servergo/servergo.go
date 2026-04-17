@@ -108,7 +108,7 @@ func emit(doc ir.Document, opts Options) ([]byte, error) {
 			endpoint.OperationID,
 			endpoint.OperationID,
 			strings.ToUpper(endpoint.Method),
-			endpoint.Path,
+			ir.JoinAPIPath(doc.API.BasePath, endpoint.Path),
 			renderGoStringSlice(endpoint.Tags),
 			renderGoIntSlice(documentedStatusCodes(endpoint)),
 			endpoint.RequestBody != nil && endpoint.RequestBody.Required,
@@ -162,7 +162,7 @@ func emit(doc ir.Document, opts Options) ([]byte, error) {
 	b.WriteString("\tapigenchi.RegisterRoutes(router, []apigenchi.Route{\n")
 	for _, endpoint := range doc.Endpoints {
 		method := strings.ToUpper(endpoint.Method)
-		fmt.Fprintf(&b, "\t\t{Method: %q, Path: %q, OperationID: %q},\n", method, endpoint.Path, endpoint.OperationID)
+		fmt.Fprintf(&b, "\t\t{Method: %q, Path: %q, OperationID: %q},\n", method, ir.JoinAPIPath(doc.API.BasePath, endpoint.Path), endpoint.OperationID)
 	}
 	b.WriteString("\t}, server.HandleAPIGen)\n")
 	b.WriteString("}\n")
@@ -792,12 +792,14 @@ func requestBodyTypeName(doc ir.Document, endpoint ir.Endpoint) (string, bool) {
 
 	schema := endpoint.RequestBody.Schema
 	if schema.Ref != "" && schema.Ref != "GenericRequest" {
-		if _, ok := doc.Schemas[schema.Ref]; ok {
-			return "GenSchema" + exportedName(schema.Ref), false
+		if schemaName, ok := ir.NormalizedSchemaRefName(schema); ok {
+			if _, exists := doc.Schemas[schemaName]; exists {
+				return "GenSchema" + exportedName(schemaName), false
+			}
 		}
 	}
 	if schema.Ref == "GenericRequest" {
-		if schemaName, ok := resolveGenericRequestBodySchemaName(doc, endpoint.OperationID); ok {
+		if schemaName, ok := ir.ResolveGenericRequestBodySchemaName(doc, endpoint.OperationID); ok {
 			return "GenSchema" + schemaName, false
 		}
 	}
@@ -827,71 +829,12 @@ func requestBodyRequiredFields(doc ir.Document, endpoint ir.Endpoint) []string {
 
 func resolveSchema(doc ir.Document, schemaRef ir.SchemaRef) (ir.Schema, bool) {
 	if schemaRef.Ref != "" {
-		schema, ok := doc.Schemas[schemaRef.Ref]
-		return schema, ok
+		return ir.ResolveSchema(doc, schemaRef)
 	}
 	if schemaRef.Type == "" {
 		return ir.Schema{}, false
 	}
 	return ir.Schema{Type: schemaRef.Type}, true
-}
-
-func resolveGenericRequestBodySchemaName(doc ir.Document, operationID string) (string, bool) {
-	if schemaName, ok := genericRequestBodySchemaOverrides[operationID]; ok {
-		return schemaName, true
-	}
-	for _, candidate := range genericRequestBodySchemaCandidates(operationID) {
-		if _, ok := doc.Schemas[candidate]; ok {
-			return candidate, true
-		}
-	}
-	return "", false
-}
-
-func genericRequestBodySchemaCandidates(operationID string) []string {
-	return []string{exportedName(operationID) + "Request"}
-}
-
-var genericRequestBodySchemaOverrides = map[string]string{
-	"bindColumnMask":                  "ColumnMaskBindingRequest",
-	"bindRowFilter":                   "RowFilterBindingRequest",
-	"commitTableIngestion":            "CommitIngestionRequest",
-	"createCell":                      "CreateCellRequest",
-	"createComputeAssignment":         "CreateComputeAssignmentRequest",
-	"createComputeEndpoint":           "CreateComputeEndpointRequest",
-	"createGitRepo":                   "CreateGitRepoRequest",
-	"createMacro":                     "CreateMacroRequest",
-	"createManifest":                  "ManifestRequest",
-	"createModelTest":                 "CreateModelTestRequest",
-	"createNotebook":                  "CreateNotebookRequest",
-	"createPipeline":                  "CreatePipelineRequest",
-	"createPipelineJob":               "CreatePipelineJobRequest",
-	"createSemanticMetric":            "CreateSemanticMetricRequest",
-	"createSemanticModel":             "CreateSemanticModelRequest",
-	"createSemanticPreAggregation":    "CreateSemanticPreAggregationRequest",
-	"createSemanticModelRelationship": "CreateSemanticRelationshipRequest",
-	"createTag":                       "CreateTagRequest",
-	"createTagAssignment":             "CreateTagAssignmentRequest",
-	"createUploadUrl":                 "UploadUrlRequest",
-	"executeQuery":                    "QueryRequest",
-	"explainMetricQuery":              "MetricQueryRequest",
-	"loadTableExternalFiles":          "LoadExternalRequest",
-	"promoteNotebookToModel":          "PromoteNotebookRequest",
-	"purgeLineage":                    "PurgeLineageRequest",
-	"reorderCells":                    "ReorderCellsRequest",
-	"runMetricQuery":                  "MetricQueryRequest",
-	"triggerModelRun":                 "TriggerModelRunRequest",
-	"triggerPipelineRun":              "TriggerPipelineRunRequest",
-	"updateCell":                      "UpdateCellRequest",
-	"updateComputeEndpoint":           "UpdateComputeEndpointRequest",
-	"updateMacro":                     "UpdateMacroRequest",
-	"updateModel":                     "UpdateModelRequest",
-	"updateNotebook":                  "UpdateNotebookRequest",
-	"updatePipeline":                  "UpdatePipelineRequest",
-	"updateSemanticMetric":            "UpdateSemanticMetricRequest",
-	"updateSemanticModel":             "UpdateSemanticModelRequest",
-	"updateSemanticPreAggregation":    "UpdateSemanticPreAggregationRequest",
-	"updateSemanticModelRelationship": "UpdateSemanticRelationshipRequest",
 }
 
 func responseTypeName(operationID string, response ir.Response) string {

@@ -1,4 +1,4 @@
-// Package apigen documents the supported in-repo APIGen surfaces.
+// Package apigen documents the supported public APIGen module surfaces.
 //
 // Supported library packages:
 //   - github.com/Yacobolo/quackstack/pkg/apigen/ir

@@ -22,6 +22,7 @@ import (
 // Source is the parity-first CUE representation for the APIGen contract.
 type Source struct {
 	SchemaVersion string               `json:"schema_version"`
+	API           ir.API               `json:"api"`
 	Info          ir.Info              `json:"info"`
 	OpenAPI       ir.OpenAPI           `json:"openapi,omitempty"`
 	Servers       []ir.Server          `json:"servers,omitempty"`
@@ -62,6 +63,7 @@ func CompileDir(dir string) (Bundle, error) {
 
 	fullDoc := ir.Document{
 		SchemaVersion: source.SchemaVersion,
+		API:           source.API,
 		Info:          source.Info,
 		OpenAPI:       source.OpenAPI,
 		Servers:       source.Servers,
@@ -72,6 +74,7 @@ func CompileDir(dir string) (Bundle, error) {
 	}
 	doc := ir.Document{
 		SchemaVersion: source.SchemaVersion,
+		API:           source.API,
 		Info:          source.Info,
 		OpenAPI:       source.OpenAPI,
 		Servers:       source.Servers,
@@ -359,6 +362,9 @@ func Bootstrap(doc ir.Document, outDir string) error {
 	if err := writeFieldFile(filepath.Join(outDir, "metadata.cue"), "schema_version", doc.SchemaVersion); err != nil {
 		return err
 	}
+	if err := appendFieldFile(filepath.Join(outDir, "metadata.cue"), "api", doc.API); err != nil {
+		return err
+	}
 	if err := appendFieldFile(filepath.Join(outDir, "metadata.cue"), "info", doc.Info); err != nil {
 		return err
 	}
@@ -642,6 +648,9 @@ const schemaFile = `package api
 
 #Source: {
 	schema_version: string
+	api: {
+		base_path: string
+	}
 	info: {
 		title: string
 		version: string

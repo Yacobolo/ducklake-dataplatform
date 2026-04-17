@@ -17,7 +17,7 @@ func TestAPI_PipelineRoutesRemainExposed(t *testing.T) {
 
 	found := false
 	err := chi.Walk(r, func(_ string, route string, _ http.Handler, _ ...func(http.Handler) http.Handler) error {
-		if strings.HasPrefix(route, "/pipelines") {
+		if strings.HasPrefix(route, "/v1/pipelines") {
 			found = true
 		}
 		return nil
@@ -33,10 +33,10 @@ func TestAPI_PipelineRoutesAreRegisteredAcrossLegacySurface(t *testing.T) {
 	RegisterAPIGenStrictRoutes(r, &APIHandler{})
 
 	tests := []string{
-		"/pipelines",
-		"/pipelines/{pipeline_name}",
-		"/pipelines/{pipeline_name}/jobs",
-		"/pipelines/{pipeline_name}/jobs/{job_id}",
+		"/v1/pipelines",
+		"/v1/pipelines/{pipeline_name}",
+		"/v1/pipelines/{pipeline_name}/jobs",
+		"/v1/pipelines/{pipeline_name}/jobs/{job_id}",
 	}
 	found := map[string]bool{}
 	err := chi.Walk(r, func(_ string, route string, _ http.Handler, _ ...func(http.Handler) http.Handler) error {
@@ -57,7 +57,7 @@ func TestAPI_AssetRoutesRemainExposed(t *testing.T) {
 
 	found := false
 	err := chi.Walk(r, func(_ string, route string, _ http.Handler, _ ...func(http.Handler) http.Handler) error {
-		if route == "/assets" {
+		if route == "/v1/assets" {
 			found = true
 		}
 		return nil

@@ -37,7 +37,7 @@ func Emit(doc ir.Document, opts Options) ([]byte, error) {
 		fmt.Fprintf(&b, "\t{OperationID: %q, Method: %q, Path: %q, Summary: %q, Description: %q, Tags: %s, Parameters: %s, BodyFields: %s, CLICommand: %q},\n",
 			endpoint.OperationID,
 			strings.ToUpper(endpoint.Method),
-			endpoint.Path,
+			ir.JoinAPIPath(doc.API.BasePath, endpoint.Path),
 			endpoint.Summary,
 			endpoint.Description,
 			renderStringSlice(endpoint.Tags),
@@ -109,14 +109,7 @@ func collectBodyFields(doc ir.Document, endpoint ir.Endpoint) []apiField {
 }
 
 func resolveSchema(doc ir.Document, schemaRef ir.SchemaRef) (ir.Schema, bool) {
-	if schemaRef.Ref == "" {
-		return ir.Schema{}, false
-	}
-	schema, ok := doc.Schemas[schemaRef.Ref]
-	if !ok {
-		return ir.Schema{}, false
-	}
-	return schema, true
+	return ir.ResolveSchema(doc, schemaRef)
 }
 
 func schemaType(doc ir.Document, schemaRef ir.SchemaRef) string {

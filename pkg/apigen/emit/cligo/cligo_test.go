@@ -12,6 +12,7 @@ func TestEmit(t *testing.T) {
 	t.Helper()
 	doc := ir.Document{
 		SchemaVersion: "v1",
+		API:           ir.API{BasePath: "/v1"},
 		Info:          ir.Info{Title: "t", Version: "1"},
 		Schemas: map[string]ir.Schema{
 			"CreateQueryRequest": {
@@ -25,7 +26,7 @@ func TestEmit(t *testing.T) {
 		Endpoints: []ir.Endpoint{
 			{
 				Method:      "post",
-				Path:        "/v1/query",
+				Path:        "/query",
 				OperationID: "executeQuery",
 				Summary:     "Execute a query",
 				Description: "Runs SQL against the default catalog",
@@ -48,6 +49,7 @@ func TestEmit(t *testing.T) {
 	require.Contains(t, string(b), "executeQuery")
 	require.Contains(t, string(b), "Summary: \"Execute a query\"")
 	require.Contains(t, string(b), "Description: \"Runs SQL against the default catalog\"")
+	require.Contains(t, string(b), `Path: "/v1/query"`)
 	require.Contains(t, string(b), "Parameters: []apigencobra.Param{{Name: \"catalogName\", In: \"path\", Type: \"string\", Description: \"Catalog to query\"")
 	require.Contains(t, string(b), "BodyFields: []apigencobra.Field{{Name: \"sql\", Type: \"string\", Description: \"SQL text to execute\"")
 	require.Contains(t, string(b), "CLICommand: \"query execute\"")

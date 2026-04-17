@@ -27,6 +27,7 @@ func AddGeneratedCommands(rootCmd *spcobra.Command, client *Client, endpoints []
 	if err != nil {
 		return err
 	}
+	ensureGeneratedRootGroups(rootCmd, specs)
 
 	groups := map[string]*spcobra.Command{}
 
@@ -66,6 +67,26 @@ func AddGeneratedCommands(rootCmd *spcobra.Command, client *Client, endpoints []
 	}
 
 	return nil
+}
+
+func ensureGeneratedRootGroups(rootCmd *spcobra.Command, specs []generatedCommandSpec) {
+	required := map[string]struct{}{}
+	for _, spec := range specs {
+		if len(spec.CommandPath) == 0 {
+			continue
+		}
+		required[generatedRootGroupID(spec.CommandPath[0])] = struct{}{}
+	}
+
+	for groupID := range required {
+		if rootCmd.ContainsGroup(groupID) {
+			continue
+		}
+		rootCmd.AddGroup(&spcobra.Group{
+			ID:    groupID,
+			Title: generatedRootGroupTitle(groupID),
+		})
+	}
 }
 
 func buildGeneratedCommandSpecsFromEndpoints(endpoints []Endpoint) ([]generatedCommandSpec, error) {
@@ -739,4 +760,17 @@ var generatedGroupDescriptions = map[string]string{
 	"semantic":              "Manage semantic models, metrics, and relationships",
 	"storage":               "Manage storage credentials and locations",
 	"catalog registrations": "Manage registered catalogs and defaults",
+}
+
+func generatedRootGroupTitle(groupID string) string {
+	if title, ok := generatedRootGroupTitles[groupID]; ok {
+		return title
+	}
+	return humanizeIdentifier(groupID)
+}
+
+var generatedRootGroupTitles = map[string]string{
+	"explore":  "Exploration",
+	"platform": "Platform Resources",
+	"server":   "Server/Admin",
 }

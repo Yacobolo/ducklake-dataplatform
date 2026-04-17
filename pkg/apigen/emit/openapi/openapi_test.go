@@ -81,6 +81,33 @@ func TestEmitYAML(t *testing.T) {
 	require.Contains(t, string(b), "example:")
 }
 
+func TestEmitYAML_UsesAPIBasePathForVisibleRoutes(t *testing.T) {
+	t.Helper()
+
+	docIR := ir.Document{
+		SchemaVersion: "v1",
+		API:           ir.API{BasePath: "/v1"},
+		Info:          ir.Info{Title: "test", Version: "1.0.0"},
+		Endpoints: []ir.Endpoint{
+			{
+				Method:      "get",
+				Path:        "/items/{id}",
+				OperationID: "getItem",
+				Responses:   []ir.Response{{StatusCode: 200, Description: "ok"}},
+			},
+		},
+	}
+
+	b, err := EmitYAML(docIR, Options{})
+	require.NoError(t, err)
+
+	loader := openapi3.NewLoader()
+	doc, err := loader.LoadFromData(b)
+	require.NoError(t, err)
+	require.NotNil(t, doc.Paths.Value("/v1/items/{id}"))
+	require.Nil(t, doc.Paths.Value("/items/{id}"))
+}
+
 func lookupYAMLMappingNode(root *yaml.Node, path ...string) *yaml.Node {
 	current := root
 	if current.Kind == yaml.DocumentNode && len(current.Content) > 0 {

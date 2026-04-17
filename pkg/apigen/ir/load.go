@@ -43,6 +43,9 @@ func Validate(doc Document) error {
 	if doc.SchemaVersion != CurrentSchemaVersion {
 		return fmt.Errorf("unsupported schema_version %q", doc.SchemaVersion)
 	}
+	if err := ValidateBasePath(doc.API.BasePath); err != nil {
+		return err
+	}
 	if strings.TrimSpace(doc.Info.Title) == "" {
 		return fmt.Errorf("info.title is required")
 	}
@@ -62,8 +65,21 @@ func Validate(doc Document) error {
 		if strings.TrimSpace(endpoint.Path) == "" {
 			return fmt.Errorf("endpoint path is required")
 		}
+		if !strings.HasPrefix(strings.TrimSpace(endpoint.Path), "/") {
+			return fmt.Errorf("endpoint %q path must start with \"/\"", endpoint.OperationID)
+		}
 		if strings.TrimSpace(endpoint.OperationID) == "" {
 			return fmt.Errorf("endpoint operation_id is required")
+		}
+		for _, parameter := range endpoint.Parameters {
+			if err := validateParameterSchema(doc, endpoint, parameter); err != nil {
+				return err
+			}
+		}
+		if endpoint.RequestBody != nil {
+			if err := validateRequestBodySchema(doc, endpoint); err != nil {
+				return err
+			}
 		}
 		if len(endpoint.Responses) == 0 {
 			return fmt.Errorf("endpoint %q must have at least one response", endpoint.OperationID)
@@ -96,10 +112,23 @@ func Validate(doc Document) error {
 				if name == "" {
 					return fmt.Errorf("endpoint %q response %d header name is required", endpoint.OperationID, response.StatusCode)
 				}
+				if err := validateSchemaRefExists(doc, header.Schema, fmt.Sprintf("endpoint %q response %d header %q", endpoint.OperationID, response.StatusCode, header.Name)); err != nil {
+					return err
+				}
 				if _, exists := seenHeaders[strings.ToLower(name)]; exists {
 					return fmt.Errorf("endpoint %q response %d has duplicate header %q", endpoint.OperationID, response.StatusCode, header.Name)
 				}
 				seenHeaders[strings.ToLower(name)] = struct{}{}
+			}
+			if response.Schema != nil {
+				if err := validateSchemaRefExists(doc, *response.Schema, fmt.Sprintf("endpoint %q response %d schema", endpoint.OperationID, response.StatusCode)); err != nil {
+					return err
+				}
+			}
+			for idx, schemaRef := range response.AnyOf {
+				if err := validateSchemaRefExists(doc, schemaRef, fmt.Sprintf("endpoint %q response %d any_of[%d]", endpoint.OperationID, response.StatusCode, idx)); err != nil {
+					return err
+				}
 			}
 		}
 
@@ -117,8 +146,8 @@ func Validate(doc Document) error {
 	}
 
 	for name, schema := range doc.Schemas {
-		if strings.TrimSpace(schema.Type) == "" {
-			return fmt.Errorf("schema %q type is required", name)
+		if err := validateSchemaDefinition(doc, name, schema); err != nil {
+			return err
 		}
 		if len(schema.PropertyOrder) > 0 {
 			for _, propertyName := range schema.PropertyOrder {
@@ -130,6 +159,149 @@ func Validate(doc Document) error {
 	}
 
 	return nil
+}
+
+func validateParameterSchema(doc Document, endpoint Endpoint, parameter Parameter) error {
+	if parameter.In == "" {
+		return fmt.Errorf("endpoint %q parameter %q location is required", endpoint.OperationID, parameter.Name)
+	}
+
+	schemaType, format, err := resolvedParameterSchemaType(doc, parameter.Schema, fmt.Sprintf("endpoint %q parameter %q", endpoint.OperationID, parameter.Name))
+	if err != nil {
+		return err
+	}
+
+	switch schemaType {
+	case "string":
+		if format == "date-time" || format == "" {
+			return nil
+		}
+		return nil
+	case "array":
+		if parameter.In != "query" {
+			return fmt.Errorf("endpoint %q parameter %q arrays are only supported in query parameters", endpoint.OperationID, parameter.Name)
+		}
+		itemType, itemFormat, err := resolvedParameterArrayItemType(doc, parameter.Schema, fmt.Sprintf("endpoint %q parameter %q", endpoint.OperationID, parameter.Name))
+		if err != nil {
+			return err
+		}
+		switch itemType {
+		case "string":
+			if itemFormat == "" || itemFormat == "date-time" {
+				return nil
+			}
+			return nil
+		case "boolean", "bool":
+			return nil
+		case "integer":
+			switch itemFormat {
+			case "", "int32", "int64":
+				return nil
+			default:
+				return fmt.Errorf("endpoint %q parameter %q has unsupported array item integer format %q", endpoint.OperationID, parameter.Name, itemFormat)
+			}
+		default:
+			return fmt.Errorf("endpoint %q parameter %q has unsupported array item schema type %q", endpoint.OperationID, parameter.Name, itemType)
+		}
+	case "boolean", "bool":
+		return nil
+	case "integer":
+		switch format {
+		case "", "int32", "int64":
+			return nil
+		default:
+			return fmt.Errorf("endpoint %q parameter %q has unsupported integer format %q", endpoint.OperationID, parameter.Name, format)
+		}
+	default:
+		return fmt.Errorf("endpoint %q parameter %q has unsupported schema type %q", endpoint.OperationID, parameter.Name, schemaType)
+	}
+}
+
+func validateRequestBodySchema(doc Document, endpoint Endpoint) error {
+	if endpoint.RequestBody == nil {
+		return nil
+	}
+	ref := endpoint.RequestBody.Schema
+	if ref.Ref == "GenericRequest" {
+		if _, ok := ResolveGenericRequestBodySchemaName(doc, endpoint.OperationID); !ok {
+			return fmt.Errorf("endpoint %q generic request body schema could not be resolved", endpoint.OperationID)
+		}
+		return nil
+	}
+	return validateSchemaRefExists(doc, ref, fmt.Sprintf("endpoint %q request_body schema", endpoint.OperationID))
+}
+
+func validateSchemaDefinition(doc Document, name string, schema Schema) error {
+	if strings.TrimSpace(schema.Type) == "" {
+		return fmt.Errorf("schema %q type is required", name)
+	}
+	for propertyName, property := range schema.Properties {
+		if err := validateSchemaRefExists(doc, property.Schema, fmt.Sprintf("schema %q property %q", name, propertyName)); err != nil {
+			return err
+		}
+	}
+	if schema.Items != nil {
+		if err := validateSchemaRefExists(doc, *schema.Items, fmt.Sprintf("schema %q items", name)); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func validateSchemaRefExists(doc Document, schemaRef SchemaRef, context string) error {
+	if schemaRef.Ref != "" {
+		if schemaRef.Ref == "GenericRequest" {
+			return nil
+		}
+		name, ok := NormalizedSchemaRefName(schemaRef)
+		if !ok {
+			return fmt.Errorf("%s has invalid schema ref %q", context, schemaRef.Ref)
+		}
+		if _, ok := doc.Schemas[name]; !ok {
+			return fmt.Errorf("%s references unknown schema %q", context, name)
+		}
+	}
+	if schemaRef.Items != nil {
+		if err := validateSchemaRefExists(doc, *schemaRef.Items, context+" items"); err != nil {
+			return err
+		}
+	}
+	if schemaRef.AdditionalProperties != nil && schemaRef.AdditionalProperties.Schema != nil {
+		if err := validateSchemaRefExists(doc, *schemaRef.AdditionalProperties.Schema, context+" additional_properties"); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func resolvedParameterSchemaType(doc Document, schemaRef SchemaRef, context string) (string, string, error) {
+	if schemaRef.Ref != "" {
+		schema, ok := ResolveSchema(doc, schemaRef)
+		if !ok {
+			name, _ := NormalizedSchemaRefName(schemaRef)
+			return "", "", fmt.Errorf("%s references unknown schema %q", context, name)
+		}
+		return strings.ToLower(strings.TrimSpace(schema.Type)), "", nil
+	}
+	return strings.ToLower(strings.TrimSpace(schemaRef.Type)), strings.ToLower(strings.TrimSpace(schemaRef.Format)), nil
+}
+
+func resolvedParameterArrayItemType(doc Document, schemaRef SchemaRef, context string) (string, string, error) {
+	if schemaRef.Ref != "" {
+		schema, ok := ResolveSchema(doc, schemaRef)
+		if !ok {
+			name, _ := NormalizedSchemaRefName(schemaRef)
+			return "", "", fmt.Errorf("%s references unknown schema %q", context, name)
+		}
+		if schema.Items == nil {
+			return "", "", fmt.Errorf("%s array schema must declare items", context)
+		}
+		return resolvedParameterSchemaType(doc, *schema.Items, context+" items")
+	}
+	if schemaRef.Items == nil {
+		return "", "", fmt.Errorf("%s array schema must declare items", context)
+	}
+	return resolvedParameterSchemaType(doc, *schemaRef.Items, context+" items")
 }
 
 // Normalize applies deterministic ordering for generation.

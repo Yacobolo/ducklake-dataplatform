@@ -49,7 +49,7 @@ tags:
   - name: Health
     description: Operational readiness and service health endpoints.
 paths:
-  /api-key-cleanup-runs:
+  /v1/api-key-cleanup-runs:
     post:
       operationId: cleanupExpiredAPIKeys
       summary: Clean up expired API keys
@@ -126,7 +126,7 @@ paths:
       tags:
         - Identity
       x-cli-command: security api-keys cleanup
-  /api-keys:
+  /v1/api-keys:
     get:
       operationId: listAPIKeys
       summary: List API keys
@@ -312,7 +312,7 @@ paths:
               name: dbt-cloud
               principal_id: user_01hzyreader4b8dm9q
       x-cli-command: security api-keys create
-  /api-keys/{api_key_id}:
+  /v1/api-keys/{api_key_id}:
     delete:
       operationId: deleteAPIKey
       summary: Delete API key
@@ -389,7 +389,7 @@ paths:
       tags:
         - Identity
       x-cli-command: security api-keys delete
-  /assets:
+  /v1/assets:
     get:
       operationId: listAssets
       summary: List assets
@@ -661,7 +661,7 @@ paths:
             privilege: MANAGE_ASSET_DEFINITIONS
             securable_id_source: catalog_sentinel
       x-cli-command: assets create
-  /assets/{asset_key}:
+  /v1/assets/{asset_key}:
     delete:
       operationId: deleteAsset
       summary: Delete asset
@@ -1048,7 +1048,7 @@ paths:
             privilege: MANAGE_ASSET_DEFINITIONS
             securable_id_source: catalog_sentinel
       x-cli-command: assets update
-  /assets/{asset_key}/backfills:
+  /v1/assets/{asset_key}/backfills:
     get:
       operationId: listAssetBackfills
       summary: List asset backfills
@@ -1314,7 +1314,7 @@ paths:
             privilege: EXECUTE_ASSET_MATERIALIZATION
             securable_id_source: catalog_sentinel
       x-cli-command: assets backfills create
-  /assets/{asset_key}/backfills/{backfill_id}:
+  /v1/assets/{asset_key}/backfills/{backfill_id}:
     get:
       operationId: getAssetBackfill
       summary: Get asset backfill
@@ -1441,7 +1441,7 @@ paths:
       tags:
         - Assets
       x-cli-command: assets backfills get
-  /assets/{asset_key}/checks:
+  /v1/assets/{asset_key}/checks:
     get:
       operationId: listAssetChecks
       summary: List asset checks
@@ -1544,7 +1544,7 @@ paths:
       tags:
         - Assets
       x-cli-command: assets checks list
-  /assets/{asset_key}/checks/results:
+  /v1/assets/{asset_key}/checks/results:
     get:
       operationId: listAssetCheckResults
       summary: List asset check results
@@ -1665,7 +1665,7 @@ paths:
       tags:
         - Assets
       x-cli-command: assets check-results list
-  /assets/{asset_key}/freshness:
+  /v1/assets/{asset_key}/freshness:
     get:
       operationId: getAssetFreshness
       summary: Get asset freshness
@@ -1770,7 +1770,7 @@ paths:
       tags:
         - Assets
       x-cli-command: assets freshness get
-  /assets/{asset_key}/freshness-reconciliations:
+  /v1/assets/{asset_key}/freshness-reconciliations:
     post:
       operationId: reconcileAssetFreshness
       summary: Reconcile asset freshness
@@ -1882,7 +1882,7 @@ paths:
       tags:
         - Assets
       x-cli-command: assets freshness reconcile
-  /assets/{asset_key}/freshness/blockers:
+  /v1/assets/{asset_key}/freshness/blockers:
     get:
       operationId: listAssetFreshnessBlockers
       summary: List asset freshness blockers
@@ -2002,7 +2002,7 @@ paths:
       tags:
         - Assets
       x-cli-command: assets freshness blockers
-  /assets/{asset_key}/freshness/explanation:
+  /v1/assets/{asset_key}/freshness/explanation:
     get:
       operationId: explainAssetFreshness
       summary: Explain asset freshness
@@ -2124,7 +2124,7 @@ paths:
       tags:
         - Assets
       x-cli-command: assets freshness explain
-  /assets/{asset_key}/freshness/requirements:
+  /v1/assets/{asset_key}/freshness/requirements:
     get:
       operationId: listAssetFreshnessRequirements
       summary: List asset freshness requirements
@@ -2244,7 +2244,7 @@ paths:
       tags:
         - Assets
       x-cli-command: assets freshness requirements
-  /assets/{asset_key}/graph:
+  /v1/assets/{asset_key}/graph:
     get:
       operationId: getAssetGraph
       summary: Get asset graph
@@ -2345,7 +2345,7 @@ paths:
       tags:
         - Assets
       x-cli-command: assets graph get
-  /assets/{asset_key}/materializations:
+  /v1/assets/{asset_key}/materializations:
     get:
       operationId: listAssetMaterializations
       summary: List asset materializations
@@ -2578,7 +2578,7 @@ paths:
             privilege: EXECUTE_ASSET_MATERIALIZATION
             securable_id_source: catalog_sentinel
       x-cli-command: assets materialize
-  /assets/{asset_key}/partitions:
+  /v1/assets/{asset_key}/partitions:
     get:
       operationId: listAssetPartitions
       summary: List asset partitions
@@ -2695,7 +2695,7 @@ paths:
       tags:
         - Assets
       x-cli-command: assets partitions list
-  /assets/{asset_key}/runs:
+  /v1/assets/{asset_key}/runs:
     get:
       operationId: listAssetRuns
       summary: List asset runs
@@ -2829,7 +2829,7 @@ paths:
       tags:
         - Assets
       x-cli-command: assets runs list
-  /audit-entries:
+  /v1/audit-entries:
     get:
       operationId: listAuditLogs
       summary: List audit entries
@@ -2957,7 +2957,7 @@ paths:
       x-authz:
         mode: admin_only
       x-cli-command: audit entries list
-  /auth/bootstrap/complete:
+  /v1/auth/bootstrap/complete:
     post:
       operationId: bootstrapComplete
       summary: Bootstrap complete
@@ -3065,7 +3065,7 @@ paths:
       x-authz:
         mode: none
       x-apigen-manual: true
-  /auth/bootstrap/tokens:
+  /v1/auth/bootstrap/tokens:
     post:
       operationId: createBootstrapToken
       summary: Create bootstrap token
@@ -3153,7 +3153,7 @@ paths:
       x-authz:
         mode: admin_only
       x-apigen-manual: true
-  /auth/local/login:
+  /v1/auth/local/login:
     post:
       operationId: localLogin
       summary: Local login
@@ -3248,7 +3248,7 @@ paths:
       x-authz:
         mode: none
       x-apigen-manual: true
-  /auth/provider/oidc:
+  /v1/auth/provider/oidc:
     get:
       operationId: getOIDCProvider
       summary: Get OIDC provider
@@ -3408,7 +3408,7 @@ paths:
       x-authz:
         mode: admin_only
       x-apigen-manual: true
-  /auth/sessions/revocations:
+  /v1/auth/sessions/revocations:
     post:
       operationId: revokeAllWebSessions
       summary: Revoke all web sessions
@@ -3501,7 +3501,7 @@ paths:
       x-authz:
         mode: admin_only
       x-apigen-manual: true
-  /auth/sessions/stats:
+  /v1/auth/sessions/stats:
     get:
       operationId: getWebSessionStats
       summary: Get web session stats
@@ -3588,7 +3588,7 @@ paths:
       x-authz:
         mode: admin_only
       x-apigen-manual: true
-  /catalogs:
+  /v1/catalogs:
     get:
       operationId: listCatalogs
       summary: List catalog registrations
@@ -3795,7 +3795,7 @@ paths:
               metastore_type: sqlite
               name: example
       x-cli-command: catalog registrations create
-  /catalogs/search:
+  /v1/catalogs/search:
     get:
       operationId: searchCatalog
       summary: Search catalog
@@ -3903,7 +3903,7 @@ paths:
       tags:
         - Catalogs
       x-cli-command: catalog search
-  /catalogs/{catalog_name}:
+  /v1/catalogs/{catalog_name}:
     delete:
       operationId: deleteCatalogRegistration
       summary: Delete catalog registration
@@ -4210,7 +4210,7 @@ paths:
               comment: example
               data_path: example
       x-cli-command: catalog registrations update
-  /catalogs/{catalog_name}/default:
+  /v1/catalogs/{catalog_name}/default:
     put:
       operationId: setDefaultCatalog
       summary: Set default catalog
@@ -4311,7 +4311,7 @@ paths:
               $ref: '#/components/schemas/SetDefaultCatalogRequest'
             example: {}
       x-cli-command: catalog registrations set-default
-  /catalogs/{catalog_name}/history:
+  /v1/catalogs/{catalog_name}/history:
     get:
       operationId: listCatalogHistory
       summary: List catalog history
@@ -4445,7 +4445,7 @@ paths:
                 message: validation failed
       tags:
         - Catalogs
-  /catalogs/{catalog_name}/metastore/summary:
+  /v1/catalogs/{catalog_name}/metastore/summary:
     get:
       operationId: getMetastoreSummary
       summary: Get metastore summary
@@ -4545,7 +4545,7 @@ paths:
       tags:
         - Catalogs
       x-cli-command: catalog metastore summary
-  /catalogs/{catalog_name}/schemas:
+  /v1/catalogs/{catalog_name}/schemas:
     get:
       operationId: listSchemas
       summary: List schemas
@@ -4781,7 +4781,7 @@ paths:
             privilege: CREATE_SCHEMA
             securable_id_source: catalog_name_param
       x-cli-command: catalog schemas create
-  /catalogs/{catalog_name}/schemas/{schema_name}:
+  /v1/catalogs/{catalog_name}/schemas/{schema_name}:
     delete:
       operationId: deleteSchema
       summary: Delete schema
@@ -5105,7 +5105,7 @@ paths:
             privilege: CREATE_SCHEMA
             securable_id_source: runtime_resolved_object_id
       x-cli-command: catalog schemas update
-  /catalogs/{catalog_name}/schemas/{schema_name}/tables:
+  /v1/catalogs/{catalog_name}/schemas/{schema_name}/tables:
     get:
       operationId: listTables
       summary: List tables
@@ -5387,7 +5387,7 @@ paths:
             privilege: CREATE_TABLE
             securable_id_source: runtime_resolved_object_id
       x-cli-command: catalog tables create
-  /catalogs/{catalog_name}/schemas/{schema_name}/tables/{table_name}:
+  /v1/catalogs/{catalog_name}/schemas/{schema_name}/tables/{table_name}:
     delete:
       operationId: deleteTable
       summary: Delete table
@@ -5755,7 +5755,7 @@ paths:
             privilege: CREATE_TABLE
             securable_id_source: runtime_resolved_object_id
       x-cli-command: catalog tables update
-  /catalogs/{catalog_name}/schemas/{schema_name}/tables/{table_name}/columns:
+  /v1/catalogs/{catalog_name}/schemas/{schema_name}/tables/{table_name}/columns:
     get:
       operationId: listTableColumns
       summary: List table columns
@@ -5884,7 +5884,7 @@ paths:
       tags:
         - Catalogs
       x-cli-command: catalog columns list
-  /catalogs/{catalog_name}/schemas/{schema_name}/tables/{table_name}/columns/{column_name}:
+  /v1/catalogs/{catalog_name}/schemas/{schema_name}/tables/{table_name}/columns/{column_name}:
     patch:
       operationId: updateColumn
       summary: Update column
@@ -6005,7 +6005,7 @@ paths:
             privilege: CREATE_TABLE
             securable_id_source: runtime_resolved_object_id
       x-cli-command: catalog columns update
-  /catalogs/{catalog_name}/schemas/{schema_name}/tables/{table_name}/ingestion-commits:
+  /v1/catalogs/{catalog_name}/schemas/{schema_name}/tables/{table_name}/ingestion-commits:
     post:
       operationId: commitTableIngestion
       summary: Commit table ingestion
@@ -6123,7 +6123,7 @@ paths:
             privilege: INSERT
             securable_id_source: runtime_resolved_object_id
       x-cli-command: ingestion commit
-  /catalogs/{catalog_name}/schemas/{schema_name}/tables/{table_name}/ingestion-loads:
+  /v1/catalogs/{catalog_name}/schemas/{schema_name}/tables/{table_name}/ingestion-loads:
     post:
       operationId: loadTableExternalFiles
       summary: Load table external files
@@ -6240,7 +6240,7 @@ paths:
             privilege: INSERT
             securable_id_source: runtime_resolved_object_id
       x-cli-command: ingestion load
-  /catalogs/{catalog_name}/schemas/{schema_name}/tables/{table_name}/manifest:
+  /v1/catalogs/{catalog_name}/schemas/{schema_name}/tables/{table_name}/manifest:
     get:
       operationId: createManifest
       summary: Get table manifest
@@ -6358,7 +6358,7 @@ paths:
       tags:
         - Catalogs
       x-cli-command: catalog tables manifest get
-  /catalogs/{catalog_name}/schemas/{schema_name}/tables/{table_name}/profiles:
+  /v1/catalogs/{catalog_name}/schemas/{schema_name}/tables/{table_name}/profiles:
     post:
       operationId: profileTable
       summary: Profile table
@@ -6457,7 +6457,7 @@ paths:
       tags:
         - Catalogs
       x-cli-command: catalog tables profile
-  /catalogs/{catalog_name}/schemas/{schema_name}/tables/{table_name}/upload-urls:
+  /v1/catalogs/{catalog_name}/schemas/{schema_name}/tables/{table_name}/upload-urls:
     post:
       operationId: createUploadUrl
       summary: Create upload URL
@@ -6569,7 +6569,7 @@ paths:
             privilege: INSERT
             securable_id_source: runtime_resolved_object_id
       x-cli-command: ingestion upload-url
-  /catalogs/{catalog_name}/schemas/{schema_name}/views:
+  /v1/catalogs/{catalog_name}/schemas/{schema_name}/views:
     get:
       operationId: listViews
       summary: List views
@@ -6826,7 +6826,7 @@ paths:
             privilege: CREATE_TABLE
             securable_id_source: runtime_resolved_object_id
       x-cli-command: catalog views create
-  /catalogs/{catalog_name}/schemas/{schema_name}/views/{view_name}:
+  /v1/catalogs/{catalog_name}/schemas/{schema_name}/views/{view_name}:
     delete:
       operationId: deleteView
       summary: Delete view
@@ -7171,7 +7171,7 @@ paths:
             privilege: CREATE_TABLE
             securable_id_source: runtime_resolved_object_id
       x-cli-command: catalog views update
-  /catalogs/{catalog_name}/schemas/{schema_name}/volumes:
+  /v1/catalogs/{catalog_name}/schemas/{schema_name}/volumes:
     get:
       operationId: listVolumes
       summary: List volumes
@@ -7413,7 +7413,7 @@ paths:
             privilege: CREATE_VOLUME
             securable_id_source: catalog_sentinel
       x-cli-command: catalog volumes create
-  /catalogs/{catalog_name}/schemas/{schema_name}/volumes/{volume_name}:
+  /v1/catalogs/{catalog_name}/schemas/{schema_name}/volumes/{volume_name}:
     delete:
       operationId: deleteVolume
       summary: Delete volume
@@ -7743,7 +7743,7 @@ paths:
             privilege: CREATE_VOLUME
             securable_id_source: runtime_resolved_object_id
       x-cli-command: catalog volumes update
-  /catalogs/{catalog_name}/version-summary:
+  /v1/catalogs/{catalog_name}/version-summary:
     get:
       operationId: getCatalogVersionSummary
       summary: Get catalog version summary
@@ -7860,7 +7860,7 @@ paths:
                 message: validation failed
       tags:
         - Catalogs
-  /classifications:
+  /v1/classifications:
     get:
       operationId: listClassifications
       summary: List classifications
@@ -7946,7 +7946,7 @@ paths:
       tags:
         - Governance
       x-cli-command: governance classifications list
-  /column-masks:
+  /v1/column-masks:
     get:
       operationId: listColumnMasks
       summary: List column masks
@@ -8160,7 +8160,7 @@ paths:
               name: example
               table_id: example
       x-cli-command: security column-masks create
-  /column-masks/{column_mask_id}:
+  /v1/column-masks/{column_mask_id}:
     delete:
       operationId: deleteColumnMask
       summary: Delete column mask
@@ -8435,7 +8435,7 @@ paths:
               description: example
               mask_expression: example
               name: example
-  /column-masks/{column_mask_id}/bindings:
+  /v1/column-masks/{column_mask_id}/bindings:
     get:
       operationId: listColumnMaskBindings
       summary: List column mask bindings
@@ -8637,7 +8637,7 @@ paths:
               principal_type: user
               see_original: true
       x-cli-command: security column-masks bind
-  /column-masks/{column_mask_id}/bindings/{principal_type}/{principal_id}:
+  /v1/column-masks/{column_mask_id}/bindings/{principal_type}/{principal_id}:
     delete:
       operationId: unbindColumnMask
       summary: Unbind column mask
@@ -8726,7 +8726,7 @@ paths:
       tags:
         - Governance
       x-cli-command: security column-masks unbind
-  /compute-endpoints:
+  /v1/compute-endpoints:
     get:
       operationId: listComputeEndpoints
       summary: List compute endpoints
@@ -8954,7 +8954,7 @@ paths:
             privilege: MANAGE_COMPUTE
             securable_id_source: catalog_sentinel
       x-cli-command: compute endpoints create
-  /compute-endpoints/{endpoint_name}:
+  /v1/compute-endpoints/{endpoint_name}:
     delete:
       operationId: deleteComputeEndpoint
       summary: Delete compute endpoint
@@ -9276,7 +9276,7 @@ paths:
             privilege: MANAGE_COMPUTE
             securable_id_source: runtime_resolved_object_id
       x-cli-command: compute endpoints update
-  /compute-endpoints/{endpoint_name}/assignments:
+  /v1/compute-endpoints/{endpoint_name}/assignments:
     get:
       operationId: listComputeAssignments
       summary: List compute assignments
@@ -9516,7 +9516,7 @@ paths:
             privilege: MANAGE_COMPUTE
             securable_id_source: runtime_resolved_object_id
       x-cli-command: compute assignments create
-  /compute-endpoints/{endpoint_name}/assignments/{assignment_id}:
+  /v1/compute-endpoints/{endpoint_name}/assignments/{assignment_id}:
     delete:
       operationId: deleteComputeAssignment
       summary: Delete compute assignment
@@ -9617,7 +9617,7 @@ paths:
             privilege: MANAGE_COMPUTE
             securable_id_source: catalog_sentinel
       x-cli-command: compute assignments delete
-  /compute-endpoints/{endpoint_name}/health:
+  /v1/compute-endpoints/{endpoint_name}/health:
     get:
       operationId: getComputeEndpointHealth
       summary: Get compute endpoint health
@@ -9731,7 +9731,7 @@ paths:
       tags:
         - Compute
       x-cli-command: compute endpoints health
-  /compute-routing-defaults:
+  /v1/compute-routing-defaults:
     get:
       operationId: getComputeRoutingDefaults
       summary: Get compute routing defaults
@@ -9903,7 +9903,7 @@ paths:
               scheduled_mode: example
       x-authz:
         mode: admin_only
-  /dashboards:
+  /v1/dashboards:
     get:
       operationId: listDashboards
       summary: List dashboards
@@ -10110,7 +10110,7 @@ paths:
               semantic_model_name: executive_metrics
               semantic_project_name: revenue
       x-cli-command: dashboards create
-  /dashboards/{dashboard_id}:
+  /v1/dashboards/{dashboard_id}:
     delete:
       operationId: deleteDashboard
       summary: Delete dashboard
@@ -10433,7 +10433,7 @@ paths:
               semantic_model_name: executive_metrics
               semantic_project_name: revenue
       x-cli-command: dashboards update
-  /dashboards/{dashboard_id}/rendered:
+  /v1/dashboards/{dashboard_id}/rendered:
     get:
       operationId: getRenderedDashboard
       summary: Get rendered dashboard
@@ -10581,7 +10581,7 @@ paths:
       tags:
         - Dashboards
       x-cli-command: dashboards get-rendered
-  /dashboards/{dashboard_id}/widgets:
+  /v1/dashboards/{dashboard_id}/widgets:
     get:
       operationId: listDashboardWidgets
       summary: List dashboard widgets
@@ -10833,7 +10833,7 @@ paths:
                 legend: false
                 title: MRR by plan tier
       x-cli-command: dashboards widgets create
-  /dashboards/{dashboard_id}/widgets/{widget_id}:
+  /v1/dashboards/{dashboard_id}/widgets/{widget_id}:
     delete:
       operationId: deleteDashboardWidget
       summary: Delete dashboard widget
@@ -11189,7 +11189,7 @@ paths:
                 chart_type: stacked_bar
                 title: MRR by plan tier and region
       x-cli-command: dashboards widgets update
-  /data-products:
+  /v1/data-products:
     get:
       operationId: listDataProducts
       summary: List data products
@@ -11794,7 +11794,7 @@ paths:
               steward_principal: alice@example.com
               team_name: customer-platform
               visibility: internal
-  /data-products/portfolio:
+  /v1/data-products/portfolio:
     get:
       operationId: getProductPortfolioReport
       summary: Get product portfolio report
@@ -11910,7 +11910,7 @@ paths:
                 message: validation failed
       tags:
         - Products
-  /data-products/scorecards:
+  /v1/data-products/scorecards:
     get:
       operationId: listProductScorecards
       summary: List product scorecards
@@ -12004,7 +12004,7 @@ paths:
                 message: validation failed
       tags:
         - Products
-  /data-products/{product_slug}:
+  /v1/data-products/{product_slug}:
     delete:
       operationId: deleteDataProduct
       summary: Delete data product
@@ -12774,7 +12774,7 @@ paths:
               steward_principal: alice@example.com
               team_name: customer-platform
               visibility: internal
-  /data-products/{product_slug}/dependencies:
+  /v1/data-products/{product_slug}/dependencies:
     get:
       operationId: listDataProductDependencies
       summary: List data product dependencies
@@ -13186,7 +13186,7 @@ paths:
               $ref: '#/components/schemas/CreateProductDependencyRequest'
             example:
               depends_on_slug: example
-  /data-products/{product_slug}/events:
+  /v1/data-products/{product_slug}/events:
     get:
       operationId: listDataProductEvents
       summary: List data product events
@@ -13293,7 +13293,7 @@ paths:
                 message: validation failed
       tags:
         - Products
-  /data-products/{product_slug}/outputs:
+  /v1/data-products/{product_slug}/outputs:
     get:
       operationId: listDataProductOutputs
       summary: List data product outputs
@@ -13382,7 +13382,7 @@ paths:
                 message: validation failed
       tags:
         - Products
-  /data-products/{product_slug}/semantic-entrypoints:
+  /v1/data-products/{product_slug}/semantic-entrypoints:
     get:
       operationId: listDataProductSemanticEntrypoints
       summary: List data product semantic entrypoints
@@ -13469,7 +13469,7 @@ paths:
                 message: validation failed
       tags:
         - Products
-  /data-products/{product_slug}/status:
+  /v1/data-products/{product_slug}/status:
     get:
       operationId: getDataProductStatus
       summary: Get data product status
@@ -13564,7 +13564,7 @@ paths:
                 message: validation failed
       tags:
         - Products
-  /data-products/{product_slug}/subscriptions:
+  /v1/data-products/{product_slug}/subscriptions:
     get:
       operationId: listDataProductSubscriptions
       summary: List data product subscriptions
@@ -13775,7 +13775,7 @@ paths:
               channel: example
               event_type: example
               principal_name: example
-  /data-products/{product_slug}/versions:
+  /v1/data-products/{product_slug}/versions:
     get:
       operationId: listDataProductVersions
       summary: List data product versions
@@ -14280,7 +14280,7 @@ paths:
               slo:
                 freshness_slo: 6h
                 latency_slo: p95 < 3s
-  /data-products/{product_slug}/versions/{version}:
+  /v1/data-products/{product_slug}/versions/{version}:
     delete:
       operationId: deleteDataProductVersion
       summary: Delete data product version
@@ -14695,7 +14695,7 @@ paths:
                 message: validation failed
       tags:
         - Products
-  /data-products/{product_slug}/versions/{version}/deprecations:
+  /v1/data-products/{product_slug}/versions/{version}/deprecations:
     post:
       operationId: deprecateDataProductVersion
       summary: Deprecate data product version
@@ -15044,7 +15044,7 @@ paths:
               $ref: '#/components/schemas/DeprecateProductVersionRequest'
             example:
               replacement_slug: example
-  /data-products/{product_slug}/versions/{version}/publications:
+  /v1/data-products/{product_slug}/versions/{version}/publications:
     post:
       operationId: publishDataProductVersion
       summary: Publish data product version
@@ -15384,7 +15384,7 @@ paths:
                 message: validation failed
       tags:
         - Products
-  /data-products/{product_slug}/versions/{version}/retirements:
+  /v1/data-products/{product_slug}/versions/{version}/retirements:
     post:
       operationId: retireDataProductVersion
       summary: Retire data product version
@@ -15724,7 +15724,7 @@ paths:
                 message: validation failed
       tags:
         - Products
-  /external-locations:
+  /v1/external-locations:
     get:
       operationId: listExternalLocations
       summary: List external locations
@@ -15921,7 +15921,7 @@ paths:
             privilege: CREATE_EXTERNAL_LOCATION
             securable_id_source: catalog_sentinel
       x-cli-command: storage locations create
-  /external-locations/{location_name}:
+  /v1/external-locations/{location_name}:
     delete:
       operationId: deleteExternalLocation
       summary: Delete external location
@@ -16240,7 +16240,7 @@ paths:
             privilege: CREATE_EXTERNAL_LOCATION
             securable_id_source: runtime_resolved_object_id
       x-cli-command: storage locations update
-  /folders/contents:
+  /v1/folders/contents:
     get:
       operationId: listRootFolderContents
       summary: List root folder contents
@@ -16338,7 +16338,7 @@ paths:
                 message: validation failed
       tags:
         - Folders
-  /folders/search:
+  /v1/folders/search:
     get:
       operationId: searchRootFolderContents
       summary: Search root folder namespace
@@ -16450,7 +16450,7 @@ paths:
                 message: validation failed
       tags:
         - Folders
-  /folders/{folder_id}:
+  /v1/folders/{folder_id}:
     delete:
       operationId: deleteFolder
       summary: Delete folder
@@ -16763,7 +16763,7 @@ paths:
               git_repo_id: example
               git_root_path: example
               name: example
-  /folders/{folder_id}/contents:
+  /v1/folders/{folder_id}/contents:
     get:
       operationId: listFolderContents
       summary: List folder contents
@@ -16867,7 +16867,7 @@ paths:
                 message: validation failed
       tags:
         - Folders
-  /folders/{folder_id}/moves:
+  /v1/folders/{folder_id}/moves:
     post:
       operationId: moveFolder
       summary: Move folder
@@ -16985,7 +16985,7 @@ paths:
               confirm_context_change: true
               confirm_leave_git: true
               parent_folder_id: example
-  /folders/{folder_id}/path:
+  /v1/folders/{folder_id}/path:
     get:
       operationId: getFolderPath
       summary: Get folder path
@@ -17093,7 +17093,7 @@ paths:
                 message: validation failed
       tags:
         - Folders
-  /folders/{folder_id}/search:
+  /v1/folders/{folder_id}/search:
     get:
       operationId: searchFolderContents
       summary: Search folder namespace
@@ -17211,7 +17211,7 @@ paths:
                 message: validation failed
       tags:
         - Folders
-  /folders/{folder_id}/shares:
+  /v1/folders/{folder_id}/shares:
     get:
       operationId: listFolderShares
       summary: List folder shares
@@ -17410,7 +17410,7 @@ paths:
             example:
               principal_name: example
               role: viewer
-  /folders/{folder_id}/shares/{principal_name}:
+  /v1/folders/{folder_id}/shares/{principal_name}:
     delete:
       operationId: unshareFolder
       summary: Remove folder share
@@ -17504,7 +17504,7 @@ paths:
                 message: validation failed
       tags:
         - Folders
-  /git-repos:
+  /v1/git-repos:
     get:
       operationId: listGitRepos
       summary: List git repos
@@ -17690,7 +17690,7 @@ paths:
               path: example
               url: example
       x-cli-command: notebooks git-repos create
-  /git-repos/{git_repo_id}:
+  /v1/git-repos/{git_repo_id}:
     delete:
       operationId: deleteGitRepo
       summary: Delete git repo
@@ -17881,7 +17881,7 @@ paths:
       tags:
         - Integrations
       x-cli-command: notebooks git-repos get
-  /git-repos/{git_repo_id}/sync-runs:
+  /v1/git-repos/{git_repo_id}/sync-runs:
     post:
       operationId: syncGitRepo
       summary: Sync git repo
@@ -17991,7 +17991,7 @@ paths:
       tags:
         - Integrations
       x-cli-command: notebooks git-repos sync
-  /grants:
+  /v1/grants:
     get:
       operationId: listGrants
       summary: List grants
@@ -18234,7 +18234,7 @@ paths:
       x-authz:
         mode: admin_only
       x-cli-command: security grants create
-  /grants/{grant_id}:
+  /v1/grants/{grant_id}:
     delete:
       operationId: deleteGrant
       summary: Delete grant
@@ -18313,7 +18313,7 @@ paths:
       x-authz:
         mode: admin_only
       x-cli-command: security grants revoke
-  /groups:
+  /v1/groups:
     get:
       operationId: listGroups
       summary: List groups
@@ -18501,7 +18501,7 @@ paths:
               description: example
               name: example
       x-cli-command: security groups create
-  /groups/{group_id}:
+  /v1/groups/{group_id}:
     delete:
       operationId: deleteGroup
       summary: Delete group
@@ -18782,7 +18782,7 @@ paths:
               $ref: '#/components/schemas/UpdateGroupRequest'
             example:
               description: example
-  /groups/{group_id}/members:
+  /v1/groups/{group_id}/members:
     get:
       operationId: listGroupMembers
       summary: List group members
@@ -18982,7 +18982,7 @@ paths:
               member_id: example
               member_type: user
       x-cli-command: security members add
-  /groups/{group_id}/members/{member_type}/{member_id}:
+  /v1/groups/{group_id}/members/{member_type}/{member_id}:
     delete:
       operationId: deleteGroupMember
       summary: Delete group member
@@ -19071,7 +19071,7 @@ paths:
       tags:
         - Identity
       x-cli-command: security members remove
-  /healthz:
+  /v1/healthz:
     get:
       operationId: getHealth
       summary: Get health
@@ -19139,7 +19139,7 @@ paths:
         - {}
       x-authz:
         mode: none
-  /lineage/columns/{schema_name}/{table_name}:
+  /v1/lineage/columns/{schema_name}/{table_name}:
     get:
       operationId: getColumnLineage
       summary: Get column lineage
@@ -19264,7 +19264,7 @@ paths:
       tags:
         - Lineage
       x-cli-command: lineage columns get
-  /lineage/columns/{schema_name}/{table_name}/{column_name}/impacts:
+  /v1/lineage/columns/{schema_name}/{table_name}/{column_name}/impacts:
     get:
       operationId: getColumnImpact
       summary: Get column impact
@@ -19395,7 +19395,7 @@ paths:
       tags:
         - Lineage
       x-cli-command: lineage impact get
-  /lineage/edges/{edge_id}:
+  /v1/lineage/edges/{edge_id}:
     delete:
       operationId: deleteLineageEdge
       summary: Delete lineage edge
@@ -19472,7 +19472,7 @@ paths:
       tags:
         - Lineage
       x-cli-command: lineage edges delete
-  /lineage/purges:
+  /v1/lineage/purges:
     post:
       operationId: purgeLineage
       summary: Purge lineage
@@ -19558,7 +19558,7 @@ paths:
             example:
               older_than_days: 30
       x-cli-command: lineage purge
-  /lineage/tables/{schema_name}/{table_name}:
+  /v1/lineage/tables/{schema_name}/{table_name}:
     get:
       operationId: getTableLineage
       summary: Get table lineage
@@ -19684,7 +19684,7 @@ paths:
       tags:
         - Lineage
       x-cli-command: lineage tables get
-  /lineage/tables/{schema_name}/{table_name}/downstream:
+  /v1/lineage/tables/{schema_name}/{table_name}/downstream:
     get:
       operationId: getDownstreamLineage
       summary: Get downstream lineage
@@ -19809,7 +19809,7 @@ paths:
       tags:
         - Lineage
       x-cli-command: lineage tables downstream
-  /lineage/tables/{schema_name}/{table_name}/upstream:
+  /v1/lineage/tables/{schema_name}/{table_name}/upstream:
     get:
       operationId: getUpstreamLineage
       summary: Get upstream lineage
@@ -19934,7 +19934,7 @@ paths:
       tags:
         - Lineage
       x-cli-command: lineage tables upstream
-  /macros:
+  /v1/macros:
     get:
       operationId: listMacros
       summary: List macros
@@ -20155,7 +20155,7 @@ paths:
                 - example
               visibility: project
       x-cli-command: models macros create
-  /macros/{macro_name}:
+  /v1/macros/{macro_name}:
     delete:
       operationId: deleteMacro
       summary: Delete macro
@@ -20469,7 +20469,7 @@ paths:
                 - example
               visibility: project
       x-cli-command: models macros update
-  /macros/{macro_name}/impacts:
+  /v1/macros/{macro_name}/impacts:
     get:
       operationId: getMacroImpact
       summary: Get macro impact
@@ -20584,7 +20584,7 @@ paths:
       tags:
         - Models
       x-cli-command: models impact get
-  /macros/{macro_name}/revision-diffs:
+  /v1/macros/{macro_name}/revision-diffs:
     get:
       operationId: diffMacroRevisions
       summary: Diff macro revisions
@@ -20730,7 +20730,7 @@ paths:
       tags:
         - Models
       x-cli-command: models revisions diff
-  /macros/{macro_name}/revisions:
+  /v1/macros/{macro_name}/revisions:
     get:
       operationId: listMacroRevisions
       summary: List macro revisions
@@ -20836,7 +20836,7 @@ paths:
       tags:
         - Models
       x-cli-command: models revisions list
-  /me/recent-resources:
+  /v1/me/recent-resources:
     get:
       operationId: listRecentResources
       summary: List recent resources
@@ -20937,7 +20937,7 @@ paths:
       tags:
         - Resources
       x-cli-command: me recent-resources list
-  /me/saved-resources:
+  /v1/me/saved-resources:
     get:
       operationId: listSavedResources
       summary: List saved resources
@@ -21136,7 +21136,7 @@ paths:
               resource_type: example
               section: example
       x-cli-command: me saved-resources create
-  /me/saved-resources/{resource_type}/{resource_key}:
+  /v1/me/saved-resources/{resource_type}/{resource_key}:
     delete:
       operationId: deleteSavedResource
       summary: Delete saved resource
@@ -21220,7 +21220,7 @@ paths:
       tags:
         - Resources
       x-cli-command: me saved-resources delete
-  /model-runs:
+  /v1/model-runs:
     get:
       operationId: listModelRuns
       summary: List model runs
@@ -21435,7 +21435,7 @@ paths:
                 - dim_customer
               project_name: finance-platform
       x-cli-command: models runs trigger
-  /model-runs/{run_id}:
+  /v1/model-runs/{run_id}:
     get:
       operationId: getModelRun
       summary: Get model run
@@ -21548,7 +21548,7 @@ paths:
       tags:
         - Models
       x-cli-command: models runs get
-  /model-runs/{run_id}/cancellations:
+  /v1/model-runs/{run_id}/cancellations:
     post:
       operationId: cancelModelRun
       summary: Cancel model run
@@ -21649,7 +21649,7 @@ paths:
       tags:
         - Models
       x-cli-command: models runs cancel
-  /model-runs/{run_id}/steps:
+  /v1/model-runs/{run_id}/steps:
     get:
       operationId: listModelRunSteps
       summary: List model run steps
@@ -21761,7 +21761,7 @@ paths:
       tags:
         - Models
       x-cli-command: models steps list
-  /model-runs/{run_id}/steps/{step_id}/test-results:
+  /v1/model-runs/{run_id}/steps/{step_id}/test-results:
     get:
       operationId: listModelTestResults
       summary: List model test results
@@ -21870,7 +21870,7 @@ paths:
       tags:
         - Models
       x-cli-command: models test-results list
-  /models:
+  /v1/models:
     get:
       operationId: listModels
       summary: List models
@@ -22130,7 +22130,7 @@ paths:
                 - finance
                 - gold
       x-cli-command: models create
-  /models/dag:
+  /v1/models/dag:
     get:
       operationId: getModelDAG
       summary: Get model DAG
@@ -22209,7 +22209,7 @@ paths:
       tags:
         - Models
       x-cli-command: models dag get
-  /models/{project_name}/{model_name}:
+  /v1/models/{project_name}/{model_name}:
     delete:
       operationId: deleteModel
       summary: Delete model
@@ -22569,7 +22569,7 @@ paths:
               tags:
                 - example
       x-cli-command: models update
-  /models/{project_name}/{model_name}/freshness:
+  /v1/models/{project_name}/{model_name}/freshness:
     get:
       operationId: checkModelFreshness
       summary: Check model freshness
@@ -22673,7 +22673,7 @@ paths:
       tags:
         - Models
       x-cli-command: models freshness check
-  /models/{project_name}/{model_name}/tests:
+  /v1/models/{project_name}/{model_name}/tests:
     get:
       operationId: listModelTests
       summary: List model tests
@@ -22902,7 +22902,7 @@ paths:
               name: example
               test_type: not_null
       x-cli-command: models tests create
-  /models/{project_name}/{model_name}/tests/{test_id}:
+  /v1/models/{project_name}/{model_name}/tests/{test_id}:
     delete:
       operationId: deleteModelTest
       summary: Delete model test
@@ -22991,7 +22991,7 @@ paths:
       tags:
         - Models
       x-cli-command: models tests delete
-  /notebooks:
+  /v1/notebooks:
     get:
       operationId: listNotebooks
       summary: List notebooks
@@ -23188,7 +23188,7 @@ paths:
               name: Revenue diagnostics
               source: manual
       x-cli-command: notebooks create
-  /notebooks/{notebook_id}:
+  /v1/notebooks/{notebook_id}:
     delete:
       operationId: deleteNotebook
       summary: Delete notebook
@@ -23553,7 +23553,7 @@ paths:
               name: Revenue diagnostics
               project_override_id: prj_01hzyfinance
       x-cli-command: notebooks update
-  /notebooks/{notebook_id}/cells:
+  /v1/notebooks/{notebook_id}/cells:
     post:
       operationId: createCell
       summary: Create cell
@@ -23707,7 +23707,7 @@ paths:
                 legend: false
                 title: Orders by region
       x-cli-command: notebooks cells create
-  /notebooks/{notebook_id}/cells/reorder:
+  /v1/notebooks/{notebook_id}/cells/reorder:
     post:
       operationId: reorderCells
       summary: Reorder cells
@@ -23851,7 +23851,7 @@ paths:
                 - cell_01hzycellsql
                 - cell_01hzychart
       x-cli-command: notebooks cells reorder
-  /notebooks/{notebook_id}/cells/{cell_id}:
+  /v1/notebooks/{notebook_id}/cells/{cell_id}:
     delete:
       operationId: deleteCell
       summary: Delete cell
@@ -24102,7 +24102,7 @@ paths:
                     field: region
                 title: Completed orders by region
       x-cli-command: notebooks cells update
-  /notebooks/{notebook_id}/copies:
+  /v1/notebooks/{notebook_id}/copies:
     post:
       operationId: duplicateNotebook
       summary: Duplicate notebook
@@ -24217,7 +24217,7 @@ paths:
               folder_id: example
               git_path: example
               name: example
-  /notebooks/{notebook_id}/jobs:
+  /v1/notebooks/{notebook_id}/jobs:
     get:
       operationId: listNotebookJobs
       summary: List notebook jobs
@@ -24336,7 +24336,7 @@ paths:
       tags:
         - Notebooks
       x-cli-command: notebooks jobs list
-  /notebooks/{notebook_id}/jobs/{job_id}:
+  /v1/notebooks/{notebook_id}/jobs/{job_id}:
     get:
       operationId: getNotebookJob
       summary: Get notebook job
@@ -24444,7 +24444,7 @@ paths:
       tags:
         - Notebooks
       x-cli-command: notebooks jobs get
-  /notebooks/{notebook_id}/model-promotions:
+  /v1/notebooks/{notebook_id}/model-promotions:
     delete:
       operationId: unpublishNotebookModel
       summary: Unpublish notebook model
@@ -24657,7 +24657,7 @@ paths:
               name: example
               project_name: example
       x-cli-command: models from-notebook promote
-  /notebooks/{notebook_id}/moves:
+  /v1/notebooks/{notebook_id}/moves:
     post:
       operationId: moveNotebook
       summary: Move notebook
@@ -24773,7 +24773,7 @@ paths:
               confirm_leave_git: true
               folder_id: example
               git_path: example
-  /notebooks/{notebook_id}/sessions:
+  /v1/notebooks/{notebook_id}/sessions:
     post:
       operationId: createNotebookSession
       summary: Create notebook session
@@ -24873,7 +24873,7 @@ paths:
       tags:
         - Notebooks
       x-cli-command: notebooks sessions create
-  /notebooks/{notebook_id}/sessions/{session_id}:
+  /v1/notebooks/{notebook_id}/sessions/{session_id}:
     delete:
       operationId: closeNotebookSession
       summary: Close notebook session
@@ -24968,7 +24968,7 @@ paths:
       tags:
         - Notebooks
       x-cli-command: notebooks sessions close
-  /notebooks/{notebook_id}/sessions/{session_id}/cell-executions:
+  /v1/notebooks/{notebook_id}/sessions/{session_id}/cell-executions:
     post:
       operationId: runAllCells
       summary: Run all cells
@@ -25085,7 +25085,7 @@ paths:
       tags:
         - Notebooks
       x-cli-command: notebooks sessions run-all
-  /notebooks/{notebook_id}/sessions/{session_id}/cell-executions/{cell_id}:
+  /v1/notebooks/{notebook_id}/sessions/{session_id}/cell-executions/{cell_id}:
     post:
       operationId: executeCell
       summary: Execute cell
@@ -25207,7 +25207,7 @@ paths:
       tags:
         - Notebooks
       x-cli-command: notebooks cells execute
-  /notebooks/{notebook_id}/sessions/{session_id}/job-runs:
+  /v1/notebooks/{notebook_id}/sessions/{session_id}/job-runs:
     post:
       operationId: runAllCellsAsync
       summary: Run all cells asynchronously
@@ -25315,7 +25315,7 @@ paths:
       tags:
         - Notebooks
       x-cli-command: notebooks sessions run-all-async
-  /notebooks/{notebook_id}/shares:
+  /v1/notebooks/{notebook_id}/shares:
     get:
       operationId: listNotebookShares
       summary: List notebook shares
@@ -25514,7 +25514,7 @@ paths:
             example:
               principal_name: analytics-reviewers
               role: viewer
-  /notebooks/{notebook_id}/shares/{principal_name}:
+  /v1/notebooks/{notebook_id}/shares/{principal_name}:
     delete:
       operationId: unshareNotebook
       summary: Remove notebook share
@@ -25608,7 +25608,7 @@ paths:
                 message: validation failed
       tags:
         - Notebooks
-  /pipelines:
+  /v1/pipelines:
     get:
       operationId: listPipelines
       summary: List pipelines
@@ -25830,7 +25830,7 @@ paths:
               run_as_principal: example
               schedule_cron: example
       x-cli-command: pipelines create
-  /pipelines/runs/{run_id}:
+  /v1/pipelines/runs/{run_id}:
     get:
       operationId: getPipelineRun
       summary: Get pipeline run
@@ -25943,7 +25943,7 @@ paths:
       tags:
         - Pipelines
       x-cli-command: pipelines runs get
-  /pipelines/runs/{run_id}/cancellations:
+  /v1/pipelines/runs/{run_id}/cancellations:
     post:
       operationId: cancelPipelineRun
       summary: Cancel pipeline run
@@ -26044,7 +26044,7 @@ paths:
       tags:
         - Pipelines
       x-cli-command: pipelines runs cancel
-  /pipelines/runs/{run_id}/events:
+  /v1/pipelines/runs/{run_id}/events:
     get:
       operationId: listPipelineRunEvents
       summary: List pipeline run events
@@ -26148,7 +26148,7 @@ paths:
       tags:
         - Pipelines
       x-cli-command: pipelines runs list-events
-  /pipelines/runs/{run_id}/jobs:
+  /v1/pipelines/runs/{run_id}/jobs:
     get:
       operationId: listPipelineJobRuns
       summary: List pipeline job runs
@@ -26256,7 +26256,7 @@ paths:
       tags:
         - Pipelines
       x-cli-command: pipelines runs list-job-runs
-  /pipelines/runs/{run_id}/repairs:
+  /v1/pipelines/runs/{run_id}/repairs:
     post:
       operationId: repairPipelineRun
       summary: Repair pipeline run
@@ -26367,7 +26367,7 @@ paths:
               from_job_id: example
               mode: example
       x-cli-command: pipelines runs repair
-  /pipelines/{pipeline_name}:
+  /v1/pipelines/{pipeline_name}:
     delete:
       operationId: deletePipeline
       summary: Delete pipeline
@@ -26683,7 +26683,7 @@ paths:
               run_as_principal: example
               schedule_cron: example
       x-cli-command: pipelines update
-  /pipelines/{pipeline_name}/jobs:
+  /v1/pipelines/{pipeline_name}/jobs:
     get:
       operationId: listPipelineJobs
       summary: List pipeline jobs
@@ -26903,7 +26903,7 @@ paths:
               retry_count: 1
               timeout_seconds: 1
       x-cli-command: pipelines jobs create
-  /pipelines/{pipeline_name}/jobs/{job_id}:
+  /v1/pipelines/{pipeline_name}/jobs/{job_id}:
     delete:
       operationId: deletePipelineJob
       summary: Delete pipeline job
@@ -27216,7 +27216,7 @@ paths:
               retry_count: 1
               timeout_seconds: 1
       x-cli-command: pipelines jobs update
-  /pipelines/{pipeline_name}/runs:
+  /v1/pipelines/{pipeline_name}/runs:
     get:
       operationId: listPipelineRuns
       summary: List pipeline runs
@@ -27463,7 +27463,7 @@ paths:
               parameters:
                 key: example
       x-cli-command: pipelines runs trigger
-  /principals:
+  /v1/principals:
     get:
       operationId: listPrincipals
       summary: List principals
@@ -27654,7 +27654,7 @@ paths:
               name: example
               type: user
       x-cli-command: security principals create
-  /principals/{principal_id}:
+  /v1/principals/{principal_id}:
     delete:
       operationId: deletePrincipal
       summary: Delete principal
@@ -27924,7 +27924,7 @@ paths:
             example:
               is_admin: true
       x-cli-command: security principals set-admin
-  /product-domains:
+  /v1/product-domains:
     get:
       operationId: listProductDomains
       summary: List product domains
@@ -28110,7 +28110,7 @@ paths:
             example:
               description: Data products supporting acquisition, activation, and retention use cases.
               name: growth
-  /product-domains/{domain_name}:
+  /v1/product-domains/{domain_name}:
     delete:
       operationId: deleteProductDomain
       summary: Delete product domain
@@ -28391,7 +28391,7 @@ paths:
               $ref: '#/components/schemas/UpdateProductDomainRequest'
             example:
               description: example
-  /product-domains/{domain_name}/teams:
+  /v1/product-domains/{domain_name}/teams:
     get:
       operationId: listProductTeams
       summary: List product teams
@@ -28593,7 +28593,7 @@ paths:
             example:
               contact_channel: '#customer-data'
               name: customer-platform
-  /product-domains/{domain_name}/teams/{team_name}:
+  /v1/product-domains/{domain_name}/teams/{team_name}:
     delete:
       operationId: deleteProductTeam
       summary: Delete product team
@@ -28906,7 +28906,7 @@ paths:
               $ref: '#/components/schemas/UpdateProductTeamRequest'
             example:
               contact_channel: example
-  /projects/{project_id}:
+  /v1/projects/{project_id}:
     delete:
       operationId: deleteProject
       summary: Delete project
@@ -29238,7 +29238,7 @@ paths:
               description: example
               product_id: example
       x-cli-command: projects update
-  /projects/{project_id}/builds:
+  /v1/projects/{project_id}/builds:
     get:
       operationId: listProjectBuilds
       summary: List project builds
@@ -29503,7 +29503,7 @@ paths:
               target_catalog: analytics
               target_schema: mart
       x-cli-command: projects builds create
-  /projects/{project_id}/dependencies:
+  /v1/projects/{project_id}/dependencies:
     get:
       operationId: listProjectDependencies
       summary: List project dependencies
@@ -29746,7 +29746,7 @@ paths:
               dependency_project: example
               position: 1
       x-cli-command: projects dependencies create
-  /projects/{project_id}/dependencies/{dependency_project}:
+  /v1/projects/{project_id}/dependencies/{dependency_project}:
     delete:
       operationId: deleteProjectDependency
       summary: Delete project dependency
@@ -29853,7 +29853,7 @@ paths:
       tags:
         - Projects
       x-cli-command: projects dependencies delete
-  /projects/{project_id}/environments:
+  /v1/projects/{project_id}/environments:
     get:
       operationId: listProjectEnvironments
       summary: List project environments
@@ -30120,7 +30120,7 @@ paths:
               variables:
                 key: example
       x-cli-command: projects environments create
-  /projects/{project_id}/environments/{environment_id}:
+  /v1/projects/{project_id}/environments/{environment_id}:
     delete:
       operationId: deleteProjectEnvironment
       summary: Delete project environment
@@ -30371,7 +30371,7 @@ paths:
               variables:
                 key: example
       x-cli-command: projects environments update
-  /projects/{project_id}/seeds:
+  /v1/projects/{project_id}/seeds:
     get:
       operationId: listProjectSeeds
       summary: List project seeds
@@ -30635,7 +30635,7 @@ paths:
               tags:
                 - example
       x-cli-command: projects seeds create
-  /projects/{project_id}/seeds/{seed_name}:
+  /v1/projects/{project_id}/seeds/{seed_name}:
     delete:
       operationId: deleteProjectSeed
       summary: Delete project seed
@@ -30999,7 +30999,7 @@ paths:
               tags:
                 - example
       x-cli-command: projects seeds update
-  /projects/{project_id}/sources:
+  /v1/projects/{project_id}/sources:
     get:
       operationId: listProjectSources
       summary: List project sources
@@ -31254,7 +31254,7 @@ paths:
               source_name: example
               table_name: example
       x-cli-command: projects sources create
-  /projects/{project_id}/sources/{source_name}/{table_name}:
+  /v1/projects/{project_id}/sources/{source_name}/{table_name}:
     delete:
       operationId: deleteProjectSource
       summary: Delete project source
@@ -31626,7 +31626,7 @@ paths:
                 timestamp_column: example
               relation_ref: example
       x-cli-command: projects sources update
-  /queries:
+  /v1/queries:
     get:
       operationId: listQueries
       summary: List queries
@@ -31810,7 +31810,7 @@ paths:
               request_id: req_01hzyquery1
               sql: select * from analytics.orders where order_status = 'PENDING' limit 100
       x-cli-command: query submit
-  /queries/history:
+  /v1/queries/history:
     get:
       operationId: listQueryHistory
       summary: List query history
@@ -31948,7 +31948,7 @@ paths:
       x-authz:
         mode: admin_only
       x-cli-command: query history list
-  /queries/{query_id}:
+  /v1/queries/{query_id}:
     delete:
       operationId: deleteQuery
       summary: Delete query
@@ -32126,7 +32126,7 @@ paths:
       tags:
         - Queries
       x-cli-command: query status
-  /queries/{query_id}/cancellations:
+  /v1/queries/{query_id}/cancellations:
     post:
       operationId: cancelQuery
       summary: Cancel query
@@ -32222,7 +32222,7 @@ paths:
       tags:
         - Queries
       x-cli-command: query cancel
-  /queries/{query_id}/results:
+  /v1/queries/{query_id}/results:
     get:
       operationId: getQueryResults
       summary: Get query results
@@ -32344,7 +32344,7 @@ paths:
       tags:
         - Queries
       x-cli-command: query results
-  /query-executions:
+  /v1/query-executions:
     post:
       operationId: executeQuery
       summary: Execute query
@@ -32442,7 +32442,7 @@ paths:
             example:
               sql: select order_id, total_amount from analytics.orders order by created_at desc limit 10
       x-cli-command: query
-  /row-filters:
+  /v1/row-filters:
     get:
       operationId: listRowFilters
       summary: List row filters
@@ -32653,7 +32653,7 @@ paths:
               name: example
               table_id: example
       x-cli-command: security row-filters create
-  /row-filters/{row_filter_id}:
+  /v1/row-filters/{row_filter_id}:
     delete:
       operationId: deleteRowFilter
       summary: Delete row filter
@@ -32925,7 +32925,7 @@ paths:
               description: example
               filter_sql: example
               name: example
-  /row-filters/{row_filter_id}/bindings:
+  /v1/row-filters/{row_filter_id}/bindings:
     get:
       operationId: listRowFilterBindings
       summary: List row filter bindings
@@ -33125,7 +33125,7 @@ paths:
               principal_id: example
               principal_type: user
       x-cli-command: security row-filters bind
-  /row-filters/{row_filter_id}/bindings/{principal_type}/{principal_id}:
+  /v1/row-filters/{row_filter_id}/bindings/{principal_type}/{principal_id}:
     delete:
       operationId: unbindRowFilter
       summary: Unbind row filter
@@ -33214,7 +33214,7 @@ paths:
       tags:
         - Governance
       x-cli-command: security row-filters unbind
-  /semantic-metrics/{metric_name}/freshness:
+  /v1/semantic-metrics/{metric_name}/freshness:
     get:
       operationId: checkMetricFreshness
       summary: Check metric freshness
@@ -33323,7 +33323,7 @@ paths:
       tags:
         - Semantic Layer
       x-cli-command: semantic freshness check
-  /semantic-sources/{source_schema}/{source_table}/freshness:
+  /v1/semantic-sources/{source_schema}/{source_table}/freshness:
     get:
       operationId: checkSourceFreshness
       summary: Check source freshness
@@ -33445,7 +33445,7 @@ paths:
       tags:
         - Semantic Layer
       x-cli-command: models sources freshness
-  /storage-credentials:
+  /v1/storage-credentials:
     get:
       operationId: listStorageCredentials
       summary: List storage credentials
@@ -33644,7 +33644,7 @@ paths:
             privilege: CREATE_STORAGE_CREDENTIAL
             securable_id_source: catalog_sentinel
       x-cli-command: storage credentials create
-  /storage-credentials/{credential_name}:
+  /v1/storage-credentials/{credential_name}:
     delete:
       operationId: deleteStorageCredential
       summary: Delete storage credential
@@ -33965,7 +33965,7 @@ paths:
             privilege: CREATE_STORAGE_CREDENTIAL
             securable_id_source: runtime_resolved_object_id
       x-cli-command: storage credentials update
-  /tags:
+  /v1/tags:
     get:
       operationId: listTags
       summary: List tags
@@ -34141,7 +34141,7 @@ paths:
               key: example
               value: example
       x-cli-command: governance tags create
-  /tags/{tag_id}:
+  /v1/tags/{tag_id}:
     delete:
       operationId: deleteTag
       summary: Delete tag
@@ -34410,7 +34410,7 @@ paths:
             example:
               key: example
               value: example
-  /tags/{tag_id}/assignments:
+  /v1/tags/{tag_id}/assignments:
     get:
       operationId: listTagAssignments
       summary: List tag assignments
@@ -34640,7 +34640,7 @@ paths:
               securable_id: example
               securable_type: schema
       x-cli-command: governance tags assignments create
-  /tags/{tag_id}/assignments/{assignment_id}:
+  /v1/tags/{tag_id}/assignments/{assignment_id}:
     delete:
       operationId: deleteTagAssignment
       summary: Delete tag assignment
@@ -34723,7 +34723,7 @@ paths:
       tags:
         - Governance
       x-cli-command: governance tags assignments delete
-  /workspaces:
+  /v1/workspaces:
     get:
       operationId: listWorkspaces
       summary: List workspaces
@@ -34939,7 +34939,7 @@ paths:
               name: Revenue Analytics
               owner_principal: alice@example.com
               owner_team_id: team_analytics
-  /workspaces/{workspace_id}:
+  /v1/workspaces/{workspace_id}:
     delete:
       operationId: deleteWorkspace
       summary: Delete workspace
@@ -35270,7 +35270,7 @@ paths:
               git_repo_id: example
               git_root_path: example
               name: example
-  /workspaces/{workspace_id}/folders:
+  /v1/workspaces/{workspace_id}/folders:
     get:
       operationId: listFolders
       summary: List folders in a workspace
@@ -35514,7 +35514,7 @@ paths:
               git_root_path: example
               name: example
               parent_folder_id: example
-  /workspaces/{workspace_id}/members:
+  /v1/workspaces/{workspace_id}/members:
     get:
       operationId: listWorkspaceMembers
       summary: List workspace members
@@ -35731,7 +35731,7 @@ paths:
             example:
               principal_name: analytics-reviewers
               role: viewer
-  /workspaces/{workspace_id}/members/{principal_name}:
+  /v1/workspaces/{workspace_id}/members/{principal_name}:
     delete:
       operationId: removeWorkspaceMember
       summary: Remove workspace member
@@ -35837,7 +35837,7 @@ paths:
                 message: validation failed
       tags:
         - Workspaces
-  /workspaces/{workspace_id}/projects:
+  /v1/workspaces/{workspace_id}/projects:
     get:
       operationId: listWorkspaceProjects
       summary: List projects in a workspace
@@ -36088,7 +36088,7 @@ paths:
               name: example
               product_id: example
       x-cli-command: projects create
-  /workspaces/{workspace_id}/semantic-models:
+  /v1/workspaces/{workspace_id}/semantic-models:
     get:
       operationId: listSemanticModels
       summary: List semantic models
@@ -36297,7 +36297,7 @@ paths:
                 - growth
                 - finance
       x-cli-command: semantic models create
-  /workspaces/{workspace_id}/semantic-models/{semantic_model_id}:
+  /v1/workspaces/{workspace_id}/semantic-models/{semantic_model_id}:
     delete:
       operationId: deleteSemanticModel
       summary: Delete semantic model
@@ -36606,7 +36606,7 @@ paths:
               tags:
                 - example
       x-cli-command: semantic models update
-  /workspaces/{workspace_id}/semantic-models/{semantic_model_id}/metrics:
+  /v1/workspaces/{workspace_id}/semantic-models/{semantic_model_id}/metrics:
     get:
       operationId: listSemanticMetrics
       summary: List semantic metrics
@@ -36850,7 +36850,7 @@ paths:
               relationship_names:
                 - account_to_subscription
       x-cli-command: semantic metrics create
-  /workspaces/{workspace_id}/semantic-models/{semantic_model_id}/metrics/{metric_name}:
+  /v1/workspaces/{workspace_id}/semantic-models/{semantic_model_id}/metrics/{metric_name}:
     delete:
       operationId: deleteSemanticMetric
       summary: Delete semantic metric
@@ -37192,7 +37192,7 @@ paths:
               relationship_names:
                 - example
       x-cli-command: semantic metrics update
-  /workspaces/{workspace_id}/semantic-models/{semantic_model_id}/pre-aggregations:
+  /v1/workspaces/{workspace_id}/semantic-models/{semantic_model_id}/pre-aggregations:
     get:
       operationId: listSemanticPreAggregations
       summary: List semantic pre aggregations
@@ -37422,7 +37422,7 @@ paths:
               refresh_policy: example
               target_relation: example
       x-cli-command: semantic pre-aggregations create
-  /workspaces/{workspace_id}/semantic-models/{semantic_model_id}/pre-aggregations/{pre_aggregation_name}:
+  /v1/workspaces/{workspace_id}/semantic-models/{semantic_model_id}/pre-aggregations/{pre_aggregation_name}:
     delete:
       operationId: deleteSemanticPreAggregation
       summary: Delete semantic pre aggregation
@@ -37749,7 +37749,7 @@ paths:
               refresh_policy: example
               target_relation: example
       x-cli-command: semantic pre-aggregations update
-  /workspaces/{workspace_id}/semantic-models/{semantic_model_id}/query-explanations:
+  /v1/workspaces/{workspace_id}/semantic-models/{semantic_model_id}/query-explanations:
     post:
       operationId: explainMetricQuery
       summary: Explain metric query
@@ -37877,7 +37877,7 @@ paths:
                 - account_to_subscription
               time_grain: month
       x-cli-command: semantic explain
-  /workspaces/{workspace_id}/semantic-models/{semantic_model_id}/query-runs:
+  /v1/workspaces/{workspace_id}/semantic-models/{semantic_model_id}/query-runs:
     post:
       operationId: runMetricQuery
       summary: Run metric query
@@ -38018,7 +38018,7 @@ paths:
                 - account_to_subscription
               time_grain: month
       x-cli-command: semantic run
-  /workspaces/{workspace_id}/semantic-models/{semantic_model_id}/relationships:
+  /v1/workspaces/{workspace_id}/semantic-models/{semantic_model_id}/relationships:
     get:
       operationId: listSemanticModelRelationships
       summary: List semantic relationships for a semantic model
@@ -38243,7 +38243,7 @@ paths:
               relationship_type: ONE_TO_ONE
               to_semantic_id: example
       x-cli-command: semantic relationships create
-  /workspaces/{workspace_id}/semantic-models/{semantic_model_id}/relationships/{relationship_name}:
+  /v1/workspaces/{workspace_id}/semantic-models/{semantic_model_id}/relationships/{relationship_name}:
     delete:
       operationId: deleteSemanticModelRelationship
       summary: Delete semantic relationship for a semantic model

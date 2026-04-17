@@ -434,6 +434,9 @@ func run() error {
 		r.Put("/auth/provider/oidc", authHandler.UpsertOIDCProvider)
 		r.Post("/auth/sessions/revocations", authHandler.RevokeAllWebSessions)
 		r.Get("/auth/sessions/stats", authHandler.GetWebSessionStats)
+	})
+	r.Group(func(r chi.Router) {
+		r.Use(authenticator.Middleware())
 		api.RegisterAPIGenStrictRoutes(r, handler)
 	})
 
