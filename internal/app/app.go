@@ -15,6 +15,7 @@ import (
 	"github.com/Yacobolo/quackstack/internal/db/repository"
 	"github.com/Yacobolo/quackstack/internal/domain"
 	"github.com/Yacobolo/quackstack/internal/engine"
+	"github.com/Yacobolo/quackstack/internal/platform"
 	assetsvc "github.com/Yacobolo/quackstack/internal/service/asset"
 	authsvc "github.com/Yacobolo/quackstack/internal/service/auth"
 	"github.com/Yacobolo/quackstack/internal/service/catalog"
@@ -43,11 +44,12 @@ import (
 // These are things the app package cannot (or should not) create itself:
 // database handles, config, and the DuckDB connection.
 type Deps struct {
-	Cfg     *config.Config
-	DuckDB  *sql.DB
-	WriteDB *sql.DB
-	ReadDB  *sql.DB
-	Logger  *slog.Logger
+	Cfg      *config.Config
+	DuckDB   *sql.DB
+	WriteDB  *sql.DB
+	ReadDB   *sql.DB
+	Logger   *slog.Logger
+	Platform platform.Provider
 }
 
 // Services groups all service pointers that the API handler and router need.
@@ -139,6 +141,8 @@ func New(ctx context.Context, deps Deps) (*App, error) {
 	storageCredRepo := repository.NewStorageCredentialRepo(deps.WriteDB, encryptor)
 	computeEndpointRepo := repository.NewComputeEndpointRepo(deps.WriteDB, encryptor)
 	computeRoutingRepo := repository.NewComputeRoutingRepo(deps.WriteDB)
+	computeClusterTemplateRepo := repository.NewComputeClusterTemplateRepo(deps.WriteDB)
+	managedComputeClusterRepo := repository.NewManagedComputeClusterRepo(deps.WriteDB)
 	catalogRegRepo := repository.NewCatalogRegistrationRepo(deps.WriteDB)
 	dataProductRepo := repository.NewDataProductRepo(deps.WriteDB)
 	workspaceRepo := repository.NewWorkspaceRepo(deps.WriteDB)
@@ -170,6 +174,14 @@ func New(ctx context.Context, deps Deps) (*App, error) {
 	introspectionRepo := repository.NewIntrospectionRepo(deps.ReadDB)
 	queryHistoryRepo := repository.NewQueryHistoryRepo(deps.ReadDB)
 	searchRepo := repository.NewSearchRepo(deps.ReadDB, deps.ReadDB)
+
+	if deps.Platform == nil {
+		var err error
+		deps.Platform, err = platform.NewProvider(cfg)
+		if err != nil {
+			return nil, fmt.Errorf("configure platform provider: %w", err)
+		}
+	}
 
 	if err := engine.AttachSystemCatalog(ctx, deps.DuckDB, cfg.MetaDBPath); err != nil {
 		return nil, fmt.Errorf("attach system catalog: %w", err)
@@ -320,8 +332,11 @@ func New(ctx context.Context, deps Deps) (*App, error) {
 	storageCredSvc := storage.NewStorageCredentialService(storageCredRepo, authSvc, auditRepo)
 	computeEndpointSvc := svccompute.NewComputeEndpointService(computeEndpointRepo, authSvc, auditRepo)
 	computeEndpointSvc.SetRoutingRepository(computeRoutingRepo)
+	computeEndpointSvc.SetClusterTemplateRepository(computeClusterTemplateRepo)
+	computeEndpointSvc.SetManagedClusterRepository(managedComputeClusterRepo)
 	computeEndpointSvc.SetPrincipalRepository(principalRepo)
 	computeEndpointSvc.SetGroupRepository(groupRepo)
+	computeEndpointSvc.SetPlatformProvider(deps.Platform)
 	volumeSvc := storage.NewVolumeService(volumeRepo, authSvc, auditRepo)
 
 	secretMgr := engine.NewDuckDBSecretManager(deps.DuckDB)

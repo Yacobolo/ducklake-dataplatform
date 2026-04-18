@@ -34,6 +34,7 @@ import (
 	"github.com/Yacobolo/quackstack/internal/flightsql"
 	"github.com/Yacobolo/quackstack/internal/middleware"
 	"github.com/Yacobolo/quackstack/internal/pgwire"
+	"github.com/Yacobolo/quackstack/internal/platform"
 	"github.com/Yacobolo/quackstack/internal/sampledata"
 	"github.com/Yacobolo/quackstack/internal/ui"
 )
@@ -96,6 +97,16 @@ func run() error {
 	for _, w := range cfg.ConfigDoctorWarnings() {
 		logger.Warn("config doctor warning", "detail", w)
 	}
+	provider, err := platform.NewProvider(cfg)
+	if err != nil {
+		return fmt.Errorf("platform provider: %w", err)
+	}
+	logger.Info(
+		"deployment profile selected",
+		"profile", cfg.DeploymentProfile,
+		"control_db_driver", cfg.ControlDBDriver,
+		"platform_provider", provider.Name(),
+	)
 
 	// Open DuckDB (in-memory)
 	duckDB, err := sql.Open("duckdb", "")
@@ -135,11 +146,12 @@ func run() error {
 
 	// Wire application dependencies
 	application, err := app.New(ctx, app.Deps{
-		Cfg:     cfg,
-		DuckDB:  duckDB,
-		WriteDB: writeDB,
-		ReadDB:  readDB,
-		Logger:  logger,
+		Cfg:      cfg,
+		DuckDB:   duckDB,
+		WriteDB:  writeDB,
+		ReadDB:   readDB,
+		Logger:   logger,
+		Platform: provider,
 	})
 	if err != nil {
 		return fmt.Errorf("app init: %w", err)
@@ -621,6 +633,9 @@ func runAdmin(args []string) error {
 	if err != nil {
 		return fmt.Errorf("config: %w", err)
 	}
+	if cfg.ControlDBDriver != "sqlite" {
+		return fmt.Errorf("server admin currently supports CONTROL_DB_DRIVER=sqlite only")
+	}
 
 	// Open SQLite directly (single connection is fine for a one-shot CLI).
 	db, err := sql.Open("sqlite3", cfg.MetaDBPath+"?_journal_mode=WAL&_busy_timeout=5000")
@@ -691,6 +706,10 @@ func printServerUsage() {
 	_, _ = fmt.Fprintln(os.Stdout, "  server admin <promote|demote> [flags]")
 	_, _ = fmt.Fprintln(os.Stdout)
 	_, _ = fmt.Fprintln(os.Stdout, "Environment:")
+	_, _ = fmt.Fprintln(os.Stdout, "  DEPLOYMENT_PROFILE       Deployment profile: simple or enterprise")
+	_, _ = fmt.Fprintln(os.Stdout, "  CONTROL_DB_DRIVER        Control-plane metadata driver: sqlite or postgres")
+	_, _ = fmt.Fprintln(os.Stdout, "  CONTROL_DB_DSN           Postgres DSN for enterprise control-plane metadata")
+	_, _ = fmt.Fprintln(os.Stdout, "  PLATFORM_PROVIDER        Platform provider: manual or azure")
 	_, _ = fmt.Fprintln(os.Stdout, "  LISTEN_ADDR              HTTP listen address (default :8080)")
 	_, _ = fmt.Fprintln(os.Stdout, "  META_DB_PATH             SQLite metastore path")
 	_, _ = fmt.Fprintln(os.Stdout, "  FLIGHT_SQL_LISTEN_ADDR   Flight SQL listen address")

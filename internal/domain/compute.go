@@ -31,6 +31,22 @@ const (
 	ComputeReadinessReady       = "READY"
 	ComputeReadinessDegraded    = "DEGRADED"
 	ComputeReadinessUnavailable = "UNAVAILABLE"
+
+	ComputeProviderManual = "manual"
+	ComputeProviderAzure  = "azure"
+	ComputeProviderAWS    = "aws"
+	ComputeProviderGCP    = "gcp"
+
+	ManagedClusterDesiredRunning  = "RUNNING"
+	ManagedClusterDesiredStopped  = "STOPPED"
+	ManagedClusterDesiredDraining = "DRAINING"
+	ManagedClusterDesiredDeleting = "DELETING"
+
+	ManagedClusterObservedStarting = "STARTING"
+	ManagedClusterObservedReady    = "READY"
+	ManagedClusterObservedDegraded = "DEGRADED"
+	ManagedClusterObservedStopped  = "STOPPED"
+	ManagedClusterObservedError    = "ERROR"
 )
 
 // ComputeEndpoint represents a SQL compute resource (local or remote DuckDB instance).
@@ -59,10 +75,19 @@ type ComputeEndpoint struct {
 	StoredJobs                 *int64
 	CleanedJobs                *int64
 	QueryResultTTLSeconds      *int64
+	ManagedBacking             *ComputeEndpointBacking
+	LastActivityAt             *time.Time
 	AuthToken                  string // pre-shared secret (AES-256-GCM encrypted at rest)
 	Owner                      string // principal who created it
 	CreatedAt                  time.Time
 	UpdatedAt                  time.Time
+}
+
+// ComputeEndpointBacking points a logical endpoint at a provider-managed cluster.
+type ComputeEndpointBacking struct {
+	Provider         string
+	ManagedClusterID string
+	TemplateID       string
 }
 
 // ComputeAssignment binds a principal to a compute endpoint.
@@ -236,9 +261,9 @@ type ComputeEndpointHealthResult struct {
 
 // ComputeExecutionRequest captures a caller's compute routing preference.
 type ComputeExecutionRequest struct {
-	Mode         string
-	EndpointName string
-	WorkloadType string
+	Mode                  string
+	EndpointName          string
+	WorkloadType          string
 	AuthoritativeEndpoint bool
 	FallbackLocal         bool
 }
@@ -262,6 +287,67 @@ type ComputeTarget struct {
 	IsDefault                bool
 	SelectableForInteractive bool
 	SelectableForScheduled   bool
+}
+
+// ComputeClusterTemplate describes a provider-neutral cluster template managed by the platform.
+type ComputeClusterTemplate struct {
+	ID                     string
+	Name                   string
+	Provider               string
+	WorkloadClass          string
+	Size                   string
+	MinReplicas            int32
+	MaxReplicas            int32
+	IdleAutoStopSeconds    int64
+	ScalingPolicy          string
+	StorageProfile         string
+	ResultRetentionSeconds int64
+	CreatedAt              time.Time
+	UpdatedAt              time.Time
+}
+
+// ManagedComputeCluster represents a provider-backed compute cluster bound to a logical endpoint.
+type ManagedComputeCluster struct {
+	ID             string
+	Name           string
+	TemplateID     string
+	EndpointID     string
+	Provider       string
+	ExternalID     string
+	DesiredState   string
+	ObservedState  string
+	MinReplicas    int32
+	MaxReplicas    int32
+	IsDraining     bool
+	LastActivityAt *time.Time
+	EndpointURL    *string
+	CreatedAt      time.Time
+	UpdatedAt      time.Time
+}
+
+// CreateComputeClusterTemplateRequest holds parameters for creating a managed cluster template.
+type CreateComputeClusterTemplateRequest struct {
+	Name                   string
+	Provider               string
+	WorkloadClass          string
+	Size                   string
+	MinReplicas            int32
+	MaxReplicas            int32
+	IdleAutoStopSeconds    int64
+	ScalingPolicy          string
+	StorageProfile         string
+	ResultRetentionSeconds int64
+}
+
+// CreateManagedComputeClusterRequest holds parameters for creating a managed cluster.
+type CreateManagedComputeClusterRequest struct {
+	Name         string
+	TemplateID   string
+	EndpointID   string
+	Provider     string
+	DesiredState string
+	MinReplicas  int32
+	MaxReplicas  int32
 }
 
 // Validate normalizes and validates a compute execution request.
@@ -327,6 +413,96 @@ func normalizeComputeDefaultMode(mode, fallback string) string {
 		return fallback
 	}
 	return mode
+}
+
+// Validate checks that the request is well-formed.
+func (r *CreateComputeClusterTemplateRequest) Validate() error {
+	return ValidateCreateComputeClusterTemplateRequest(*r)
+}
+
+// ValidateCreateComputeClusterTemplateRequest validates a managed cluster template create request.
+func ValidateCreateComputeClusterTemplateRequest(r CreateComputeClusterTemplateRequest) error {
+	if strings.TrimSpace(r.Name) == "" {
+		return ErrValidation("name is required")
+	}
+	if err := validateComputeProvider(r.Provider); err != nil {
+		return err
+	}
+	if err := validateComputeEndpointWorkloadClass(r.WorkloadClass); err != nil {
+		return err
+	}
+	if r.MinReplicas < 0 {
+		return ErrValidation("min_replicas must be greater than or equal to zero")
+	}
+	if r.MaxReplicas <= 0 {
+		return ErrValidation("max_replicas must be greater than zero")
+	}
+	if r.MaxReplicas < r.MinReplicas {
+		return ErrValidation("max_replicas must be greater than or equal to min_replicas")
+	}
+	if r.IdleAutoStopSeconds < 0 {
+		return ErrValidation("idle_auto_stop_seconds must be greater than or equal to zero")
+	}
+	if r.ResultRetentionSeconds < 0 {
+		return ErrValidation("result_retention_seconds must be greater than or equal to zero")
+	}
+	return nil
+}
+
+// Validate checks that the request is well-formed.
+func (r *CreateManagedComputeClusterRequest) Validate() error {
+	return ValidateCreateManagedComputeClusterRequest(*r)
+}
+
+// ValidateCreateManagedComputeClusterRequest validates a managed cluster create request.
+func ValidateCreateManagedComputeClusterRequest(r CreateManagedComputeClusterRequest) error {
+	if strings.TrimSpace(r.Name) == "" {
+		return ErrValidation("name is required")
+	}
+	if strings.TrimSpace(r.TemplateID) == "" {
+		return ErrValidation("template_id is required")
+	}
+	if strings.TrimSpace(r.EndpointID) == "" {
+		return ErrValidation("endpoint_id is required")
+	}
+	if strings.TrimSpace(r.Provider) != "" {
+		if err := validateComputeProvider(r.Provider); err != nil {
+			return err
+		}
+	}
+	if strings.TrimSpace(r.DesiredState) != "" {
+		if err := validateManagedClusterDesiredState(r.DesiredState); err != nil {
+			return err
+		}
+	}
+	if r.MinReplicas < 0 {
+		return ErrValidation("min_replicas must be greater than or equal to zero")
+	}
+	if r.MaxReplicas < 0 {
+		return ErrValidation("max_replicas must be greater than or equal to zero")
+	}
+	if r.MaxReplicas > 0 && r.MaxReplicas < r.MinReplicas {
+		return ErrValidation("max_replicas must be greater than or equal to min_replicas")
+	}
+	return nil
+}
+
+func validateComputeProvider(provider string) error {
+	switch strings.ToLower(strings.TrimSpace(provider)) {
+	case ComputeProviderManual, ComputeProviderAzure, ComputeProviderAWS, ComputeProviderGCP:
+		return nil
+	default:
+		return ErrValidation("provider must be manual, azure, aws, or gcp, got %q", provider)
+	}
+}
+
+func validateManagedClusterDesiredState(state string) error {
+	switch strings.ToUpper(strings.TrimSpace(state)) {
+	case ManagedClusterDesiredRunning, ManagedClusterDesiredStopped, ManagedClusterDesiredDraining, ManagedClusterDesiredDeleting:
+		return nil
+	default:
+		return ErrValidation("desired_state must be RUNNING, STOPPED, DRAINING, or DELETING, got %q", state)
+	}
 }
 
 func validateComputeSelectionPolicy(policy string) error {

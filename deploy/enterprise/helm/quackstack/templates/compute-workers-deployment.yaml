@@ -1,0 +1,39 @@
+{{- if .Values.computeWorkers.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "quackstack.fullname" . }}-compute
+  labels:
+    {{- include "quackstack.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.computeWorkers.replicaCount }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "quackstack.name" . }}-compute
+      app.kubernetes.io/instance: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ include "quackstack.name" . }}-compute
+        app.kubernetes.io/instance: {{ .Release.Name }}
+    spec:
+      serviceAccountName: {{ default (include "quackstack.serviceAccountName" .) .Values.computeWorkers.serviceAccountName }}
+      containers:
+        - name: compute-worker
+          image: "{{ .Values.computeWorkerImage.repository }}:{{ .Values.computeWorkerImage.tag }}"
+          imagePullPolicy: {{ .Values.computeWorkerImage.pullPolicy }}
+          env:
+            - name: PLATFORM_PROVIDER
+              value: {{ .Values.platformProvider | quote }}
+            - name: LISTEN_ADDR
+              value: {{ .Values.computeWorkers.httpListenAddr | quote }}
+            - name: GRPC_LISTEN_ADDR
+              value: {{ .Values.computeWorkers.grpcListenAddr | quote }}
+            {{- range $key, $value := .Values.computeWorkers.env }}
+            - name: {{ $key }}
+              value: {{ $value | quote }}
+            {{- end }}
+          resources:
+            {{- toYaml .Values.computeWorkers.resources | nindent 12 }}
+{{- end }}
+

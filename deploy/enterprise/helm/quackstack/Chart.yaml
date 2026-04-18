@@ -1,0 +1,7 @@
+apiVersion: v2
+name: quackstack
+description: Enterprise Helm chart foundation for QuackStack
+type: application
+version: 0.1.0
+appVersion: "0.1.0"
+

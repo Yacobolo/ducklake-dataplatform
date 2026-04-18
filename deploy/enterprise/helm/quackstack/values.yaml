@@ -1,0 +1,90 @@
+nameOverride: ""
+fullnameOverride: ""
+
+image:
+  repository: ghcr.io/yacobolo/quackstack-control-plane
+  tag: main-latest
+  pullPolicy: IfNotPresent
+
+computeWorkerImage:
+  repository: ghcr.io/yacobolo/quackstack-compute-agent
+  tag: main-latest
+  pullPolicy: IfNotPresent
+
+deploymentProfile: enterprise
+platformProvider: azure
+
+replicaCount: 1
+
+serviceAccount:
+  create: true
+  name: ""
+  annotations: {}
+
+service:
+  type: ClusterIP
+  port: 8080
+  flightSQLPort: 32010
+  pgWirePort: 5433
+
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+  hosts:
+    - host: quackstack.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
+
+controlDB:
+  driver: postgres
+  dsnSecretName: quackstack-control-plane
+  dsnSecretKey: CONTROL_DB_DSN
+
+secrets:
+  controlPlane:
+    name: quackstack-control-plane
+    create: false
+    stringData: {}
+
+env:
+  ENV: production
+  LOG_LEVEL: info
+  LISTEN_ADDR: ":8080"
+  FLIGHT_SQL_LISTEN_ADDR: ":32010"
+  PG_WIRE_LISTEN_ADDR: ":5433"
+  FEATURE_REMOTE_ROUTING: "true"
+  FEATURE_ASYNC_QUEUE: "true"
+  FEATURE_CURSOR_MODE: "true"
+  FEATURE_INTERNAL_GRPC: "true"
+  FEATURE_FLIGHT_SQL: "true"
+  FEATURE_PG_WIRE: "true"
+  TRUST_DOWNSTREAM_PROXY: "true"
+
+resources: {}
+
+nodeSelector: {}
+tolerations: []
+affinity: {}
+
+computeWorkers:
+  enabled: true
+  replicaCount: 1
+  serviceAccountName: ""
+  grpcListenAddr: ":9444"
+  httpListenAddr: ":9443"
+  resources: {}
+  env:
+    FEATURE_CURSOR_MODE: "true"
+    FEATURE_INTERNAL_GRPC: "true"
+
+lifecycleController:
+  enabled: false
+  image:
+    repository: ghcr.io/yacobolo/quackstack-lifecycle-controller
+    tag: main-latest
+    pullPolicy: IfNotPresent
+  resources: {}
+
