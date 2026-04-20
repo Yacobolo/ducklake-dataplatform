@@ -11,16 +11,20 @@ import (
 	"github.com/Yacobolo/quackstack/pkg/cli/apiruntime"
 )
 
-func init() {
+func addPrincipalRuntimeOptions(opts *apiruntime.RuntimeOptions) {
+	if opts.RunOverrides == nil {
+		opts.RunOverrides = map[string]func(*apiruntime.Client) func(*cobra.Command, []string) error{}
+	}
+
 	// Override getPrincipal to resolve name→UUID before calling the API.
-	apiruntime.RegisterRunOverride("getPrincipal", func(client *apiruntime.Client) func(*cobra.Command, []string) error {
+	opts.RunOverrides["getPrincipal"] = func(client *apiruntime.Client) func(*cobra.Command, []string) error {
 		return func(cmd *cobra.Command, args []string) error {
 			id, err := resolvePrincipalArg(client, args[0])
 			if err != nil {
 				return err
 			}
 
-			resp, err := client.Do("GET", "/principals/"+url.PathEscape(id), nil, nil)
+			resp, err := client.Do("GET", generatedAPIPath("/principals/"+url.PathEscape(id)), nil, nil)
 			if err != nil {
 				return err
 			}
@@ -50,10 +54,10 @@ func init() {
 			}
 			return nil
 		}
-	})
+	}
 
 	// Override deletePrincipal to resolve name→UUID before calling the API.
-	apiruntime.RegisterRunOverride("deletePrincipal", func(client *apiruntime.Client) func(*cobra.Command, []string) error {
+	opts.RunOverrides["deletePrincipal"] = func(client *apiruntime.Client) func(*cobra.Command, []string) error {
 		return func(cmd *cobra.Command, args []string) error {
 			if !cmd.Flags().Changed("yes") {
 				if !apiruntime.ConfirmPrompt("Are you sure?") {
@@ -66,7 +70,7 @@ func init() {
 				return err
 			}
 
-			resp, err := client.Do("DELETE", "/principals/"+url.PathEscape(id), nil, nil)
+			resp, err := client.Do("DELETE", generatedAPIPath("/principals/"+url.PathEscape(id)), nil, nil)
 			if err != nil {
 				return err
 			}
@@ -83,7 +87,7 @@ func init() {
 			}
 			return nil
 		}
-	})
+	}
 }
 
 // resolvePrincipalArg resolves a principal argument that may be a name or UUID.
@@ -105,7 +109,7 @@ func resolvePrincipalArg(client *apiruntime.Client, arg string) (string, error) 
 			q.Set("page_token", pageToken)
 		}
 
-		resp, err := client.Do("GET", "/principals", q, nil)
+		resp, err := client.Do("GET", generatedAPIPath("/principals"), q, nil)
 		if err != nil {
 			return "", fmt.Errorf("list principals: %w", err)
 		}

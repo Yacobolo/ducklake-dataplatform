@@ -1,0 +1,14 @@
+targets:
+  - name: v1
+    cue_dir: api/v1/cue
+    ir_out: internal/api/gen/json-ir.json
+    openapi_out: internal/api/gen/openapi.yaml
+    server_out: internal/api/server.apigen.gen.go
+    server_package: api
+    request_models_out: internal/api/gen_request_models.gen.go
+    request_models_package: api
+    compat_types_out: internal/api/types.gen.go
+    compat_types_package: api
+    cli_out: pkg/cli/gen/apigen_registry.gen.go
+    cli_package: gen
+    generate_cli: true

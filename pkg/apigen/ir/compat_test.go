@@ -19,12 +19,13 @@ func TestV1FixtureLoadsAndEmits(t *testing.T) {
 	doc, err := ir.Load(path)
 	require.NoError(t, err)
 	require.Equal(t, ir.CurrentSchemaVersion, doc.SchemaVersion)
+	require.Equal(t, "/v1", doc.API.BasePath)
 	require.Len(t, doc.Endpoints, 3)
 
 	openapiYAML, err := openapiemit.EmitYAML(doc, openapiemit.Options{})
 	require.NoError(t, err)
 	require.Contains(t, string(openapiYAML), "x-authz:")
-	require.Contains(t, string(openapiYAML), "x-cli-command: widgets list")
+	require.NotContains(t, string(openapiYAML), "x-cli-command:")
 
 	requestModels, err := requestmodelgoemit.EmitWithResponseRoots(doc, requestmodelgoemit.Options{})
 	require.NoError(t, err)
@@ -39,7 +40,8 @@ func TestV1FixtureLoadsAndEmits(t *testing.T) {
 	cliCode, err := cligoemit.Emit(doc, cligoemit.Options{})
 	require.NoError(t, err)
 	require.Contains(t, string(cliCode), `import apigencobra "github.com/Yacobolo/quackstack/pkg/apigen/runtime/cobra"`)
-	require.Contains(t, string(cliCode), `CLICommand: "widgets list"`)
-	require.Contains(t, string(cliCode), `CLICommand: "widgets create"`)
+	require.Contains(t, string(cliCode), `Path: "/v1/widgets"`)
+	require.Contains(t, string(cliCode), `Command: []string{"widgets", "list"}`)
+	require.Contains(t, string(cliCode), `Command: []string{"widgets", "create"}`)
 	require.NotContains(t, string(cliCode), "deleteWidget")
 }

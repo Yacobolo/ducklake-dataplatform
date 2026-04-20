@@ -13,6 +13,7 @@ import (
 
 func main() {
 	openapiPath := flag.String("openapi", "internal/api/gen/openapi.yaml", "path to OpenAPI spec")
+	jsonIRPath := flag.String("json-ir", "internal/api/gen/json-ir.json", "path to APIGen JSON IR")
 	outDir := flag.String("outdir", "site/content/reference/generated", "output directory for derived reference docs")
 	docsDir := flag.String("docs-dir", "site/content", "path to source docs directory")
 	cliIndexOut := flag.String("cli-index-out", "pkg/cli/gen/discovery_index.gen.go", "path to generated CLI discovery metadata")
@@ -31,7 +32,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	if err := discovery.Generate(*docsDir, *openapiPath, *cliIndexOut); err != nil {
+	if err := discovery.Generate(*docsDir, *openapiPath, *jsonIRPath, *cliIndexOut); err != nil {
 		_, _ = fmt.Fprintf(os.Stderr, "error: generate CLI discovery index: %v\n", err)
 		os.Exit(1)
 	}

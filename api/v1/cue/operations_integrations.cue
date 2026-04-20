@@ -25,7 +25,9 @@ import "list"
 	op:      "deleteGitRepo"
 	path:    "/git-repos/{git_repo_id}"
 	summary: "Delete git repo"
-	cli:     "notebooks git-repos delete"
+	cli: {
+		command: ["notebooks", "git-repos", "delete"]
+	}
 	error_family: "resource"
 	params:  #gitRepoPathParameters
 }
@@ -37,7 +39,9 @@ import "list"
 		op:           "listGitRepos"
 		path:         "/git-repos"
 		summary:      "List git repos"
-		cli:          "notebooks git-repos list"
+		cli: {
+			command: ["notebooks", "git-repos", "list"]
+		}
 		returns:      "PaginatedGitRepos"
 		error_family: "standard"
 		params:       #paginationParameters
@@ -48,7 +52,9 @@ import "list"
 		op:             "createGitRepo"
 		path:           "/git-repos"
 		summary:        "Create git repo"
-		cli:            "notebooks git-repos create"
+		cli: {
+			command: ["notebooks", "git-repos", "create"]
+		}
 		returns:        "GitRepo"
 		success_status: 201
 		error_family:   "mutating"
@@ -61,7 +67,9 @@ import "list"
 		op:           "getGitRepo"
 		path:         "/git-repos/{git_repo_id}"
 		summary:      "Get git repo"
-		cli:          "notebooks git-repos get"
+		cli: {
+			command: ["notebooks", "git-repos", "get"]
+		}
 		returns:      "GitRepo"
 		error_family: "resource"
 		params:       #gitRepoPathParameters
@@ -111,8 +119,9 @@ endpoints_integrations: list.Concat([
 					},
 				],
 			])
-			extensions: #authenticatedExtensions & {
-				#cli_command: "notebooks git-repos sync"
+			extensions: #authenticatedExtensions
+			cli: {
+				command: ["notebooks", "git-repos", "sync"]
 			}
 		},
 	],

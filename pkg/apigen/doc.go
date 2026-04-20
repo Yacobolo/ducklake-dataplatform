@@ -1,4 +1,4 @@
-// Package apigen documents the supported in-repo APIGen surfaces.
+// Package apigen documents the supported public APIGen module surfaces.
 //
 // Supported library packages:
 //   - github.com/Yacobolo/quackstack/pkg/apigen/ir
@@ -10,6 +10,5 @@
 //   - github.com/Yacobolo/quackstack/pkg/apigen/runtime/cobra
 //
 // JSON IR is the generator input contract. Canonical OpenAPI is the published
-// API contract artifact and may carry repo-owned extensions such as x-authz and
-// x-cli-command.
+// API contract artifact and may carry repo-owned extensions such as x-authz.
 package apigen

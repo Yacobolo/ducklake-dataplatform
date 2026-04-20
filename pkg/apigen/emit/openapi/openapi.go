@@ -4,6 +4,7 @@ package openapi
 import (
 	"bytes"
 	"fmt"
+	"net/url"
 	"regexp"
 	"sort"
 	"strconv"
@@ -45,7 +46,7 @@ func EmitYAML(docIR ir.Document, _ Options) ([]byte, error) {
 	appendKeyValue(root, "components", components)
 
 	if len(docIR.Servers) > 0 {
-		appendKeyValue(root, "servers", serversNode(docIR.Servers))
+		appendKeyValue(root, "servers", serversNode(docIR.Servers, docIR.API.BasePath))
 	}
 
 	var buffer bytes.Buffer
@@ -117,10 +118,11 @@ func pathsNode(doc ir.Document, examples *exampleResolver) (*yaml.Node, error) {
 	grouped := map[string][]ir.Endpoint{}
 	pathKeys := make([]string, 0)
 	for _, endpoint := range doc.Endpoints {
-		if _, ok := grouped[endpoint.Path]; !ok {
-			pathKeys = append(pathKeys, endpoint.Path)
+		fullPath := ir.JoinAPIPath(doc.API.BasePath, endpoint.Path)
+		if _, ok := grouped[fullPath]; !ok {
+			pathKeys = append(pathKeys, fullPath)
 		}
-		grouped[endpoint.Path] = append(grouped[endpoint.Path], endpoint)
+		grouped[fullPath] = append(grouped[fullPath], endpoint)
 	}
 
 	for _, path := range pathKeys {
@@ -136,6 +138,15 @@ func pathsNode(doc ir.Document, examples *exampleResolver) (*yaml.Node, error) {
 	}
 
 	return paths, nil
+}
+
+func joinServerURLPath(raw string, basePath string) string {
+	parsed, err := url.Parse(raw)
+	if err != nil || parsed.Scheme == "" || parsed.Host == "" {
+		return raw
+	}
+	parsed.Path = ir.JoinAPIPath(parsed.Path, basePath)
+	return parsed.String()
 }
 
 func operationNode(endpoint ir.Endpoint, examples *exampleResolver) (*yaml.Node, error) {
@@ -185,11 +196,12 @@ func operationNode(endpoint ir.Endpoint, examples *exampleResolver) (*yaml.Node,
 	}
 
 	extensionKeys := make([]string, 0, len(endpoint.Extensions))
-	for key := range endpoint.Extensions {
+	extensions := endpoint.Extensions
+	for key := range extensions {
 		if key == "security" {
 			continue
 		}
-		if key == "x-authz" && isAuthenticatedAuthz(endpoint.Extensions[key]) {
+		if key == "x-authz" && isAuthenticatedAuthz(extensions[key]) {
 			continue
 		}
 		extensionKeys = append(extensionKeys, key)
@@ -198,7 +210,6 @@ func operationNode(endpoint ir.Endpoint, examples *exampleResolver) (*yaml.Node,
 		order := map[string]int{
 			"x-authz":         0,
 			"x-apigen-manual": 1,
-			"x-cli-command":   2,
 		}
 		if order[extensionKeys[i]] == order[extensionKeys[j]] {
 			return extensionKeys[i] < extensionKeys[j]
@@ -206,10 +217,18 @@ func operationNode(endpoint ir.Endpoint, examples *exampleResolver) (*yaml.Node,
 		return order[extensionKeys[i]] < order[extensionKeys[j]]
 	})
 	for _, key := range extensionKeys {
-		appendKeyValue(node, key, anyToNode(endpoint.Extensions[key]))
+		appendKeyValue(node, key, anyToNode(extensions[key]))
 	}
 
 	return node, nil
+}
+
+func cloneExtensions(in map[string]any) map[string]any {
+	out := make(map[string]any, len(in))
+	for key, value := range in {
+		out[key] = value
+	}
+	return out
 }
 
 func parameterNode(parameter ir.Parameter, examples *exampleResolver) *yaml.Node {
@@ -721,11 +740,11 @@ func securitySchemeNode(scheme ir.SecurityScheme) *yaml.Node {
 	return node
 }
 
-func serversNode(servers []ir.Server) *yaml.Node {
+func serversNode(servers []ir.Server, basePath string) *yaml.Node {
 	node := sequenceNode()
 	for _, server := range servers {
 		entry := mappingNode()
-		appendKeyValue(entry, "url", stringNode(server.URL))
+		appendKeyValue(entry, "url", stringNode(joinServerURLPath(server.URL, basePath)))
 		if server.Description != "" {
 			appendKeyValue(entry, "description", stringNode(server.Description))
 		}

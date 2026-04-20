@@ -8,6 +8,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	urlpkg "net/url"
 	"strings"
 	"testing"
 	"time"
@@ -415,7 +416,14 @@ func nbDoRequest(t *testing.T, method, url string, body string) *http.Response {
 	} else {
 		reqBody = bytes.NewBuffer(nil)
 	}
-	req, err := http.NewRequestWithContext(context.Background(), method, url, reqBody)
+	reqURL := url
+	parsed, err := urlpkg.Parse(url)
+	require.NoError(t, err)
+	if !strings.HasPrefix(parsed.Path, "/v1/") && parsed.Path != "/v1" {
+		parsed.Path = "/v1" + parsed.Path
+		reqURL = parsed.String()
+	}
+	req, err := http.NewRequestWithContext(context.Background(), method, reqURL, reqBody)
 	require.NoError(t, err)
 	if body != "" {
 		req.Header.Set("Content-Type", "application/json")

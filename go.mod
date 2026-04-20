@@ -4,6 +4,7 @@ go 1.25.8
 
 require (
 	cloud.google.com/go/storage v1.60.0
+	github.com/Yacobolo/quackstack/pkg/apigen v0.0.0
 	cuelang.org/go v0.16.1
 	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v1.6.4
 	github.com/alecthomas/chroma/v2 v2.23.1
@@ -163,3 +164,5 @@ require (
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260203192932-546029d2fa20 // indirect
 	google.golang.org/protobuf v1.36.11 // indirect
 )
+
+replace github.com/Yacobolo/quackstack/pkg/apigen => ./pkg/apigen

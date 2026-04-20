@@ -1,6 +1,7 @@
 package apigen
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -15,36 +16,45 @@ func TestMainRepoCueParity(t *testing.T) {
 	require.NoError(t, err)
 
 	repoRoot := repoRootFromWorkingDir(t, cwd)
+	apigenRoot := filepath.Join(repoRoot, "pkg", "apigen")
 	tempDir := t.TempDir()
 	irPath := filepath.Join(tempDir, "json-ir.json")
 	openAPIPath := filepath.Join(tempDir, "openapi.yaml")
-
-	runCommand(t, repoRoot, "go", "run", "./cmd/apigen", "cue-compile", "-cue-dir", filepath.Join(repoRoot, "internal", "api", "contract", "cue"), "-ir-out", irPath, "-openapi-out", openAPIPath)
-
-	requireFileEquals(t, openAPIPath, filepath.Join(repoRoot, "internal", "api", "gen", "openapi.yaml"))
-
 	serverOut := filepath.Join(tempDir, "server.apigen.gen.go")
 	requestModelsOut := filepath.Join(tempDir, "gen_request_models.gen.go")
 	typesOut := filepath.Join(tempDir, "types.gen.go")
 	cliOut := filepath.Join(tempDir, "apigen_registry.gen.go")
+	manifestPath := filepath.Join(tempDir, "apigen.targets.yaml")
+
+	require.NoError(t, os.WriteFile(manifestPath, []byte(fmt.Sprintf(`targets:
+  - name: parity
+    cue_dir: %s
+    ir_out: %s
+    openapi_out: %s
+    server_out: %s
+    server_package: api
+    request_models_out: %s
+    request_models_package: api
+    compat_types_out: %s
+    compat_types_package: api
+    cli_out: %s
+    cli_package: gen
+    generate_cli: true
+`, filepath.Join(repoRoot, "api", "v1", "cue"), irPath, openAPIPath, serverOut, requestModelsOut, typesOut, cliOut)), 0o644))
+
+	runCommand(t, apigenRoot, "go", "run", "./cmd/apigen", "cue-compile", "-manifest", manifestPath, "-target", "parity")
+
+	requireFileEquals(t, openAPIPath, filepath.Join(repoRoot, "internal", "api", "gen", "openapi.yaml"))
 
 	runCommand(
 		t,
-		repoRoot,
+		apigenRoot,
 		"go",
 		"run",
 		"./cmd/apigen",
 		"all",
-		"-ir", irPath,
-		"-canonical-openapi", openAPIPath,
-		"-server-out", serverOut,
-		"-server-package", "api",
-		"-request-models-out", requestModelsOut,
-		"-request-models-package", "api",
-		"-compat-types-out", typesOut,
-		"-compat-types-package", "api",
-		"-cli-out", cliOut,
-		"-cli-package", "gen",
+		"-manifest", manifestPath,
+		"-target", "parity",
 	)
 
 	requireFileEquals(t, requestModelsOut, filepath.Join(repoRoot, "internal", "api", "gen_request_models.gen.go"))

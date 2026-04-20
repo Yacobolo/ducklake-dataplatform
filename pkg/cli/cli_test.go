@@ -1201,7 +1201,7 @@ func TestCLI_ProjectModelsCreateRequiresNameOrJSON(t *testing.T) {
 
 	err := rootCmd.Execute()
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "required flag \"name\" not set (or use --json)")
+	assert.Contains(t, err.Error(), "required flag \"name\" not set")
 }
 
 // === Agent-Friendly Output Tests ===

@@ -41,7 +41,6 @@ Endpoint routes are unique by `lower(method) + " " + path`.
 Supported endpoint-level extensions in current consumers:
 
 - `x-authz`
-- `x-cli-command`
 - `x-apigen-manual`
 
 `x-apigen-manual` marks operations that are intentionally excluded from generated transport and CLI surfaces before IR reaches APIGen.
@@ -81,4 +80,4 @@ Response headers are unique case-insensitively per response.
 
 - JSON IR is the generator input contract
 - canonical OpenAPI is the published API contract artifact
-- canonical OpenAPI may carry repo-owned metadata extensions such as `x-authz` and `x-cli-command`
+- canonical OpenAPI may carry repo-owned metadata extensions such as `x-authz`

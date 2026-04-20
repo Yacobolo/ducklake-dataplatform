@@ -28,7 +28,7 @@ func TestAPIContractRegression_ExternalLocationCreateDocumentsNoCatalogAttachmen
 
 	doc := loadOpenAPISpec(t, filepath.Join(repoRootDir(), "internal", "api", "gen", "openapi.yaml"))
 
-	pathItem := doc.Paths.Find("/external-locations")
+	pathItem := doc.Paths.Find("/v1/external-locations")
 	require.NotNil(t, pathItem)
 	require.NotNil(t, pathItem.Post)
 	assert.Contains(t, pathItem.Post.Description, "does not attach or create a DuckLake catalog")

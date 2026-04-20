@@ -16,8 +16,8 @@ func TestManualAuthEndpoints_AreCanonicalButNotAPIGenerated(t *testing.T) {
 	doc := loadOpenAPISpec(t, filepath.Join(repoRootDir(), "internal", "api", "gen", "openapi.yaml"))
 	operations := collectOpenAPICoreOperations(t, doc)
 
-	generated := make(map[string]struct{}, len(gen.APIGeneratedEndpoints))
-	for _, endpoint := range gen.APIGeneratedEndpoints {
+	generated := make(map[string]struct{}, len(gen.APIGeneratedCommandSpecs))
+	for _, endpoint := range gen.APIGeneratedCommandSpecs {
 		generated[endpoint.OperationID] = struct{}{}
 	}
 

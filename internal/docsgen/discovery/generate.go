@@ -1,9 +1,8 @@
-// Package discovery renders CLI discovery metadata from docs and OpenAPI.
+// Package discovery renders CLI discovery metadata from docs, OpenAPI, and APIGen IR.
 package discovery
 
 import (
 	"bytes"
-	"encoding/json"
 	"fmt"
 	"go/format"
 	"os"
@@ -14,6 +13,7 @@ import (
 	"unicode"
 
 	"github.com/getkin/kin-openapi/openapi3"
+	apigenir "github.com/Yacobolo/quackstack/pkg/apigen/ir"
 	"gopkg.in/yaml.v3"
 )
 
@@ -78,13 +78,18 @@ type referenceLink struct {
 }
 
 // Generate renders discovery metadata into a generated Go file.
-func Generate(docsDir, specPath, outPath string) error {
+func Generate(docsDir, specPath, irPath, outPath string) error {
 	docs, frontMatterByDocID, err := loadDocs(docsDir)
 	if err != nil {
 		return err
 	}
 
-	operations, err := loadOperations(specPath)
+	commandByOperation, err := loadCLICommands(irPath)
+	if err != nil {
+		return err
+	}
+
+	operations, err := loadOperations(specPath, commandByOperation)
 	if err != nil {
 		return err
 	}
@@ -301,7 +306,7 @@ func docKeywords(id, title string, headings []string, fm frontMatter) []string {
 	return dedupeStrings(words)
 }
 
-func loadOperations(specPath string) ([]referenceOperation, error) {
+func loadOperations(specPath string, commandByOperation map[string]string) ([]referenceOperation, error) {
 	loader := &openapi3.Loader{IsExternalRefsAllowed: true}
 	spec, err := loader.LoadFromFile(specPath)
 	if err != nil {
@@ -311,13 +316,29 @@ func loadOperations(specPath string) ([]referenceOperation, error) {
 	operations := make([]referenceOperation, 0, len(spec.Paths.Map()))
 	for path, pathItem := range spec.Paths.Map() {
 		for method, op := range pathItem.Operations() {
-			operations = append(operations, buildOperation(path, method, pathItem, op))
+			operations = append(operations, buildOperation(path, method, pathItem, op, commandByOperation))
 		}
 	}
 	return operations, nil
 }
 
-func buildOperation(path, method string, pathItem *openapi3.PathItem, op *openapi3.Operation) referenceOperation {
+func loadCLICommands(irPath string) (map[string]string, error) {
+	doc, err := apigenir.Load(irPath)
+	if err != nil {
+		return nil, fmt.Errorf("load apigen ir: %w", err)
+	}
+	commands := make(map[string]string, len(doc.Endpoints))
+	for _, endpoint := range doc.Endpoints {
+		command := apigenir.CLICommandString(endpoint.CLI)
+		if strings.TrimSpace(command) == "" || strings.TrimSpace(endpoint.OperationID) == "" {
+			continue
+		}
+		commands[endpoint.OperationID] = command
+	}
+	return commands, nil
+}
+
+func buildOperation(path, method string, pathItem *openapi3.PathItem, op *openapi3.Operation, commandByOperation map[string]string) referenceOperation {
 	params := append([]*openapi3.ParameterRef{}, pathItem.Parameters...)
 	params = append(params, op.Parameters...)
 
@@ -328,7 +349,7 @@ func buildOperation(path, method string, pathItem *openapi3.PathItem, op *openap
 		Tags:        append([]string(nil), op.Tags...),
 		Summary:     strings.TrimSpace(op.Summary),
 		Description: strings.TrimSpace(op.Description),
-		CLICommand:  cliCommandFromExtensions(op.Extensions),
+		CLICommand:  strings.TrimSpace(commandByOperation[strings.TrimSpace(op.OperationID)]),
 	}
 
 	for _, p := range params {
@@ -420,7 +441,7 @@ func buildLinks(docs []referenceDoc, fmByDocID map[string]frontMatter, operation
 				SourceID:   op.OperationID,
 				TargetKind: "command",
 				TargetID:   op.CLICommand,
-				Reason:     "x-cli-command",
+				Reason:     "apigen-command-spec",
 				Confidence: 100,
 			})
 		}
@@ -535,28 +556,6 @@ func renderGo(docs []referenceDoc, operations []referenceOperation, links []refe
 		return nil, fmt.Errorf("format generated Go: %w", err)
 	}
 	return formatted, nil
-}
-
-func cliCommandFromExtensions(extensions map[string]any) string {
-	if len(extensions) == 0 {
-		return ""
-	}
-	for _, key := range []string{"x-cli-command", "cli_command", "x_cli_command"} {
-		raw, ok := extensions[key]
-		if !ok {
-			continue
-		}
-		switch value := raw.(type) {
-		case string:
-			return strings.TrimSpace(value)
-		case json.RawMessage:
-			var decoded string
-			if err := json.Unmarshal(value, &decoded); err == nil {
-				return strings.TrimSpace(decoded)
-			}
-		}
-	}
-	return ""
 }
 
 func schemaTypeFromSchemaRef(ref *openapi3.SchemaRef) string {

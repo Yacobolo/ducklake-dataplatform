@@ -1,6 +1,7 @@
 package api
 
 import "list"
+import "strings"
 
 #authenticatedSecurity: [
 	{
@@ -12,13 +13,10 @@ import "list"
 ]
 
 #authenticatedExtensions: {
-	#cli_command: string
-
 	"security": #authenticatedSecurity
 	"x-authz": {
 		mode: "authenticated"
 	}
-	"x-cli-command": #cli_command
 }
 
 // High-level authored operation specs. These stay close to API intent and are
@@ -31,8 +29,8 @@ import "list"
 	path:    string
 	summary: string
 	description?: string
-	cli?:    string
 	deprecated?: *false | true
+	cli?:    string | #CLI
 	returns: string
 	params:  [...#Parameter]
 }
@@ -45,8 +43,8 @@ import "list"
 	path:             string
 	summary:          string
 	description?:     string
-	cli?:             string
 	deprecated?:      *false | true
+	cli?:             string | #CLI
 	returns:          string
 	body_ref:         string
 	body_required:    *true | false
@@ -61,8 +59,8 @@ import "list"
 	path:    string
 	summary: string
 	description?: string
-	cli?:    string
 	deprecated?: *false | true
+	cli?:    string | #CLI
 	params:  [...#Parameter]
 }
 
@@ -134,7 +132,7 @@ import "list"
 ]
 
 // Shared error/response building blocks used by both the generic DSL and the
-// smaller legacy helper path that still powers lineage-style authored specs.
+// smaller lineage-oriented helper path.
 #errorResponse: {
 	#status_code: int
 	#description: string
@@ -347,7 +345,7 @@ import "list"
 	path:           string
 	summary:        string
 	description?:   string
-	cli?:           string
+	cli?:           string | #CLI
 	returns?:       string
 	success_schema?: #SchemaRef
 	success_status: *200 | 201 | 202
@@ -706,14 +704,22 @@ import "list"
 			if spec.authz == _|_ && spec.authz_default {
 				"x-authz": #authenticatedAuthz
 			}
-			if spec.cli != _|_ {
-				"x-cli-command": spec.cli
+			if (spec.cli & string) != _|_ {
+				"x-cli-command": spec.cli & string
 			}
+		}
+		if (spec.cli & string) != _|_ {
+			cli: {
+				command: strings.Split(spec.cli & string, " ")
+			}
+		}
+		if (spec.cli & #CLI) != _|_ {
+			cli: spec.cli & #CLI
 		}
 	}
 }
 
-// Legacy compact helpers retained for lineage-style authored specs. These are
+// Compact helpers retained for lineage-style authored specs. These are
 // intentionally smaller than the generic operation DSL, but they lower through
 // the same shared response/auth conventions.
 #endpointFromOperation: {
@@ -792,9 +798,17 @@ import "list"
 			"x-authz": {
 				mode: "authenticated"
 			}
-			if spec.cli != _|_ {
-				"x-cli-command": spec.cli
+			if (spec.cli & string) != _|_ {
+				"x-cli-command": spec.cli & string
 			}
+		}
+		if (spec.cli & string) != _|_ {
+			cli: {
+				command: strings.Split(spec.cli & string, " ")
+			}
+		}
+		if (spec.cli & #CLI) != _|_ {
+			cli: spec.cli & #CLI
 		}
 	}
 }

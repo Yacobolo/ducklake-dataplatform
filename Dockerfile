@@ -8,6 +8,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends build-essential
 
 WORKDIR /src
 COPY go.mod go.sum ./
+COPY pkg/apigen/go.mod pkg/apigen/go.sum ./pkg/apigen/
 RUN go mod download
 
 COPY . .

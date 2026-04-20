@@ -821,9 +821,7 @@ func setupIntegrationServer(t *testing.T) *testEnv {
 		NameClaim:     "sub",
 	}, nil)
 	r.Use(authenticator.Middleware())
-	r.Route("/v1", func(r chi.Router) {
-		api.RegisterAPIGenStrictRoutes(r, handler)
-	})
+	api.RegisterAPIGenStrictRoutes(r, handler)
 
 	srv := httptest.NewServer(r)
 	t.Cleanup(srv.Close)
@@ -998,9 +996,7 @@ func setupLocalExtensionServer(t *testing.T) *testEnv {
 		NameClaim:     "sub",
 	}, nil)
 	r.Use(authenticator.Middleware())
-	r.Route("/v1", func(r chi.Router) {
-		api.RegisterAPIGenStrictRoutes(r, handler)
-	})
+	api.RegisterAPIGenStrictRoutes(r, handler)
 
 	srv := httptest.NewServer(r)
 	t.Cleanup(srv.Close)
@@ -1868,6 +1864,9 @@ func setupHTTPServer(t *testing.T, opts httpTestOpts) *httpTestEnv {
 		r.Put("/auth/provider/oidc", authHandler.UpsertOIDCProvider)
 		r.Post("/auth/sessions/revoke-all", authHandler.RevokeAllWebSessions)
 		r.Get("/auth/sessions/stats", authHandler.GetWebSessionStats)
+	})
+	r.Group(func(r chi.Router) {
+		r.Use(authenticator.Middleware())
 		api.RegisterAPIGenStrictRoutes(r, handler)
 	})
 
@@ -2599,9 +2598,7 @@ func setupMultiTableLocalServer(t *testing.T) *multiTableTestEnv {
 		NameClaim:     "sub",
 	}, nil)
 	r.Use(authenticator.Middleware())
-	r.Route("/v1", func(r chi.Router) {
-		api.RegisterAPIGenStrictRoutes(r, handler)
-	})
+	api.RegisterAPIGenStrictRoutes(r, handler)
 
 	srv := httptest.NewServer(r)
 	t.Cleanup(srv.Close)

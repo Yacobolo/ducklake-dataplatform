@@ -521,19 +521,7 @@ func safeResponseSchemaRoots(doc ir.Document) []string {
 }
 
 func normalizedSchemaRefName(schema ir.SchemaRef) (string, bool) {
-	if schema.Ref == "" {
-		return "", false
-	}
-	ref := strings.TrimSpace(schema.Ref)
-	ref = strings.TrimPrefix(ref, "#/components/schemas/")
-	ref = strings.TrimPrefix(ref, "#/schemas/")
-	if idx := strings.LastIndex(ref, "/"); idx >= 0 {
-		ref = ref[idx+1:]
-	}
-	if ref == "" {
-		return "", false
-	}
-	return ref, true
+	return ir.NormalizedSchemaRefName(schema)
 }
 
 func isErrorSchemaRef(schema ir.SchemaRef) bool {
@@ -554,69 +542,11 @@ func resolveRequestSchemaName(doc ir.Document, endpoint ir.Endpoint) (string, bo
 		return normalizedSchemaRefName(schema)
 	}
 	if schema.Ref == "GenericRequest" {
-		if schemaName, ok := resolveGenericRequestBodySchemaName(doc, endpoint.OperationID); ok {
+		if schemaName, ok := ir.ResolveGenericRequestBodySchemaName(doc, endpoint.OperationID); ok {
 			return schemaName, true
 		}
 	}
 	return "", false
-}
-
-func resolveGenericRequestBodySchemaName(doc ir.Document, operationID string) (string, bool) {
-	if schemaName, ok := genericRequestBodySchemaOverrides[operationID]; ok {
-		return schemaName, true
-	}
-	for _, candidate := range genericRequestBodySchemaCandidates(operationID) {
-		if _, ok := doc.Schemas[candidate]; ok {
-			return candidate, true
-		}
-	}
-	return "", false
-}
-
-func genericRequestBodySchemaCandidates(operationID string) []string {
-	return []string{exportedName(operationID) + "Request"}
-}
-
-var genericRequestBodySchemaOverrides = map[string]string{
-	"bindColumnMask":                  "ColumnMaskBindingRequest",
-	"bindRowFilter":                   "RowFilterBindingRequest",
-	"commitTableIngestion":            "CommitIngestionRequest",
-	"createCell":                      "CreateCellRequest",
-	"createComputeAssignment":         "CreateComputeAssignmentRequest",
-	"createComputeEndpoint":           "CreateComputeEndpointRequest",
-	"createGitRepo":                   "CreateGitRepoRequest",
-	"createMacro":                     "CreateMacroRequest",
-	"createManifest":                  "ManifestRequest",
-	"createModelTest":                 "CreateModelTestRequest",
-	"createNotebook":                  "CreateNotebookRequest",
-	"createPipeline":                  "CreatePipelineRequest",
-	"createPipelineJob":               "CreatePipelineJobRequest",
-	"createSemanticMetric":            "CreateSemanticMetricRequest",
-	"createSemanticModel":             "CreateSemanticModelRequest",
-	"createSemanticPreAggregation":    "CreateSemanticPreAggregationRequest",
-	"createSemanticModelRelationship": "CreateSemanticRelationshipRequest",
-	"createTag":                       "CreateTagRequest",
-	"createTagAssignment":             "CreateTagAssignmentRequest",
-	"createUploadUrl":                 "UploadUrlRequest",
-	"executeQuery":                    "QueryRequest",
-	"explainMetricQuery":              "MetricQueryRequest",
-	"loadTableExternalFiles":          "LoadExternalRequest",
-	"promoteNotebookToModel":          "PromoteNotebookRequest",
-	"purgeLineage":                    "PurgeLineageRequest",
-	"reorderCells":                    "ReorderCellsRequest",
-	"runMetricQuery":                  "MetricQueryRequest",
-	"triggerModelRun":                 "TriggerModelRunRequest",
-	"triggerPipelineRun":              "TriggerPipelineRunRequest",
-	"updateCell":                      "UpdateCellRequest",
-	"updateComputeEndpoint":           "UpdateComputeEndpointRequest",
-	"updateMacro":                     "UpdateMacroRequest",
-	"updateModel":                     "UpdateModelRequest",
-	"updateNotebook":                  "UpdateNotebookRequest",
-	"updatePipeline":                  "UpdatePipelineRequest",
-	"updateSemanticMetric":            "UpdateSemanticMetricRequest",
-	"updateSemanticModel":             "UpdateSemanticModelRequest",
-	"updateSemanticPreAggregation":    "UpdateSemanticPreAggregationRequest",
-	"updateSemanticModelRelationship": "UpdateSemanticRelationshipRequest",
 }
 
 func exportedName(operationID string) string {

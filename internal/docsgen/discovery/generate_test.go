@@ -15,11 +15,12 @@ func TestGenerate_EmitsDocAndOperationMetadata(t *testing.T) {
 	require.NoError(t, os.MkdirAll(filepath.Join(docsDir, "govern"), 0o750))
 	require.NoError(t, os.MkdirAll(filepath.Join(docsDir, "reference", "generated"), 0o750))
 
-	docBody := `---
+docBody := `---
 title: Access the Platform
 description: Use tokens or API keys.
 keywords: [auth, login]
 operation_ids: [login]
+cli_commands: [auth login]
 ---
 
 # Access the Platform
@@ -46,7 +47,6 @@ paths:
       operationId: login
       summary: Login
       tags: [Auth]
-      x-cli-command: auth login
       requestBody:
         required: true
         content:
@@ -63,8 +63,38 @@ paths:
 `
 	require.NoError(t, os.WriteFile(specPath, []byte(spec), 0o600))
 
+	irPath := filepath.Join(root, "json-ir.json")
+	ir := `{
+  "schema_version": "v1",
+  "api": {
+    "base_path": "/v1"
+  },
+  "info": {
+    "title": "QuackStack",
+    "version": "test"
+  },
+  "endpoints": [
+    {
+      "method": "post",
+      "path": "/auth/login",
+      "operation_id": "login",
+      "summary": "Login",
+      "responses": [
+        {
+          "status_code": 200,
+          "description": "ok"
+        }
+      ],
+      "cli": {
+        "command": ["auth", "login"]
+      }
+    }
+  ]
+}`
+	require.NoError(t, os.WriteFile(irPath, []byte(ir), 0o600))
+
 	outPath := filepath.Join(root, "discovery_index.gen.go")
-	require.NoError(t, Generate(docsDir, specPath, outPath))
+	require.NoError(t, Generate(docsDir, specPath, irPath, outPath))
 
 	output, err := os.ReadFile(outPath)
 	require.NoError(t, err)

@@ -75,7 +75,9 @@ package api
 		op:           "listStorageCredentials"
 		path:         "/storage-credentials"
 		summary:      "List storage credentials"
-		cli:          "storage credentials list"
+		cli: {
+			command: ["storage", "credentials", "list"]
+		}
 		returns:      "PaginatedStorageCredentials"
 		error_family: "standard"
 		params:       #paginationParameters
@@ -87,7 +89,9 @@ package api
 		path:           "/storage-credentials"
 		summary:        "Create storage credential"
 		description:    "Creates a reusable storage credential that can be referenced by external locations and managed catalogs."
-		cli:            "storage credentials create"
+		cli: {
+			command: ["storage", "credentials", "create"]
+		}
 		returns:        "StorageCredential"
 		success_status: 201
 		error_family:   "mutating"
@@ -102,7 +106,9 @@ package api
 		op:           "getStorageCredential"
 		path:         "/storage-credentials/{credential_name}"
 		summary:      "Get storage credential"
-		cli:          "storage credentials get"
+		cli: {
+			command: ["storage", "credentials", "get"]
+		}
 		returns:      "StorageCredential"
 		error_family: "resource"
 		params:       #storageCredentialPathParameters
@@ -113,7 +119,9 @@ package api
 		op:           "updateStorageCredential"
 		path:         "/storage-credentials/{credential_name}"
 		summary:      "Update storage credential"
-		cli:          "storage credentials update"
+		cli: {
+			command: ["storage", "credentials", "update"]
+		}
 		returns:      "StorageCredential"
 		error_family: "resource"
 		params:       #storageCredentialPathParameters
@@ -129,7 +137,9 @@ package api
 		op:            "deleteStorageCredential"
 		path:          "/storage-credentials/{credential_name}"
 		summary:       "Delete storage credential"
-		cli:           "storage credentials delete"
+		cli: {
+			command: ["storage", "credentials", "delete"]
+		}
 		error_family:  "resource"
 		params:        #storageCredentialPathParameters
 		authz_default: false
@@ -141,7 +151,9 @@ package api
 		op:           "listExternalLocations"
 		path:         "/external-locations"
 		summary:      "List external locations"
-		cli:          "storage locations list"
+		cli: {
+			command: ["storage", "locations", "list"]
+		}
 		returns:      "PaginatedExternalLocations"
 		error_family: "standard"
 		params:       #paginationParameters
@@ -153,7 +165,9 @@ package api
 		path:           "/external-locations"
 		summary:        "Create external location"
 		description:    "Creates a new external location and configures DuckDB with the associated credential. Catalog registrations are managed separately; creating a location does not attach or create a DuckLake catalog."
-		cli:            "storage locations create"
+		cli: {
+			command: ["storage", "locations", "create"]
+		}
 		returns:        "ExternalLocation"
 		success_status: 201
 		error_family:   "mutating"
@@ -168,7 +182,9 @@ package api
 		op:           "getExternalLocation"
 		path:         "/external-locations/{location_name}"
 		summary:      "Get external location"
-		cli:          "storage locations get"
+		cli: {
+			command: ["storage", "locations", "get"]
+		}
 		returns:      "ExternalLocation"
 		error_family: "resource"
 		params:       #externalLocationPathParameters
@@ -179,7 +195,9 @@ package api
 		op:           "updateExternalLocation"
 		path:         "/external-locations/{location_name}"
 		summary:      "Update external location"
-		cli:          "storage locations update"
+		cli: {
+			command: ["storage", "locations", "update"]
+		}
 		returns:      "ExternalLocation"
 		error_family: "resource"
 		params:       #externalLocationPathParameters
@@ -195,7 +213,9 @@ package api
 		op:            "deleteExternalLocation"
 		path:          "/external-locations/{location_name}"
 		summary:       "Delete external location"
-		cli:           "storage locations delete"
+		cli: {
+			command: ["storage", "locations", "delete"]
+		}
 		error_family:  "resource"
 		params:        #externalLocationPathParameters
 		authz_default: false

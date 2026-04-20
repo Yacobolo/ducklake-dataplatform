@@ -12,6 +12,7 @@ func TestEmit(t *testing.T) {
 	t.Helper()
 	doc := ir.Document{
 		SchemaVersion: "v1",
+		API:           ir.API{BasePath: "/v1"},
 		Info:          ir.Info{Title: "t", Version: "1"},
 		Schemas: map[string]ir.Schema{
 			"CreateQueryRequest": {
@@ -25,7 +26,7 @@ func TestEmit(t *testing.T) {
 		Endpoints: []ir.Endpoint{
 			{
 				Method:      "post",
-				Path:        "/v1/query",
+				Path:        "/query",
 				OperationID: "executeQuery",
 				Summary:     "Execute a query",
 				Description: "Runs SQL against the default catalog",
@@ -35,8 +36,8 @@ func TestEmit(t *testing.T) {
 				},
 				RequestBody: &ir.RequestBody{Schema: ir.SchemaRef{Ref: "CreateQueryRequest"}},
 				Responses:   []ir.Response{{StatusCode: 200, Description: "ok"}},
-				Extensions: map[string]any{
-					"x-cli-command": "query execute",
+				CLI: &ir.CLI{
+					Command: []string{"query", "execute"},
 				},
 			},
 		},
@@ -44,11 +45,37 @@ func TestEmit(t *testing.T) {
 
 	b, err := Emit(doc, Options{})
 	require.NoError(t, err)
-	require.Contains(t, string(b), "APIGeneratedEndpoints")
+	require.Contains(t, string(b), "APIGeneratedCommandSpecs")
 	require.Contains(t, string(b), "executeQuery")
 	require.Contains(t, string(b), "Summary: \"Execute a query\"")
 	require.Contains(t, string(b), "Description: \"Runs SQL against the default catalog\"")
+	require.Contains(t, string(b), `Path: "/v1/query"`)
 	require.Contains(t, string(b), "Parameters: []apigencobra.Param{{Name: \"catalogName\", In: \"path\", Type: \"string\", Description: \"Catalog to query\"")
-	require.Contains(t, string(b), "BodyFields: []apigencobra.Field{{Name: \"sql\", Type: \"string\", Description: \"SQL text to execute\"")
-	require.Contains(t, string(b), "CLICommand: \"query execute\"")
+	require.Contains(t, string(b), "RequestBody: &apigencobra.RequestBodySpec")
+	require.Contains(t, string(b), "Fields: []apigencobra.Field{{Name: \"sql\", Type: \"string\", Description: \"SQL text to execute\"")
+	require.Contains(t, string(b), "Command: []string{\"query\", \"execute\"}")
+}
+
+func TestEmit_RejectsInvalidCLI(t *testing.T) {
+	t.Helper()
+
+	doc := ir.Document{
+		SchemaVersion: "v1",
+		API:           ir.API{BasePath: "/v1"},
+		Info:          ir.Info{Title: "t", Version: "1"},
+		Endpoints: []ir.Endpoint{
+			{
+				Method:      "get",
+				Path:        "/widgets",
+				OperationID: "listWidgets",
+				Summary:     "List widgets",
+				Responses:   []ir.Response{{StatusCode: 200, Description: "ok"}},
+				CLI:         &ir.CLI{},
+			},
+		},
+	}
+
+	_, err := Emit(doc, Options{})
+	require.Error(t, err)
+	require.ErrorContains(t, err, `cli.command is required`)
 }
