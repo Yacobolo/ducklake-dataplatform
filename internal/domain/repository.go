@@ -128,7 +128,8 @@ type EnvironmentRepository interface {
 type ProjectDependencyRepository interface {
 	Create(ctx context.Context, dep *ProjectDependency) (*ProjectDependency, error)
 	ListByProject(ctx context.Context, projectID string) ([]ProjectDependency, error)
-	Delete(ctx context.Context, projectID string, dependencyProject string) error
+	GetByID(ctx context.Context, id string) (*ProjectDependency, error)
+	Delete(ctx context.Context, projectID string, dependencyID string) error
 }
 
 // SourceDefinitionRepository provides CRUD operations for first-class source declarations.
@@ -154,7 +155,22 @@ type BuildRepository interface {
 	Create(ctx context.Context, b *Build) (*Build, error)
 	GetByID(ctx context.Context, id string) (*Build, error)
 	ListByProject(ctx context.Context, projectID string, page PageRequest) ([]Build, int64, error)
+	ListByEnvironment(ctx context.Context, projectID, environmentID string, page PageRequest) ([]Build, int64, error)
 	UpdateState(ctx context.Context, id string, state string) error
+}
+
+// CompilationRepository provides CRUD operations for immutable compilation artifacts.
+type CompilationRepository interface {
+	Create(ctx context.Context, c *Compilation) (*Compilation, error)
+	GetByID(ctx context.Context, id string) (*Compilation, error)
+	ListByEnvironment(ctx context.Context, projectID, environmentID string, page PageRequest) ([]Compilation, int64, error)
+}
+
+// ProjectReleaseRepository provides CRUD operations for immutable project releases.
+type ProjectReleaseRepository interface {
+	Create(ctx context.Context, release *ProjectRelease) (*ProjectRelease, error)
+	GetByID(ctx context.Context, id string) (*ProjectRelease, error)
+	ListByProject(ctx context.Context, projectID string, page PageRequest) ([]ProjectRelease, int64, error)
 }
 
 // GrantRepository provides operations for privilege grants.
@@ -309,6 +325,7 @@ type IntrospectionRepository interface {
 	GetTable(ctx context.Context, tableID string) (*Table, error)
 	ListColumns(ctx context.Context, tableID string, page PageRequest) ([]Column, int64, error)
 	GetTableByName(ctx context.Context, tableName string) (*Table, error)
+	GetTableBySchemaAndName(ctx context.Context, schemaName, tableName string) (*Table, error)
 	GetSchemaByName(ctx context.Context, schemaName string) (*Schema, error)
 }
 
@@ -375,6 +392,14 @@ type ColumnLineageRepository interface {
 	GetForTable(ctx context.Context, schema, table string) ([]ColumnLineageEdge, error)
 	GetForSourceColumn(ctx context.Context, schema, table, column string) ([]ColumnLineageEdge, error)
 	DeleteByEdgeID(ctx context.Context, edgeID string) error
+	ReplaceBuildLineage(ctx context.Context, buildID string, items []CompiledColumnLineage) error
+	ListBuildLineage(ctx context.Context, buildID string) ([]CompiledColumnLineage, error)
+	ListBuildLineageByModel(ctx context.Context, buildID, modelName string) ([]CompiledColumnLineage, error)
+	ListBuildImpactsForSourceColumn(ctx context.Context, buildID, schema, table, column string) ([]CompiledColumnLineage, error)
+	ReplaceCompilationLineage(ctx context.Context, compilationID string, items []CompiledColumnLineage) error
+	ListCompilationLineage(ctx context.Context, compilationID string) ([]CompiledColumnLineage, error)
+	ListCompilationLineageByModel(ctx context.Context, compilationID, modelName string) ([]CompiledColumnLineage, error)
+	ListCompilationImpactsForSourceColumn(ctx context.Context, compilationID, sourceName, table, column string) ([]CompiledColumnLineage, error)
 }
 
 // TableStatisticsRepository provides operations for table statistics.

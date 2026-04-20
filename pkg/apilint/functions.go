@@ -512,6 +512,9 @@ func (f *fnCheckPostCreateStatus) RunRule(nodes []*yaml.Node, ctx model.RuleFunc
 		if method != "post" {
 			return
 		}
+		if deprecated := yGet(op, "deprecated"); deprecated != nil && strings.EqualFold(deprecated.Value, "true") {
+			return
+		}
 		opID := yOpID(op)
 		if actionVerbSet[opID] {
 			return

@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"sort"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -163,6 +164,42 @@ func nonDeleteActions(actions []declarative.Action) []declarative.Action {
 		}
 		filtered = append(filtered, action)
 	}
+	priority := map[declarative.ResourceKind]int{
+		declarative.KindWorkspace:      0,
+		declarative.KindFolder:         1,
+		declarative.KindProject:        2,
+		declarative.KindEnvironment:    3,
+		declarative.KindMacro:          4,
+		declarative.KindModel:          5,
+		declarative.KindSemanticModel:  6,
+		declarative.KindNotebook:       7,
+		declarative.KindDashboard:      8,
+	}
+	sort.SliceStable(filtered, func(i, j int) bool {
+		oi := 1
+		if filtered[i].Operation == declarative.OpCreate {
+			oi = 0
+		}
+		oj := 1
+		if filtered[j].Operation == declarative.OpCreate {
+			oj = 0
+		}
+		if oi != oj {
+			return oi < oj
+		}
+		pi, ok := priority[filtered[i].ResourceKind]
+		if !ok {
+			pi = 100 + filtered[i].ResourceKind.Layer()
+		}
+		pj, ok := priority[filtered[j].ResourceKind]
+		if !ok {
+			pj = 100 + filtered[j].ResourceKind.Layer()
+		}
+		if pi != pj {
+			return pi < pj
+		}
+		return filtered[i].ResourceName < filtered[j].ResourceName
+	})
 	return filtered
 }
 

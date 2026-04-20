@@ -27,11 +27,15 @@ type Service struct {
 	sources       domain.SourceDefinitionRepository
 	seeds         domain.SeedRepository
 	builds        domain.BuildRepository
+	compilations  domain.CompilationRepository
+	releases      domain.ProjectReleaseRepository
 	tests         domain.ModelTestRepository
 	testResults   domain.ModelTestResultRepository
 	audit         domain.AuditRepository
 	lineage       domain.LineageRepository
 	colLineage    domain.ColumnLineageRepository
+	introspection domain.IntrospectionRepository
+	tags          domain.TagRepository
 	macros        domain.MacroRepository
 	notebooks     domain.NotebookProvider
 	notebookLinks domain.NotebookModelLinkRepository
@@ -51,11 +55,15 @@ type ServiceDeps struct {
 	Sources       domain.SourceDefinitionRepository
 	Seeds         domain.SeedRepository
 	Builds        domain.BuildRepository
+	Compilations  domain.CompilationRepository
+	Releases      domain.ProjectReleaseRepository
 	Tests         domain.ModelTestRepository
 	TestResults   domain.ModelTestResultRepository
 	Audit         domain.AuditRepository
 	Lineage       domain.LineageRepository
 	ColumnLineage domain.ColumnLineageRepository
+	Introspection domain.IntrospectionRepository
+	Tags          domain.TagRepository
 	Macros        domain.MacroRepository
 	Notebooks     domain.NotebookProvider
 	NotebookLinks domain.NotebookModelLinkRepository
@@ -75,11 +83,15 @@ func NewService(deps ServiceDeps) *Service {
 		sources:       deps.Sources,
 		seeds:         deps.Seeds,
 		builds:        deps.Builds,
+		compilations:  deps.Compilations,
+		releases:      deps.Releases,
 		tests:         deps.Tests,
 		testResults:   deps.TestResults,
 		audit:         deps.Audit,
 		lineage:       deps.Lineage,
 		colLineage:    deps.ColumnLineage,
+		introspection: deps.Introspection,
+		tags:          deps.Tags,
 		macros:        deps.Macros,
 		notebooks:     deps.Notebooks,
 		notebookLinks: deps.NotebookLinks,
@@ -247,18 +259,23 @@ func (s *Service) TriggerRun(ctx context.Context, principal string, req domain.T
 	if err := s.persistCompileDependencyLineage(ctx, selected, compiledArtifacts, req, principal); err != nil {
 		return nil, fmt.Errorf("persist compile dependency lineage: %w", err)
 	}
+	rollupEphemeralArtifacts(selected, compiledArtifacts)
+	analysisResult, err := s.analyzeCompiledModels(ctx, principal, selected, compiledArtifacts, runCtx, req)
+	if err != nil {
+		return nil, fmt.Errorf("analyze compiled models: %w", err)
+	}
 
 	// Resolve ephemeral models: inject CTEs and remove from execution set.
 	// This can alter SQL for downstream models, so keep artifacts in sync.
-	selected = resolveEphemeralModels(selected)
+	selected = resolveEphemeralModels(selected, req.TargetCatalog, req.TargetSchema)
 	if err := s.syncCompiledArtifacts(selected, compiledArtifacts, req); err != nil {
 		return nil, err
 	}
-	manifestJSON, err := buildCompileManifest(selected, compiledArtifacts, runCtx)
+	manifestJSON, err := buildCompileManifest(selected, compiledArtifacts, runCtx, analysisResult.coverageByModel)
 	if err != nil {
 		return nil, fmt.Errorf("build compile manifest: %w", err)
 	}
-	diagnosticsJSON, err := buildCompileDiagnostics(compileWarnings, nil)
+	diagnosticsJSON, err := buildCompileDiagnostics(compileWarnings, nil, analysisResult.diagnostics)
 	if err != nil {
 		return nil, fmt.Errorf("build compile diagnostics: %w", err)
 	}
@@ -288,10 +305,17 @@ func (s *Service) TriggerRun(ctx context.Context, principal string, req domain.T
 	if err != nil {
 		return nil, fmt.Errorf("create run: %w", err)
 	}
-	if build, err := s.createRunBuild(ctx, principal, runCtx.project, runCtx.environment, run.ID, req, manifestJSON, diagnosticsJSON); err != nil {
+	stateSnapshotJSON, err := marshalStateSnapshot(analysisResult.stateSnapshot)
+	if err != nil {
+		return nil, fmt.Errorf("marshal build state snapshot: %w", err)
+	}
+	if build, err := s.createRunBuild(ctx, principal, runCtx.project, runCtx.environment, run.ID, req, manifestJSON, diagnosticsJSON, stateSnapshotJSON); err != nil {
 		return nil, err
 	} else if build != nil {
 		run.BuildID = &build.ID
+		if err := s.persistCompiledColumnLineage(ctx, build.ID, analysisResult.lineage); err != nil {
+			return nil, fmt.Errorf("persist compiled column lineage: %w", err)
+		}
 	}
 
 	// Create steps
@@ -374,16 +398,21 @@ func (s *Service) TriggerRunSync(ctx context.Context, principal string, req doma
 	if err := s.persistCompileDependencyLineage(ctx, selected, compiledArtifacts, req, principal); err != nil {
 		return fmt.Errorf("persist compile dependency lineage: %w", err)
 	}
+	rollupEphemeralArtifacts(selected, compiledArtifacts)
+	analysisResult, err := s.analyzeCompiledModels(ctx, principal, selected, compiledArtifacts, runCtx, req)
+	if err != nil {
+		return fmt.Errorf("analyze compiled models: %w", err)
+	}
 
-	selected = resolveEphemeralModels(selected)
+	selected = resolveEphemeralModels(selected, req.TargetCatalog, req.TargetSchema)
 	if err := s.syncCompiledArtifacts(selected, compiledArtifacts, req); err != nil {
 		return err
 	}
-	manifestJSON, err := buildCompileManifest(selected, compiledArtifacts, runCtx)
+	manifestJSON, err := buildCompileManifest(selected, compiledArtifacts, runCtx, analysisResult.coverageByModel)
 	if err != nil {
 		return fmt.Errorf("build compile manifest: %w", err)
 	}
-	diagnosticsJSON, err := buildCompileDiagnostics(compileWarnings, nil)
+	diagnosticsJSON, err := buildCompileDiagnostics(compileWarnings, nil, analysisResult.diagnostics)
 	if err != nil {
 		return fmt.Errorf("build compile diagnostics: %w", err)
 	}
@@ -412,10 +441,17 @@ func (s *Service) TriggerRunSync(ctx context.Context, principal string, req doma
 	if err != nil {
 		return fmt.Errorf("create run: %w", err)
 	}
-	if build, err := s.createRunBuild(ctx, principal, runCtx.project, runCtx.environment, run.ID, req, manifestJSON, diagnosticsJSON); err != nil {
+	stateSnapshotJSON, err := marshalStateSnapshot(analysisResult.stateSnapshot)
+	if err != nil {
+		return fmt.Errorf("marshal build state snapshot: %w", err)
+	}
+	if build, err := s.createRunBuild(ctx, principal, runCtx.project, runCtx.environment, run.ID, req, manifestJSON, diagnosticsJSON, stateSnapshotJSON); err != nil {
 		return err
 	} else if build != nil {
 		run.BuildID = &build.ID
+		if err := s.persistCompiledColumnLineage(ctx, build.ID, analysisResult.lineage); err != nil {
+			return fmt.Errorf("persist compiled column lineage: %w", err)
+		}
 	}
 
 	// Create steps
@@ -978,9 +1014,19 @@ func (s *Service) loadSourceRegistry(ctx context.Context, runCtx *resolvedRunCon
 
 	projects := append([]string{runCtx.project.Name}, runCtx.dependencyProjects...)
 	for _, projectName := range projects {
-		sources, err := s.sources.ListByProject(ctx, projectName)
-		if err != nil {
-			return nil, nil, fmt.Errorf("list sources for project %s: %w", projectName, err)
+		var sources []domain.SourceDefinition
+		if projectName == runCtx.project.Name {
+			liveSources, err := s.sources.ListByProject(ctx, projectName)
+			if err != nil {
+				return nil, nil, fmt.Errorf("list sources for project %s: %w", projectName, err)
+			}
+			sources = liveSources
+		} else {
+			snapshot, ok := runCtx.dependencySnapshots[projectName]
+			if !ok {
+				return nil, nil, domain.ErrValidation("missing dependency snapshot for project %s", projectName)
+			}
+			sources = append(sources, snapshot.Sources...)
 		}
 		for _, source := range sources {
 			relationRef := strings.TrimSpace(source.RelationRef)
@@ -1001,6 +1047,7 @@ func (s *Service) loadSourceRegistry(ctx context.Context, runCtx *resolvedRunCon
 				tableName:   source.TableName,
 				relation:    renderRelationParts(relationRef),
 				relationRef: relationRef,
+				freshness:   source.Freshness,
 			}
 		}
 	}
@@ -1033,6 +1080,55 @@ func (s *Service) syncCompiledArtifacts(selected []domain.Model, artifacts map[s
 	return nil
 }
 
+func rollupEphemeralArtifacts(models []domain.Model, artifacts map[string]compileResult) {
+	if len(models) == 0 || len(artifacts) == 0 {
+		return
+	}
+
+	byQualified := make(map[string]domain.Model, len(models))
+	for _, m := range models {
+		byQualified[m.QualifiedName()] = m
+	}
+
+	visited := make(map[string]compileResult, len(models))
+	var visit func(domain.Model) compileResult
+	visit = func(model domain.Model) compileResult {
+		if cached, ok := visited[model.ID]; ok {
+			return cached
+		}
+
+		artifact, ok := artifacts[model.ID]
+		if !ok {
+			return compileResult{}
+		}
+
+		for _, dep := range model.DependsOn {
+			depModel, ok := byQualified[dep]
+			if !ok || depModel.Materialization != domain.MaterializationEphemeral {
+				continue
+			}
+			depArtifact := visit(depModel)
+			artifact.varsUsed = dedupeSorted(append(artifact.varsUsed, depArtifact.varsUsed...))
+			artifact.macrosUsed = dedupeSorted(append(artifact.macrosUsed, depArtifact.macrosUsed...))
+			artifact.dependsOn = dedupeSorted(append(artifact.dependsOn, depArtifact.dependsOn...))
+			if artifact.sourcesUsed == nil && len(depArtifact.sourcesUsed) > 0 {
+				artifact.sourcesUsed = map[string]string{}
+			}
+			for key, value := range depArtifact.sourcesUsed {
+				artifact.sourcesUsed[key] = value
+			}
+		}
+
+		visited[model.ID] = artifact
+		artifacts[model.ID] = artifact
+		return artifact
+	}
+
+	for _, m := range models {
+		visit(m)
+	}
+}
+
 func strPtrOrNil(v string) *string {
 	if strings.TrimSpace(v) == "" {
 		return nil
@@ -1040,7 +1136,12 @@ func strPtrOrNil(v string) *string {
 	return &v
 }
 
-func buildCompileManifest(selected []domain.Model, artifacts map[string]compileResult, runCtx *resolvedRunContext) (string, error) {
+func buildCompileManifest(
+	selected []domain.Model,
+	artifacts map[string]compileResult,
+	runCtx *resolvedRunContext,
+	coverageByModel map[string]string,
+) (string, error) {
 	type manifestModel struct {
 		ModelName       string             `json:"model_name"`
 		CompiledHash    string             `json:"compiled_hash"`
@@ -1049,15 +1150,17 @@ func buildCompileManifest(selected []domain.Model, artifacts map[string]compileR
 		MacrosUsed      []string           `json:"macros_used,omitempty"`
 		ResolvedSources map[string]string  `json:"resolved_sources,omitempty"`
 		EffectiveConfig domain.ModelConfig `json:"effective_config,omitempty"`
+		LineageCoverage string             `json:"lineage_coverage,omitempty"`
 	}
 	type manifest struct {
-		Version             int             `json:"version"`
-		ProjectName         string          `json:"project_name,omitempty"`
-		EnvironmentName     string          `json:"environment_name,omitempty"`
-		TargetCatalog       string          `json:"target_catalog,omitempty"`
-		TargetSchema        string          `json:"target_schema,omitempty"`
-		ProjectDependencies []string        `json:"project_dependencies,omitempty"`
-		Models              []manifestModel `json:"models"`
+		Version                    int               `json:"version"`
+		ProjectName                string            `json:"project_name,omitempty"`
+		EnvironmentName            string            `json:"environment_name,omitempty"`
+		TargetCatalog              string            `json:"target_catalog,omitempty"`
+		TargetSchema               string            `json:"target_schema,omitempty"`
+		ProjectDependencies        []string          `json:"project_dependencies,omitempty"`
+		ResolvedDependencyReleases map[string]string `json:"resolved_dependency_releases,omitempty"`
+		Models                     []manifestModel   `json:"models"`
 	}
 
 	models := make([]manifestModel, 0, len(selected))
@@ -1074,6 +1177,7 @@ func buildCompileManifest(selected []domain.Model, artifacts map[string]compileR
 			MacrosUsed:      artifact.macrosUsed,
 			ResolvedSources: artifact.sourcesUsed,
 			EffectiveConfig: m.Config,
+			LineageCoverage: coverageByModel[m.QualifiedName()],
 		})
 	}
 	sort.Slice(models, func(i, j int) bool { return models[i].ModelName < models[j].ModelName })
@@ -1084,6 +1188,9 @@ func buildCompileManifest(selected []domain.Model, artifacts map[string]compileR
 	}
 	if runCtx != nil {
 		payload.ProjectDependencies = append([]string(nil), runCtx.dependencyProjects...)
+		if len(runCtx.dependencyReleases) > 0 {
+			payload.ResolvedDependencyReleases = cloneStringMap(runCtx.dependencyReleases)
+		}
 		payload.ProjectName = runCtx.project.Name
 		payload.EnvironmentName = runCtx.environment.Name
 		payload.TargetCatalog = runCtx.targetCatalog
@@ -1097,8 +1204,9 @@ func buildCompileManifest(selected []domain.Model, artifacts map[string]compileR
 	return string(b), nil
 }
 
-func buildCompileDiagnostics(warnings, errors []string) (string, error) {
+func buildCompileDiagnostics(warnings, errors []string, items []domain.CompileDiagnostic) (string, error) {
 	diagnostics := domain.ModelCompileDiagnostics{
+		Items:    dedupeDiagnostics(items),
 		Warnings: dedupeSorted(warnings),
 		Errors:   dedupeSorted(errors),
 	}
@@ -1119,6 +1227,56 @@ func diagnosticsFromJSONOrNil(raw string) *domain.ModelCompileDiagnostics {
 		return nil
 	}
 	return &out
+}
+
+func dedupeDiagnostics(items []domain.CompileDiagnostic) []domain.CompileDiagnostic {
+	if len(items) == 0 {
+		return nil
+	}
+	seen := make(map[string]struct{}, len(items))
+	out := make([]domain.CompileDiagnostic, 0, len(items))
+	for _, item := range items {
+		key := strings.Join([]string{
+			string(item.Severity),
+			item.Code,
+			item.Message,
+			item.ModelName,
+			item.ColumnName,
+			strings.Join(item.RelatedObjects, ","),
+		}, "|")
+		if _, ok := seen[key]; ok {
+			continue
+		}
+		seen[key] = struct{}{}
+		out = append(out, item)
+	}
+	sort.Slice(out, func(i, j int) bool {
+		if out[i].Severity != out[j].Severity {
+			return out[i].Severity < out[j].Severity
+		}
+		if out[i].Code != out[j].Code {
+			return out[i].Code < out[j].Code
+		}
+		if out[i].ModelName != out[j].ModelName {
+			return out[i].ModelName < out[j].ModelName
+		}
+		if out[i].ColumnName != out[j].ColumnName {
+			return out[i].ColumnName < out[j].ColumnName
+		}
+		return out[i].Message < out[j].Message
+	})
+	return out
+}
+
+func marshalStateSnapshot(snapshot *domain.BuildStateSnapshot) (string, error) {
+	if snapshot == nil {
+		return "", nil
+	}
+	b, err := json.Marshal(snapshot)
+	if err != nil {
+		return "", err
+	}
+	return string(b), nil
 }
 
 func (s *Service) persistCompileDependencyLineage(
@@ -1209,6 +1367,7 @@ func (s *Service) createRunBuild(
 	req domain.TriggerModelRunRequest,
 	manifestJSON string,
 	diagnosticsJSON string,
+	stateSnapshotJSON string,
 ) (*domain.Build, error) {
 	if s.builds == nil {
 		return nil, nil
@@ -1225,6 +1384,7 @@ func (s *Service) createRunBuild(
 		SourceModelRunID:   &runID,
 		CompileManifest:    manifestJSON,
 		CompileDiagnostics: strPtrOrNil(diagnosticsJSON),
+		StateSnapshot:      strPtrOrNil(stateSnapshotJSON),
 		CreatedBy:          principal,
 	}
 	created, err := s.builds.Create(ctx, build)
@@ -1237,6 +1397,16 @@ func (s *Service) createRunBuild(
 		}
 	}
 	return created, nil
+}
+
+func (s *Service) persistCompiledColumnLineage(ctx context.Context, buildID string, items []domain.CompiledColumnLineage) error {
+	if s.colLineage == nil {
+		return nil
+	}
+	for i := range items {
+		items[i].BuildID = buildID
+	}
+	return s.colLineage.ReplaceBuildLineage(ctx, buildID, items)
 }
 
 func (s *Service) loadProjectModels(ctx context.Context, projectName string) ([]domain.Model, error) {

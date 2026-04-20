@@ -61,12 +61,14 @@ schemas_core: {
   },
   CreateProjectDependencyRequest: #objectSchema & {
     #fields: {
+      dependency_project_id: #stringProperty,
       dependency_project: #stringProperty,
       dependency_kind: #stringProperty,
+      version_constraint: #stringProperty,
       position: #int32Property
     },
     #required: [
-      "dependency_project"
+      "dependency_project_id"
     ]
   },
   CreateFolderRequest: #objectSchema & {
@@ -108,6 +110,16 @@ schemas_core: {
     #required: [
       "name",
       "input_ref"
+    ]
+  },
+  CreateProjectReleaseRequest: #objectSchema & {
+    #fields: {
+      version: #stringProperty,
+      resolved_build_id: #stringProperty,
+      compilation_id: #stringProperty
+    },
+    #required: [
+      "version"
     ]
   },
   CreateSourceDefinitionRequest: #objectSchema & {

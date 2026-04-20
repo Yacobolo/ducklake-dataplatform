@@ -30,12 +30,16 @@ func (r *ProjectDependencyRepo) Create(ctx context.Context, dep *domain.ProjectD
 	id := newID()
 	_, err := r.db.ExecContext(ctx, `
 		INSERT INTO project_dependencies (
-			id, project_id, dependency_project, dependency_kind, position, created_by, created_at, updated_at
-		) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+			id, project_id, dependency_project_id, dependency_project, dependency_kind, version_constraint,
+			resolved_release_id, position, created_by, created_at, updated_at
+		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 		id,
 		dep.ProjectID,
+		dep.DependencyProjectID,
 		dep.DependencyProject,
 		defaultProjectDependencyKind(dep.DependencyKind),
+		dep.VersionConstraint,
+		nullableStringValue(dep.ResolvedReleaseID),
 		dep.Position,
 		dep.CreatedBy,
 		now.Format(time.RFC3339),
@@ -44,6 +48,12 @@ func (r *ProjectDependencyRepo) Create(ctx context.Context, dep *domain.ProjectD
 	if err != nil {
 		return nil, mapDBError(err)
 	}
+	row := r.db.QueryRowContext(ctx, projectDependencySelectSQL+` WHERE d.id = ?`, id)
+	return scanProjectDependency(row)
+}
+
+// GetByID returns one project dependency by id.
+func (r *ProjectDependencyRepo) GetByID(ctx context.Context, id string) (*domain.ProjectDependency, error) {
 	row := r.db.QueryRowContext(ctx, projectDependencySelectSQL+` WHERE d.id = ?`, id)
 	return scanProjectDependency(row)
 }
@@ -73,10 +83,10 @@ func (r *ProjectDependencyRepo) ListByProject(ctx context.Context, projectID str
 }
 
 // Delete removes a project dependency by project and dependency name.
-func (r *ProjectDependencyRepo) Delete(ctx context.Context, projectID string, dependencyProject string) error {
+func (r *ProjectDependencyRepo) Delete(ctx context.Context, projectID string, dependencyID string) error {
 	result, err := r.db.ExecContext(ctx, `
-		DELETE FROM project_dependencies WHERE project_id = ? AND dependency_project = ?`,
-		projectID, dependencyProject)
+		DELETE FROM project_dependencies WHERE project_id = ? AND id = ?`,
+		projectID, dependencyID)
 	if err != nil {
 		return mapDBError(err)
 	}
@@ -85,34 +95,41 @@ func (r *ProjectDependencyRepo) Delete(ctx context.Context, projectID string, de
 		return err
 	}
 	if rows == 0 {
-		return domain.ErrNotFound("dependency %q not found for project %q", dependencyProject, projectID)
+		return domain.ErrNotFound("dependency %q not found for project %q", dependencyID, projectID)
 	}
 	return nil
 }
 
 const projectDependencySelectSQL = `
 	SELECT
-		d.id, d.project_id, p.name, d.dependency_project, d.dependency_kind, d.position,
-		d.created_by, d.created_at, d.updated_at
+		d.id, d.project_id, p.name, d.dependency_project_id, d.dependency_project, d.dependency_kind,
+		d.version_constraint, d.resolved_release_id, d.position, d.created_by, d.created_at, d.updated_at
 	FROM project_dependencies d
 	JOIN projects p ON p.id = d.project_id`
 
 func scanProjectDependency(scanner projectRowScanner) (*domain.ProjectDependency, error) {
 	var item domain.ProjectDependency
+	var resolvedReleaseID sql.NullString
 	var createdAtRaw string
 	var updatedAtRaw string
 	if err := scanner.Scan(
 		&item.ID,
 		&item.ProjectID,
 		&item.ProjectName,
+		&item.DependencyProjectID,
 		&item.DependencyProject,
 		&item.DependencyKind,
+		&item.VersionConstraint,
+		&resolvedReleaseID,
 		&item.Position,
 		&item.CreatedBy,
 		&createdAtRaw,
 		&updatedAtRaw,
 	); err != nil {
 		return nil, mapDBError(err)
+	}
+	if resolvedReleaseID.Valid {
+		item.ResolvedReleaseID = &resolvedReleaseID.String
 	}
 	item.CreatedAt = parseSQLiteTimestamp(createdAtRaw)
 	item.UpdatedAt = parseSQLiteTimestamp(updatedAtRaw)

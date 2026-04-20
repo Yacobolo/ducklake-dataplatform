@@ -63,25 +63,25 @@ func buildSchemaInfo(ctx context.Context, stmt duckdbsql.Stmt, defaultSchema str
 		return nil
 	}
 
-	tableNames := duckdbsql.CollectTableNames(stmt)
-	if len(tableNames) == 0 {
+	refs := duckdbsql.CollectTableRefs(stmt)
+	if len(refs) == 0 {
 		return nil
 	}
 
-	info := make(duckdbsql.SchemaInfo, len(tableNames))
-	for _, name := range tableNames {
+	info := make(duckdbsql.SchemaInfo, len(refs))
+	for _, ref := range refs {
 		// Skip internal sentinel entries (e.g., __func__read_csv)
-		if strings.HasPrefix(name, "__func__") {
+		if strings.HasPrefix(ref.Name, "__func__") {
 			continue
 		}
 
 		schema := defaultSchema
-		table := name
-
-		// Handle schema-qualified names (schema.table)
-		if parts := strings.SplitN(name, ".", 2); len(parts) == 2 {
-			schema = parts[0]
-			table = parts[1]
+		if strings.TrimSpace(ref.Schema) != "" {
+			schema = strings.TrimSpace(ref.Schema)
+		}
+		table := strings.TrimSpace(ref.Name)
+		if table == "" {
+			continue
 		}
 
 		cols, err := catalog.ResolveColumns(ctx, schema, table)

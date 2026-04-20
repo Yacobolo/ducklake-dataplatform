@@ -29,6 +29,24 @@ type modelService interface {
 	CheckSourceFreshness(ctx context.Context, principal, sourceSchema, sourceTable, timestampColumn string, maxLagSeconds int64) (*domain.SourceFreshnessStatus, error)
 	PromoteNotebook(ctx context.Context, principal string, req domain.PromoteNotebookRequest) (*domain.Model, error)
 	UnpublishNotebook(ctx context.Context, principal, notebookID string) error
+	GetBuildLineage(ctx context.Context, buildID string, modelName *string) ([]domain.CompiledColumnLineage, error)
+	GetCompilationLineage(ctx context.Context, compilationID string, modelName *string) ([]domain.CompiledColumnLineage, error)
+	GetBuildDiagnostics(ctx context.Context, buildID string, filter domain.BuildDiagnosticsFilter) ([]domain.CompileDiagnostic, error)
+	GetCompilationDiagnostics(ctx context.Context, compilationID string, filter domain.BuildDiagnosticsFilter) ([]domain.CompileDiagnostic, error)
+	GetBuildSourceColumnImpact(ctx context.Context, buildID, schema, table, column string) ([]domain.CompiledColumnLineage, error)
+	GetCompilationSourceColumnImpact(ctx context.Context, compilationID, schema, table, column string) ([]domain.CompiledColumnLineage, error)
+	PlanRebuild(ctx context.Context, principal string, req domain.PlanRebuildRequest) (*domain.RebuildPlan, error)
+	CompareBuilds(ctx context.Context, principal string, req domain.CompareBuildsRequest) (*domain.BuildCompareResult, error)
+	GetModelImpact(ctx context.Context, projectName string, buildID *string, modelName string) (*domain.BuildImpactResult, error)
+	GetMacroImpact(ctx context.Context, projectName string, buildID *string, macroName string) (*domain.BuildImpactResult, error)
+	GetCompilation(ctx context.Context, compilationID string) (*domain.Compilation, error)
+	ListCompilationsForEnvironment(ctx context.Context, projectName, environmentName string, page domain.PageRequest) ([]domain.Compilation, int64, error)
+	GetCompilationModelImpact(ctx context.Context, compilationID string, modelName string) (*domain.BuildImpactResult, error)
+	GetCompilationMacroImpact(ctx context.Context, compilationID string, macroName string) (*domain.BuildImpactResult, error)
+	CreateCompilation(ctx context.Context, principal string, projectName string, environmentName string, req domain.CreateCompilationRequest) (*domain.Compilation, error)
+	CreateEnvironmentBuild(ctx context.Context, principal string, projectName string, environmentName string, req domain.CreateCompilationRequest) (*domain.Build, error)
+	ListRunsForBuild(ctx context.Context, buildID string, page domain.PageRequest) ([]domain.ModelRun, int64, error)
+	CreateRunForBuild(ctx context.Context, principal string, build *domain.Build) (*domain.ModelRun, error)
 }
 
 // === Models ===
@@ -410,15 +428,7 @@ func modelRunToAPI(r domain.ModelRun) ModelRun {
 		resp.CompileManifest = r.CompileManifest
 	}
 	if r.CompileDiagnostics != nil {
-		warnings := make([]string, len(r.CompileDiagnostics.Warnings))
-		copy(warnings, r.CompileDiagnostics.Warnings)
-		errors := make([]string, len(r.CompileDiagnostics.Errors))
-		copy(errors, r.CompileDiagnostics.Errors)
-		d := ModelRunCompileDiagnostics{
-			Warnings: &warnings,
-			Errors:   &errors,
-		}
-		resp.CompileDiagnostics = &d
+		resp.CompileDiagnostics = modelCompileDiagnosticsToAPI(r.CompileDiagnostics)
 	}
 	if names := selectorToModelNames(r.ModelSelector); len(names) > 0 {
 		resp.ModelNames = &names
@@ -433,6 +443,25 @@ func modelRunToAPI(r domain.ModelRun) ModelRun {
 		resp.ErrorMessage = r.ErrorMessage
 	}
 	return resp
+}
+
+func modelCompileDiagnosticsToAPI(item *domain.ModelCompileDiagnostics) *ModelRunCompileDiagnostics {
+	if item == nil {
+		return nil
+	}
+	warnings := make([]string, 0, len(item.Warnings))
+	warnings = append(warnings, item.Warnings...)
+	errors := make([]string, 0, len(item.Errors))
+	errors = append(errors, item.Errors...)
+	diagnostics := make([]CompileDiagnostic, 0, len(item.Items))
+	for _, entry := range item.Items {
+		diagnostics = append(diagnostics, compileDiagnosticToAPI(entry))
+	}
+	return &ModelRunCompileDiagnostics{
+		Items:    &diagnostics,
+		Warnings: &warnings,
+		Errors:   &errors,
+	}
 }
 
 func isValidListModelRunsStatus(status string) bool {

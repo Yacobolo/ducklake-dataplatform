@@ -293,6 +293,15 @@ func (r *fakeBuildRepo) ListByProject(_ context.Context, projectID string, _ dom
 	}
 	return out, int64(len(out)), nil
 }
+func (r *fakeBuildRepo) ListByEnvironment(_ context.Context, projectID string, environmentID string, _ domain.PageRequest) ([]domain.Build, int64, error) {
+	out := make([]domain.Build, 0)
+	for _, item := range r.items {
+		if item.ProjectID == projectID && item.EnvironmentID == environmentID {
+			out = append(out, *item)
+		}
+	}
+	return out, int64(len(out)), nil
+}
 func (r *fakeBuildRepo) UpdateState(_ context.Context, _ string, _ string) error { return nil }
 
 type fakeModelRepo struct {
@@ -672,7 +681,7 @@ func setupProjectsHandler(t *testing.T) projectsHandlerFixture {
 	audit := testAuditRepo{}
 
 	workspaceSvc := workspacesvc.NewService(workspaceRepo, nil, projectRepo, environmentRepo, nil, audit)
-	projectSvc := projectsvc.NewService(workspaceRepo, projectRepo, environmentRepo, nil, nil, nil, buildRepo, nil, nil, audit)
+	projectSvc := projectsvc.NewService(workspaceRepo, projectRepo, environmentRepo, nil, nil, nil, nil, nil, buildRepo, nil, nil, nil, audit)
 	modelService := modelsvc.NewService(modelsvc.ServiceDeps{
 		Models:       modelRepo,
 		Projects:     projectRepo,

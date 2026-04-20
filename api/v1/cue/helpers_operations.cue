@@ -1,6 +1,7 @@
 package api
 
 import "list"
+import "strings"
 
 #authenticatedSecurity: [
 	{
@@ -27,8 +28,11 @@ import "list"
 	op:      string
 	path:    string
 	summary: string
-	cli:     #CLI
+	description?: string
+	deprecated?: *false | true
+	cli?:    string | #CLI
 	returns: string
+	success_status: *200 | 201 | 202
 	params:  [...#Parameter]
 }
 
@@ -39,8 +43,11 @@ import "list"
 	op:               string
 	path:             string
 	summary:          string
-	cli:              #CLI
+	description?:     string
+	deprecated?:      *false | true
+	cli?:             string | #CLI
 	returns:          string
+	success_status:   *200 | 201 | 202
 	body_ref:         string
 	body_required:    *true | false
 	body_description?: string
@@ -53,7 +60,10 @@ import "list"
 	op:      string
 	path:    string
 	summary: string
-	cli:     #CLI
+	description?: string
+	deprecated?: *false | true
+	cli?:    string | #CLI
+	success_status: *204 | 200
 	params:  [...#Parameter]
 }
 
@@ -271,8 +281,8 @@ import "list"
 #wrappedJSONSuccessResponse: {
 	#body_type: string
 
-	status_code: 200
-	description: "The request has succeeded."
+	status_code: *200 | int
+	description: *"The request has succeeded." | string
 	schema: {
 		ref: #body_type
 	}
@@ -338,7 +348,7 @@ import "list"
 	path:           string
 	summary:        string
 	description?:   string
-	cli?:           #CLI
+	cli?:           string | #CLI
 	returns?:       string
 	success_schema?: #SchemaRef
 	success_status: *200 | 201 | 202
@@ -352,6 +362,7 @@ import "list"
 	authz_default:  *true | false
 	authz?:         _
 	security?:      _
+	deprecated?:    *false | true
 }
 
 #endpointFromGenericOperation: {
@@ -364,6 +375,11 @@ import "list"
 		operation_id: spec.op
 		summary:      spec.summary
 		tags:         [tag]
+		deprecated:   spec.deprecated
+		if spec.description != _|_ {
+			description: spec.description
+		}
+		deprecated:   spec.deprecated
 		if spec.description != _|_ {
 			description: spec.description
 		}
@@ -691,9 +707,17 @@ import "list"
 			if spec.authz == _|_ && spec.authz_default {
 				"x-authz": #authenticatedAuthz
 			}
+			if (spec.cli & string) != _|_ {
+				"x-cli-command": spec.cli & string
+			}
 		}
-		if spec.cli != _|_ {
-			cli: spec.cli
+		if (spec.cli & string) != _|_ {
+			cli: {
+				command: strings.Split(spec.cli & string, " ")
+			}
+		}
+		if (spec.cli & #CLI) != _|_ {
+			cli: spec.cli & #CLI
 		}
 	}
 }
@@ -717,8 +741,26 @@ import "list"
 		if spec.kind == "wrapped_resource" {
 			responses: list.Concat([
 				[
-					#wrappedJSONSuccessResponse & {
-						#body_type: spec.returns
+					{
+						status_code: (spec & #postWrapped).success_status
+						if (spec & #postWrapped).success_status == 200 {
+							description: "The request has succeeded."
+						}
+						if (spec & #postWrapped).success_status == 201 {
+							description: "The request has succeeded and a new resource has been created as a result."
+						}
+						if (spec & #postWrapped).success_status == 202 {
+							description: "The request has been accepted for processing."
+						}
+						schema: {
+							ref: spec.returns
+						}
+						extensions: {
+							"x-apigen-response-shape": {
+								body_type: spec.returns
+								kind:      "wrapped_json"
+							}
+						}
 					},
 				],
 				[
@@ -745,8 +787,26 @@ import "list"
 			}
 			responses: list.Concat([
 				[
-					#wrappedJSONSuccessResponse & {
-						#body_type: spec.returns
+					{
+						status_code: (spec & #postWrapped).success_status
+						if (spec & #postWrapped).success_status == 200 {
+							description: "The request has succeeded."
+						}
+						if (spec & #postWrapped).success_status == 201 {
+							description: "The request has succeeded and a new resource has been created as a result."
+						}
+						if (spec & #postWrapped).success_status == 202 {
+							description: "The request has been accepted for processing."
+						}
+						schema: {
+							ref: spec.returns
+						}
+						extensions: {
+							"x-apigen-response-shape": {
+								body_type: spec.returns
+								kind:      "wrapped_json"
+							}
+						}
 					},
 				],
 				[
@@ -772,8 +832,23 @@ import "list"
 				#mutatingErrorResponses,
 			])
 		}
-		extensions: #authenticatedExtensions
-		cli:        spec.cli
+		extensions: {
+			"security": #authenticatedSecurity
+			"x-authz": {
+				mode: "authenticated"
+			}
+			if (spec.cli & string) != _|_ {
+				"x-cli-command": spec.cli & string
+			}
+		}
+		if (spec.cli & string) != _|_ {
+			cli: {
+				command: strings.Split(spec.cli & string, " ")
+			}
+		}
+		if (spec.cli & #CLI) != _|_ {
+			cli: spec.cli & #CLI
+		}
 	}
 }
 

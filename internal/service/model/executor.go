@@ -178,6 +178,10 @@ func (s *Service) loadMacros(ctx context.Context, conn *sql.Conn, principal stri
 	}
 
 	for _, m := range macros {
+		if !shouldCreateRuntimeSQLMacro(m) {
+			continue
+		}
+
 		var paramList string
 		if len(m.Parameters) > 0 {
 			paramList = strings.Join(m.Parameters, ", ")
@@ -198,6 +202,12 @@ func (s *Service) loadMacros(ctx context.Context, conn *sql.Conn, principal stri
 		}
 	}
 	return nil
+}
+
+func shouldCreateRuntimeSQLMacro(m domain.Macro) bool {
+	// Namespaced project macros are compile-time only and are already expanded
+	// into compiled SQL before execution.
+	return !strings.Contains(strings.TrimSpace(m.Name), ".")
 }
 
 // executeSingleModel materializes one model on a pinned DuckDB connection.
@@ -734,7 +744,7 @@ func canDirectExecOnConn(stmtType sqlrewrite.StatementType, query string) bool {
 
 // resolveEphemeralModels injects ephemeral model SQL as CTEs into downstream models.
 // Returns only the materializable models (non-ephemeral).
-func resolveEphemeralModels(models []domain.Model) []domain.Model {
+func resolveEphemeralModels(models []domain.Model, targetCatalog, targetSchema string) []domain.Model {
 	// Index ephemeral models
 	ephemeral := make(map[string]*domain.Model)
 	for i, m := range models {
@@ -744,6 +754,30 @@ func resolveEphemeralModels(models []domain.Model) []domain.Model {
 	}
 	if len(ephemeral) == 0 {
 		return models
+	}
+
+	resolved := make(map[string]domain.Model, len(ephemeral))
+	var resolveSQL func(domain.Model) string
+	resolveSQL = func(model domain.Model) string {
+		if cached, ok := resolved[model.QualifiedName()]; ok {
+			return cached.SQL
+		}
+
+		sqlText := model.SQL
+		for _, dep := range model.DependsOn {
+			eph, ok := ephemeral[dep]
+			if !ok {
+				continue
+			}
+			sqlText = replaceEphemeralReference(sqlText, *eph, targetCatalog, targetSchema)
+			ephResolved := *eph
+			ephResolved.SQL = resolveSQL(*eph)
+			resolved[eph.QualifiedName()] = ephResolved
+		}
+
+		model.SQL = sqlText
+		resolved[model.QualifiedName()] = model
+		return sqlText
 	}
 
 	// For each non-ephemeral model, inject dependent ephemeral CTEs
@@ -756,12 +790,19 @@ func resolveEphemeralModels(models []domain.Model) []domain.Model {
 		// Collect ephemeral deps (recursive)
 		ctes := collectEphemeralCTEs(&m, ephemeral, make(map[string]bool))
 		if len(ctes) > 0 {
-			// Prepend CTEs to the model SQL
 			var cteParts []string
+			sqlText := m.SQL
 			for _, cte := range ctes {
-				cteParts = append(cteParts, fmt.Sprintf("%s AS (%s)", quoteIdent(cte.Name), cte.SQL))
+				resolvedSQL := resolveSQL(cte)
+				cteParts = append(cteParts, fmt.Sprintf("%s AS (%s)", quoteIdent(cte.Name), resolvedSQL))
+				sqlText = replaceEphemeralReference(sqlText, cte, targetCatalog, targetSchema)
 			}
-			m.SQL = "WITH " + strings.Join(cteParts, ", ") + " " + m.SQL
+			if strings.HasPrefix(strings.ToUpper(strings.TrimSpace(sqlText)), "WITH ") {
+				trimmed := strings.TrimSpace(sqlText)
+				m.SQL = "WITH " + strings.Join(cteParts, ", ") + ", " + strings.TrimSpace(trimmed[5:])
+			} else {
+				m.SQL = "WITH " + strings.Join(cteParts, ", ") + " " + sqlText
+			}
 		}
 		result = append(result, m)
 	}
@@ -784,4 +825,9 @@ func collectEphemeralCTEs(model *domain.Model, ephemeral map[string]*domain.Mode
 		}
 	}
 	return ctes
+}
+
+func replaceEphemeralReference(sqlText string, model domain.Model, targetCatalog, targetSchema string) string {
+	relation := relationFQN(targetCatalog, effectiveSchema(targetSchema, model.Config.Schema), model.Name)
+	return strings.ReplaceAll(sqlText, relation, quoteIdent(model.Name))
 }

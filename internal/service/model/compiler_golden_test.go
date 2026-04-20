@@ -92,7 +92,7 @@ func TestBuildCompileManifest_Golden(t *testing.T) {
 		targetCatalog:      "memory",
 		targetSchema:       "analytics",
 		dependencyProjects: []string{"shared_lib"},
-	})
+	}, map[string]string{})
 	require.NoError(t, err)
 
 	expected, err := os.ReadFile(filepath.Join("testdata", "compile_manifest.golden.json"))

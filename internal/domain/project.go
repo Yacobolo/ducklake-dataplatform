@@ -10,6 +10,8 @@ const (
 	ProjectKindPersonal = "personal"
 	// ProjectKindShared is a team-owned authoring workspace that can back products.
 	ProjectKindShared = "shared"
+	// ProjectKindTransform is the canonical project kind for transformation authoring.
+	ProjectKindTransform = "transform"
 	// ProjectKindLibrary is a reusable compile-time workspace for shared macros and checks.
 	ProjectKindLibrary = "library"
 )
@@ -91,15 +93,18 @@ type Environment struct {
 // ProjectDependency declares that a project may compile against another project.
 // Library/shared projects act as the package mechanism for transformation authoring.
 type ProjectDependency struct {
-	ID                string
-	ProjectID         string
-	ProjectName       string
-	DependencyProject string
-	DependencyKind    string
-	Position          int
-	CreatedBy         string
-	CreatedAt         time.Time
-	UpdatedAt         time.Time
+	ID                  string
+	ProjectID           string
+	ProjectName         string
+	DependencyProjectID string
+	DependencyProject   string
+	DependencyKind      string
+	VersionConstraint   string
+	ResolvedReleaseID   *string
+	Position            int
+	CreatedBy           string
+	CreatedAt           time.Time
+	UpdatedAt           time.Time
 }
 
 // SourceFreshnessPolicy defines freshness thresholds for a registered source.
@@ -124,9 +129,11 @@ type SourceDefinition struct {
 
 // CreateProjectDependencyRequest defines the input for attaching a dependency project.
 type CreateProjectDependencyRequest struct {
-	DependencyProject string
-	DependencyKind    string
-	Position          int
+	DependencyProjectID string
+	DependencyProject   string
+	DependencyKind      string
+	VersionConstraint   string
+	Position            int
 }
 
 // CreateSourceDefinitionRequest defines the input for creating a project-owned source.
@@ -184,10 +191,71 @@ type Build struct {
 	TargetCatalog      string
 	TargetSchema       string
 	SourceModelRunID   *string
+	ResolvedReleaseID  *string
 	CompileManifest    string
 	CompileDiagnostics *string
+	StateSnapshot      *string
 	CreatedBy          string
 	CreatedAt          time.Time
+}
+
+// Compilation is an immutable environment-scoped compile artifact for preview and analysis.
+type Compilation struct {
+	ID                 string
+	ProjectID          string
+	ProjectName        string
+	EnvironmentID      string
+	EnvironmentName    string
+	GitRef             string
+	CommitSHA          *string
+	Selector           string
+	TargetCatalog      string
+	TargetSchema       string
+	ResolvedReleaseID  *string
+	CompileManifest    string
+	CompileDiagnostics *string
+	StateSnapshot      *string
+	CreatedBy          string
+	CreatedAt          time.Time
+}
+
+// CreateCompilationRequest defines the input for creating a compilation artifact.
+type CreateCompilationRequest struct {
+	GitRef        string
+	CommitSHA     *string
+	Selector      string
+	TargetCatalog string
+	TargetSchema  string
+}
+
+// ProjectRelease is an immutable published snapshot for dependency resolution.
+type ProjectRelease struct {
+	ID                string
+	ProjectID         string
+	ProjectName       string
+	Version           string
+	ResolvedBuildID   *string
+	ResolvedCompileID *string
+	Snapshot          *ProjectReleaseSnapshot
+	CreatedBy         string
+	CreatedAt         time.Time
+}
+
+// ProjectReleaseSnapshot captures immutable authoring resources for a released project.
+type ProjectReleaseSnapshot struct {
+	ProjectName string             `json:"project_name,omitempty"`
+	Kind        string             `json:"kind,omitempty"`
+	Models      []Model            `json:"models,omitempty"`
+	Macros      []Macro            `json:"macros,omitempty"`
+	Sources     []SourceDefinition `json:"sources,omitempty"`
+	Seeds       []Seed             `json:"seeds,omitempty"`
+}
+
+// CreateProjectReleaseRequest defines the input for creating a project release.
+type CreateProjectReleaseRequest struct {
+	Version         string
+	ResolvedBuildID *string
+	CompilationID   *string
 }
 
 // CreateBuildRequest defines the input for creating an immutable project build.
@@ -201,6 +269,7 @@ type CreateBuildRequest struct {
 	SourceModelRunID   *string
 	CompileManifest    string
 	CompileDiagnostics *string
+	StateSnapshot      *string
 }
 
 // Validate validates a project creation request.
@@ -220,7 +289,7 @@ func ValidateCreateProjectRequest(req CreateProjectRequest) error {
 		return ErrValidation("project name must be at most 128 characters")
 	}
 	switch normalizeProjectKind(req.Kind) {
-	case ProjectKindPersonal, ProjectKindShared, ProjectKindLibrary:
+	case ProjectKindPersonal, ProjectKindShared, ProjectKindTransform, ProjectKindLibrary:
 	default:
 		return ErrValidation("unsupported project kind %q", req.Kind)
 	}
@@ -251,8 +320,27 @@ func ValidateUpdateProjectRequest(req UpdateProjectRequest) error {
 
 // Validate validates a dependency creation request.
 func (r *CreateProjectDependencyRequest) Validate() error {
-	if strings.TrimSpace(r.DependencyProject) == "" {
-		return ErrValidation("dependency_project is required")
+	if strings.TrimSpace(r.DependencyProjectID) == "" && strings.TrimSpace(r.DependencyProject) == "" {
+		return ErrValidation("dependency_project_id is required")
+	}
+	return nil
+}
+
+// Validate validates a compilation creation request.
+func (r *CreateCompilationRequest) Validate() error {
+	if strings.TrimSpace(r.GitRef) == "" {
+		return ErrValidation("git_ref is required")
+	}
+	return nil
+}
+
+// Validate validates a project release creation request.
+func (r *CreateProjectReleaseRequest) Validate() error {
+	if strings.TrimSpace(r.Version) == "" {
+		return ErrValidation("version is required")
+	}
+	if trimmedPtr(r.ResolvedBuildID) == nil && trimmedPtr(r.CompilationID) == nil {
+		return ErrValidation("resolved_build_id or compilation_id is required")
 	}
 	return nil
 }

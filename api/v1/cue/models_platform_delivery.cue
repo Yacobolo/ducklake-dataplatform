@@ -18,8 +18,14 @@ schemas_platform_delivery: {
       target_catalog:      "analytics"
       target_schema:       "mart"
       source_model_run_id: "run_01hzymodel"
+      resolved_release_id: "rel_01hzylib"
       compile_manifest:    "{...manifest json...}"
-      compile_diagnostics: "{...diagnostics json...}"
+      compile_diagnostics: {
+        items: []
+      }
+      state_snapshot: {
+        version: 1
+      }
       created_at:          "2026-04-13T07:00:00Z"
     }
     #fields: {
@@ -36,8 +42,10 @@ schemas_platform_delivery: {
       target_catalog: #stringProperty,
       target_schema: #stringProperty,
       source_model_run_id: #stringProperty,
+      resolved_release_id: #stringProperty,
       compile_manifest: #stringProperty,
-      compile_diagnostics: #stringProperty,
+      compile_diagnostics: #refProperty & {#ref: "ModelRunCompileDiagnostics"},
+      state_snapshot: #refProperty & {#ref: "BuildStateSnapshot"},
       created_at: #createdAtProperty,
     },
     #required: [
@@ -45,6 +53,46 @@ schemas_platform_delivery: {
       "target_catalog",
       "target_schema",
       "compile_manifest"
+    ]
+  },
+  Compilation: #objectSchema & {
+    #fields: {
+      id: #idProperty,
+      project_id: #stringProperty,
+      project_name: #stringProperty,
+      environment_id: #stringProperty,
+      environment_name: #stringProperty,
+      git_ref: #stringProperty,
+      commit_sha: #stringProperty,
+      selector: #stringProperty,
+      target_catalog: #stringProperty,
+      target_schema: #stringProperty,
+      resolved_release_id: #stringProperty,
+      compile_manifest: #stringProperty,
+      compile_diagnostics: #refProperty & {#ref: "ModelRunCompileDiagnostics"},
+      state_snapshot: #refProperty & {#ref: "BuildStateSnapshot"},
+      created_at: #createdAtProperty,
+    },
+    #required: [
+      "id",
+      "project_id",
+      "environment_id",
+      "git_ref",
+      "target_catalog",
+      "target_schema",
+      "compile_manifest"
+    ]
+  },
+  CreateCompilationRequest: #objectSchema & {
+    #fields: {
+      git_ref: #stringProperty,
+      commit_sha: #stringProperty,
+      selector: #stringProperty,
+      target_catalog: #stringProperty,
+      target_schema: #stringProperty
+    },
+    #required: [
+      "git_ref"
     ]
   },
   BuildState: #enumSchema & {
@@ -66,6 +114,7 @@ schemas_platform_delivery: {
       source_model_run_id: "run_01hzymodel"
       compile_manifest:    "{...manifest json...}"
       compile_diagnostics: "{...diagnostics json...}"
+      state_snapshot:      "{...snapshot json...}"
     }
     #fields: {
       environment_name: #stringProperty,
@@ -76,7 +125,8 @@ schemas_platform_delivery: {
       target_schema: #stringProperty,
       source_model_run_id: #stringProperty,
       compile_manifest: #stringProperty,
-      compile_diagnostics: #stringProperty
+      compile_diagnostics: #stringProperty,
+      state_snapshot: #stringProperty
     },
     #required: [
       "environment_name",
@@ -85,6 +135,9 @@ schemas_platform_delivery: {
       "target_schema",
       "compile_manifest"
     ]
+  },
+  CreateBuildRunRequest: #objectSchema & {
+    #fields: {},
   },
   CreateExternalLocationRequest: #objectSchema & {
     #fields: {
@@ -190,6 +243,22 @@ schemas_platform_delivery: {
       "kind",
       "target_catalog",
       "target_schema"
+    ]
+  },
+  ProjectRelease: #objectSchema & {
+    #fields: {
+      id: #idProperty,
+      project_id: #stringProperty,
+      project_name: #stringProperty,
+      version: #stringProperty,
+      resolved_build_id: #stringProperty,
+      resolved_compilation_id: #stringProperty,
+      created_at: #createdAtProperty,
+    },
+    #required: [
+      "id",
+      "project_id",
+      "version"
     ]
   },
   EnvironmentKind: #enumSchema & {

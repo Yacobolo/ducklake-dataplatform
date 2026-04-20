@@ -393,10 +393,14 @@ func New(ctx context.Context, deps Deps) (*App, error) {
 	assetRunRepo := repository.NewAssetRunRepo(deps.WriteDB)
 	assetCheckRepo := repository.NewAssetCheckRepo(deps.WriteDB)
 	buildRepo := repository.NewBuildRepo(deps.WriteDB)
+	compilationRepo := repository.NewCompilationRepo(deps.WriteDB)
 	projectRepo := repository.NewProjectRepo(deps.WriteDB)
 	environmentRepo := repository.NewEnvironmentRepo(deps.WriteDB)
+	projectReleaseRepo := repository.NewProjectReleaseRepo(deps.WriteDB)
+	modelRepo := repository.NewModelRepo(deps.WriteDB)
+	macroRepo := repository.NewMacroRepo(deps.WriteDB)
 	workspaceSvc := workspacesvc.NewService(workspaceRepo, folderRepo, projectRepo, environmentRepo, teamRepo, auditRepo)
-	projectSvc := projectsvc.NewService(workspaceRepo, projectRepo, environmentRepo, projectDependencyRepo, sourceDefinitionRepo, seedRepo, buildRepo, teamRepo, dataProductRepo, auditRepo)
+	projectSvc := projectsvc.NewService(workspaceRepo, projectRepo, environmentRepo, projectDependencyRepo, sourceDefinitionRepo, seedRepo, modelRepo, macroRepo, buildRepo, projectReleaseRepo, teamRepo, dataProductRepo, auditRepo)
 	orchEventRepo := repository.NewOrchestrationEventRepo(deps.WriteDB)
 	backfillRepo := repository.NewBackfillRepo(deps.WriteDB)
 	notebookProvider := pipeline.NewDBNotebookProvider(notebookRepo)
@@ -459,7 +463,6 @@ func New(ctx context.Context, deps Deps) (*App, error) {
 	}
 
 	// === Model ===
-	modelRepo := repository.NewModelRepo(deps.WriteDB)
 	if err := pipeline.SyncModelsToAssets(ctx, modelRepo, notebookModelLinkRepo, assetRepo, assetDepRepo, modelProduct.Product.ID); err != nil {
 		return nil, fmt.Errorf("sync models to assets: %w", err)
 	}
@@ -467,7 +470,6 @@ func New(ctx context.Context, deps Deps) (*App, error) {
 	modelTestRepo := repository.NewModelTestRepo(deps.WriteDB)
 	modelTestResultRepo := repository.NewModelTestResultRepo(deps.WriteDB)
 	// === Macro ===
-	macroRepo := repository.NewMacroRepo(deps.WriteDB)
 	macroSvc := macro.NewService(macroRepo, auditRepo)
 	modelSvc := svcmodel.NewService(svcmodel.ServiceDeps{
 		Models:        modelRepo,
@@ -478,6 +480,8 @@ func New(ctx context.Context, deps Deps) (*App, error) {
 		Sources:       sourceDefinitionRepo,
 		Seeds:         seedRepo,
 		Builds:        buildRepo,
+		Compilations:  compilationRepo,
+		Releases:      projectReleaseRepo,
 		Tests:         modelTestRepo,
 		TestResults:   modelTestResultRepo,
 		Audit:         auditRepo,

@@ -24,8 +24,8 @@ package api
 	#name: "environment_id"
 }
 
-#dependencyProjectPathParameter: #pathStringParameter & {
-	#name: "dependency_project"
+#dependencyIDPathParameter: #pathStringParameter & {
+	#name: "dependency_id"
 }
 
 #sourceNamePathParameter: #pathStringParameter & {
@@ -40,6 +40,10 @@ package api
 	#name: "seed_name"
 }
 
+#releaseIDPathParameter: #pathStringParameter & {
+	#name: "release_id"
+}
+
 #workspaceProjectPathParameters: [
 	#projectWorkspaceIDPathParameter,
 ]
@@ -51,7 +55,7 @@ package api
 
 #projectDependencyPathParameters: [
 	#projectIDPathParameter,
-	#dependencyProjectPathParameter,
+	#dependencyIDPathParameter,
 ]
 
 #projectSourcePathParameters: [
@@ -63,6 +67,11 @@ package api
 #projectSeedPathParameters: [
 	#projectIDPathParameter,
 	#seedNamePathParameter,
+]
+
+#projectReleasePathParameters: [
+	#projectIDPathParameter,
+	#releaseIDPathParameter,
 ]
 
 #workspaceProjectListParameters: [
@@ -265,7 +274,7 @@ package api
 		kind:         "no_content"
 		method:       "delete"
 		op:           "deleteProjectDependency"
-		path:         "/projects/{project_id}/dependencies/{dependency_project}"
+		path:         "/projects/{project_id}/dependencies/{dependency_id}"
 		summary:      "Delete project dependency"
 		cli: {
 			command: ["projects", "dependencies", "delete"]
@@ -410,6 +419,42 @@ package api
 		}
 		error_family: "resource_conflict"
 		params:       #projectSeedPathParameters
+	},
+	#plainProjectOperation & {
+		kind:         "response"
+		method:       "get"
+		op:           "listProjectReleases"
+		path:         "/projects/{project_id}/releases"
+		summary:      "List project releases"
+		cli:          "projects releases list"
+		returns:      "PaginatedProjectReleases"
+		error_family: "resource"
+		params:       #projectListParameters
+	},
+	#plainProjectOperation & {
+		kind:           "response"
+		method:         "post"
+		op:             "createProjectRelease"
+		path:           "/projects/{project_id}/releases"
+		summary:        "Create project release"
+		cli:            "projects releases create"
+		returns:        "ProjectRelease"
+		success_status: 201
+		error_family:   "resource_conflict"
+		params:         #projectPathParameters
+		body_ref:       "CreateProjectReleaseRequest"
+		body_description: "Request payload"
+	},
+	#plainProjectOperation & {
+		kind:         "response"
+		method:       "get"
+		op:           "getProjectRelease"
+		path:         "/projects/{project_id}/releases/{release_id}"
+		summary:      "Get project release"
+		cli:          "projects releases get"
+		returns:      "ProjectRelease"
+		error_family: "resource"
+		params:       #projectReleasePathParameters
 	},
 ]
 

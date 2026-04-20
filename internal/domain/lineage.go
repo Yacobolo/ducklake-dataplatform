@@ -30,8 +30,14 @@ type TransformType string
 const (
 	// TransformDirect means the output column is a direct pass-through of the source.
 	TransformDirect TransformType = "DIRECT"
+	// TransformRename means the output column is a renamed pass-through of the source.
+	TransformRename TransformType = "RENAME"
 	// TransformExpression means the output column is computed from an expression.
 	TransformExpression TransformType = "EXPRESSION"
+	// TransformAggregate means the output column is computed from an aggregate.
+	TransformAggregate TransformType = "AGGREGATE"
+	// TransformUnknown means the analyzer could not determine a precise transform.
+	TransformUnknown TransformType = "UNKNOWN"
 )
 
 // ColumnLineageEntry is the analyzer output for one output column.

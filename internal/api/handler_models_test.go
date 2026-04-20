@@ -20,6 +20,24 @@ type mockModelService struct {
 	listTestResultsFn      func(ctx context.Context, runID, stepID string) ([]domain.ModelTestResult, error)
 	checkSourceFreshnessFn func(ctx context.Context, principal, sourceSchema, sourceTable, timestampColumn string, maxLagSeconds int64) (*domain.SourceFreshnessStatus, error)
 	unpublishNotebookFn    func(ctx context.Context, principal, notebookID string) error
+	getBuildLineageFn      func(ctx context.Context, buildID string, modelName *string) ([]domain.CompiledColumnLineage, error)
+	getCompilationLineageFn func(ctx context.Context, compilationID string, modelName *string) ([]domain.CompiledColumnLineage, error)
+	getBuildDiagnosticsFn  func(ctx context.Context, buildID string, filter domain.BuildDiagnosticsFilter) ([]domain.CompileDiagnostic, error)
+	getCompilationDiagnosticsFn func(ctx context.Context, compilationID string, filter domain.BuildDiagnosticsFilter) ([]domain.CompileDiagnostic, error)
+	getBuildImpactFn       func(ctx context.Context, buildID, schema, table, column string) ([]domain.CompiledColumnLineage, error)
+	getCompilationImpactFn func(ctx context.Context, compilationID, schema, table, column string) ([]domain.CompiledColumnLineage, error)
+	planRebuildFn          func(ctx context.Context, principal string, req domain.PlanRebuildRequest) (*domain.RebuildPlan, error)
+	compareBuildsFn        func(ctx context.Context, principal string, req domain.CompareBuildsRequest) (*domain.BuildCompareResult, error)
+	getModelImpactFn       func(ctx context.Context, projectName string, buildID *string, modelName string) (*domain.BuildImpactResult, error)
+	getMacroImpactFn       func(ctx context.Context, projectName string, buildID *string, macroName string) (*domain.BuildImpactResult, error)
+	getCompilationFn       func(ctx context.Context, compilationID string) (*domain.Compilation, error)
+	listCompilationsFn     func(ctx context.Context, projectName, environmentName string, page domain.PageRequest) ([]domain.Compilation, int64, error)
+	getCompilationModelImpactFn func(ctx context.Context, compilationID string, modelName string) (*domain.BuildImpactResult, error)
+	getCompilationMacroImpactFn func(ctx context.Context, compilationID string, macroName string) (*domain.BuildImpactResult, error)
+	createCompilationFn    func(ctx context.Context, principal string, projectName string, environmentName string, req domain.CreateCompilationRequest) (*domain.Compilation, error)
+	createEnvironmentBuildFn func(ctx context.Context, principal string, projectName string, environmentName string, req domain.CreateCompilationRequest) (*domain.Build, error)
+	listRunsForBuildFn     func(ctx context.Context, buildID string, page domain.PageRequest) ([]domain.ModelRun, int64, error)
+	createRunForBuildFn    func(ctx context.Context, principal string, build *domain.Build) (*domain.ModelRun, error)
 }
 
 func (m *mockModelService) CreateModel(context.Context, string, domain.CreateModelRequest) (*domain.Model, error) {
@@ -99,6 +117,114 @@ func (m *mockModelService) UnpublishNotebook(ctx context.Context, principal, not
 		panic("not implemented")
 	}
 	return m.unpublishNotebookFn(ctx, principal, notebookID)
+}
+func (m *mockModelService) GetBuildLineage(ctx context.Context, buildID string, modelName *string) ([]domain.CompiledColumnLineage, error) {
+	if m.getBuildLineageFn == nil {
+		return nil, nil
+	}
+	return m.getBuildLineageFn(ctx, buildID, modelName)
+}
+func (m *mockModelService) GetCompilationLineage(ctx context.Context, compilationID string, modelName *string) ([]domain.CompiledColumnLineage, error) {
+	if m.getCompilationLineageFn == nil {
+		return nil, nil
+	}
+	return m.getCompilationLineageFn(ctx, compilationID, modelName)
+}
+func (m *mockModelService) GetBuildDiagnostics(ctx context.Context, buildID string, filter domain.BuildDiagnosticsFilter) ([]domain.CompileDiagnostic, error) {
+	if m.getBuildDiagnosticsFn == nil {
+		return nil, nil
+	}
+	return m.getBuildDiagnosticsFn(ctx, buildID, filter)
+}
+func (m *mockModelService) GetCompilationDiagnostics(ctx context.Context, compilationID string, filter domain.BuildDiagnosticsFilter) ([]domain.CompileDiagnostic, error) {
+	if m.getCompilationDiagnosticsFn == nil {
+		return nil, nil
+	}
+	return m.getCompilationDiagnosticsFn(ctx, compilationID, filter)
+}
+func (m *mockModelService) GetBuildSourceColumnImpact(ctx context.Context, buildID, schema, table, column string) ([]domain.CompiledColumnLineage, error) {
+	if m.getBuildImpactFn == nil {
+		return nil, nil
+	}
+	return m.getBuildImpactFn(ctx, buildID, schema, table, column)
+}
+func (m *mockModelService) GetCompilationSourceColumnImpact(ctx context.Context, compilationID, schema, table, column string) ([]domain.CompiledColumnLineage, error) {
+	if m.getCompilationImpactFn == nil {
+		return nil, nil
+	}
+	return m.getCompilationImpactFn(ctx, compilationID, schema, table, column)
+}
+func (m *mockModelService) PlanRebuild(ctx context.Context, principal string, req domain.PlanRebuildRequest) (*domain.RebuildPlan, error) {
+	if m.planRebuildFn == nil {
+		return nil, nil
+	}
+	return m.planRebuildFn(ctx, principal, req)
+}
+func (m *mockModelService) CompareBuilds(ctx context.Context, principal string, req domain.CompareBuildsRequest) (*domain.BuildCompareResult, error) {
+	if m.compareBuildsFn == nil {
+		return nil, nil
+	}
+	return m.compareBuildsFn(ctx, principal, req)
+}
+func (m *mockModelService) GetModelImpact(ctx context.Context, projectName string, buildID *string, modelName string) (*domain.BuildImpactResult, error) {
+	if m.getModelImpactFn == nil {
+		return nil, nil
+	}
+	return m.getModelImpactFn(ctx, projectName, buildID, modelName)
+}
+func (m *mockModelService) GetMacroImpact(ctx context.Context, projectName string, buildID *string, macroName string) (*domain.BuildImpactResult, error) {
+	if m.getMacroImpactFn == nil {
+		return nil, nil
+	}
+	return m.getMacroImpactFn(ctx, projectName, buildID, macroName)
+}
+func (m *mockModelService) GetCompilation(ctx context.Context, compilationID string) (*domain.Compilation, error) {
+	if m.getCompilationFn == nil {
+		return nil, nil
+	}
+	return m.getCompilationFn(ctx, compilationID)
+}
+func (m *mockModelService) ListCompilationsForEnvironment(ctx context.Context, projectName, environmentName string, page domain.PageRequest) ([]domain.Compilation, int64, error) {
+	if m.listCompilationsFn == nil {
+		return nil, 0, nil
+	}
+	return m.listCompilationsFn(ctx, projectName, environmentName, page)
+}
+func (m *mockModelService) GetCompilationModelImpact(ctx context.Context, compilationID string, modelName string) (*domain.BuildImpactResult, error) {
+	if m.getCompilationModelImpactFn == nil {
+		return nil, nil
+	}
+	return m.getCompilationModelImpactFn(ctx, compilationID, modelName)
+}
+func (m *mockModelService) GetCompilationMacroImpact(ctx context.Context, compilationID string, macroName string) (*domain.BuildImpactResult, error) {
+	if m.getCompilationMacroImpactFn == nil {
+		return nil, nil
+	}
+	return m.getCompilationMacroImpactFn(ctx, compilationID, macroName)
+}
+func (m *mockModelService) CreateCompilation(ctx context.Context, principal string, projectName string, environmentName string, req domain.CreateCompilationRequest) (*domain.Compilation, error) {
+	if m.createCompilationFn == nil {
+		return nil, nil
+	}
+	return m.createCompilationFn(ctx, principal, projectName, environmentName, req)
+}
+func (m *mockModelService) CreateEnvironmentBuild(ctx context.Context, principal string, projectName string, environmentName string, req domain.CreateCompilationRequest) (*domain.Build, error) {
+	if m.createEnvironmentBuildFn == nil {
+		return nil, nil
+	}
+	return m.createEnvironmentBuildFn(ctx, principal, projectName, environmentName, req)
+}
+func (m *mockModelService) ListRunsForBuild(ctx context.Context, buildID string, page domain.PageRequest) ([]domain.ModelRun, int64, error) {
+	if m.listRunsForBuildFn == nil {
+		return nil, 0, nil
+	}
+	return m.listRunsForBuildFn(ctx, buildID, page)
+}
+func (m *mockModelService) CreateRunForBuild(ctx context.Context, principal string, build *domain.Build) (*domain.ModelRun, error) {
+	if m.createRunForBuildFn == nil {
+		return nil, nil
+	}
+	return m.createRunForBuildFn(ctx, principal, build)
 }
 
 func TestHandler_UnpublishNotebookModel(t *testing.T) {

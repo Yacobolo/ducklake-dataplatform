@@ -23,6 +23,40 @@ schemas_semantic_models: {
       "body"
     ]
   },
+  CreateProjectMacroRequest: #objectSchema & {
+    #fields: {
+      name: #nameProperty,
+      body: #stringProperty,
+      macro_type: #refProperty & {#ref: "MacroType"},
+      parameters: #stringArrayProperty,
+      description: #descriptionProperty,
+      catalog_name: #stringProperty,
+      owner: #ownerProperty,
+      properties: #stringMapProperty,
+      tags: #stringArrayProperty,
+      status: #refProperty & {#ref: "MacroStatus"}
+    },
+    #required: [
+      "name",
+      "body"
+    ]
+  },
+  CreateProjectModelRequest: #objectSchema & {
+    #fields: {
+      name: #nameProperty,
+      sql: #stringProperty,
+      materialization: #refProperty & {#ref: "ModelMaterialization"},
+      description: #descriptionProperty,
+      tags: #stringArrayProperty,
+      config: #refProperty & {#ref: "ModelConfig"},
+      contract: #refProperty & {#ref: "ModelContract"},
+      freshness_policy: #refProperty & {#ref: "FreshnessPolicy"}
+    },
+    #required: [
+      "name",
+      "sql"
+    ]
+  },
   CreateModelRequest: #objectSchema & {
     example: {
       project_name:    "revenue"
@@ -296,9 +330,7 @@ schemas_semantic_models: {
   },
   MacroVisibility: #enumSchema & {
     #values: [
-      "project",
-      "catalog_global",
-      "system"
+      "project"
     ]
   },
   Model: #objectSchema & {
@@ -458,6 +490,7 @@ schemas_semantic_models: {
   },
   ModelRunCompileDiagnostics: #objectSchema & {
     #fields: {
+      items: #arrayRefProperty & {#ref: "CompileDiagnostic"},
       warnings: #stringArrayProperty,
       errors: #stringArrayProperty
     }
@@ -707,6 +740,18 @@ schemas_semantic_models: {
       catalog_name: #stringProperty,
       project_name: #stringProperty,
       visibility: #refProperty & {#ref: "MacroVisibility"},
+      owner: #ownerProperty,
+      properties: #stringMapProperty,
+      tags: #stringArrayProperty
+    }
+  },
+  UpdateProjectMacroRequest: #objectSchema & {
+    #fields: {
+      body: #stringProperty,
+      description: #descriptionProperty,
+      parameters: #stringArrayProperty,
+      status: #refProperty & {#ref: "MacroStatus"},
+      catalog_name: #stringProperty,
       owner: #ownerProperty,
       properties: #stringMapProperty,
       tags: #stringArrayProperty

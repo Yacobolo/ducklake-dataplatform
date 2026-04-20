@@ -144,6 +144,83 @@ func (m *mockTagService) UpdateTag(ctx context.Context, principal string, id str
 	return m.updateTagFn(ctx, principal, id, req)
 }
 
+func TestHandler_GetBuildDiagnostics(t *testing.T) {
+	t.Parallel()
+
+	h := &APIHandler{
+		models: &mockModelService{
+			getBuildDiagnosticsFn: func(_ context.Context, buildID string, filter domain.BuildDiagnosticsFilter) ([]domain.CompileDiagnostic, error) {
+				assert.Equal(t, "build-1", buildID)
+				require.NotNil(t, filter.ModelName)
+				assert.Equal(t, "analytics.stg_orders", *filter.ModelName)
+				require.NotNil(t, filter.Severity)
+				assert.Equal(t, domain.DiagnosticSeverityWarning, *filter.Severity)
+				require.NotNil(t, filter.Code)
+				assert.Equal(t, "lineage.select_star", *filter.Code)
+				return []domain.CompileDiagnostic{{
+					Severity:  domain.DiagnosticSeverityWarning,
+					Code:      "lineage.select_star",
+					Message:   "select * can cause drift",
+					ModelName: "analytics.stg_orders",
+				}}, nil
+			},
+		},
+	}
+
+	resp, err := h.GetBuildDiagnostics(context.Background(), GenGetBuildDiagnosticsRequest{
+		BuildId: "build-1",
+		Params: GenGetBuildDiagnosticsParams{
+			ModelName: strPtr("analytics.stg_orders"),
+			Severity:  strPtr("WARNING"),
+			Code:      strPtr("lineage.select_star"),
+		},
+	})
+	require.NoError(t, err)
+	got := resp.(GenGetBuildDiagnostics200JSONResponse)
+	require.Len(t, got.Body.Data, 1)
+	assert.Equal(t, "lineage.select_star", got.Body.Data[0].Code)
+	require.NotNil(t, got.Body.Data[0].ModelName)
+	assert.Equal(t, "analytics.stg_orders", *got.Body.Data[0].ModelName)
+}
+
+func TestHandler_PlanRebuild(t *testing.T) {
+	t.Parallel()
+
+	h := &APIHandler{
+		models: &mockModelService{
+			planRebuildFn: func(_ context.Context, principal string, req domain.PlanRebuildRequest) (*domain.RebuildPlan, error) {
+				assert.Equal(t, "agent-user", principal)
+				assert.Equal(t, "analytics", req.ProjectName)
+				assert.Equal(t, "dev", req.EnvironmentName)
+				assert.Equal(t, "tag:daily", req.Selector)
+				return &domain.RebuildPlan{
+					ProjectName:     "analytics",
+					EnvironmentName: "dev",
+					SelectedModels: []domain.RebuildPlanItem{{
+						ModelName: "analytics.fct_orders",
+						Reasons:   []domain.RebuildReason{domain.RebuildReasonCodeModified},
+					}},
+					UnchangedModels: []string{"analytics.dim_customers"},
+				}, nil
+			},
+		},
+	}
+
+	ctx := domain.WithPrincipal(context.Background(), domain.ContextPrincipal{Name: "agent-user"})
+	resp, err := h.PlanRebuild(ctx, GenPlanRebuildRequest{
+		Body: &GenPlanRebuildJSONBody{
+			ProjectName:     "analytics",
+			EnvironmentName: "dev",
+			Selector:        strPtr("tag:daily"),
+		},
+	})
+	require.NoError(t, err)
+	got := resp.(GenPlanRebuild201JSONResponse)
+	require.NotNil(t, got.Body.SelectedModels)
+	require.Len(t, *got.Body.SelectedModels, 1)
+	assert.Equal(t, "analytics.fct_orders", *(*got.Body.SelectedModels)[0].ModelName)
+}
+
 func (m *mockTagService) DeleteTag(ctx context.Context, principal string, id string) error {
 	if m.deleteTagFn == nil {
 		panic("mockTagService.DeleteTag called but not configured")

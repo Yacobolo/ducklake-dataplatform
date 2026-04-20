@@ -60,6 +60,9 @@ func newTestExecuteClient(t *testing.T, captured *[]execCapture) *APIStateClient
 
 // withTestIndex pre-populates the resourceIndex for resolution tests.
 func withTestIndex(sc *APIStateClient) *APIStateClient {
+	if sc.index == nil {
+		sc.index = newResourceIndex()
+	}
 	sc.index.principalIDByName["alice"] = "principal-id-alice"
 	sc.index.principalIDByName["bob"] = "principal-id-bob"
 	sc.index.groupIDByName["admins"] = "group-id-admins"
@@ -1407,7 +1410,7 @@ func TestExecuteNotebook_UpdateUnpublishesBeforeRemovingPublishedOutput(t *testi
 
 func TestExecuteMacro_CreateUpdateDelete(t *testing.T) {
 	var captured []execCapture
-	sc := newTestExecuteClient(t, &captured)
+	sc := withTestIndex(newTestExecuteClient(t, &captured))
 
 	create := declarative.Action{
 		Operation:    declarative.OpCreate,
@@ -1420,8 +1423,8 @@ func TestExecuteMacro_CreateUpdateDelete(t *testing.T) {
 				Parameters:  []string{"amount"},
 				Body:        "amount / 100.0",
 				CatalogName: "main",
-				ProjectName: "analytics",
-				Visibility:  "catalog_global",
+				ProjectName: "core",
+				Visibility:  "project",
 				Owner:       "data-team",
 				Properties:  map[string]string{"team": "finance"},
 				Tags:        []string{"finance"},
@@ -1433,35 +1436,40 @@ func TestExecuteMacro_CreateUpdateDelete(t *testing.T) {
 	require.NoError(t, sc.Execute(context.Background(), create))
 	require.Len(t, captured, 1)
 	assert.Equal(t, http.MethodPost, captured[0].Method)
-	assert.Contains(t, captured[0].Path, "/macros")
+	assert.Equal(t, "/v1/projects/project-id-core/macros", captured[0].Path)
 	assert.Equal(t, "fmt_money", bodyStr(captured[0], "name"))
-	assert.Equal(t, "catalog_global", bodyStr(captured[0], "visibility"))
+	assert.NotContains(t, captured[0].Body, `"visibility"`)
 
 	update := create
 	update.Operation = declarative.OpUpdate
 	update.Desired = declarative.MacroResource{
 		Name: "fmt_money",
 		Spec: declarative.MacroSpec{
-			Body:       "amount / 100",
-			Parameters: []string{"amount"},
-			Status:     "DEPRECATED",
+			ProjectName: "core",
+			Body:        "amount / 100",
+			Parameters:  []string{"amount"},
+			Status:      "DEPRECATED",
 		},
 	}
 	require.NoError(t, sc.Execute(context.Background(), update))
 	require.Len(t, captured, 2)
 	assert.Equal(t, http.MethodPatch, captured[1].Method)
-	assert.Contains(t, captured[1].Path, "/macros/fmt_money")
+	assert.Equal(t, "/v1/projects/project-id-core/macros/fmt_money", captured[1].Path)
 	assert.Equal(t, "DEPRECATED", bodyStr(captured[1], "status"))
 
 	deleteAction := declarative.Action{
 		Operation:    declarative.OpDelete,
 		ResourceKind: declarative.KindMacro,
 		ResourceName: "fmt_money",
+		Actual: declarative.MacroResource{
+			Name: "fmt_money",
+			Spec: declarative.MacroSpec{ProjectName: "core"},
+		},
 	}
 	require.NoError(t, sc.Execute(context.Background(), deleteAction))
 	require.Len(t, captured, 3)
 	assert.Equal(t, http.MethodDelete, captured[2].Method)
-	assert.Contains(t, captured[2].Path, "/macros/fmt_money")
+	assert.Equal(t, "/v1/projects/project-id-core/macros/fmt_money", captured[2].Path)
 }
 
 func TestExecuteModel_CreateWithTestReconcile(t *testing.T) {
@@ -1489,7 +1497,7 @@ func TestExecuteModel_CreateWithTestReconcile(t *testing.T) {
 
 		w.Header().Set("Content-Type", "application/json")
 		switch {
-		case r.Method == http.MethodGet && r.URL.Path == "/v1/models/analytics/stg_orders/tests":
+		case r.Method == http.MethodGet && r.URL.Path == "/v1/projects/project-id-core/models/stg_orders/tests":
 			_, _ = w.Write([]byte(`{"data":[]}`))
 		default:
 			w.WriteHeader(http.StatusCreated)
@@ -1498,15 +1506,14 @@ func TestExecuteModel_CreateWithTestReconcile(t *testing.T) {
 	}))
 	t.Cleanup(srv.Close)
 
-	sc := NewAPIStateClient(apiruntime.NewClient(srv.URL, "", "test-token"))
-	sc.index = newResourceIndex()
+	sc := withTestIndex(NewAPIStateClient(apiruntime.NewClient(srv.URL, "", "test-token")))
 
 	action := declarative.Action{
 		Operation:    declarative.OpCreate,
 		ResourceKind: declarative.KindModel,
-		ResourceName: "analytics.stg_orders",
+		ResourceName: "core.stg_orders",
 		Desired: declarative.ModelResource{
-			ProjectName: "analytics",
+			ProjectName: "core",
 			ModelName:   "stg_orders",
 			Spec: declarative.ModelSpec{
 				Materialization: "INCREMENTAL",
@@ -1527,17 +1534,17 @@ func TestExecuteModel_CreateWithTestReconcile(t *testing.T) {
 	defer mu.Unlock()
 	require.Len(t, captured, 3)
 	assert.Equal(t, http.MethodPost, captured[0].Method)
-	assert.Equal(t, "/v1/models", captured[0].Path)
+	assert.Equal(t, "/v1/projects/project-id-core/models", captured[0].Path)
 	config, ok := captured[0].Body["config"].(map[string]interface{})
 	require.True(t, ok)
 	assert.Equal(t, "delete_insert", config["incremental_strategy"])
 	assert.Equal(t, "fail", config["on_schema_change"])
 
 	assert.Equal(t, http.MethodGet, captured[1].Method)
-	assert.Equal(t, "/v1/models/analytics/stg_orders/tests", captured[1].Path)
+	assert.Equal(t, "/v1/projects/project-id-core/models/stg_orders/tests", captured[1].Path)
 
 	assert.Equal(t, http.MethodPost, captured[2].Method)
-	assert.Equal(t, "/v1/models/analytics/stg_orders/tests", captured[2].Path)
+	assert.Equal(t, "/v1/projects/project-id-core/models/stg_orders/tests", captured[2].Path)
 	assert.Equal(t, "not_null_order_id", bodyStr(captured[2], "name"))
 }
 
@@ -1565,7 +1572,7 @@ func TestExecuteModel_UpdateReconcilesTests(t *testing.T) {
 		captured = append(captured, ec)
 
 		w.Header().Set("Content-Type", "application/json")
-		if r.Method == http.MethodGet && r.URL.Path == "/v1/models/analytics/stg_orders/tests" {
+		if r.Method == http.MethodGet && r.URL.Path == "/v1/projects/project-id-core/models/stg_orders/tests" {
 			_, _ = w.Write([]byte(`{"data":[{"id":"t1","name":"not_null_order_id","test_type":"not_null","column":"id"},{"id":"t2","name":"legacy_unique","test_type":"unique","column":"legacy_id"}]}`))
 			return
 		}
@@ -1578,15 +1585,14 @@ func TestExecuteModel_UpdateReconcilesTests(t *testing.T) {
 	}))
 	t.Cleanup(srv.Close)
 
-	sc := NewAPIStateClient(apiruntime.NewClient(srv.URL, "", "test-token"))
-	sc.index = newResourceIndex()
+	sc := withTestIndex(NewAPIStateClient(apiruntime.NewClient(srv.URL, "", "test-token")))
 
 	action := declarative.Action{
 		Operation:    declarative.OpUpdate,
 		ResourceKind: declarative.KindModel,
-		ResourceName: "analytics.stg_orders",
+		ResourceName: "core.stg_orders",
 		Desired: declarative.ModelResource{
-			ProjectName: "analytics",
+			ProjectName: "core",
 			ModelName:   "stg_orders",
 			Spec: declarative.ModelSpec{
 				Materialization: "TABLE",
@@ -1605,17 +1611,17 @@ func TestExecuteModel_UpdateReconcilesTests(t *testing.T) {
 	defer mu.Unlock()
 	require.GreaterOrEqual(t, len(captured), 6)
 	assert.Equal(t, http.MethodPatch, captured[0].Method)
-	assert.Equal(t, "/v1/models/analytics/stg_orders", captured[0].Path)
+	assert.Equal(t, "/v1/projects/project-id-core/models/stg_orders", captured[0].Path)
 	assert.Equal(t, http.MethodGet, captured[1].Method)
-	assert.Equal(t, "/v1/models/analytics/stg_orders/tests", captured[1].Path)
+	assert.Equal(t, "/v1/projects/project-id-core/models/stg_orders/tests", captured[1].Path)
 
 	paths := make([]string, 0, len(captured))
 	for _, c := range captured {
 		paths = append(paths, c.Method+" "+c.Path)
 	}
-	assert.Contains(t, paths, "DELETE /v1/models/analytics/stg_orders/tests/t1")
-	assert.Contains(t, paths, "DELETE /v1/models/analytics/stg_orders/tests/t2")
-	assert.Contains(t, paths, "POST /v1/models/analytics/stg_orders/tests")
+	assert.Contains(t, paths, "DELETE /v1/projects/project-id-core/models/stg_orders/tests/t1")
+	assert.Contains(t, paths, "DELETE /v1/projects/project-id-core/models/stg_orders/tests/t2")
+	assert.Contains(t, paths, "POST /v1/projects/project-id-core/models/stg_orders/tests")
 }
 
 func TestExecuteModel_SkipsTestsWhenEndpointUnavailable(t *testing.T) {
@@ -1642,7 +1648,7 @@ func TestExecuteModel_SkipsTestsWhenEndpointUnavailable(t *testing.T) {
 		captured = append(captured, ec)
 
 		w.Header().Set("Content-Type", "application/json")
-		if r.Method == http.MethodGet && r.URL.Path == "/v1/models/analytics/stg_orders/tests" {
+		if r.Method == http.MethodGet && r.URL.Path == "/v1/projects/project-id-core/models/stg_orders/tests" {
 			w.WriteHeader(http.StatusNotFound)
 			_, _ = w.Write([]byte(`{"code":"NOT_FOUND","message":"tests endpoint disabled"}`))
 			return
@@ -1652,15 +1658,14 @@ func TestExecuteModel_SkipsTestsWhenEndpointUnavailable(t *testing.T) {
 	}))
 	t.Cleanup(srv.Close)
 
-	sc := NewAPIStateClient(apiruntime.NewClient(srv.URL, "", "test-token"))
-	sc.index = newResourceIndex()
+	sc := withTestIndex(NewAPIStateClient(apiruntime.NewClient(srv.URL, "", "test-token")))
 
 	action := declarative.Action{
 		Operation:    declarative.OpCreate,
 		ResourceKind: declarative.KindModel,
-		ResourceName: "analytics.stg_orders",
+		ResourceName: "core.stg_orders",
 		Desired: declarative.ModelResource{
-			ProjectName: "analytics",
+			ProjectName: "core",
 			ModelName:   "stg_orders",
 			Spec: declarative.ModelSpec{
 				Materialization: "INCREMENTAL",
@@ -1678,9 +1683,9 @@ func TestExecuteModel_SkipsTestsWhenEndpointUnavailable(t *testing.T) {
 	defer mu.Unlock()
 	require.Len(t, captured, 2)
 	assert.Equal(t, http.MethodPost, captured[0].Method)
-	assert.Equal(t, "/v1/models", captured[0].Path)
+	assert.Equal(t, "/v1/projects/project-id-core/models", captured[0].Path)
 	assert.Equal(t, http.MethodGet, captured[1].Method)
-	assert.Equal(t, "/v1/models/analytics/stg_orders/tests", captured[1].Path)
+	assert.Equal(t, "/v1/projects/project-id-core/models/stg_orders/tests", captured[1].Path)
 }
 
 func TestExecuteSemanticModel_CreateReconcilesChildren(t *testing.T) {
@@ -1875,15 +1880,24 @@ func TestReadState_ModelsAndMacros(t *testing.T) {
 	t.Parallel()
 
 	mux := http.NewServeMux()
-	mux.HandleFunc("/v1/models", func(w http.ResponseWriter, _ *http.Request) {
+	mux.HandleFunc("/v1/workspaces", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"data":[{"id":"ws-analytics","name":"analytics","kind":"shared"}]}`))
+	})
+	mux.HandleFunc("/v1/workspaces/ws-analytics/projects", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"data":[{"id":"prj-analytics","workspace_id":"ws-analytics","name":"analytics","kind":"TRANSFORM"}]}`))
+	})
+	mux.HandleFunc("/v1/projects/prj-analytics/environments", emptyListHandler())
+	mux.HandleFunc("/v1/projects/prj-analytics/models", func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		_, _ = w.Write([]byte(`{"data":[{"project_name":"analytics","name":"stg_orders","sql":"SELECT 1","materialization":"INCREMENTAL","description":"orders","tags":["finance"],"config":{"unique_key":["order_id"],"incremental_strategy":"merge","on_schema_change":"ignore"},"contract":{"enforce":true,"columns":[{"name":"order_id","type":"BIGINT","nullable":false}]},"freshness_policy":{"max_lag_seconds":300,"cron_schedule":"*/5 * * * *"}}]}`))
 	})
-	mux.HandleFunc("/v1/models/analytics/stg_orders/tests", func(w http.ResponseWriter, _ *http.Request) {
+	mux.HandleFunc("/v1/projects/prj-analytics/models/stg_orders/tests", func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		_, _ = w.Write([]byte(`{"data":[{"id":"t1","name":"accepted_status","test_type":"accepted_values","column":"status","config":{"values":["active","pending"]}}]}`))
 	})
-	mux.HandleFunc("/v1/macros", func(w http.ResponseWriter, _ *http.Request) {
+	mux.HandleFunc("/v1/projects/prj-analytics/macros", func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		_, _ = w.Write([]byte(`{"data":[{"name":"fmt_money","macro_type":"SCALAR","parameters":["amount"],"body":"amount/100.0","catalog_name":"main","project_name":"analytics","visibility":"project","owner":"data-team","properties":{"team":"finance"},"tags":["finance"],"status":"ACTIVE"}]}`))
 	})
@@ -1992,8 +2006,17 @@ func TestReadState_ModelEndpointFailureIsFatal(t *testing.T) {
 	t.Parallel()
 
 	mux := http.NewServeMux()
-	mux.HandleFunc("/v1/macros", emptyListHandler())
-	mux.HandleFunc("/v1/models", func(w http.ResponseWriter, _ *http.Request) {
+	mux.HandleFunc("/v1/workspaces", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"data":[{"id":"ws-analytics","name":"analytics","kind":"shared"}]}`))
+	})
+	mux.HandleFunc("/v1/workspaces/ws-analytics/projects", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"data":[{"id":"prj-analytics","workspace_id":"ws-analytics","name":"analytics","kind":"TRANSFORM"}]}`))
+	})
+	mux.HandleFunc("/v1/projects/prj-analytics/environments", emptyListHandler())
+	mux.HandleFunc("/v1/projects/prj-analytics/macros", emptyListHandler())
+	mux.HandleFunc("/v1/projects/prj-analytics/models", func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
 		_, _ = w.Write([]byte(`{"code":"NOT_FOUND","message":"models disabled"}`))
 	})
@@ -2020,21 +2043,25 @@ func TestValidateApplyCapabilities_ModelEndpointRequired(t *testing.T) {
 	t.Parallel()
 
 	mux := http.NewServeMux()
-	mux.HandleFunc("/v1/models", func(w http.ResponseWriter, _ *http.Request) {
+	mux.HandleFunc("/v1/projects/project-id-core/models", func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
 		_, _ = w.Write([]byte(`{"code":"NOT_FOUND"}`))
 	})
-	mux.HandleFunc("/v1/macros", emptyListHandler())
 	mux.HandleFunc("/", emptyListHandler())
 
-	sc := setupReadStateClient(t, mux)
+	sc := withTestIndex(setupReadStateClient(t, mux))
 	err := sc.ValidateApplyCapabilities(context.Background(), []declarative.Action{{
 		Operation:    declarative.OpCreate,
 		ResourceKind: declarative.KindModel,
-		ResourceName: "analytics.stg_orders",
+		ResourceName: "core.stg_orders",
+		Desired: declarative.ModelResource{
+			ProjectName: "core",
+			ModelName:   "stg_orders",
+			Spec:        declarative.ModelSpec{SQL: "select 1", Materialization: "TABLE"},
+		},
 	}})
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "/models endpoint is unavailable")
+	assert.Contains(t, err.Error(), "/projects/project-id-core/models endpoint is unavailable")
 }
 
 func TestValidateApplyCapabilities_SemanticEndpointRequired(t *testing.T) {
@@ -2065,7 +2092,9 @@ func setupReadStateClient(t *testing.T, handler http.Handler) *APIStateClient {
 	srv := httptest.NewServer(handler)
 	t.Cleanup(srv.Close)
 	client := apiruntime.NewClient(srv.URL, "", "test-token")
-	return NewAPIStateClient(client)
+	sc := NewAPIStateClient(client)
+	sc.index = newResourceIndex()
+	return sc
 }
 
 // emptyListHandler returns an HTTP handler that always responds with an empty paginated list.

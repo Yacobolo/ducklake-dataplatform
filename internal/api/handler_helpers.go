@@ -1,6 +1,7 @@
 package api
 
 import (
+	"encoding/json"
 	"fmt"
 	"math"
 	"reflect"
@@ -275,6 +276,209 @@ func columnLineageEdgeToAPI(e domain.ColumnLineageEdge) ColumnLineageEdge {
 		TransformType: &tt,
 		Function:      strPtrIfNonEmpty(e.Function),
 	}
+}
+
+func compiledColumnLineageToAPI(item domain.CompiledColumnLineage) CompiledColumnLineage {
+	tt := ColumnLineageEdgeTransformType(item.TransformType)
+	sources := make([]ColumnLineageSourceRef, 0, len(item.Sources))
+	for _, src := range item.Sources {
+		sources = append(sources, ColumnLineageSourceRef{
+			Catalog:   strPtrIfNonEmpty(src.Catalog),
+			Schema:    strPtrIfNonEmpty(src.Schema),
+			Table:     strPtrIfNonEmpty(src.Table),
+			Column:    strPtrIfNonEmpty(src.Column),
+			Kind:      strPtrIfNonEmpty(src.Kind),
+			ModelName: strPtrIfNonEmpty(src.ModelName),
+		})
+	}
+	return CompiledColumnLineage{
+		BuildId:       strPtrIfNonEmpty(item.BuildID),
+		CompilationId: strPtrIfNonEmpty(item.CompilationID),
+		ProjectName:   strPtrIfNonEmpty(item.ProjectName),
+		ModelName:     strPtrIfNonEmpty(item.ModelName),
+		TargetCatalog: strPtrIfNonEmpty(item.TargetCatalog),
+		TargetSchema:  strPtrIfNonEmpty(item.TargetSchema),
+		TargetTable:   strPtrIfNonEmpty(item.TargetTable),
+		TargetColumn:  strPtrIfNonEmpty(item.TargetColumn),
+		TransformType: &tt,
+		Function:      strPtrIfNonEmpty(item.Function),
+		Partial:       &item.Partial,
+		Sources:       optSliceRef(sources),
+		Sensitivity:   sensitivityInfoToAPI(item.Sensitivity),
+	}
+}
+
+func sensitivityInfoToAPI(item *domain.ColumnSensitivityInfo) *ColumnSensitivityInfo {
+	if item == nil {
+		return nil
+	}
+	fields := make([]ColumnLineageSourceRef, 0, len(item.SourceFields))
+	for _, src := range item.SourceFields {
+		fields = append(fields, ColumnLineageSourceRef{
+			Catalog:   strPtrIfNonEmpty(src.Catalog),
+			Schema:    strPtrIfNonEmpty(src.Schema),
+			Table:     strPtrIfNonEmpty(src.Table),
+			Column:    strPtrIfNonEmpty(src.Column),
+			Kind:      strPtrIfNonEmpty(src.Kind),
+			ModelName: strPtrIfNonEmpty(src.ModelName),
+		})
+	}
+	reasons := append([]string(nil), item.Reasons...)
+	return &ColumnSensitivityInfo{
+		Status:       strPtrIfNonEmpty(item.Status),
+		Partial:      &item.Partial,
+		Reasons:      optSliceRef(reasons),
+		SourceFields: optSliceRef(fields),
+	}
+}
+
+func compileDiagnosticToAPI(item domain.CompileDiagnostic) CompileDiagnostic {
+	severity := CompileDiagnosticSeverity(item.Severity)
+	related := append([]string(nil), item.RelatedObjects...)
+	var location *CompileDiagnosticLocation
+	if item.Location != nil {
+		line := safeIntPtr(item.Location.Line)
+		column := safeIntPtr(item.Location.Column)
+		location = &CompileDiagnosticLocation{
+			Line:   line,
+			Column: column,
+		}
+	}
+	return CompileDiagnostic{
+		Severity:       severity,
+		Code:           item.Code,
+		Message:        item.Message,
+		ModelName:      strPtrIfNonEmpty(item.ModelName),
+		ColumnName:     strPtrIfNonEmpty(item.ColumnName),
+		Location:       location,
+		RelatedObjects: optSliceRef(related),
+	}
+}
+
+func buildStateSnapshotToAPI(item *domain.BuildStateSnapshot) *BuildStateSnapshot {
+	if item == nil {
+		return nil
+	}
+	version := safeIntPtr(item.Version)
+	sources := make([]BuildSourceStateSnapshot, 0, len(item.Sources))
+	for _, src := range item.Sources {
+		maxLag := safeInt64ToInt32(src.MaxLagSeconds)
+		sources = append(sources, BuildSourceStateSnapshot{
+			SourceKey:         strPtrIfNonEmpty(src.SourceKey),
+			RelationRef:       strPtrIfNonEmpty(src.RelationRef),
+			TimestampColumn:   strPtrIfNonEmpty(src.TimestampColumn),
+			LastLoadedAt:      formatTimePtr(src.LastLoadedAt),
+			MaxLagSeconds:     &maxLag,
+			FreshnessBreached: &src.FreshnessBreached,
+			StaleSince:        formatTimePtr(src.StaleSince),
+		})
+	}
+	return &BuildStateSnapshot{
+		Version:         version,
+		ProjectName:     strPtrIfNonEmpty(item.ProjectName),
+		EnvironmentName: strPtrIfNonEmpty(item.EnvironmentName),
+		Sources:         optSliceRef(sources),
+	}
+}
+
+func rebuildPlanToAPI(item domain.RebuildPlan) RebuildPlan {
+	selected := make([]RebuildPlanItem, 0, len(item.SelectedModels))
+	for _, model := range item.SelectedModels {
+		reasons := make([]string, 0, len(model.Reasons))
+		for _, reason := range model.Reasons {
+			reasons = append(reasons, string(reason))
+		}
+		selected = append(selected, RebuildPlanItem{
+			ModelName: strPtrIfNonEmpty(model.ModelName),
+			Reasons:   optSliceRef(reasons),
+		})
+	}
+	unchanged := append([]string(nil), item.UnchangedModels...)
+	return RebuildPlan{
+		ProjectName:     strPtrIfNonEmpty(item.ProjectName),
+		EnvironmentName: strPtrIfNonEmpty(item.EnvironmentName),
+		BaselineBuildId: item.BaselineBuildID,
+		SelectedModels:  optSliceRef(selected),
+		UnchangedModels: optSliceRef(unchanged),
+	}
+}
+
+func buildCompareResultToAPI(item domain.BuildCompareResult) BuildCompareResult {
+	modelDiffs := make([]BuildCompareModelDiff, 0, len(item.ModelDiffs))
+	for _, diff := range item.ModelDiffs {
+		modelDiffs = append(modelDiffs, BuildCompareModelDiff{
+			ModelName:        strPtrIfNonEmpty(diff.ModelName),
+			ChangeType:       strPtrIfNonEmpty(diff.ChangeType),
+			FromCompiledHash: strPtrIfNonEmpty(diff.FromCompiledHash),
+			ToCompiledHash:   strPtrIfNonEmpty(diff.ToCompiledHash),
+			AddedColumns:     optSliceRef(append([]string(nil), diff.AddedColumns...)),
+			RemovedColumns:   optSliceRef(append([]string(nil), diff.RemovedColumns...)),
+			ChangedColumns:   optSliceRef(append([]string(nil), diff.ChangedColumns...)),
+			ImpactedModels:   optSliceRef(append([]string(nil), diff.ImpactedModels...)),
+			ImpactedTests:    optSliceRef(append([]string(nil), diff.ImpactedTests...)),
+			ImpactedProducts: optSliceRef(append([]string(nil), diff.ImpactedProducts...)),
+		})
+	}
+	added := make([]CompileDiagnostic, 0, len(item.DiagnosticsAdded))
+	for _, diag := range item.DiagnosticsAdded {
+		added = append(added, compileDiagnosticToAPI(diag))
+	}
+	removed := make([]CompileDiagnostic, 0, len(item.DiagnosticsRemoved))
+	for _, diag := range item.DiagnosticsRemoved {
+		removed = append(removed, compileDiagnosticToAPI(diag))
+	}
+	return BuildCompareResult{
+		ProjectName:        strPtrIfNonEmpty(item.ProjectName),
+		FromBuildId:        strPtrIfNonEmpty(item.FromBuildID),
+		ToBuildId:          item.ToBuildID,
+		ComparedToHead:     &item.ComparedToHead,
+		ModelDiffs:         optSliceRef(modelDiffs),
+		DiagnosticsAdded:   optSliceRef(added),
+		DiagnosticsRemoved: optSliceRef(removed),
+	}
+}
+
+func buildImpactResultToAPI(item domain.BuildImpactResult) BuildImpactResult {
+	columns := make([]CompiledColumnLineage, 0, len(item.ImpactedColumns))
+	for _, col := range item.ImpactedColumns {
+		columns = append(columns, compiledColumnLineageToAPI(col))
+	}
+	return BuildImpactResult{
+		ProjectName:      strPtrIfNonEmpty(item.ProjectName),
+		Kind:             item.Kind,
+		Key:              item.Key,
+		BuildId:          item.BuildID,
+		ImpactedModels:   optSliceRef(append([]string(nil), item.ImpactedModels...)),
+		ImpactedColumns:  optSliceRef(columns),
+		ImpactedTests:    optSliceRef(append([]string(nil), item.ImpactedTests...)),
+		ImpactedProducts: optSliceRef(append([]string(nil), item.ImpactedProducts...)),
+		Partial:          &item.Partial,
+	}
+}
+
+func optSliceRef[T any](items []T) *[]T {
+	if len(items) == 0 {
+		return nil
+	}
+	return &items
+}
+
+func parseModelCompileDiagnosticsJSON(raw *string) *domain.ModelCompileDiagnostics {
+	if raw == nil || *raw == "" {
+		return nil
+	}
+	var out domain.ModelCompileDiagnostics
+	if err := json.Unmarshal([]byte(*raw), &out); err != nil {
+		return nil
+	}
+	return &out
+}
+
+func stringPtrValue(value *string) string {
+	if value == nil {
+		return ""
+	}
+	return *value
 }
 
 func strPtrIfNonEmpty(s string) *string {

@@ -66,6 +66,42 @@ func endpointRequiredByPlan(actions []declarative.Action, kind declarative.Resou
 	return false
 }
 
+func (c *APIStateClient) canonicalProjectProbePath(action declarative.Action) (string, error) {
+	resolveByName := func(projectName string) (string, error) {
+		if c.index == nil {
+			return "", fmt.Errorf("resource index not populated; call ReadState first")
+		}
+		projectID, err := c.resolveProjectIDByName(projectName)
+		if err != nil {
+			return "", err
+		}
+		return "/projects/" + projectID, nil
+	}
+
+	switch action.ResourceKind {
+	case declarative.KindModel:
+		if desired, ok := action.Desired.(declarative.ModelResource); ok {
+			return resolveByName(desired.ProjectName)
+		}
+		if actual, ok := action.Actual.(declarative.ModelResource); ok {
+			return resolveByName(actual.ProjectName)
+		}
+		parts := strings.SplitN(action.ResourceName, ".", 2)
+		if len(parts) == 2 {
+			return resolveByName(parts[0])
+		}
+	case declarative.KindMacro:
+		if desired, ok := action.Desired.(declarative.MacroResource); ok {
+			return resolveByName(desired.Spec.ProjectName)
+		}
+		if actual, ok := action.Actual.(declarative.MacroResource); ok {
+			return resolveByName(actual.Spec.ProjectName)
+		}
+	}
+
+	return "", fmt.Errorf("cannot resolve project scope for %s %q", action.ResourceKind, action.ResourceName)
+}
+
 func (c *APIStateClient) probeEndpoint(ctx context.Context, path string) error {
 	q := url.Values{}
 	q.Set("max_results", "1")
@@ -88,19 +124,53 @@ func (c *APIStateClient) probeEndpoint(ctx context.Context, path string) error {
 // required by the current plan are available before execution starts.
 func (c *APIStateClient) ValidateApplyCapabilities(ctx context.Context, actions []declarative.Action) error {
 	if endpointRequiredByPlan(actions, declarative.KindModel) {
-		if err := c.probeEndpoint(ctx, "/models"); err != nil {
-			if c.isOptionalReadError(err) {
-				return fmt.Errorf("model actions present but /models endpoint is unavailable: %w", err)
+		probed := false
+		for _, action := range actions {
+			if action.ResourceKind != declarative.KindModel {
+				continue
 			}
-			return fmt.Errorf("cannot probe /models endpoint: %w", err)
+			path, err := c.canonicalProjectProbePath(action)
+			if err != nil {
+				if c.index == nil {
+					break
+				}
+				return fmt.Errorf("model actions present but project scope could not be resolved: %w", err)
+			}
+			probed = true
+			if err := c.probeEndpoint(ctx, path+"/models"); err != nil {
+				return fmt.Errorf("model actions present but %s/models endpoint is unavailable: %w", path, err)
+			}
+			break
+		}
+		if !probed {
+			if err := c.probeEndpoint(ctx, "/workspaces"); err != nil {
+				return fmt.Errorf("model actions present but canonical project endpoints could not be probed: %w", err)
+			}
 		}
 	}
 	if endpointRequiredByPlan(actions, declarative.KindMacro) {
-		if err := c.probeEndpoint(ctx, "/macros"); err != nil {
-			if c.isOptionalReadError(err) {
-				return fmt.Errorf("macro actions present but /macros endpoint is unavailable: %w", err)
+		probed := false
+		for _, action := range actions {
+			if action.ResourceKind != declarative.KindMacro {
+				continue
 			}
-			return fmt.Errorf("cannot probe /macros endpoint: %w", err)
+			path, err := c.canonicalProjectProbePath(action)
+			if err != nil {
+				if c.index == nil {
+					break
+				}
+				return fmt.Errorf("macro actions present but project scope could not be resolved: %w", err)
+			}
+			probed = true
+			if err := c.probeEndpoint(ctx, path+"/macros"); err != nil {
+				return fmt.Errorf("macro actions present but %s/macros endpoint is unavailable: %w", path, err)
+			}
+			break
+		}
+		if !probed {
+			if err := c.probeEndpoint(ctx, "/workspaces"); err != nil {
+				return fmt.Errorf("macro actions present but canonical project endpoints could not be probed: %w", err)
+			}
 		}
 	}
 	if endpointRequiredByPlan(actions, declarative.KindSemanticModel) {

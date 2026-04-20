@@ -5,19 +5,22 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/Masterminds/semver/v3"
 	"github.com/Yacobolo/quackstack/internal/domain"
 )
 
 type resolvedRunContext struct {
-	project            *domain.Project
-	environment        *domain.Environment
-	stateEnvironment   *domain.Environment
-	targetCatalog      string
-	targetSchema       string
-	variables          map[string]string
-	sourceOverrides    map[string]string
-	dependencyProjects []string
-	allowedRefProjects map[string]struct{}
+	project             *domain.Project
+	environment         *domain.Environment
+	stateEnvironment    *domain.Environment
+	targetCatalog       string
+	targetSchema        string
+	variables           map[string]string
+	sourceOverrides     map[string]string
+	dependencyProjects  []string
+	dependencyReleases  map[string]string
+	dependencySnapshots map[string]domain.ProjectReleaseSnapshot
+	allowedRefProjects  map[string]struct{}
 }
 
 func (s *Service) resolveExecutionContext(
@@ -49,13 +52,15 @@ func (s *Service) resolveExecutionContext(
 	}
 
 	resolved := &resolvedRunContext{
-		project:          project,
-		environment:      environment,
-		stateEnvironment: &stack[0],
-		targetCatalog:    environment.TargetCatalog,
-		targetSchema:     environment.TargetSchema,
-		variables:        map[string]string{},
-		sourceOverrides:  map[string]string{},
+		project:             project,
+		environment:         environment,
+		stateEnvironment:    &stack[0],
+		targetCatalog:       environment.TargetCatalog,
+		targetSchema:        environment.TargetSchema,
+		variables:           map[string]string{},
+		sourceOverrides:     map[string]string{},
+		dependencyReleases:  map[string]string{},
+		dependencySnapshots: map[string]domain.ProjectReleaseSnapshot{},
 	}
 
 	for _, item := range stack {
@@ -103,8 +108,17 @@ func (s *Service) resolveExecutionContext(
 			if _, ok := resolved.allowedRefProjects[name]; ok {
 				continue
 			}
+			release, err := s.resolveDependencyRelease(ctx, dep)
+			if err != nil {
+				return nil, fmt.Errorf("resolve dependency release for %s: %w", name, err)
+			}
+			if release == nil || release.Snapshot == nil {
+				return nil, domain.ErrValidation("dependency project %s must resolve to a project release snapshot", name)
+			}
 			resolved.allowedRefProjects[name] = struct{}{}
 			resolved.dependencyProjects = append(resolved.dependencyProjects, name)
+			resolved.dependencyReleases[name] = release.ID
+			resolved.dependencySnapshots[name] = *release.Snapshot
 		}
 	}
 
@@ -186,4 +200,55 @@ func cloneStringMap(value map[string]string) map[string]string {
 		out[key] = item
 	}
 	return out
+}
+
+func (s *Service) resolveDependencyRelease(ctx context.Context, dep domain.ProjectDependency) (*domain.ProjectRelease, error) {
+	if s.releases == nil {
+		return nil, domain.ErrNotImplemented("project releases are not configured")
+	}
+	if dep.ResolvedReleaseID != nil && strings.TrimSpace(*dep.ResolvedReleaseID) != "" {
+		return s.releases.GetByID(ctx, strings.TrimSpace(*dep.ResolvedReleaseID))
+	}
+	if strings.TrimSpace(dep.DependencyProjectID) == "" {
+		return nil, domain.ErrValidation("dependency project id is required for release resolution")
+	}
+	releases, _, err := s.releases.ListByProject(ctx, dep.DependencyProjectID, domain.PageRequest{MaxResults: domain.MaxMaxResults})
+	if err != nil {
+		return nil, err
+	}
+	if len(releases) == 0 {
+		return nil, domain.ErrValidation("dependency project %s has no releases", dep.DependencyProject)
+	}
+	return latestMatchingRelease(releases, strings.TrimSpace(dep.VersionConstraint))
+}
+
+func latestMatchingRelease(releases []domain.ProjectRelease, constraint string) (*domain.ProjectRelease, error) {
+	if len(releases) == 0 {
+		return nil, nil
+	}
+	constraint = strings.TrimSpace(constraint)
+	if constraint == "" {
+		return &releases[0], nil
+	}
+	c, err := semver.NewConstraint(constraint)
+	if err != nil {
+		return nil, domain.ErrValidation("invalid version constraint %q", constraint)
+	}
+	for i := range releases {
+		versionText := strings.TrimSpace(releases[i].Version)
+		if versionText == "" {
+			continue
+		}
+		if !strings.HasPrefix(versionText, "v") {
+			versionText = "v" + versionText
+		}
+		v, err := semver.NewVersion(strings.TrimPrefix(versionText, "v"))
+		if err != nil {
+			continue
+		}
+		if c.Check(v) {
+			return &releases[i], nil
+		}
+	}
+	return nil, domain.ErrValidation("no project release matched constraint %q", constraint)
 }

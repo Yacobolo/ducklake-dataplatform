@@ -24,5 +24,6 @@ endpoints: list.Concat([
   endpoints_resources,
   endpoints_semantic,
   endpoints_storage,
+  endpoints_transform_canonical,
   endpoints_workspaces,
 ])

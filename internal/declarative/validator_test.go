@@ -898,23 +898,15 @@ func TestValidate_MacroErrors(t *testing.T) {
 				Name: "fmt_money",
 				Spec: MacroSpec{Body: "x", Visibility: "project"},
 			}}},
-			"project_name is required when visibility is project",
+			"project_name is required",
 		},
 		{
-			"catalog_global visibility requires catalog_name",
+			"macro requires project scope",
 			&DesiredState{Macros: []MacroResource{{
 				Name: "fmt_money",
-				Spec: MacroSpec{Body: "x", Visibility: "catalog_global"},
+				Spec: MacroSpec{Body: "x"},
 			}}},
-			"catalog_name is required when visibility is catalog_global",
-		},
-		{
-			"system visibility forbids project and catalog",
-			&DesiredState{Macros: []MacroResource{{
-				Name: "fmt_money",
-				Spec: MacroSpec{Body: "x", Visibility: "system", ProjectName: "analytics", CatalogName: "main"},
-			}}},
-			"must be empty when visibility is system",
+			"project_name is required",
 		},
 	}
 

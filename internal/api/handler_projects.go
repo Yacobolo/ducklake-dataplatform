@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"encoding/json"
 
 	"github.com/Yacobolo/quackstack/internal/domain"
 )
@@ -14,7 +15,7 @@ type projectControlService interface {
 	DeleteProjectForPrincipal(ctx context.Context, principal string, isAdmin bool, id string) error
 	CreateDependencyForProject(ctx context.Context, principal string, isAdmin bool, projectID string, req domain.CreateProjectDependencyRequest) (*domain.ProjectDependency, error)
 	ListDependenciesForProject(ctx context.Context, principal string, isAdmin bool, projectID string, page domain.PageRequest) ([]domain.ProjectDependency, int64, error)
-	DeleteDependencyForProject(ctx context.Context, principal string, isAdmin bool, projectID string, dependencyProject string) error
+	DeleteDependencyForProject(ctx context.Context, principal string, isAdmin bool, projectID string, dependencyID string) error
 	CreateSourceForProject(ctx context.Context, principal string, isAdmin bool, projectID string, req domain.CreateSourceDefinitionRequest) (*domain.SourceDefinition, error)
 	ListSourcesForProject(ctx context.Context, principal string, isAdmin bool, projectID string, page domain.PageRequest) ([]domain.SourceDefinition, int64, error)
 	GetSourceForProject(ctx context.Context, principal string, isAdmin bool, projectID string, sourceName string, tableName string) (*domain.SourceDefinition, error)
@@ -27,10 +28,16 @@ type projectControlService interface {
 	DeleteSeedForProject(ctx context.Context, principal string, isAdmin bool, projectID string, seedName string) error
 	CreateEnvironmentForProject(ctx context.Context, principal string, isAdmin bool, projectID string, req domain.CreateEnvironmentRequest) (*domain.Environment, error)
 	ListEnvironmentsForProject(ctx context.Context, principal string, isAdmin bool, projectID string, page domain.PageRequest) ([]domain.Environment, int64, error)
+	GetEnvironmentForProject(ctx context.Context, principal string, isAdmin bool, projectID string, environmentID string) (*domain.Environment, error)
 	UpdateEnvironmentForProject(ctx context.Context, principal string, isAdmin bool, projectID string, environmentID string, req domain.UpdateEnvironmentRequest) (*domain.Environment, error)
 	DeleteEnvironmentForProject(ctx context.Context, principal string, isAdmin bool, projectID string, environmentID string) error
 	CreateBuildForProject(ctx context.Context, principal string, isAdmin bool, projectID string, req domain.CreateBuildRequest) (*domain.Build, error)
 	ListBuildsForProject(ctx context.Context, principal string, isAdmin bool, projectID string, page domain.PageRequest) ([]domain.Build, int64, error)
+	ListBuildsForEnvironment(ctx context.Context, principal string, isAdmin bool, projectID string, environmentID string, page domain.PageRequest) ([]domain.Build, int64, error)
+	GetBuildForProject(ctx context.Context, principal string, isAdmin bool, projectID string, buildID string) (*domain.Build, error)
+	CreateReleaseForProject(ctx context.Context, principal string, isAdmin bool, projectID string, req domain.CreateProjectReleaseRequest) (*domain.ProjectRelease, error)
+	ListReleasesForProject(ctx context.Context, principal string, isAdmin bool, projectID string, page domain.PageRequest) ([]domain.ProjectRelease, int64, error)
+	GetReleaseForProject(ctx context.Context, principal string, isAdmin bool, projectID string, releaseID string) (*domain.ProjectRelease, error)
 }
 
 // ListWorkspaceProjects implements the endpoint for listing projects within a workspace.
@@ -504,9 +511,11 @@ func (h *APIHandler) CreateProjectDependency(ctx context.Context, req GenCreateP
 	}
 	cp, _ := domain.PrincipalFromContext(ctx)
 	item, err := h.projectsCtl.CreateDependencyForProject(ctx, cp.Name, cp.IsAdmin, req.ProjectId, domain.CreateProjectDependencyRequest{
-		DependencyProject: req.Body.DependencyProject,
-		DependencyKind:    derefString(req.Body.DependencyKind),
-		Position:          derefInt32(req.Body.Position),
+		DependencyProjectID: req.Body.DependencyProjectId,
+		DependencyProject:   derefString(req.Body.DependencyProject),
+		DependencyKind:      derefString(req.Body.DependencyKind),
+		VersionConstraint:   derefString(req.Body.VersionConstraint),
+		Position:            derefInt32(req.Body.Position),
 	})
 	if err != nil {
 		if resp, ok := respondDomainErrorForOperation[GenCreateProjectDependencyResponse]("createProjectDependency", err, domainErrorResponder[GenCreateProjectDependencyResponse]{
@@ -539,7 +548,7 @@ func (h *APIHandler) DeleteProjectDependency(ctx context.Context, req GenDeleteP
 		return nil, domain.ErrNotImplemented("projects are not configured")
 	}
 	cp, _ := domain.PrincipalFromContext(ctx)
-	if err := h.projectsCtl.DeleteDependencyForProject(ctx, cp.Name, cp.IsAdmin, req.ProjectId, req.DependencyProject); err != nil {
+	if err := h.projectsCtl.DeleteDependencyForProject(ctx, cp.Name, cp.IsAdmin, req.ProjectId, req.DependencyId); err != nil {
 		if resp, ok := respondDomainErrorForOperation[GenDeleteProjectDependencyResponse]("deleteProjectDependency", err, domainErrorResponder[GenDeleteProjectDependencyResponse]{
 			BadRequest: func(resp BadRequestJSONResponse) GenDeleteProjectDependencyResponse {
 				return DeleteProjectDependency400JSONResponse{resp}
@@ -950,6 +959,17 @@ func environmentToAPI(item domain.Environment) Environment {
 }
 
 func buildToAPI(item domain.Build) Build {
+	var diagnostics *ModelRunCompileDiagnostics
+	if parsed := parseModelCompileDiagnosticsJSON(item.CompileDiagnostics); parsed != nil {
+		diagnostics = modelCompileDiagnosticsToAPI(parsed)
+	}
+	var stateSnapshot *BuildStateSnapshot
+	if raw := stringPtrValue(item.StateSnapshot); raw != "" {
+		var parsed domain.BuildStateSnapshot
+		if err := json.Unmarshal([]byte(raw), &parsed); err == nil {
+			stateSnapshot = buildStateSnapshotToAPI(&parsed)
+		}
+	}
 	return Build{
 		Id:                 optStr(item.ID),
 		ProjectId:          optStr(item.ProjectID),
@@ -964,22 +984,70 @@ func buildToAPI(item domain.Build) Build {
 		TargetCatalog:      item.TargetCatalog,
 		TargetSchema:       item.TargetSchema,
 		SourceModelRunId:   item.SourceModelRunID,
+		ResolvedReleaseId:  item.ResolvedReleaseID,
 		CompileManifest:    item.CompileManifest,
-		CompileDiagnostics: item.CompileDiagnostics,
+		CompileDiagnostics: diagnostics,
+		StateSnapshot:      stateSnapshot,
 		CreatedAt:          formatTimePtr(&item.CreatedAt),
 	}
 }
 
 func projectDependencyToAPI(item domain.ProjectDependency) ProjectDependency {
 	return ProjectDependency{
-		Id:                optStr(item.ID),
-		ProjectId:         item.ProjectID,
-		ProjectName:       optStr(item.ProjectName),
-		DependencyProject: item.DependencyProject,
-		DependencyKind:    optStr(item.DependencyKind),
-		Position:          safeIntPtr(item.Position),
-		CreatedAt:         formatTimePtr(&item.CreatedAt),
-		UpdatedAt:         formatTimePtr(&item.UpdatedAt),
+		Id:                  optStr(item.ID),
+		ProjectId:           item.ProjectID,
+		ProjectName:         optStr(item.ProjectName),
+		DependencyProjectId: optStr(item.DependencyProjectID),
+		DependencyProject:   item.DependencyProject,
+		DependencyKind:      optStr(item.DependencyKind),
+		VersionConstraint:   optStr(item.VersionConstraint),
+		ResolvedReleaseId:   item.ResolvedReleaseID,
+		Position:            safeIntPtr(item.Position),
+		CreatedAt:           formatTimePtr(&item.CreatedAt),
+		UpdatedAt:           formatTimePtr(&item.UpdatedAt),
+	}
+}
+
+func compilationToAPI(item domain.Compilation) Compilation {
+	var diagnostics *ModelRunCompileDiagnostics
+	if parsed := parseModelCompileDiagnosticsJSON(item.CompileDiagnostics); parsed != nil {
+		diagnostics = modelCompileDiagnosticsToAPI(parsed)
+	}
+	var stateSnapshot *BuildStateSnapshot
+	if raw := stringPtrValue(item.StateSnapshot); raw != "" {
+		var parsed domain.BuildStateSnapshot
+		if err := json.Unmarshal([]byte(raw), &parsed); err == nil {
+			stateSnapshot = buildStateSnapshotToAPI(&parsed)
+		}
+	}
+	return Compilation{
+		Id:                 item.ID,
+		ProjectId:          item.ProjectID,
+		ProjectName:        optStr(item.ProjectName),
+		EnvironmentId:      item.EnvironmentID,
+		EnvironmentName:    optStr(item.EnvironmentName),
+		GitRef:             item.GitRef,
+		CommitSha:          item.CommitSHA,
+		Selector:           optStr(item.Selector),
+		TargetCatalog:      item.TargetCatalog,
+		TargetSchema:       item.TargetSchema,
+		ResolvedReleaseId:  item.ResolvedReleaseID,
+		CompileManifest:    item.CompileManifest,
+		CompileDiagnostics: diagnostics,
+		StateSnapshot:      stateSnapshot,
+		CreatedAt:          formatTimePtr(&item.CreatedAt),
+	}
+}
+
+func projectReleaseToAPI(item domain.ProjectRelease) ProjectRelease {
+	return ProjectRelease{
+		Id:                    item.ID,
+		ProjectId:             item.ProjectID,
+		ProjectName:           optStr(item.ProjectName),
+		Version:               item.Version,
+		ResolvedBuildId:       item.ResolvedBuildID,
+		ResolvedCompilationId: item.ResolvedCompileID,
+		CreatedAt:             formatTimePtr(&item.CreatedAt),
 	}
 }
 

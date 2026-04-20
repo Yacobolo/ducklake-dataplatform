@@ -1642,7 +1642,7 @@ func setupHTTPServer(t *testing.T, opts httpTestOpts) *httpTestEnv {
 	environmentRepo = repository.NewEnvironmentRepo(metaDB)
 	buildRepo = repository.NewBuildRepo(metaDB)
 	workspaceSvc := workspacesvc.NewService(workspaceRepo, folderRepo, projectRepo, environmentRepo, teamRepo, auditRepo)
-	projectCtlSvc := projectsvc.NewService(workspaceRepo, projectRepo, environmentRepo, nil, nil, nil, buildRepo, teamRepo, productRepo, auditRepo)
+	projectCtlSvc := projectsvc.NewService(workspaceRepo, projectRepo, environmentRepo, nil, nil, nil, nil, nil, buildRepo, nil, teamRepo, productRepo, auditRepo)
 	notebookSvc.SetProjectRepositories(projectRepo, environmentRepo)
 	notebookFolderSvc.SetProjectRepositories(projectRepo, environmentRepo)
 

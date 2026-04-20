@@ -38,14 +38,18 @@ func TestProjectAuthoringRepos_DependencySourceAndSeedLifecycle(t *testing.T) {
 	require.NoError(t, err)
 
 	dependency, err := dependencyRepo.Create(ctx, &domain.ProjectDependency{
-		ProjectID:         project.ID,
-		DependencyProject: "shared_lib",
-		Position:          2,
-		CreatedBy:         "alice",
+		ProjectID:           project.ID,
+		DependencyProjectID: "prj_shared_lib",
+		DependencyProject:   "shared_lib",
+		VersionConstraint:   ">=1.0.0",
+		Position:            2,
+		CreatedBy:           "alice",
 	})
 	require.NoError(t, err)
 	assert.Equal(t, "analytics", dependency.ProjectName)
 	assert.Equal(t, "project", dependency.DependencyKind)
+	assert.Equal(t, "prj_shared_lib", dependency.DependencyProjectID)
+	assert.Equal(t, ">=1.0.0", dependency.VersionConstraint)
 
 	dependencies, err := dependencyRepo.ListByProject(ctx, project.ID)
 	require.NoError(t, err)
@@ -121,7 +125,7 @@ func TestProjectAuthoringRepos_DependencySourceAndSeedLifecycle(t *testing.T) {
 
 	require.NoError(t, sourceRepo.Delete(ctx, source.ID))
 	require.NoError(t, seedRepo.Delete(ctx, seed.ID))
-	require.NoError(t, dependencyRepo.Delete(ctx, project.ID, "shared_lib"))
+	require.NoError(t, dependencyRepo.Delete(ctx, project.ID, dependency.ID))
 
 	_, err = sourceRepo.GetByName(ctx, "analytics", "raw", "orders")
 	require.Error(t, err)

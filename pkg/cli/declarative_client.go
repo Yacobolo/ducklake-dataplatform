@@ -2283,36 +2283,42 @@ type apiMacro struct {
 }
 
 func (c *APIStateClient) readMacros(ctx context.Context, state *declarative.DesiredState) error {
-	pages, err := c.fetchAllPages(ctx, "/macros")
-	if err != nil {
-		return err
-	}
-	if len(pages) == 0 {
-		return nil
-	}
+	for _, project := range state.Projects {
+		projectID, err := c.resolveProjectID(workspaceProjectKey(project.Spec.WorkspaceRef, project.Name))
+		if err != nil {
+			return fmt.Errorf("resolve project %q for macros: %w", project.Name, err)
+		}
+		pages, err := c.fetchAllPages(ctx, "/projects/"+projectID+"/macros")
+		if err != nil {
+			return err
+		}
+		if len(pages) == 0 {
+			continue
+		}
 
-	var items []apiMacro
-	if err := mergePages(pages, &items); err != nil {
-		return err
-	}
+		var items []apiMacro
+		if err := mergePages(pages, &items); err != nil {
+			return err
+		}
 
-	for _, m := range items {
-		state.Macros = append(state.Macros, declarative.MacroResource{
-			Name: m.Name,
-			Spec: declarative.MacroSpec{
-				MacroType:   m.MacroType,
-				Parameters:  m.Parameters,
-				Body:        m.Body,
-				Description: m.Description,
-				CatalogName: m.CatalogName,
-				ProjectName: m.ProjectName,
-				Visibility:  m.Visibility,
-				Owner:       m.Owner,
-				Properties:  m.Properties,
-				Tags:        m.Tags,
-				Status:      m.Status,
-			},
-		})
+		for _, m := range items {
+			state.Macros = append(state.Macros, declarative.MacroResource{
+				Name: m.Name,
+				Spec: declarative.MacroSpec{
+					MacroType:   m.MacroType,
+					Parameters:  m.Parameters,
+					Body:        m.Body,
+					Description: m.Description,
+					CatalogName: m.CatalogName,
+					ProjectName: m.ProjectName,
+					Visibility:  m.Visibility,
+					Owner:       m.Owner,
+					Properties:  m.Properties,
+					Tags:        m.Tags,
+					Status:      m.Status,
+				},
+			})
+		}
 	}
 
 	return nil
@@ -2442,8 +2448,8 @@ type apiModelTest struct {
 	Config   *apiModelTestConfig `json:"config"`
 }
 
-func (c *APIStateClient) listModelTests(ctx context.Context, projectName, modelName string) ([]apiModelTest, bool, error) {
-	pages, err := c.fetchAllPages(ctx, "/models/"+projectName+"/"+modelName+"/tests")
+func (c *APIStateClient) listModelTests(ctx context.Context, projectID, modelName string) ([]apiModelTest, bool, error) {
+	pages, err := c.fetchAllPages(ctx, "/projects/"+projectID+"/models/"+modelName+"/tests")
 	if err != nil {
 		if c.isOptionalReadError(err) {
 			return nil, false, nil
@@ -2552,19 +2558,6 @@ func defaultNotebookCellRole(cellType string) string {
 }
 
 func (c *APIStateClient) readModels(ctx context.Context, state *declarative.DesiredState) error {
-	pages, err := c.fetchAllPages(ctx, "/models")
-	if err != nil {
-		return err
-	}
-	if len(pages) == 0 {
-		return nil
-	}
-
-	var items []apiModel
-	if err := mergePages(pages, &items); err != nil {
-		return err
-	}
-
 	publishedNotebookModels := make(map[string]struct{}, len(state.Notebooks))
 	for _, notebook := range state.Notebooks {
 		if notebook.Spec.Publish == nil || notebook.Spec.Publish.Model == nil {
@@ -2573,34 +2566,53 @@ func (c *APIStateClient) readModels(ctx context.Context, state *declarative.Desi
 		publishedNotebookModels[modelPath(notebook.Spec.Publish.Model.Project, notebook.Spec.Publish.Model.Name)] = struct{}{}
 	}
 
-	for _, m := range items {
-		if _, published := publishedNotebookModels[modelPath(m.ProjectName, m.Name)]; published {
+	for _, project := range state.Projects {
+		projectID, err := c.resolveProjectID(workspaceProjectKey(project.Spec.WorkspaceRef, project.Name))
+		if err != nil {
+			return fmt.Errorf("resolve project %q for models: %w", project.Name, err)
+		}
+		pages, err := c.fetchAllPages(ctx, "/projects/"+projectID+"/models")
+		if err != nil {
+			return err
+		}
+		if len(pages) == 0 {
 			continue
 		}
-		tests, _, err := c.listModelTests(ctx, m.ProjectName, m.Name)
-		if err != nil {
-			return fmt.Errorf("list tests for model %s.%s: %w", m.ProjectName, m.Name, err)
+
+		var items []apiModel
+		if err := mergePages(pages, &items); err != nil {
+			return err
 		}
 
-		testSpecs := make([]declarative.TestSpec, len(tests))
-		for i, test := range tests {
-			testSpecs[i] = toDeclarativeTestSpec(test)
-		}
+		for _, m := range items {
+			if _, published := publishedNotebookModels[modelPath(m.ProjectName, m.Name)]; published {
+				continue
+			}
+			tests, _, err := c.listModelTests(ctx, projectID, m.Name)
+			if err != nil {
+				return fmt.Errorf("list tests for model %s.%s: %w", m.ProjectName, m.Name, err)
+			}
 
-		state.Models = append(state.Models, declarative.ModelResource{
-			ProjectName: m.ProjectName,
-			ModelName:   m.Name,
-			Spec: declarative.ModelSpec{
-				Materialization: m.Materialization,
-				Description:     m.Description,
-				Tags:            m.Tags,
-				SQL:             m.SQL,
-				Config:          toDeclarativeConfig(m.Config),
-				Contract:        toDeclarativeContract(m.Contract),
-				Tests:           testSpecs,
-				Freshness:       toDeclarativeFreshness(m.FreshnessPolicy),
-			},
-		})
+			testSpecs := make([]declarative.TestSpec, len(tests))
+			for i, test := range tests {
+				testSpecs[i] = toDeclarativeTestSpec(test)
+			}
+
+			state.Models = append(state.Models, declarative.ModelResource{
+				ProjectName: m.ProjectName,
+				ModelName:   m.Name,
+				Spec: declarative.ModelSpec{
+					Materialization: m.Materialization,
+					Description:     m.Description,
+					Tags:            m.Tags,
+					SQL:             m.SQL,
+					Config:          toDeclarativeConfig(m.Config),
+					Contract:        toDeclarativeContract(m.Contract),
+					Tests:           testSpecs,
+					Freshness:       toDeclarativeFreshness(m.FreshnessPolicy),
+				},
+			})
+		}
 	}
 
 	return nil
@@ -3061,6 +3073,30 @@ func (c *APIStateClient) resolveProjectID(key string) (string, error) {
 		return "", fmt.Errorf("project %q not found in index", key)
 	}
 	return id, nil
+}
+
+func (c *APIStateClient) resolveProjectIDByName(projectName string) (string, error) {
+	if c.index == nil {
+		return "", fmt.Errorf("resource index not populated; call ReadState first")
+	}
+	projectName = strings.TrimSpace(projectName)
+	if projectName == "" {
+		return "", fmt.Errorf("project name is required")
+	}
+	var matchID string
+	for key, id := range c.index.projectIDByKey {
+		if lastSegment(key) != projectName {
+			continue
+		}
+		if matchID != "" && matchID != id {
+			return "", fmt.Errorf("project %q is ambiguous across workspaces; use a unique project name", projectName)
+		}
+		matchID = id
+	}
+	if matchID == "" {
+		return "", fmt.Errorf("project %q not found in index", projectName)
+	}
+	return matchID, nil
 }
 
 func (c *APIStateClient) resolveEnvironmentID(key string) (string, error) {
@@ -5629,8 +5665,8 @@ func testsEquivalent(desired declarative.TestSpec, actual apiModelTest) bool {
 	return true
 }
 
-func (c *APIStateClient) reconcileModelTests(ctx context.Context, projectName, modelName string, desired []declarative.TestSpec) error {
-	actual, supported, err := c.listModelTests(ctx, projectName, modelName)
+func (c *APIStateClient) reconcileModelTests(ctx context.Context, projectID, modelName string, desired []declarative.TestSpec) error {
+	actual, supported, err := c.listModelTests(ctx, projectID, modelName)
 	if err != nil {
 		return err
 	}
@@ -5654,7 +5690,7 @@ func (c *APIStateClient) reconcileModelTests(ctx context.Context, projectName, m
 			if current.ID == "" {
 				return fmt.Errorf("model test %q missing id for replace", wanted.Name)
 			}
-			resp, err := c.client.Do(http.MethodDelete, "/models/"+projectName+"/"+modelName+"/tests/"+current.ID, nil, nil)
+			resp, err := c.client.Do(http.MethodDelete, "/projects/"+projectID+"/models/"+modelName+"/tests/"+current.ID, nil, nil)
 			if err != nil {
 				return err
 			}
@@ -5663,7 +5699,7 @@ func (c *APIStateClient) reconcileModelTests(ctx context.Context, projectName, m
 			}
 		}
 
-		resp, err := c.client.Do(http.MethodPost, "/models/"+projectName+"/"+modelName+"/tests", nil, toModelTestBody(wanted))
+		resp, err := c.client.Do(http.MethodPost, "/projects/"+projectID+"/models/"+modelName+"/tests", nil, toModelTestBody(wanted))
 		if err != nil {
 			return err
 		}
@@ -5679,7 +5715,7 @@ func (c *APIStateClient) reconcileModelTests(ctx context.Context, projectName, m
 		if current.ID == "" {
 			return fmt.Errorf("model test %q missing id for delete", current.Name)
 		}
-		resp, err := c.client.Do(http.MethodDelete, "/models/"+projectName+"/"+modelName+"/tests/"+current.ID, nil, nil)
+		resp, err := c.client.Do(http.MethodDelete, "/projects/"+projectID+"/models/"+modelName+"/tests/"+current.ID, nil, nil)
 		if err != nil {
 			return err
 		}
@@ -5692,9 +5728,30 @@ func (c *APIStateClient) reconcileModelTests(ctx context.Context, projectName, m
 }
 
 func (c *APIStateClient) executeMacro(_ context.Context, action declarative.Action) error {
+	resolveMacroProjectID := func(action declarative.Action) (string, error) {
+		extract := func(value any) string {
+			resource, ok := value.(declarative.MacroResource)
+			if !ok {
+				return ""
+			}
+			return strings.TrimSpace(resource.Spec.ProjectName)
+		}
+		if projectName := extract(action.Desired); projectName != "" {
+			return c.resolveProjectIDByName(projectName)
+		}
+		if projectName := extract(action.Actual); projectName != "" {
+			return c.resolveProjectIDByName(projectName)
+		}
+		return "", fmt.Errorf("macro %q is missing project scope", action.ResourceName)
+	}
+
 	switch action.Operation {
 	case declarative.OpCreate:
 		macro := action.Desired.(declarative.MacroResource)
+		projectID, err := resolveMacroProjectID(action)
+		if err != nil {
+			return err
+		}
 		body := map[string]interface{}{
 			"name": macro.Name,
 			"body": macro.Spec.Body,
@@ -5711,12 +5768,6 @@ func (c *APIStateClient) executeMacro(_ context.Context, action declarative.Acti
 		if macro.Spec.CatalogName != "" {
 			body["catalog_name"] = macro.Spec.CatalogName
 		}
-		if macro.Spec.ProjectName != "" {
-			body["project_name"] = macro.Spec.ProjectName
-		}
-		if macro.Spec.Visibility != "" {
-			body["visibility"] = macro.Spec.Visibility
-		}
 		if macro.Spec.Owner != "" {
 			body["owner"] = macro.Spec.Owner
 		}
@@ -5730,7 +5781,7 @@ func (c *APIStateClient) executeMacro(_ context.Context, action declarative.Acti
 			body["status"] = macro.Spec.Status
 		}
 
-		resp, err := c.client.Do(http.MethodPost, "/macros", nil, body)
+		resp, err := c.client.Do(http.MethodPost, "/projects/"+projectID+"/macros", nil, body)
 		if err != nil {
 			return err
 		}
@@ -5738,6 +5789,10 @@ func (c *APIStateClient) executeMacro(_ context.Context, action declarative.Acti
 
 	case declarative.OpUpdate:
 		macro := action.Desired.(declarative.MacroResource)
+		projectID, err := resolveMacroProjectID(action)
+		if err != nil {
+			return err
+		}
 		body := map[string]interface{}{}
 		if macro.Spec.Body != "" {
 			body["body"] = macro.Spec.Body
@@ -5746,12 +5801,6 @@ func (c *APIStateClient) executeMacro(_ context.Context, action declarative.Acti
 		body["description"] = macro.Spec.Description
 		if macro.Spec.CatalogName != "" {
 			body["catalog_name"] = macro.Spec.CatalogName
-		}
-		if macro.Spec.ProjectName != "" {
-			body["project_name"] = macro.Spec.ProjectName
-		}
-		if macro.Spec.Visibility != "" {
-			body["visibility"] = macro.Spec.Visibility
 		}
 		if macro.Spec.Owner != "" {
 			body["owner"] = macro.Spec.Owner
@@ -5762,14 +5811,18 @@ func (c *APIStateClient) executeMacro(_ context.Context, action declarative.Acti
 			body["status"] = macro.Spec.Status
 		}
 
-		resp, err := c.client.Do(http.MethodPatch, "/macros/"+macro.Name, nil, body)
+		resp, err := c.client.Do(http.MethodPatch, "/projects/"+projectID+"/macros/"+macro.Name, nil, body)
 		if err != nil {
 			return err
 		}
 		return apiruntime.CheckError(resp)
 
 	case declarative.OpDelete:
-		resp, err := c.client.Do(http.MethodDelete, "/macros/"+action.ResourceName, nil, nil)
+		projectID, err := resolveMacroProjectID(action)
+		if err != nil {
+			return err
+		}
+		resp, err := c.client.Do(http.MethodDelete, "/projects/"+projectID+"/macros/"+action.ResourceName, nil, nil)
 		if err != nil {
 			return err
 		}
@@ -5784,10 +5837,13 @@ func (c *APIStateClient) executeModel(ctx context.Context, action declarative.Ac
 	switch action.Operation {
 	case declarative.OpCreate:
 		model := action.Desired.(declarative.ModelResource)
+		projectID, err := c.resolveProjectIDByName(model.ProjectName)
+		if err != nil {
+			return err
+		}
 		body := map[string]interface{}{
-			"project_name": model.ProjectName,
-			"name":         model.ModelName,
-			"sql":          model.Spec.SQL,
+			"name": model.ModelName,
+			"sql":  model.Spec.SQL,
 		}
 		if model.Spec.Materialization != "" {
 			body["materialization"] = model.Spec.Materialization
@@ -5808,17 +5864,21 @@ func (c *APIStateClient) executeModel(ctx context.Context, action declarative.Ac
 			body["freshness_policy"] = freshness
 		}
 
-		resp, err := c.client.Do(http.MethodPost, "/models", nil, body)
+		resp, err := c.client.Do(http.MethodPost, "/projects/"+projectID+"/models", nil, body)
 		if err != nil {
 			return err
 		}
 		if err := apiruntime.CheckError(resp); err != nil {
 			return err
 		}
-		return c.reconcileModelTests(ctx, model.ProjectName, model.ModelName, model.Spec.Tests)
+		return c.reconcileModelTests(ctx, projectID, model.ModelName, model.Spec.Tests)
 
 	case declarative.OpUpdate:
 		model := action.Desired.(declarative.ModelResource)
+		projectID, err := c.resolveProjectIDByName(model.ProjectName)
+		if err != nil {
+			return err
+		}
 		body := map[string]interface{}{
 			"sql": model.Spec.SQL,
 		}
@@ -5831,7 +5891,7 @@ func (c *APIStateClient) executeModel(ctx context.Context, action declarative.Ac
 		body["contract"] = modelContractBody(model.Spec.Contract)
 		body["freshness_policy"] = modelFreshnessBody(model.Spec.Freshness)
 
-		path := "/models/" + model.ProjectName + "/" + model.ModelName
+		path := "/projects/" + projectID + "/models/" + model.ModelName
 		resp, err := c.client.Do(http.MethodPatch, path, nil, body)
 		if err != nil {
 			return err
@@ -5839,14 +5899,18 @@ func (c *APIStateClient) executeModel(ctx context.Context, action declarative.Ac
 		if err := apiruntime.CheckError(resp); err != nil {
 			return err
 		}
-		return c.reconcileModelTests(ctx, model.ProjectName, model.ModelName, model.Spec.Tests)
+		return c.reconcileModelTests(ctx, projectID, model.ModelName, model.Spec.Tests)
 
 	case declarative.OpDelete:
 		parts := strings.SplitN(action.ResourceName, ".", 2)
 		if len(parts) != 2 {
 			return fmt.Errorf("invalid model resource name: %s", action.ResourceName)
 		}
-		resp, err := c.client.Do(http.MethodDelete, "/models/"+parts[0]+"/"+parts[1], nil, nil)
+		projectID, err := c.resolveProjectIDByName(parts[0])
+		if err != nil {
+			return err
+		}
+		resp, err := c.client.Do(http.MethodDelete, "/projects/"+projectID+"/models/"+parts[1], nil, nil)
 		if err != nil {
 			return err
 		}

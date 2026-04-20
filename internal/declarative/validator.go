@@ -2510,10 +2510,8 @@ var validMacroTypes = map[string]bool{
 }
 
 var validMacroVisibility = map[string]bool{
-	"":               true,
-	"project":        true,
-	"catalog_global": true,
-	"system":         true,
+	"":        true,
+	"project": true,
 }
 
 var validMacroStatus = map[string]bool{
@@ -2743,21 +2741,10 @@ func validateMacros(macros []MacroResource, errs *[]ValidationError) {
 			addErr(errs, path, "macro_type must be \"SCALAR\" or \"TABLE\", got %q", m.Spec.MacroType)
 		}
 		if !validMacroVisibility[m.Spec.Visibility] {
-			addErr(errs, path, "visibility must be one of [project, catalog_global, system], got %q", m.Spec.Visibility)
+			addErr(errs, path, "visibility must be one of [project], got %q", m.Spec.Visibility)
 		}
-		if m.Spec.Visibility == "project" && m.Spec.ProjectName == "" {
-			addErr(errs, path, "project_name is required when visibility is project")
-		}
-		if m.Spec.Visibility == "catalog_global" && m.Spec.CatalogName == "" {
-			addErr(errs, path, "catalog_name is required when visibility is catalog_global")
-		}
-		if m.Spec.Visibility == "system" {
-			if m.Spec.ProjectName != "" {
-				addErr(errs, path, "project_name must be empty when visibility is system")
-			}
-			if m.Spec.CatalogName != "" {
-				addErr(errs, path, "catalog_name must be empty when visibility is system")
-			}
+		if m.Spec.ProjectName == "" {
+			addErr(errs, path, "project_name is required")
 		}
 		if !validMacroStatus[m.Spec.Status] {
 			addErr(errs, path, "status must be one of [ACTIVE, DEPRECATED], got %q", m.Spec.Status)
