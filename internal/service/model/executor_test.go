@@ -62,6 +62,42 @@ func newDuckDBServiceForTest(t *testing.T) (*Service, *sql.DB) {
 	}, db
 }
 
+type executorMacroRepoStub struct {
+	all []domain.Macro
+}
+
+func (s executorMacroRepoStub) Create(context.Context, *domain.Macro) (*domain.Macro, error) {
+	panic("unexpected call")
+}
+
+func (s executorMacroRepoStub) GetByName(context.Context, string) (*domain.Macro, error) {
+	panic("unexpected call")
+}
+
+func (s executorMacroRepoStub) List(context.Context, domain.PageRequest) ([]domain.Macro, int64, error) {
+	panic("unexpected call")
+}
+
+func (s executorMacroRepoStub) Update(context.Context, string, domain.UpdateMacroRequest) (*domain.Macro, error) {
+	panic("unexpected call")
+}
+
+func (s executorMacroRepoStub) Delete(context.Context, string) error {
+	panic("unexpected call")
+}
+
+func (s executorMacroRepoStub) ListAll(context.Context) ([]domain.Macro, error) {
+	return append([]domain.Macro(nil), s.all...), nil
+}
+
+func (s executorMacroRepoStub) ListRevisions(context.Context, string) ([]domain.MacroRevision, error) {
+	panic("unexpected call")
+}
+
+func (s executorMacroRepoStub) GetRevisionByVersion(context.Context, string, int) (*domain.MacroRevision, error) {
+	panic("unexpected call")
+}
+
 func TestCanDirectExecOnConn(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -143,6 +179,46 @@ func TestExecuteSingleModel_DDLBypassesQueryEngine(t *testing.T) {
 	}
 }
 
+func TestVerifyMacrosLoadable_SkipsCompileTimeNamespacedMacros(t *testing.T) {
+	t.Parallel()
+
+	db, err := sql.Open("duckdb", "")
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = db.Close() })
+
+	svc := &Service{
+		engine: passthroughSessionEngine{},
+		duckDB: db,
+		logger: slog.New(slog.DiscardHandler),
+		macros: executorMacroRepoStub{
+			all: []domain.Macro{
+				{
+					Name:       "utils.cents_to_dollars",
+					MacroType:  domain.MacroTypeScalar,
+					Parameters: []string{"col"},
+					Body:       "\"(\" + col + \" / 100.0)\"",
+				},
+				{
+					Name:       "double_val",
+					MacroType:  domain.MacroTypeScalar,
+					Parameters: []string{"x"},
+					Body:       "x * 2",
+				},
+			},
+		},
+	}
+
+	require.NoError(t, svc.verifyMacrosLoadable(context.Background(), "admin"))
+
+	row := db.QueryRowContext(context.Background(), "SELECT double_val(3)")
+	var got int64
+	require.NoError(t, row.Scan(&got))
+	assert.EqualValues(t, 6, got)
+
+	_, err = db.ExecContext(context.Background(), "SELECT utils.cents_to_dollars(100)")
+	require.Error(t, err)
+}
+
 func TestResolveIncrementalStrategy(t *testing.T) {
 	tests := []struct {
 		name string
@@ -177,6 +253,38 @@ func TestResolveSchemaChangePolicy(t *testing.T) {
 			assert.Equal(t, tt.want, resolveSchemaChangePolicy(tt.in))
 		})
 	}
+}
+
+func TestResolveEphemeralModels_RewritesRefsToCTEs(t *testing.T) {
+	t.Parallel()
+
+	models := []domain.Model{
+		{
+			ProjectName:     "analytics",
+			Name:            "stg_orders_star",
+			Materialization: domain.MaterializationEphemeral,
+			SQL:             `select * from "e2e"."raw"."orders"`,
+		},
+		{
+			ProjectName:     "analytics",
+			Name:            "stg_orders",
+			Materialization: domain.MaterializationEphemeral,
+			DependsOn:       []string{"analytics.stg_orders_star"},
+			SQL:             `select order_id from "e2e"."app_dev"."stg_orders_star"`,
+		},
+		{
+			ProjectName:     "analytics",
+			Name:            "fct_orders",
+			Materialization: domain.MaterializationTable,
+			DependsOn:       []string{"analytics.stg_orders"},
+			SQL:             `select * from "e2e"."app_dev"."stg_orders"`,
+		},
+	}
+
+	resolved := resolveEphemeralModels(models, "e2e", "app_dev")
+	require.Len(t, resolved, 1)
+	assert.Equal(t, "fct_orders", resolved[0].Name)
+	assert.Equal(t, `WITH "stg_orders_star" AS (select * from "e2e"."raw"."orders"), "stg_orders" AS (select order_id from "stg_orders_star") select * from "stg_orders"`, resolved[0].SQL)
 }
 
 func TestSameColumns(t *testing.T) {

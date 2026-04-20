@@ -85,6 +85,18 @@ func TestExtractColumnLineage(t *testing.T) {
 			},
 		},
 		{
+			name:          "SELECT * with catalog-qualified source",
+			sql:           `SELECT * FROM "e2e"."raw"."orders"`,
+			defaultSchema: "main",
+			catalog: &mockCatalog{tables: map[string][]string{
+				"raw.orders": {"order_id", "amount_cents"},
+			}},
+			expected: []domain.ColumnLineageEntry{
+				{TargetColumn: "order_id", TransformType: domain.TransformDirect, Sources: []domain.ColumnSource{{Schema: "raw", Table: "orders", Column: "order_id"}}},
+				{TargetColumn: "amount_cents", TransformType: domain.TransformDirect, Sources: []domain.ColumnSource{{Schema: "raw", Table: "orders", Column: "amount_cents"}}},
+			},
+		},
+		{
 			name:          "SELECT * multi-table",
 			sql:           "SELECT t.*, s.val FROM t JOIN s ON t.id = s.id",
 			defaultSchema: "main",

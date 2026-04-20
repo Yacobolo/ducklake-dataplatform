@@ -231,6 +231,11 @@ schemas_catalog_compute: {
       "environment_name"
     ]
   },
+  EnvironmentScopedPlanRebuildRequest: #objectSchema & {
+    #fields: {
+      selector: #stringProperty
+    }
+  },
   CompareBuildsRequest: #objectSchema & {
     #fields: {
       project_name: #stringProperty,

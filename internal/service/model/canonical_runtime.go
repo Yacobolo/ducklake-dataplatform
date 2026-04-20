@@ -204,7 +204,8 @@ func (s *Service) CreateRunForBuild(ctx context.Context, principal string, build
 	}
 	compileWarnings = append(compileWarnings, scopeWarnings...)
 	compileWarnings = append(compileWarnings, selectorWarnings...)
-	selected = resolveEphemeralModels(selected)
+	rollupEphemeralArtifacts(selected, compiledArtifacts)
+	selected = resolveEphemeralModels(selected, req.TargetCatalog, req.TargetSchema)
 	if err := s.syncCompiledArtifacts(selected, compiledArtifacts, req); err != nil {
 		return nil, err
 	}

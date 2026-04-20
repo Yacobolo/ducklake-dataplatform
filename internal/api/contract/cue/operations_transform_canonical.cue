@@ -628,7 +628,7 @@ import "list"
 		returns:          "RebuildPlan"
 		error_family:     "resource"
 		params:           #projectEnvironmentPathParametersOnly
-		body_ref:         "PlanRebuildRequest"
+		body_ref:         "EnvironmentScopedPlanRebuildRequest"
 		body_description: "Request payload"
 	},
 	#plainProjectOperation & {

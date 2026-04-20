@@ -101,9 +101,13 @@ func (s *Service) analyzeCompiledModels(
 				targetKey := lineageColumnKey(items[i].TargetCatalog, items[i].TargetSchema, items[i].TargetTable) + "|" + strings.ToLower(items[i].TargetColumn)
 				expandedByTarget[targetKey] = append([]domain.ColumnLineageSourceRef(nil), items[i].Sources...)
 			}
-			result.lineage = append(result.lineage, items...)
-			result.coverageByModel[model.QualifiedName()] = lineageCoverage(items)
-			resolver.columnCache[lineageColumnKey(req.TargetCatalog, effectiveSchema(req.TargetSchema, model.Config.Schema), model.Name)] = targetColumns(items)
+			if model.Materialization != domain.MaterializationEphemeral {
+				result.lineage = append(result.lineage, items...)
+				result.coverageByModel[model.QualifiedName()] = lineageCoverage(items)
+			}
+			cols := targetColumns(items)
+			resolver.columnCache[lineageColumnKey(req.TargetCatalog, effectiveSchema(req.TargetSchema, model.Config.Schema), model.Name)] = cols
+			resolver.columnCache[lineageColumnKey("", effectiveSchema(req.TargetSchema, model.Config.Schema), model.Name)] = cols
 		}
 	}
 
@@ -940,12 +944,13 @@ func (s *Service) prepareBuildAnalysis(
 	if err != nil {
 		return nil, nil, nil, nil, err
 	}
-	selected = resolveEphemeralModels(selected)
-	if err := s.syncCompiledArtifacts(selected, artifacts, req); err != nil {
-		return nil, nil, nil, nil, err
-	}
+	rollupEphemeralArtifacts(selected, artifacts)
 	analysisResult, err := s.analyzeCompiledModels(ctx, principal, selected, artifacts, runCtx, req)
 	if err != nil {
+		return nil, nil, nil, nil, err
+	}
+	selected = resolveEphemeralModels(selected, req.TargetCatalog, req.TargetSchema)
+	if err := s.syncCompiledArtifacts(selected, artifacts, req); err != nil {
 		return nil, nil, nil, nil, err
 	}
 	return selected, artifacts, analysisResult, runCtx, nil

@@ -1520,6 +1520,10 @@ const (
 	EnvironmentKindProduction  EnvironmentKind = "production"
 )
 
+type EnvironmentScopedPlanRebuildRequest struct {
+	Selector *string `json:"selector,omitempty"`
+}
+
 type Error struct {
 	Code    int32           `json:"code"`
 	Details *map[string]any `json:"details,omitempty"`

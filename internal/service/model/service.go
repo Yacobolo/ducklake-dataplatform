@@ -259,16 +259,17 @@ func (s *Service) TriggerRun(ctx context.Context, principal string, req domain.T
 	if err := s.persistCompileDependencyLineage(ctx, selected, compiledArtifacts, req, principal); err != nil {
 		return nil, fmt.Errorf("persist compile dependency lineage: %w", err)
 	}
-
-	// Resolve ephemeral models: inject CTEs and remove from execution set.
-	// This can alter SQL for downstream models, so keep artifacts in sync.
-	selected = resolveEphemeralModels(selected)
-	if err := s.syncCompiledArtifacts(selected, compiledArtifacts, req); err != nil {
-		return nil, err
-	}
+	rollupEphemeralArtifacts(selected, compiledArtifacts)
 	analysisResult, err := s.analyzeCompiledModels(ctx, principal, selected, compiledArtifacts, runCtx, req)
 	if err != nil {
 		return nil, fmt.Errorf("analyze compiled models: %w", err)
+	}
+
+	// Resolve ephemeral models: inject CTEs and remove from execution set.
+	// This can alter SQL for downstream models, so keep artifacts in sync.
+	selected = resolveEphemeralModels(selected, req.TargetCatalog, req.TargetSchema)
+	if err := s.syncCompiledArtifacts(selected, compiledArtifacts, req); err != nil {
+		return nil, err
 	}
 	manifestJSON, err := buildCompileManifest(selected, compiledArtifacts, runCtx, analysisResult.coverageByModel)
 	if err != nil {
@@ -397,14 +398,15 @@ func (s *Service) TriggerRunSync(ctx context.Context, principal string, req doma
 	if err := s.persistCompileDependencyLineage(ctx, selected, compiledArtifacts, req, principal); err != nil {
 		return fmt.Errorf("persist compile dependency lineage: %w", err)
 	}
-
-	selected = resolveEphemeralModels(selected)
-	if err := s.syncCompiledArtifacts(selected, compiledArtifacts, req); err != nil {
-		return err
-	}
+	rollupEphemeralArtifacts(selected, compiledArtifacts)
 	analysisResult, err := s.analyzeCompiledModels(ctx, principal, selected, compiledArtifacts, runCtx, req)
 	if err != nil {
 		return fmt.Errorf("analyze compiled models: %w", err)
+	}
+
+	selected = resolveEphemeralModels(selected, req.TargetCatalog, req.TargetSchema)
+	if err := s.syncCompiledArtifacts(selected, compiledArtifacts, req); err != nil {
+		return err
 	}
 	manifestJSON, err := buildCompileManifest(selected, compiledArtifacts, runCtx, analysisResult.coverageByModel)
 	if err != nil {
@@ -1076,6 +1078,55 @@ func (s *Service) syncCompiledArtifacts(selected []domain.Model, artifacts map[s
 		artifacts[m.ID] = artifact
 	}
 	return nil
+}
+
+func rollupEphemeralArtifacts(models []domain.Model, artifacts map[string]compileResult) {
+	if len(models) == 0 || len(artifacts) == 0 {
+		return
+	}
+
+	byQualified := make(map[string]domain.Model, len(models))
+	for _, m := range models {
+		byQualified[m.QualifiedName()] = m
+	}
+
+	visited := make(map[string]compileResult, len(models))
+	var visit func(domain.Model) compileResult
+	visit = func(model domain.Model) compileResult {
+		if cached, ok := visited[model.ID]; ok {
+			return cached
+		}
+
+		artifact, ok := artifacts[model.ID]
+		if !ok {
+			return compileResult{}
+		}
+
+		for _, dep := range model.DependsOn {
+			depModel, ok := byQualified[dep]
+			if !ok || depModel.Materialization != domain.MaterializationEphemeral {
+				continue
+			}
+			depArtifact := visit(depModel)
+			artifact.varsUsed = dedupeSorted(append(artifact.varsUsed, depArtifact.varsUsed...))
+			artifact.macrosUsed = dedupeSorted(append(artifact.macrosUsed, depArtifact.macrosUsed...))
+			artifact.dependsOn = dedupeSorted(append(artifact.dependsOn, depArtifact.dependsOn...))
+			if artifact.sourcesUsed == nil && len(depArtifact.sourcesUsed) > 0 {
+				artifact.sourcesUsed = map[string]string{}
+			}
+			for key, value := range depArtifact.sourcesUsed {
+				artifact.sourcesUsed[key] = value
+			}
+		}
+
+		visited[model.ID] = artifact
+		artifacts[model.ID] = artifact
+		return artifact
+	}
+
+	for _, m := range models {
+		visit(m)
+	}
 }
 
 func strPtrOrNil(v string) *string {

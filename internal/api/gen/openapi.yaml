@@ -35294,10 +35294,8 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/PlanRebuildRequest'
+              $ref: '#/components/schemas/EnvironmentScopedPlanRebuildRequest'
             example:
-              environment_name: example
-              project_name: example
               selector: example
       x-cli-command: projects environments rebuild-plans create
   /projects/{project_id}/environments/{environment_id}/runs/{run_id}:
@@ -52948,6 +52946,14 @@ components:
         - staging
         - production
       example: development
+    EnvironmentScopedPlanRebuildRequest:
+      type: object
+      properties:
+        selector:
+          type: string
+          example: example
+      example:
+        selector: example
     Error:
       type: object
       required:

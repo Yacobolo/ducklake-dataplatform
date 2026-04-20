@@ -91,3 +91,42 @@ func TestSelectStateModifiedModels(t *testing.T) {
 	require.Len(t, selected, 1)
 	assert.Equal(t, "analytics.fct_orders", selected[0].QualifiedName())
 }
+
+func TestRollupEphemeralArtifacts_PropagatesCompileDependencies(t *testing.T) {
+	models := []domain.Model{
+		{
+			ID:              "e1",
+			ProjectName:     "analytics",
+			Name:            "stg_orders",
+			Materialization: domain.MaterializationEphemeral,
+			DependsOn:       []string{"source:raw.orders"},
+		},
+		{
+			ID:              "t1",
+			ProjectName:     "analytics",
+			Name:            "fct_orders",
+			Materialization: domain.MaterializationTable,
+			DependsOn:       []string{"analytics.stg_orders"},
+		},
+	}
+	artifacts := map[string]compileResult{
+		"e1": {
+			dependsOn:    []string{"source:raw.orders"},
+			varsUsed:     []string{"order_status"},
+			macrosUsed:   []string{"utils.cents_to_dollars"},
+			sourcesUsed:  map[string]string{"analytics.raw.orders": `"e2e"."raw"."orders"`},
+			compiledHash: "sha256:e1",
+		},
+		"t1": {
+			dependsOn:    []string{"analytics.stg_orders"},
+			compiledHash: "sha256:t1",
+		},
+	}
+
+	rollupEphemeralArtifacts(models, artifacts)
+
+	assert.Equal(t, []string{"analytics.stg_orders", "source:raw.orders"}, artifacts["t1"].dependsOn)
+	assert.Equal(t, []string{"utils.cents_to_dollars"}, artifacts["t1"].macrosUsed)
+	assert.Equal(t, []string{"order_status"}, artifacts["t1"].varsUsed)
+	assert.Equal(t, map[string]string{"analytics.raw.orders": `"e2e"."raw"."orders"`}, artifacts["t1"].sourcesUsed)
+}
