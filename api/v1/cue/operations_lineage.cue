@@ -219,6 +219,7 @@ import "list"
 		description:      "Deprecated migration alias. Use project environment rebuild plans."
 		deprecated:       true
 		returns:          "RebuildPlan"
+		success_status:   201
 		body_ref:         "PlanRebuildRequest"
 		body_description: "Request payload"
 	},
@@ -229,6 +230,7 @@ import "list"
 		description:      "Deprecated migration alias. Use project environment build comparisons."
 		deprecated:       true
 		returns:          "BuildCompareResult"
+		success_status:   201
 		body_ref:         "CompareBuildsRequest"
 		body_description: "Request payload"
 	},
@@ -297,6 +299,7 @@ import "list"
 		summary:          "Purge catalog lineage"
 		cli:              "catalog lineage purge"
 		returns:          "PurgeLineageResponse"
+		success_status:   201
 		body_ref:         "PurgeLineageRequest"
 		body_description: "Request payload"
 	},

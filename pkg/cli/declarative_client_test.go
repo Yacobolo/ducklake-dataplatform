@@ -1438,7 +1438,7 @@ func TestExecuteMacro_CreateUpdateDelete(t *testing.T) {
 	assert.Equal(t, http.MethodPost, captured[0].Method)
 	assert.Equal(t, "/v1/projects/project-id-core/macros", captured[0].Path)
 	assert.Equal(t, "fmt_money", bodyStr(captured[0], "name"))
-	assert.Equal(t, "project", bodyStr(captured[0], "visibility"))
+	assert.NotContains(t, captured[0].Body, `"visibility"`)
 
 	update := create
 	update.Operation = declarative.OpUpdate

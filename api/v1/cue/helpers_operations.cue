@@ -32,6 +32,7 @@ import "strings"
 	deprecated?: *false | true
 	cli?:    string | #CLI
 	returns: string
+	success_status: *200 | 201 | 202
 	params:  [...#Parameter]
 }
 
@@ -46,6 +47,7 @@ import "strings"
 	deprecated?:      *false | true
 	cli?:             string | #CLI
 	returns:          string
+	success_status:   *200 | 201 | 202
 	body_ref:         string
 	body_required:    *true | false
 	body_description?: string
@@ -61,6 +63,7 @@ import "strings"
 	description?: string
 	deprecated?: *false | true
 	cli?:    string | #CLI
+	success_status: *204 | 200
 	params:  [...#Parameter]
 }
 
@@ -278,8 +281,8 @@ import "strings"
 #wrappedJSONSuccessResponse: {
 	#body_type: string
 
-	status_code: 200
-	description: "The request has succeeded."
+	status_code: *200 | int
+	description: *"The request has succeeded." | string
 	schema: {
 		ref: #body_type
 	}
@@ -738,8 +741,26 @@ import "strings"
 		if spec.kind == "wrapped_resource" {
 			responses: list.Concat([
 				[
-					#wrappedJSONSuccessResponse & {
-						#body_type: spec.returns
+					{
+						status_code: (spec & #postWrapped).success_status
+						if (spec & #postWrapped).success_status == 200 {
+							description: "The request has succeeded."
+						}
+						if (spec & #postWrapped).success_status == 201 {
+							description: "The request has succeeded and a new resource has been created as a result."
+						}
+						if (spec & #postWrapped).success_status == 202 {
+							description: "The request has been accepted for processing."
+						}
+						schema: {
+							ref: spec.returns
+						}
+						extensions: {
+							"x-apigen-response-shape": {
+								body_type: spec.returns
+								kind:      "wrapped_json"
+							}
+						}
 					},
 				],
 				[
@@ -766,8 +787,26 @@ import "strings"
 			}
 			responses: list.Concat([
 				[
-					#wrappedJSONSuccessResponse & {
-						#body_type: spec.returns
+					{
+						status_code: (spec & #postWrapped).success_status
+						if (spec & #postWrapped).success_status == 200 {
+							description: "The request has succeeded."
+						}
+						if (spec & #postWrapped).success_status == 201 {
+							description: "The request has succeeded and a new resource has been created as a result."
+						}
+						if (spec & #postWrapped).success_status == 202 {
+							description: "The request has been accepted for processing."
+						}
+						schema: {
+							ref: spec.returns
+						}
+						extensions: {
+							"x-apigen-response-shape": {
+								body_type: spec.returns
+								kind:      "wrapped_json"
+							}
+						}
 					},
 				],
 				[

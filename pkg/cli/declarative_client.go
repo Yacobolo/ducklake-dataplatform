@@ -5768,7 +5768,6 @@ func (c *APIStateClient) executeMacro(_ context.Context, action declarative.Acti
 		if macro.Spec.CatalogName != "" {
 			body["catalog_name"] = macro.Spec.CatalogName
 		}
-		body["visibility"] = "project"
 		if macro.Spec.Owner != "" {
 			body["owner"] = macro.Spec.Owner
 		}
@@ -5803,7 +5802,6 @@ func (c *APIStateClient) executeMacro(_ context.Context, action declarative.Acti
 		if macro.Spec.CatalogName != "" {
 			body["catalog_name"] = macro.Spec.CatalogName
 		}
-		body["visibility"] = "project"
 		if macro.Spec.Owner != "" {
 			body["owner"] = macro.Spec.Owner
 		}

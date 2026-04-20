@@ -626,6 +626,7 @@ import "list"
 		summary:          "Create project environment rebuild plan"
 		cli:              "projects environments rebuild-plans create"
 		returns:          "RebuildPlan"
+		success_status:   201
 		error_family:     "resource"
 		params:           #projectEnvironmentPathParametersOnly
 		body_ref:         "EnvironmentScopedPlanRebuildRequest"
@@ -639,6 +640,7 @@ import "list"
 		summary:          "Create project environment build comparison"
 		cli:              "projects environments build-comparisons create"
 		returns:          "BuildCompareResult"
+		success_status:   201
 		error_family:     "resource"
 		params:           #projectEnvironmentPathParametersOnly
 		body_ref:         "CompareBuildsRequest"

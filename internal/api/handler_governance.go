@@ -343,7 +343,7 @@ func (h *APIHandler) PurgeCatalogLineage(ctx context.Context, req GenPurgeCatalo
 	}
 	switch typed := resp.(type) {
 	case PurgeLineage200JSONResponse:
-		return PurgeCatalogLineage200JSONResponse{Body: typed.Body, Headers: PurgeCatalogLineage200ResponseHeaders(typed.Headers)}, nil
+		return PurgeCatalogLineage201JSONResponse{Body: typed.Body, Headers: PurgeCatalogLineage201ResponseHeaders(typed.Headers)}, nil
 	case PurgeLineage403JSONResponse:
 		return PurgeCatalogLineage403JSONResponse(typed), nil
 	case GenPurgeLineage500JSONResponse:
@@ -489,9 +489,9 @@ func (h *APIHandler) PlanRebuild(ctx context.Context, req GenPlanRebuildRequest)
 	if err != nil {
 		return nil, err
 	}
-	return GenPlanRebuild200JSONResponse{
+	return GenPlanRebuild201JSONResponse{
 		Body:    rebuildPlanToAPI(*plan),
-		Headers: GenPlanRebuild200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+		Headers: GenPlanRebuild201ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
@@ -510,9 +510,9 @@ func (h *APIHandler) CompareBuilds(ctx context.Context, req GenCompareBuildsRequ
 	if err != nil {
 		return nil, err
 	}
-	return GenCompareBuilds200JSONResponse{
+	return GenCompareBuilds201JSONResponse{
 		Body:    buildCompareResultToAPI(*result),
-		Headers: GenCompareBuilds200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+		Headers: GenCompareBuilds201ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 

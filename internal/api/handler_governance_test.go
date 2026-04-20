@@ -215,7 +215,7 @@ func TestHandler_PlanRebuild(t *testing.T) {
 		},
 	})
 	require.NoError(t, err)
-	got := resp.(GenPlanRebuild200JSONResponse)
+	got := resp.(GenPlanRebuild201JSONResponse)
 	require.NotNil(t, got.Body.SelectedModels)
 	require.Len(t, *got.Body.SelectedModels, 1)
 	assert.Equal(t, "analytics.fct_orders", *(*got.Body.SelectedModels)[0].ModelName)

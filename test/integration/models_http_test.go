@@ -571,6 +571,7 @@ func TestHTTP_MacroCRUD(t *testing.T) {
 				"parameters":  []string{"x"},
 				"body":        "x * 2",
 				"description": "Doubles the input value",
+				"project_name": "analytics",
 			})
 			require.Equal(t, 201, resp.StatusCode)
 
@@ -592,6 +593,7 @@ func TestHTTP_MacroCRUD(t *testing.T) {
 				"macro_type": "TABLE",
 				"parameters": []string{"n"},
 				"body":       "SELECT * FROM generate_series(1, n)",
+				"project_name": "analytics",
 			})
 			require.Equal(t, 201, resp.StatusCode)
 			_ = resp.Body.Close()
@@ -599,8 +601,9 @@ func TestHTTP_MacroCRUD(t *testing.T) {
 
 		{"create_macro_duplicate_409", func(t *testing.T) {
 			resp := doRequest(t, "POST", env.Server.URL+"/v1/macros", env.Keys.Admin, map[string]interface{}{
-				"name": "double_val",
-				"body": "x * 3",
+				"name":         "double_val",
+				"body":         "x * 3",
+				"project_name": "analytics",
 			})
 			defer resp.Body.Close() //nolint:errcheck
 			require.Equal(t, 409, resp.StatusCode)
@@ -666,7 +669,7 @@ func TestHTTP_MacroCRUD(t *testing.T) {
 			resp := doRequest(t, "PATCH", env.Server.URL+"/v1/macros/double_val", env.Keys.Admin, map[string]interface{}{
 				"catalog_name": "main",
 				"project_name": "analytics",
-				"visibility":   "catalog_global",
+				"visibility":   "project",
 				"owner":        "data-platform",
 				"properties": map[string]interface{}{
 					"domain": "finance",
@@ -680,7 +683,7 @@ func TestHTTP_MacroCRUD(t *testing.T) {
 			assert.Equal(t, doubleValID, result["id"])
 			assert.Equal(t, "main", result["catalog_name"])
 			assert.Equal(t, "analytics", result["project_name"])
-			assert.Equal(t, "catalog_global", result["visibility"])
+			assert.Equal(t, "project", result["visibility"])
 			assert.Equal(t, "data-platform", result["owner"])
 
 			var comment sql.NullString
@@ -788,10 +791,11 @@ func TestHTTP_MacroImpact(t *testing.T) {
 	env := setupHTTPServer(t, httpTestOpts{WithModels: true})
 
 	createMacroResp := doRequest(t, "POST", env.Server.URL+"/v1/macros", env.Keys.Admin, map[string]interface{}{
-		"name":       "double_val",
-		"macro_type": "SCALAR",
-		"parameters": []string{"x"},
-		"body":       "x * 2",
+		"name":         "double_val",
+		"macro_type":   "SCALAR",
+		"parameters":   []string{"x"},
+		"body":         "x * 2",
+		"project_name": "analytics",
 	})
 	require.Equal(t, 201, createMacroResp.StatusCode)
 	_ = createMacroResp.Body.Close()
@@ -836,10 +840,11 @@ func TestHTTP_MacroRevisionDiff_ImpactChanged(t *testing.T) {
 	env := setupHTTPServer(t, httpTestOpts{WithModels: true})
 
 	createMacroResp := doRequest(t, "POST", env.Server.URL+"/v1/macros", env.Keys.Admin, map[string]interface{}{
-		"name":       "double_val",
-		"macro_type": "SCALAR",
-		"parameters": []string{"x"},
-		"body":       "x * 2",
+		"name":         "double_val",
+		"macro_type":   "SCALAR",
+		"parameters":   []string{"x"},
+		"body":         "x * 2",
+		"project_name": "analytics",
 	})
 	require.Equal(t, 201, createMacroResp.StatusCode)
 	_ = createMacroResp.Body.Close()
@@ -1671,8 +1676,9 @@ func TestHTTP_ModelNonAdminAccess(t *testing.T) {
 
 		{"analyst_creates_macro", func(t *testing.T) {
 			resp := doRequest(t, "POST", env.Server.URL+"/v1/macros", env.Keys.Analyst, map[string]interface{}{
-				"name": "analyst_macro",
-				"body": "x + 1",
+				"name":         "analyst_macro",
+				"body":         "x + 1",
+				"project_name": "analytics",
 			})
 			require.Equal(t, 201, resp.StatusCode)
 			_ = resp.Body.Close()
@@ -1695,8 +1701,9 @@ func TestHTTP_MacroDefaultType(t *testing.T) {
 	env := setupHTTPServer(t, httpTestOpts{WithModels: true})
 
 	resp := doRequest(t, "POST", env.Server.URL+"/v1/macros", env.Keys.Admin, map[string]interface{}{
-		"name": "default_type_macro",
-		"body": "42",
+		"name":         "default_type_macro",
+		"body":         "42",
+		"project_name": "analytics",
 	})
 	require.Equal(t, 201, resp.StatusCode)
 

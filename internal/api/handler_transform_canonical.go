@@ -1156,9 +1156,9 @@ func (h *APIHandler) CreateProjectEnvironmentRebuildPlan(ctx context.Context, re
 	if err != nil {
 		return nil, err
 	}
-	return GenCreateProjectEnvironmentRebuildPlan200JSONResponse{
+	return GenCreateProjectEnvironmentRebuildPlan201JSONResponse{
 		Body:    rebuildPlanToAPI(*item),
-		Headers: GenCreateProjectEnvironmentRebuildPlan200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+		Headers: GenCreateProjectEnvironmentRebuildPlan201ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
@@ -1181,9 +1181,9 @@ func (h *APIHandler) CreateProjectEnvironmentBuildComparison(ctx context.Context
 	if err != nil {
 		return nil, err
 	}
-	return GenCreateProjectEnvironmentBuildComparison200JSONResponse{
+	return GenCreateProjectEnvironmentBuildComparison201JSONResponse{
 		Body:    buildCompareResultToAPI(*item),
-		Headers: GenCreateProjectEnvironmentBuildComparison200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+		Headers: GenCreateProjectEnvironmentBuildComparison201ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 

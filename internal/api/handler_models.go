@@ -449,8 +449,10 @@ func modelCompileDiagnosticsToAPI(item *domain.ModelCompileDiagnostics) *ModelRu
 	if item == nil {
 		return nil
 	}
-	warnings := append([]string(nil), item.Warnings...)
-	errors := append([]string(nil), item.Errors...)
+	warnings := make([]string, 0, len(item.Warnings))
+	warnings = append(warnings, item.Warnings...)
+	errors := make([]string, 0, len(item.Errors))
+	errors = append(errors, item.Errors...)
 	diagnostics := make([]CompileDiagnostic, 0, len(item.Items))
 	for _, entry := range item.Items {
 		diagnostics = append(diagnostics, compileDiagnosticToAPI(entry))
