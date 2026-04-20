@@ -270,7 +270,7 @@ func scanCompiledColumnLineage(rows *sql.Rows) ([]domain.CompiledColumnLineage, 
 	order := make([]key, 0)
 	for rows.Next() {
 		var (
-			buildID            string
+			buildID            sql.NullString
 			compilationID      sql.NullString
 			projectName        string
 			modelName          string
@@ -305,8 +305,12 @@ func scanCompiledColumnLineage(rows *sql.Rows) ([]domain.CompiledColumnLineage, 
 			if compilationID.Valid {
 				compilationIDValue = compilationID.String
 			}
+			buildIDValue := ""
+			if buildID.Valid {
+				buildIDValue = buildID.String
+			}
 			item = &domain.CompiledColumnLineage{
-				BuildID:       buildID,
+				BuildID:       buildIDValue,
 				CompilationID: compilationIDValue,
 				ProjectName:   projectName,
 				ModelName:     modelName,
@@ -352,9 +356,6 @@ func scanCompiledColumnLineage(rows *sql.Rows) ([]domain.CompiledColumnLineage, 
 func lineageIDForColumn(keyColumn, keyID, target string) any {
 	if keyColumn == target {
 		return keyID
-	}
-	if target == "build_id" {
-		return ""
 	}
 	return nil
 }

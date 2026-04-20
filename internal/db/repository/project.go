@@ -747,6 +747,7 @@ func scanCompilation(scanner projectRowScanner) (*domain.Compilation, error) {
 	var resolvedReleaseID sql.NullString
 	var compileDiagnostics sql.NullString
 	var stateSnapshot sql.NullString
+	var createdAt string
 	if err := scanner.Scan(
 		&item.ID,
 		&item.ProjectID,
@@ -763,7 +764,7 @@ func scanCompilation(scanner projectRowScanner) (*domain.Compilation, error) {
 		&compileDiagnostics,
 		&stateSnapshot,
 		&item.CreatedBy,
-		&item.CreatedAt,
+		&createdAt,
 	); err != nil {
 		return nil, mapDBError(err)
 	}
@@ -778,6 +779,9 @@ func scanCompilation(scanner projectRowScanner) (*domain.Compilation, error) {
 	}
 	if stateSnapshot.Valid {
 		item.StateSnapshot = &stateSnapshot.String
+	}
+	if createdAt != "" {
+		item.CreatedAt = parseSQLiteTimestamp(createdAt)
 	}
 	return &item, nil
 }
@@ -861,6 +865,7 @@ func scanProjectRelease(scanner projectRowScanner) (*domain.ProjectRelease, erro
 	var resolvedBuildID sql.NullString
 	var resolvedCompilationID sql.NullString
 	var snapshotJSON sql.NullString
+	var createdAt string
 	if err := scanner.Scan(
 		&item.ID,
 		&item.ProjectID,
@@ -870,7 +875,7 @@ func scanProjectRelease(scanner projectRowScanner) (*domain.ProjectRelease, erro
 		&resolvedCompilationID,
 		&snapshotJSON,
 		&item.CreatedBy,
-		&item.CreatedAt,
+		&createdAt,
 	); err != nil {
 		return nil, mapDBError(err)
 	}
@@ -886,6 +891,9 @@ func scanProjectRelease(scanner projectRowScanner) (*domain.ProjectRelease, erro
 			return nil, fmt.Errorf("unmarshal project release snapshot: %w", err)
 		}
 		item.Snapshot = &snapshot
+	}
+	if createdAt != "" {
+		item.CreatedAt = parseSQLiteTimestamp(createdAt)
 	}
 	return &item, nil
 }
