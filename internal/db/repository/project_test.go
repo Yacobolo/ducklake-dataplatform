@@ -11,63 +11,37 @@ import (
 	"github.com/Yacobolo/quackstack/internal/domain"
 )
 
-func TestProjectRepo_CreateListByProductEnvironmentAndBuildLifecycle(t *testing.T) {
+func TestProjectRepo_CreateEnvironmentAndBuildLifecycle(t *testing.T) {
 	writeDB, _ := internaldb.OpenTestSQLite(t)
 	ctx := context.Background()
 
-	domainRepo := NewDomainRepo(writeDB)
-	teamRepo := NewTeamRepo(writeDB)
-	productRepo := NewDataProductRepo(writeDB)
+	groupRepo := NewGroupRepo(writeDB)
 	workspaceRepo := NewWorkspaceRepo(writeDB)
 	projectRepo := NewProjectRepo(writeDB)
 	environmentRepo := NewEnvironmentRepo(writeDB)
-
-	domainItem, err := domainRepo.Create(ctx, &domain.Domain{Name: "Revenue"})
+	group, err := groupRepo.Create(ctx, &domain.Group{Name: "analytics-engineering"})
 	require.NoError(t, err)
-	teamItem, err := teamRepo.Create(ctx, &domain.Team{
-		DomainID:       domainItem.ID,
-		Name:           "Analytics Engineering",
-		ContactChannel: "#rev-data",
-	})
-	require.NoError(t, err)
-	productItem, err := productRepo.Create(ctx, &domain.DataProduct{
-		Slug:              "daily-orders",
-		Name:              "Daily Orders",
-		DomainID:          domainItem.ID,
-		OwnerTeamID:       teamItem.ID,
-		StewardPrincipal:  "alice",
-		ContactChannel:    "#rev-data",
-		PublicationIntent: domain.ProductPublicationIntentDraft,
-		CreatedBy:         "alice",
-	})
-	require.NoError(t, err)
+	ownerGroupID := group.ID
 	workspace, err := workspaceRepo.Create(ctx, &domain.Workspace{
-		Name:        "Revenue Workspace",
-		Kind:        domain.WorkspaceKindShared,
-		OwnerTeamID: &teamItem.ID,
-		CreatedBy:   "alice",
+		Name:         "Revenue Workspace",
+		Kind:         domain.WorkspaceKindShared,
+		OwnerGroupID: &ownerGroupID,
+		CreatedBy:    "alice",
 	})
 	require.NoError(t, err)
 
 	project, err := projectRepo.Create(ctx, &domain.Project{
-		WorkspaceID:   workspace.ID,
-		Name:          "rev-orders",
-		Kind:          domain.ProjectKindShared,
-		Description:   "Revenue orders authoring",
-		OwnerTeamID:   &teamItem.ID,
-		ProductID:     &productItem.ID,
-		DefaultBranch: "main",
-		CreatedBy:     "alice",
+		WorkspaceID:    workspace.ID,
+		Name:           "rev-orders",
+		Kind:           domain.ProjectKindShared,
+		Description:    "Revenue orders authoring",
+		OwnerGroupID:   &ownerGroupID,
+		DefaultBranch:  "main",
+		CreatedBy:      "alice",
 	})
 	require.NoError(t, err)
-	require.NotNil(t, project.ProductID)
-	assert.Equal(t, productItem.ID, *project.ProductID)
-
-	projects, total, err := projectRepo.ListByProduct(ctx, productItem.ID, domain.PageRequest{MaxResults: 10})
-	require.NoError(t, err)
-	assert.EqualValues(t, 1, total)
-	require.Len(t, projects, 1)
-	assert.Equal(t, "rev-orders", projects[0].Name)
+	require.NotNil(t, project.OwnerGroupID)
+	assert.Equal(t, ownerGroupID, *project.OwnerGroupID)
 
 	environment, err := environmentRepo.Create(ctx, &domain.Environment{
 		ProjectID:     project.ID,
@@ -89,7 +63,6 @@ func TestProjectRepo_CreateListByProductEnvironmentAndBuildLifecycle(t *testing.
 	buildRepo := NewBuildRepo(writeDB)
 	build, err := buildRepo.Create(ctx, &domain.Build{
 		ProjectID:       project.ID,
-		ProductID:       &productItem.ID,
 		EnvironmentID:   environment.ID,
 		GitRef:          "refs/heads/main",
 		Selector:        "tag:revenue",
@@ -99,8 +72,6 @@ func TestProjectRepo_CreateListByProductEnvironmentAndBuildLifecycle(t *testing.
 		CreatedBy:       "alice",
 	})
 	require.NoError(t, err)
-	require.NotNil(t, build.ProductID)
-	assert.Equal(t, productItem.ID, *build.ProductID)
 	assert.Equal(t, "rev-orders", build.ProjectName)
 	assert.Equal(t, "dev", build.EnvironmentName)
 
@@ -111,8 +82,8 @@ func TestProjectRepo_CreateListByProductEnvironmentAndBuildLifecycle(t *testing.
 	assert.Equal(t, build.ID, builds[0].ID)
 	assert.Equal(t, domain.BuildStateReady, builds[0].State)
 
-	require.NoError(t, buildRepo.UpdateState(ctx, build.ID, domain.BuildStateReleased))
+	require.NoError(t, buildRepo.UpdateState(ctx, build.ID, domain.BuildStateReady))
 	updated, err := buildRepo.GetByID(ctx, build.ID)
 	require.NoError(t, err)
-	assert.Equal(t, domain.BuildStateReleased, updated.State)
+	assert.Equal(t, domain.BuildStateReady, updated.State)
 }

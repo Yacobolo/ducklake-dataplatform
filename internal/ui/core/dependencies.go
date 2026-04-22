@@ -19,7 +19,6 @@ import (
 	"github.com/Yacobolo/quackstack/internal/service/notebook"
 	"github.com/Yacobolo/quackstack/internal/service/orchestration"
 	"github.com/Yacobolo/quackstack/internal/service/pipeline"
-	productsvc "github.com/Yacobolo/quackstack/internal/service/product"
 	projectsvc "github.com/Yacobolo/quackstack/internal/service/project"
 	"github.com/Yacobolo/quackstack/internal/service/query"
 	"github.com/Yacobolo/quackstack/internal/service/resourceaccess"
@@ -44,7 +43,6 @@ type Dependencies struct {
 	Manifest            *query.ManifestService
 	View                *catalog.ViewService
 	Pipeline            *pipeline.Service
-	Product             *productsvc.Service
 	Asset               *assetsvc.Service
 	Backfill            *orchestration.BackfillService
 	Notebook            *notebook.Service

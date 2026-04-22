@@ -244,7 +244,6 @@ func run() error {
 		svc.Semantic,
 		svc.Dashboard,
 	)
-	handler.SetProductService(svc.Product)
 	handler.SetNotebookFolders(svc.NotebookFolders)
 	handler.SetWorkspaceService(svc.Workspace)
 	handler.SetProjectControlService(svc.Project)
@@ -483,7 +482,6 @@ func run() error {
 	uiHandler.GitService = svc.GitService
 	uiHandler.Dependencies.Semantic = svc.Semantic
 	uiHandler.Dashboard = svc.Dashboard
-	uiHandler.Product = svc.Product
 	uiHandler.SyncDependencies()
 	r.Route("/ui", func(r chi.Router) {
 		ui.MountRoutes(r, uiHandler)

@@ -1374,7 +1374,6 @@ func (s *Service) createRunBuild(
 	}
 	build := &domain.Build{
 		ProjectID:          project.ID,
-		ProductID:          project.ProductID,
 		EnvironmentID:      environment.ID,
 		State:              domain.BuildStateReady,
 		GitRef:             "refs/heads/" + project.DefaultBranch,

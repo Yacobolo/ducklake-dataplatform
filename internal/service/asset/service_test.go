@@ -22,11 +22,10 @@ func TestService_CreateAsset_ReconcilesDependenciesAndChecks(t *testing.T) {
 	_, err := assets.Create(adminCtx(), &domain.DataAsset{AssetKey: "showcase.rides.raw", AssetType: domain.AssetTypeTable, Owner: "platform-admins", CreatedBy: "tester", IsActive: true, SchemaJSON: map[string]any{}})
 	require.NoError(t, err)
 
-	svc := &Service{assets: assets, deps: deps, checks: checks, products: fakeProductLookup{}}
+	svc := &Service{assets: assets, deps: deps, checks: checks}
 	created, err := svc.CreateAsset(adminCtx(), domain.CreateAssetRequest{
 		AssetKey:              "showcase.rides.bronze",
 		AssetType:             domain.AssetTypeTable,
-		ProductSlug:           "rides",
 		Owner:                 "data-engineers",
 		Description:           "Bronze showcase asset",
 		Tags:                  []string{"showcase", "bronze"},
@@ -62,10 +61,9 @@ func TestService_UpdateAsset_ReplacesChecks(t *testing.T) {
 	_, err = checks.CreateCheck(adminCtx(), &domain.AssetCheck{AssetID: asset.ID, Name: "old_check", CheckType: "SQL_ASSERT", Enabled: true, ConfigJSON: map[string]any{}})
 	require.NoError(t, err)
 
-	svc := &Service{assets: assets, deps: deps, checks: checks, products: fakeProductLookup{}}
+	svc := &Service{assets: assets, deps: deps, checks: checks}
 	updated, err := svc.UpdateAsset(adminCtx(), "showcase.rides.gold", domain.UpdateAssetRequest{
 		AssetType:             domain.AssetTypeTable,
-		ProductSlug:           "rides",
 		Owner:                 "analytics",
 		FreshnessPolicy:       &domain.AssetFreshnessPolicy{MaxLagSeconds: 600},
 		AutoMaterializePolicy: &domain.AssetAutoMaterializePolicy{Mode: "AUTO", OnUpstreamMaterialized: true},
@@ -92,11 +90,10 @@ func TestService_CreateAsset_RollsBackWhenUpstreamResolutionFails(t *testing.T) 
 	deps := &fakeAssetDependencyRepo{}
 	checks := &fakeAssetCheckRepo{checksByAsset: map[string][]domain.AssetCheck{}}
 
-	svc := &Service{assets: assets, deps: deps, checks: checks, products: fakeProductLookup{}}
+	svc := &Service{assets: assets, deps: deps, checks: checks}
 	created, err := svc.CreateAsset(adminCtx(), domain.CreateAssetRequest{
 		AssetKey:          "showcase.rides.failed",
 		AssetType:         domain.AssetTypeTable,
-		ProductSlug:       "rides",
 		Owner:             "data-engineers",
 		IsActive:          true,
 		UpstreamAssetKeys: []string{"showcase.rides.missing"},
@@ -305,14 +302,6 @@ type fakeAssetRepo struct {
 	assetsByID map[string]domain.DataAsset
 	idsByKey   map[string]string
 	seq        int
-}
-
-type fakeProductLookup struct{}
-
-func (fakeProductLookup) GetBySlug(_ context.Context, slug string) (*domain.DataProductDetail, error) {
-	return &domain.DataProductDetail{
-		Product: domain.DataProduct{ID: "product-" + slug, Slug: slug, Name: slug},
-	}, nil
 }
 
 func (f *fakeAssetRepo) Create(_ context.Context, a *domain.DataAsset) (*domain.DataAsset, error) {

@@ -91,7 +91,6 @@ func (h *APIHandler) CreateWorkspaceProject(ctx context.Context, req GenCreateWo
 		Name:          req.Body.Name,
 		Kind:          derefStringEnum(req.Body.Kind),
 		Description:   derefString(req.Body.Description),
-		ProductID:     req.Body.ProductId,
 		DefaultBranch: derefString(req.Body.DefaultBranch),
 	})
 	if err != nil {
@@ -163,7 +162,6 @@ func (h *APIHandler) UpdateProject(ctx context.Context, req GenUpdateProjectRequ
 	item, err := h.projectsCtl.UpdateProjectForPrincipal(ctx, cp.Name, cp.IsAdmin, req.ProjectId, domain.UpdateProjectRequest{
 		Description:   req.Body.Description,
 		DefaultBranch: req.Body.DefaultBranch,
-		ProductID:     req.Body.ProductId,
 	})
 	if err != nil {
 		if resp, ok := respondDomainErrorForOperation[GenUpdateProjectResponse]("updateProject", err, domainErrorResponder[GenUpdateProjectResponse]{
@@ -930,9 +928,8 @@ func projectToAPI(item domain.Project) Project {
 		Name:           item.Name,
 		Kind:           ProjectKind(item.Kind),
 		Description:    optStr(item.Description),
-		OwnerTeamId:    item.OwnerTeamID,
+		OwnerGroupId:   item.OwnerGroupID,
 		OwnerPrincipal: item.OwnerPrincipal,
-		ProductId:      item.ProductID,
 		DefaultBranch:  optStr(item.DefaultBranch),
 		CreatedAt:      formatTimePtr(&item.CreatedAt),
 		UpdatedAt:      formatTimePtr(&item.UpdatedAt),
@@ -974,7 +971,6 @@ func buildToAPI(item domain.Build) Build {
 		Id:                 optStr(item.ID),
 		ProjectId:          optStr(item.ProjectID),
 		ProjectName:        optStr(item.ProjectName),
-		ProductId:          item.ProductID,
 		EnvironmentId:      optStr(item.EnvironmentID),
 		EnvironmentName:    optStr(item.EnvironmentName),
 		State:              buildStateToAPI(item.State),

@@ -41,12 +41,7 @@ func assetDetailPage(d assetDetailPageData) Node {
 						statusLabel(assetActiveLabel(d.IsActive), assetActiveTone(d.IsActive)),
 						statusLabel(summary.MaterializationMode, "accent"),
 						statusLabel(summary.PartitionLabel, "accent"),
-						func() Node {
-							if strings.TrimSpace(d.ProductSlug) == "" {
-								return statusLabel("Unlinked runtime asset", "attention")
-							}
-							return core.SubtleLink("/ui/products/"+d.ProductSlug, Text("Product: "+fallbackString(d.ProductName, d.ProductSlug)))
-						}(),
+						statusLabel("Runtime asset", "attention"),
 					),
 				),
 				core.DetailHeroMeta(

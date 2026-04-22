@@ -118,7 +118,6 @@ func (s *Service) CreateEnvironmentBuild(
 	}
 	build, err := s.builds.Create(ctx, &domain.Build{
 		ProjectID:          runCtx.project.ID,
-		ProductID:          runCtx.project.ProductID,
 		EnvironmentID:      runCtx.environment.ID,
 		State:              domain.BuildStateReady,
 		GitRef:             strings.TrimSpace(req.GitRef),

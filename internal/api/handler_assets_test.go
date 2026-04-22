@@ -148,7 +148,6 @@ func TestHandler_CreateAsset(t *testing.T) {
 	h := &APIHandler{assets: &mockAssetService{createAssetFn: func(_ context.Context, req domain.CreateAssetRequest) (*domain.DataAsset, error) {
 		require.Equal(t, "showcase.rides.gold", req.AssetKey)
 		require.Equal(t, domain.AssetTypeTable, req.AssetType)
-		require.Equal(t, "rides", req.ProductSlug)
 		require.Equal(t, []string{"showcase.rides.silver"}, req.UpstreamAssetKeys)
 		require.Len(t, req.Checks, 1)
 		require.NotNil(t, req.FreshnessPolicy)
@@ -174,7 +173,6 @@ func TestHandler_CreateAsset(t *testing.T) {
 	resp, err := h.CreateAsset(assetTestCtx(true), GenCreateAssetRequest{Body: &CreateAssetJSONRequestBody{
 		AssetKey:        "showcase.rides.gold",
 		AssetType:       domain.AssetTypeTable,
-		ProductSlug:     "rides",
 		Owner:           "platform-admins",
 		Description:     assetStrPtr("Gold showcase asset"),
 		Tags:            &[]string{"showcase", "gold"},
@@ -250,7 +248,6 @@ func TestHandler_UpdateAsset(t *testing.T) {
 	updatedAt := time.Now().UTC()
 	h := &APIHandler{assets: &mockAssetService{updateAssetFn: func(_ context.Context, assetKey string, req domain.UpdateAssetRequest) (*domain.DataAsset, error) {
 		require.Equal(t, "showcase.rides.silver", assetKey)
-		require.Equal(t, "rides", req.ProductSlug)
 		require.Equal(t, "analytics", req.Owner)
 		require.Equal(t, []string{"showcase.rides.bronze"}, req.UpstreamAssetKeys)
 		require.NotNil(t, req.FreshnessPolicy)
@@ -270,7 +267,6 @@ func TestHandler_UpdateAsset(t *testing.T) {
 	assetType := AssetType(domain.AssetTypeTable)
 	resp, err := h.UpdateAsset(assetTestCtx(true), GenUpdateAssetRequest{AssetKey: "showcase.rides.silver", Body: &UpdateAssetJSONRequestBody{
 		AssetType:       &assetType,
-		ProductSlug:     assetStrPtr("rides"),
 		Owner:           assetStrPtr("analytics"),
 		Description:     assetStrPtr("Silver showcase asset"),
 		FreshnessPolicy: &AssetFreshnessPolicy{MaxLagSeconds: assetInt32Ptr(600)},

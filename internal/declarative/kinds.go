@@ -10,13 +10,11 @@ const (
 	KindPrincipal                                  // layer 0
 	KindTag                                        // layer 0
 	KindMacro                                      // layer 0
-	KindDomain                                     // layer 0
 	KindWorkspace                                  // layer 0
 	KindGroup                                      // layer 1
 	KindExternalLocation                           // layer 1
 	KindComputeEndpoint                            // layer 1
 	KindComputeRoutingDefaults                     // layer 1
-	KindTeam                                       // layer 1
 	KindFolder                                     // layer 1
 	KindProject                                    // layer 1
 	KindGroupMembership                            // layer 2
@@ -35,7 +33,6 @@ const (
 	KindColumnMaskBinding                          // layer 6
 	KindAPIKey                                     // layer 6
 	KindNotebook                                   // layer 6
-	KindDataProduct                                // layer 7
 	KindAsset                                      // layer 8
 	KindModel                                      // layer 9
 	KindSemanticModel                              // layer 10
@@ -53,8 +50,6 @@ func (k ResourceKind) String() string {
 		return "tag"
 	case KindMacro:
 		return "macro"
-	case KindDomain:
-		return "domain"
 	case KindWorkspace:
 		return "workspace"
 	case KindGroup:
@@ -65,8 +60,6 @@ func (k ResourceKind) String() string {
 		return "compute-endpoint"
 	case KindComputeRoutingDefaults:
 		return "compute-routing-defaults"
-	case KindTeam:
-		return "team"
 	case KindFolder:
 		return "folder"
 	case KindProject:
@@ -103,8 +96,6 @@ func (k ResourceKind) String() string {
 		return "api-key"
 	case KindNotebook:
 		return "notebook"
-	case KindDataProduct:
-		return "data-product"
 	case KindAsset:
 		return "asset"
 	case KindModel:
@@ -122,9 +113,9 @@ func (k ResourceKind) String() string {
 // Layer 0 has no dependencies; higher layers depend on lower ones.
 func (k ResourceKind) Layer() int {
 	switch k {
-	case KindStorageCredential, KindPrincipal, KindTag, KindMacro, KindDomain, KindWorkspace:
+	case KindStorageCredential, KindPrincipal, KindTag, KindMacro, KindWorkspace:
 		return 0
-	case KindGroup, KindExternalLocation, KindComputeEndpoint, KindComputeRoutingDefaults, KindTeam, KindFolder, KindProject:
+	case KindGroup, KindExternalLocation, KindComputeEndpoint, KindComputeRoutingDefaults, KindFolder, KindProject:
 		return 1
 	case KindGroupMembership, KindCatalogRegistration, KindEnvironment:
 		return 2
@@ -136,8 +127,6 @@ func (k ResourceKind) Layer() int {
 		return 5
 	case KindRowFilterBinding, KindColumnMaskBinding, KindAPIKey, KindNotebook:
 		return 6
-	case KindDataProduct:
-		return 7
 	case KindAsset:
 		return 8
 	case KindModel:
@@ -201,13 +190,10 @@ const (
 	KindNameComputeEndpointList    = "ComputeEndpointList"
 	KindNameComputeAssignmentList  = "ComputeAssignmentList"
 	KindNameComputeRoutingDefaults = "ComputeRoutingDefaults"
-	KindNameDomain                 = "Domain"
 	KindNameWorkspace              = "Workspace"
 	KindNameFolder                 = "Folder"
 	KindNameProject                = "Project"
 	KindNameEnvironment            = "Environment"
-	KindNameTeam                   = "Team"
-	KindNameDataProduct            = "DataProduct"
 	KindNameNotebook               = "Notebook"
 	KindNameAsset                  = "Asset"
 	KindNameModel                  = "Model"

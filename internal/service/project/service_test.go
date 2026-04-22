@@ -126,158 +126,6 @@ func (f *fakeBuildRepo) UpdateState(context.Context, string, string) error {
 	panic("UpdateState not implemented")
 }
 
-type fakeTeamRepo struct {
-	getByIDFn func(ctx context.Context, id string) (*domain.Team, error)
-}
-
-func (f *fakeTeamRepo) Create(context.Context, *domain.Team) (*domain.Team, error) {
-	panic("Create not implemented")
-}
-
-func (f *fakeTeamRepo) GetByID(ctx context.Context, id string) (*domain.Team, error) {
-	return f.getByIDFn(ctx, id)
-}
-
-func (f *fakeTeamRepo) GetByDomainAndName(context.Context, string, string) (*domain.Team, error) {
-	panic("GetByDomainAndName not implemented")
-}
-
-func (f *fakeTeamRepo) List(context.Context, domain.PageRequest) ([]domain.Team, int64, error) {
-	panic("List not implemented")
-}
-
-func (f *fakeTeamRepo) Update(context.Context, string, string, *domain.Team) (*domain.Team, error) {
-	panic("Update not implemented")
-}
-
-func (f *fakeTeamRepo) Delete(context.Context, string, string) error {
-	panic("Delete not implemented")
-}
-
-type fakeDataProductRepo struct {
-	getByIDFn func(ctx context.Context, id string) (*domain.DataProduct, error)
-}
-
-func (f *fakeDataProductRepo) Create(context.Context, *domain.DataProduct) (*domain.DataProduct, error) {
-	panic("Create not implemented")
-}
-
-func (f *fakeDataProductRepo) GetByID(ctx context.Context, productID string) (*domain.DataProduct, error) {
-	return f.getByIDFn(ctx, productID)
-}
-
-func (f *fakeDataProductRepo) GetBySlug(context.Context, string) (*domain.DataProductDetail, error) {
-	panic("GetBySlug not implemented")
-}
-
-func (f *fakeDataProductRepo) List(context.Context, domain.DataProductFilter) ([]domain.DataProductListItem, int64, error) {
-	panic("List not implemented")
-}
-
-func (f *fakeDataProductRepo) Update(context.Context, *domain.DataProduct) (*domain.DataProduct, error) {
-	panic("Update not implemented")
-}
-
-func (f *fakeDataProductRepo) Delete(context.Context, string) error {
-	panic("Delete not implemented")
-}
-
-func (f *fakeDataProductRepo) CreateVersion(context.Context, *domain.DataProductVersion) (*domain.DataProductVersion, error) {
-	panic("CreateVersion not implemented")
-}
-
-func (f *fakeDataProductRepo) GetVersionByNumber(context.Context, string, int) (*domain.DataProductVersion, error) {
-	panic("GetVersionByNumber not implemented")
-}
-
-func (f *fakeDataProductRepo) ListVersions(context.Context, string) ([]domain.DataProductVersion, error) {
-	panic("ListVersions not implemented")
-}
-
-func (f *fakeDataProductRepo) DeleteVersion(context.Context, string) error {
-	panic("DeleteVersion not implemented")
-}
-
-func (f *fakeDataProductRepo) UpdateVersionReleaseState(context.Context, string, string) error {
-	panic("UpdateVersionReleaseState not implemented")
-}
-
-func (f *fakeDataProductRepo) UpdatePublicationIntent(context.Context, string, string) error {
-	panic("UpdatePublicationIntent not implemented")
-}
-
-func (f *fakeDataProductRepo) UpsertStatus(context.Context, *domain.DataProductStatus) error {
-	panic("UpsertStatus not implemented")
-}
-
-func (f *fakeDataProductRepo) GetStatus(context.Context, string) (*domain.DataProductStatus, error) {
-	panic("GetStatus not implemented")
-}
-
-func (f *fakeDataProductRepo) AddOutput(context.Context, *domain.ProductOutput) error {
-	panic("AddOutput not implemented")
-}
-
-func (f *fakeDataProductRepo) ListOutputs(context.Context, string) ([]domain.ProductOutput, error) {
-	panic("ListOutputs not implemented")
-}
-
-func (f *fakeDataProductRepo) ReplaceOutputs(context.Context, string, []domain.ProductOutput) error {
-	panic("ReplaceOutputs not implemented")
-}
-
-func (f *fakeDataProductRepo) AddSemanticEntrypoint(context.Context, *domain.ProductSemanticEntrypoint) error {
-	panic("AddSemanticEntrypoint not implemented")
-}
-
-func (f *fakeDataProductRepo) ListSemanticEntrypoints(context.Context, string) ([]domain.ProductSemanticEntrypoint, error) {
-	panic("ListSemanticEntrypoints not implemented")
-}
-
-func (f *fakeDataProductRepo) ReplaceSemanticEntrypoints(context.Context, string, []domain.ProductSemanticEntrypoint) error {
-	panic("ReplaceSemanticEntrypoints not implemented")
-}
-
-func (f *fakeDataProductRepo) AddDependency(context.Context, *domain.ProductDependency) error {
-	panic("AddDependency not implemented")
-}
-
-func (f *fakeDataProductRepo) ListDependencies(context.Context, string) ([]domain.DataProductListItem, error) {
-	panic("ListDependencies not implemented")
-}
-
-func (f *fakeDataProductRepo) AddSubscription(context.Context, *domain.ProductSubscription) (*domain.ProductSubscription, error) {
-	panic("AddSubscription not implemented")
-}
-
-func (f *fakeDataProductRepo) ListSubscriptions(context.Context, string) ([]domain.ProductSubscription, error) {
-	panic("ListSubscriptions not implemented")
-}
-
-func (f *fakeDataProductRepo) AddEvent(context.Context, *domain.ProductEvent) (*domain.ProductEvent, error) {
-	panic("AddEvent not implemented")
-}
-
-func (f *fakeDataProductRepo) ListEvents(context.Context, string, domain.PageRequest) ([]domain.ProductEvent, int64, error) {
-	panic("ListEvents not implemented")
-}
-
-func (f *fakeDataProductRepo) CountDependents(context.Context, string) (int64, error) {
-	panic("CountDependents not implemented")
-}
-
-func (f *fakeDataProductRepo) ListOrphanAssets(context.Context) ([]domain.OrphanResource, error) {
-	panic("ListOrphanAssets not implemented")
-}
-
-func (f *fakeDataProductRepo) ListOrphanSemanticModels(context.Context) ([]domain.OrphanResource, error) {
-	panic("ListOrphanSemanticModels not implemented")
-}
-
-func (f *fakeDataProductRepo) GetByAssetID(context.Context, string) (*domain.DataProductListItem, error) {
-	panic("GetByAssetID not implemented")
-}
-
 type fakeWorkspaceRepo struct {
 	getByIDFn          func(ctx context.Context, id string) (*domain.Workspace, error)
 	getRoleFn          func(ctx context.Context, workspaceID string, principal string) (string, error)
@@ -451,17 +299,16 @@ func (f *fakeSeedRepo) Delete(ctx context.Context, id string) error {
 	return f.deleteFn(ctx, id)
 }
 
-func TestService_CreateProject_DefaultsBranchAndValidatesAttachedProduct(t *testing.T) {
+func TestService_CreateProject_DefaultsBranchAndCopiesWorkspaceOwnership(t *testing.T) {
 	t.Parallel()
 
 	ctx := domain.WithPrincipal(context.Background(), domain.ContextPrincipal{Name: "admin", IsAdmin: true})
-	ownerTeamID := "team-1"
-	productID := "prod-1"
+	ownerGroupID := "group-1"
 	workspaceID := "workspace-1"
 	workspaces := &fakeWorkspaceRepo{
 		getByIDFn: func(_ context.Context, id string) (*domain.Workspace, error) {
 			assert.Equal(t, workspaceID, id)
-			return &domain.Workspace{ID: id, Kind: domain.WorkspaceKindShared, OwnerTeamID: &ownerTeamID}, nil
+			return &domain.Workspace{ID: id, Kind: domain.WorkspaceKindShared, OwnerGroupID: &ownerGroupID}, nil
 		},
 		getRoleFn: func(_ context.Context, id string, principal string) (string, error) {
 			assert.Equal(t, workspaceID, id)
@@ -472,31 +319,18 @@ func TestService_CreateProject_DefaultsBranchAndValidatesAttachedProduct(t *test
 	projects := &fakeProjectRepo{
 		createFn: func(_ context.Context, p *domain.Project) (*domain.Project, error) {
 			assert.Equal(t, workspaceID, p.WorkspaceID)
-			require.NotNil(t, p.OwnerTeamID)
-			assert.Equal(t, ownerTeamID, *p.OwnerTeamID)
-			require.NotNil(t, p.ProductID)
-			assert.Equal(t, productID, *p.ProductID)
+			require.NotNil(t, p.OwnerGroupID)
+			assert.Equal(t, ownerGroupID, *p.OwnerGroupID)
 			assert.Equal(t, "main", p.DefaultBranch)
 			return p, nil
 		},
 	}
-	teams := &fakeTeamRepo{
-		getByIDFn: func(_ context.Context, id string) (*domain.Team, error) {
-			return &domain.Team{ID: id, Name: "Analytics"}, nil
-		},
-	}
-	products := &fakeDataProductRepo{
-		getByIDFn: func(_ context.Context, id string) (*domain.DataProduct, error) {
-			return &domain.DataProduct{ID: id, OwnerTeamID: ownerTeamID}, nil
-		},
-	}
-	svc := NewService(workspaces, projects, &fakeEnvironmentRepo{}, nil, nil, nil, nil, nil, &fakeBuildRepo{}, nil, teams, products)
+	svc := NewService(workspaces, projects, &fakeEnvironmentRepo{}, nil, nil, nil, nil, nil, &fakeBuildRepo{}, nil)
 
 	project, err := svc.CreateProject(ctx, "admin", domain.CreateProjectRequest{
 		WorkspaceID: workspaceID,
 		Name:        "analytics-authoring",
 		Kind:        domain.ProjectKindShared,
-		ProductID:   &productID,
 	})
 	require.NoError(t, err)
 	assert.Equal(t, "analytics-authoring", project.Name)
@@ -519,7 +353,7 @@ func TestService_CreateProject_RejectsWorkspaceKindMismatch(t *testing.T) {
 			return domain.FolderShareRoleManager, nil
 		},
 	}
-	svc := NewService(workspaces, &fakeProjectRepo{}, &fakeEnvironmentRepo{}, nil, nil, nil, nil, nil, &fakeBuildRepo{}, nil, &fakeTeamRepo{}, &fakeDataProductRepo{})
+	svc := NewService(workspaces, &fakeProjectRepo{}, &fakeEnvironmentRepo{}, nil, nil, nil, nil, nil, &fakeBuildRepo{}, nil)
 
 	_, err := svc.CreateProject(ctx, "alice", domain.CreateProjectRequest{
 		WorkspaceID: workspaceID,
@@ -545,7 +379,7 @@ func TestService_CreateEnvironment_PersonalProjectRejectsNonDev(t *testing.T) {
 			return nil, nil
 		},
 	}
-	svc := NewService(&fakeWorkspaceRepo{}, projects, envs, nil, nil, nil, nil, nil, &fakeBuildRepo{}, nil, &fakeTeamRepo{}, &fakeDataProductRepo{})
+	svc := NewService(&fakeWorkspaceRepo{}, projects, envs, nil, nil, nil, nil, nil, &fakeBuildRepo{}, nil)
 
 	_, err := svc.CreateEnvironment(ctx, "admin", "alice-personal", domain.CreateEnvironmentRequest{
 		Name:          "prod",
@@ -557,17 +391,15 @@ func TestService_CreateEnvironment_PersonalProjectRejectsNonDev(t *testing.T) {
 	assert.Contains(t, err.Error(), "personal projects only support development environments")
 }
 
-func TestService_CreateBuild_UsesProjectEnvironmentAndProduct(t *testing.T) {
+func TestService_CreateBuild_UsesProjectEnvironmentDefaults(t *testing.T) {
 	t.Parallel()
 
 	ctx := domain.WithPrincipal(context.Background(), domain.ContextPrincipal{Name: "admin", IsAdmin: true})
-	productID := "prod-1"
 	project := &domain.Project{
 		ID:            "project-1",
 		WorkspaceID:   "workspace-1",
 		Name:          "analytics-authoring",
 		Kind:          domain.ProjectKindShared,
-		ProductID:     &productID,
 		DefaultBranch: "main",
 	}
 	environment := &domain.Environment{
@@ -595,8 +427,6 @@ func TestService_CreateBuild_UsesProjectEnvironmentAndProduct(t *testing.T) {
 	builds := &fakeBuildRepo{
 		createFn: func(_ context.Context, b *domain.Build) (*domain.Build, error) {
 			assert.Equal(t, project.ID, b.ProjectID)
-			require.NotNil(t, b.ProductID)
-			assert.Equal(t, productID, *b.ProductID)
 			assert.Equal(t, environment.ID, b.EnvironmentID)
 			assert.Equal(t, domain.BuildStateReady, b.State)
 			assert.Equal(t, "refs/heads/main", b.GitRef)
@@ -606,7 +436,7 @@ func TestService_CreateBuild_UsesProjectEnvironmentAndProduct(t *testing.T) {
 			return b, nil
 		},
 	}
-	svc := NewService(&fakeWorkspaceRepo{}, projects, environments, nil, nil, nil, nil, nil, builds, nil, &fakeTeamRepo{}, &fakeDataProductRepo{})
+	svc := NewService(&fakeWorkspaceRepo{}, projects, environments, nil, nil, nil, nil, nil, builds, nil)
 
 	build, err := svc.CreateBuild(ctx, "admin", "analytics-authoring", domain.CreateBuildRequest{
 		EnvironmentName: "prod",
@@ -637,7 +467,7 @@ func TestService_ListBuilds_ByProject(t *testing.T) {
 			return []domain.Build{{ID: "build-1", ProjectID: projectID, GitRef: "refs/heads/main"}}, 1, nil
 		},
 	}
-	svc := NewService(&fakeWorkspaceRepo{}, projects, &fakeEnvironmentRepo{}, nil, nil, nil, nil, nil, builds, nil, &fakeTeamRepo{}, &fakeDataProductRepo{})
+	svc := NewService(&fakeWorkspaceRepo{}, projects, &fakeEnvironmentRepo{}, nil, nil, nil, nil, nil, builds, nil)
 
 	items, total, err := svc.ListBuilds(ctx, project.Name, domain.PageRequest{MaxResults: 10})
 	require.NoError(t, err)
@@ -664,7 +494,7 @@ func TestService_GetEnvironmentForProject_RejectsCrossProjectEnvironment(t *test
 		},
 	}
 
-	svc := NewService(&fakeWorkspaceRepo{}, projects, environments, nil, nil, nil, nil, nil, &fakeBuildRepo{}, nil, &fakeTeamRepo{}, &fakeDataProductRepo{})
+	svc := NewService(&fakeWorkspaceRepo{}, projects, environments, nil, nil, nil, nil, nil, &fakeBuildRepo{}, nil)
 
 	_, err := svc.GetEnvironmentForProject(ctx, "admin", true, project.ID, "env-1")
 	require.Error(t, err)
@@ -689,7 +519,7 @@ func TestService_GetBuildForProject_RejectsCrossProjectBuild(t *testing.T) {
 		},
 	}
 
-	svc := NewService(&fakeWorkspaceRepo{}, projects, &fakeEnvironmentRepo{}, nil, nil, nil, nil, nil, builds, nil, &fakeTeamRepo{}, &fakeDataProductRepo{})
+	svc := NewService(&fakeWorkspaceRepo{}, projects, &fakeEnvironmentRepo{}, nil, nil, nil, nil, nil, builds, nil)
 
 	_, err := svc.GetBuildForProject(ctx, "admin", true, project.ID, "build-1")
 	require.Error(t, err)
@@ -722,7 +552,7 @@ func TestService_CreateDependencyForProject_PersistsDeclaredDependency(t *testin
 		},
 	}
 
-	svc := NewService(&fakeWorkspaceRepo{}, projects, &fakeEnvironmentRepo{}, deps, nil, nil, nil, nil, &fakeBuildRepo{}, nil, &fakeTeamRepo{}, &fakeDataProductRepo{})
+	svc := NewService(&fakeWorkspaceRepo{}, projects, &fakeEnvironmentRepo{}, deps, nil, nil, nil, nil, &fakeBuildRepo{}, nil)
 
 	created, err := svc.CreateDependencyForProject(ctx, "admin", true, project.ID, domain.CreateProjectDependencyRequest{
 		DependencyProject: "shared_lib",
@@ -756,7 +586,7 @@ func TestService_CreateSourceForProject_PersistsSourceDefinition(t *testing.T) {
 		},
 	}
 
-	svc := NewService(&fakeWorkspaceRepo{}, projects, &fakeEnvironmentRepo{}, nil, sources, nil, nil, nil, &fakeBuildRepo{}, nil, &fakeTeamRepo{}, &fakeDataProductRepo{})
+	svc := NewService(&fakeWorkspaceRepo{}, projects, &fakeEnvironmentRepo{}, nil, sources, nil, nil, nil, &fakeBuildRepo{}, nil)
 
 	created, err := svc.CreateSourceForProject(ctx, "admin", true, project.ID, domain.CreateSourceDefinitionRequest{
 		SourceName:  "raw",
@@ -795,7 +625,7 @@ func TestService_CreateSeedForProject_DefaultsProjectAndCsvFormat(t *testing.T) 
 		},
 	}
 
-	svc := NewService(&fakeWorkspaceRepo{}, projects, &fakeEnvironmentRepo{}, nil, nil, seeds, nil, nil, &fakeBuildRepo{}, nil, &fakeTeamRepo{}, &fakeDataProductRepo{})
+	svc := NewService(&fakeWorkspaceRepo{}, projects, &fakeEnvironmentRepo{}, nil, nil, seeds, nil, nil, &fakeBuildRepo{}, nil)
 
 	created, err := svc.CreateSeedForProject(ctx, "admin", true, project.ID, domain.CreateSeedRequest{
 		Name:        "seed_orders",

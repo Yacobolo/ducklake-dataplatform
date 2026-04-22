@@ -55,7 +55,6 @@ import (
 	svcnotebook "github.com/Yacobolo/quackstack/internal/service/notebook"
 	"github.com/Yacobolo/quackstack/internal/service/orchestration"
 	svcpipeline "github.com/Yacobolo/quackstack/internal/service/pipeline"
-	productsvc "github.com/Yacobolo/quackstack/internal/service/product"
 	projectsvc "github.com/Yacobolo/quackstack/internal/service/project"
 	"github.com/Yacobolo/quackstack/internal/service/query"
 	"github.com/Yacobolo/quackstack/internal/service/security"
@@ -1415,10 +1414,6 @@ func setupHTTPServer(t *testing.T, opts httpTestOpts) *httpTestEnv {
 	searchRepo := repository.NewSearchRepo(catalogMetaDB, metaDB)
 	queryHistoryRepo := repository.NewQueryHistoryRepo(metaDB)
 	viewRepo := repository.NewViewRepo(metaDB)
-	domainRepo := repository.NewDomainRepo(metaDB)
-	teamRepo := repository.NewTeamRepo(metaDB)
-	productRepo := repository.NewDataProductRepo(metaDB)
-
 	// Build authorization service unconditionally (needed by viewSvc)
 	authSvc := security.NewAuthorizationService(
 		principalRepo, groupRepo, grantRepo,
@@ -1437,7 +1432,6 @@ func setupHTTPServer(t *testing.T, opts httpTestOpts) *httpTestEnv {
 	lineageSvc := governance.NewLineageService(lineageRepo, nil)
 	searchSvc := catalog.NewSearchService(searchRepo, nil)
 	queryHistorySvc := governance.NewQueryHistoryService(queryHistoryRepo)
-	productSvc := productsvc.NewService(domainRepo, teamRepo, nil, nil, nil, productRepo, auditRepo)
 
 	// querySvc gets nil engine — no /v1/queries:execute support unless WithDuckLake+engine
 	querySvc := query.NewQueryService(nil, auditRepo, nil)
@@ -1490,7 +1484,6 @@ func setupHTTPServer(t *testing.T, opts httpTestOpts) *httpTestEnv {
 		lineageSvc = governance.NewLineageService(lineageRepo, nil)
 		searchSvc = catalog.NewSearchService(searchRepo, nil)
 		queryHistorySvc = governance.NewQueryHistoryService(queryHistoryRepo)
-		productSvc = productsvc.NewService(domainRepo, teamRepo, nil, nil, nil, productRepo, auditRepo)
 
 		catalogRegRepo = repository.NewCatalogRegistrationRepo(metaDB)
 		catalogRepoFactory = overrideCatalogRepoFactory{
@@ -1641,8 +1634,8 @@ func setupHTTPServer(t *testing.T, opts httpTestOpts) *httpTestEnv {
 	projectRepo = repository.NewProjectRepo(metaDB)
 	environmentRepo = repository.NewEnvironmentRepo(metaDB)
 	buildRepo = repository.NewBuildRepo(metaDB)
-	workspaceSvc := workspacesvc.NewService(workspaceRepo, folderRepo, projectRepo, environmentRepo, teamRepo, auditRepo)
-	projectCtlSvc := projectsvc.NewService(workspaceRepo, projectRepo, environmentRepo, nil, nil, nil, nil, nil, buildRepo, nil, teamRepo, productRepo, auditRepo)
+	workspaceSvc := workspacesvc.NewService(workspaceRepo, folderRepo, projectRepo, environmentRepo, groupRepo, auditRepo)
+	projectCtlSvc := projectsvc.NewService(workspaceRepo, projectRepo, environmentRepo, nil, nil, nil, nil, nil, buildRepo, nil, auditRepo)
 	notebookSvc.SetProjectRepositories(projectRepo, environmentRepo)
 	notebookFolderSvc.SetProjectRepositories(projectRepo, environmentRepo)
 
@@ -1676,7 +1669,6 @@ func setupHTTPServer(t *testing.T, opts httpTestOpts) *httpTestEnv {
 			false,
 		)
 		assetSvc = assetsvc.NewService(assetRepo, assetDepRepo, assetPartitionRepo, assetRunRepo, assetCheckRepo, backfillRepo, eventRepo, auditRepo, authSvc)
-		productSvc = productsvc.NewService(domainRepo, teamRepo, assetRepo, assetRunRepo, assetCheckRepo, productRepo, auditRepo)
 	}
 
 	// Wire APIKeyService by default so API key endpoints are always available
@@ -1765,8 +1757,6 @@ func setupHTTPServer(t *testing.T, opts httpTestOpts) *httpTestEnv {
 			Logger:        slog.New(slog.NewTextHandler(io.Discard, nil)),
 		})
 		notebookSvc.SetPublishRepositories(modelRepo, notebookModelLinkRepo)
-		productSvc.SetBuildRepository(buildRepo)
-		productSvc.SetProjectRepository(projectRepo)
 	}
 
 	// Optionally wire Semantic service.
@@ -1783,7 +1773,6 @@ func setupHTTPServer(t *testing.T, opts httpTestOpts) *httpTestEnv {
 			semanticPreAggRepo,
 		)
 		semanticSvc.SetQueryExecutor(querySvc)
-		productSvc.SetSemanticModelRepository(semanticModelRepo)
 	}
 	dashboardSvc := dashboardsvc.NewService(dashboardRepo, dashboardWidgetRepo, notebookRepo, auditRepo, querySvc, semanticSvc)
 	dashboardSvc.SetFolderRepository(folderRepo)
@@ -1814,7 +1803,6 @@ func setupHTTPServer(t *testing.T, opts httpTestOpts) *httpTestEnv {
 	handler.SetWorkspaceService(workspaceSvc)
 	handler.SetProjectControlService(projectCtlSvc)
 	handler.SetExplore(exploreSvc)
-	handler.SetProductService(productSvc)
 	r := chi.NewRouter()
 
 	// Always use the full Authenticator for correct IsAdmin resolution.

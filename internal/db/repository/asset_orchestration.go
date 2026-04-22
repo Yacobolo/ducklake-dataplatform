@@ -69,16 +69,15 @@ func (r *DataAssetRepo) Create(ctx context.Context, a *domain.DataAsset) (*domai
 
 	_, err = r.db.ExecContext(ctx, `
 		INSERT INTO data_assets (
-			id, asset_key, asset_type, product_id, owner, description, tags_json, schema_json,
+			id, asset_key, asset_type, owner, description, tags_json, schema_json,
 			partition_definition_json, freshness_policy_json, materialization_policy_json,
 			auto_materialize_policy_json, io_profile, is_active, created_by
 		)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`,
 		id,
 		a.AssetKey,
 		a.AssetType,
-		nullStringFromString(a.ProductID),
 		a.Owner,
 		a.Description,
 		string(tagsJSON),
@@ -100,7 +99,7 @@ func (r *DataAssetRepo) Create(ctx context.Context, a *domain.DataAsset) (*domai
 
 func (r *DataAssetRepo) GetByID(ctx context.Context, id string) (*domain.DataAsset, error) {
 	return r.getOne(ctx, `
-		SELECT id, asset_key, asset_type, product_id, owner, description, tags_json, schema_json,
+		SELECT id, asset_key, asset_type, owner, description, tags_json, schema_json,
 		       partition_definition_json, freshness_policy_json, materialization_policy_json,
 		       auto_materialize_policy_json, io_profile, is_active, created_by, created_at, updated_at
 		FROM data_assets
@@ -110,7 +109,7 @@ func (r *DataAssetRepo) GetByID(ctx context.Context, id string) (*domain.DataAss
 
 func (r *DataAssetRepo) GetByKey(ctx context.Context, assetKey string) (*domain.DataAsset, error) {
 	return r.getOne(ctx, `
-		SELECT id, asset_key, asset_type, product_id, owner, description, tags_json, schema_json,
+		SELECT id, asset_key, asset_type, owner, description, tags_json, schema_json,
 		       partition_definition_json, freshness_policy_json, materialization_policy_json,
 		       auto_materialize_policy_json, io_profile, is_active, created_by, created_at, updated_at
 		FROM data_assets
@@ -144,7 +143,7 @@ func (r *DataAssetRepo) List(ctx context.Context, filter domain.AssetFilter) ([]
 
 	//nolint:gosec // query fragments are assembled from fixed, parameterized clauses only.
 	listSQL := `
-		SELECT id, asset_key, asset_type, product_id, owner, description, tags_json, schema_json,
+		SELECT id, asset_key, asset_type, owner, description, tags_json, schema_json,
 		       partition_definition_json, freshness_policy_json, materialization_policy_json,
 		       auto_materialize_policy_json, io_profile, is_active, created_by, created_at, updated_at
 		FROM data_assets ` + w + `
@@ -203,14 +202,13 @@ func (r *DataAssetRepo) Update(ctx context.Context, id string, a *domain.DataAss
 
 	_, err = r.db.ExecContext(ctx, `
 		UPDATE data_assets
-		SET asset_key = ?, asset_type = ?, product_id = ?, owner = ?, description = ?, tags_json = ?, schema_json = ?,
+		SET asset_key = ?, asset_type = ?, owner = ?, description = ?, tags_json = ?, schema_json = ?,
 		    partition_definition_json = ?, freshness_policy_json = ?, materialization_policy_json = ?,
 		    auto_materialize_policy_json = ?, io_profile = ?, is_active = ?, updated_at = CURRENT_TIMESTAMP
 		WHERE id = ?
 	`,
 		a.AssetKey,
 		a.AssetType,
-		nullStringFromString(a.ProductID),
 		a.Owner,
 		a.Description,
 		string(tagsJSON),
@@ -828,7 +826,6 @@ func scanDataAsset(scanner interface {
 	var (
 		asset                                                       domain.DataAsset
 		tagsJSON, schemaJSON                                        string
-		productID                                                   sql.NullString
 		partitionJSON, freshnessJSON, materializationJSON, autoJSON sql.NullString
 		isActive                                                    int64
 	)
@@ -836,7 +833,6 @@ func scanDataAsset(scanner interface {
 		&asset.ID,
 		&asset.AssetKey,
 		&asset.AssetType,
-		&productID,
 		&asset.Owner,
 		&asset.Description,
 		&tagsJSON,
@@ -853,9 +849,6 @@ func scanDataAsset(scanner interface {
 	)
 	if err != nil {
 		return nil, err
-	}
-	if productID.Valid {
-		asset.ProductID = productID.String
 	}
 	asset.IsActive = isActive == 1
 	if err := json.Unmarshal([]byte(tagsJSON), &asset.Tags); err != nil {
@@ -1190,12 +1183,4 @@ func nullTimeFromPtr(t *time.Time) sql.NullTime {
 		return sql.NullTime{}
 	}
 	return sql.NullTime{Time: t.UTC(), Valid: true}
-}
-
-func nullStringFromString(v string) sql.NullString {
-	v = strings.TrimSpace(v)
-	if v == "" {
-		return sql.NullString{}
-	}
-	return sql.NullString{String: v, Valid: true}
 }

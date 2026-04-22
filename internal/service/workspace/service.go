@@ -15,7 +15,7 @@ type Service struct {
 	folders      domain.FolderRepository
 	projects     domain.ProjectRepository
 	environments domain.EnvironmentRepository
-	teams        domain.TeamRepository
+	groups       domain.GroupRepository
 	audit        domain.AuditRepository
 }
 
@@ -25,7 +25,7 @@ func NewService(
 	folders domain.FolderRepository,
 	projects domain.ProjectRepository,
 	environments domain.EnvironmentRepository,
-	teams domain.TeamRepository,
+	groups domain.GroupRepository,
 	audit domain.AuditRepository,
 ) *Service {
 	return &Service{
@@ -33,7 +33,7 @@ func NewService(
 		folders:      folders,
 		projects:     projects,
 		environments: environments,
-		teams:        teams,
+		groups:       groups,
 		audit:        audit,
 	}
 }
@@ -54,8 +54,8 @@ func (s *Service) CreateWorkspace(ctx context.Context, principal string, isAdmin
 	} else if !isAdmin {
 		return nil, domain.ErrAccessDenied("only admins can create shared or library workspaces")
 	}
-	if req.OwnerTeamID != nil && s.teams != nil {
-		if _, err := s.teams.GetByID(ctx, strings.TrimSpace(*req.OwnerTeamID)); err != nil {
+	if req.OwnerGroupID != nil && s.groups != nil {
+		if _, err := s.groups.GetByID(ctx, strings.TrimSpace(*req.OwnerGroupID)); err != nil {
 			return nil, err
 		}
 	}
@@ -66,7 +66,7 @@ func (s *Service) CreateWorkspace(ctx context.Context, principal string, isAdmin
 	workspace := &domain.Workspace{
 		Name:                 strings.TrimSpace(req.Name),
 		Kind:                 kind,
-		OwnerTeamID:          req.OwnerTeamID,
+		OwnerGroupID:         req.OwnerGroupID,
 		OwnerPrincipal:       req.OwnerPrincipal,
 		DefaultProjectID:     req.DefaultProjectID,
 		DefaultEnvironmentID: req.DefaultEnvironmentID,

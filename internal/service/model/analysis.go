@@ -1244,11 +1244,9 @@ func (s *Service) impactedTests(ctx context.Context, modelNames []string) []stri
 }
 
 func (s *Service) impactedProducts(ctx context.Context, projectName string) []string {
-	project, err := s.projects.GetByName(ctx, projectName)
-	if err != nil || project.ProductID == nil {
-		return nil
-	}
-	return []string{*project.ProductID}
+	_ = ctx
+	_ = projectName
+	return nil
 }
 
 func splitQualifiedName(name string) (string, string) {

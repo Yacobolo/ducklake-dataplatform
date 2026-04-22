@@ -93,18 +93,6 @@ func legacyConfigToCUE(t *testing.T, relPath, content string) string {
 		var parsed declarative.GrantListDoc
 		require.NoError(t, yaml.Unmarshal([]byte(content), &parsed))
 		platform = map[string]any{"security": map[string]any{"grants": parsed.Grants}}
-	case declarative.KindNameDomain:
-		var parsed declarative.DomainDoc
-		require.NoError(t, yaml.Unmarshal([]byte(content), &parsed))
-		platform = map[string]any{"domains": map[string]any{parsed.Metadata.Name: parsed.Spec}}
-	case declarative.KindNameTeam:
-		var parsed declarative.TeamDoc
-		require.NoError(t, yaml.Unmarshal([]byte(content), &parsed))
-		platform = map[string]any{"teams": map[string]any{parsed.Metadata.Name: parsed.Spec}}
-	case declarative.KindNameDataProduct:
-		var parsed declarative.DataProductDoc
-		require.NoError(t, yaml.Unmarshal([]byte(content), &parsed))
-		platform = map[string]any{"data_products": map[string]any{parsed.Metadata.Name: parsed.Spec}}
 	case declarative.KindNameModel:
 		var parsed declarative.ModelDoc
 		require.NoError(t, yaml.Unmarshal([]byte(content), &parsed))
@@ -1312,95 +1300,6 @@ spec:
 	assertNotebookDriftFields(t, actionsOfKindAndOp(replanUpdate, declarative.KindNotebook, declarative.OpUpdate), "workspace_ref")
 	assert.Empty(t, actionsOfKindAndOp(replanUpdate, declarative.KindModel, declarative.OpDelete))
 	assert.Empty(t, actionsOfKindAndOp(replanUpdate, declarative.KindModel, declarative.OpUpdate))
-}
-
-func TestDeclarative_DataProductVersionRemovalConverges(t *testing.T) {
-	env := setupHTTPServer(t, httpTestOpts{})
-	stateClient := makeStateClient(t, env.Server.URL, env.Keys.Admin)
-
-	dir := t.TempDir()
-	writeYAML(t, dir, "domains/revenue.yaml", `apiVersion: quackstack/v1
-kind: Domain
-metadata:
-  name: revenue
-spec:
-  description: Revenue domain
-`)
-	writeYAML(t, dir, "teams/analytics-engineering.yaml", `apiVersion: quackstack/v1
-kind: Team
-metadata:
-  name: analytics-engineering
-spec:
-  domain_ref: revenue
-  contact_channel: "#rev-data"
-`)
-	writeYAML(t, dir, "data-products/daily-orders.yaml", `apiVersion: quackstack/v1
-kind: DataProduct
-metadata:
-  name: daily-orders
-spec:
-  name: Daily Orders
-  domain_ref: revenue
-  owner_team_ref: analytics-engineering
-  steward_principal: admin_user
-  contact_channel: "#rev-data"
-  versions:
-    - version: 1
-      release_state: DRAFT
-      compatibility_level: BACKWARD_COMPATIBLE
-`)
-
-	desired, err := declarative.LoadDirectory(dir)
-	require.NoError(t, err)
-	require.Empty(t, declarative.Validate(desired))
-
-	actual, err := stateClient.ReadState(context.Background())
-	require.NoError(t, err)
-
-	plan := declarative.Diff(desired, actual)
-	var createActions []declarative.Action
-	for _, action := range plan.Actions {
-		switch action.ResourceKind {
-		case declarative.KindDomain, declarative.KindTeam, declarative.KindDataProduct:
-			if action.Operation == declarative.OpCreate {
-				createActions = append(createActions, action)
-			}
-		}
-	}
-	require.Len(t, createActions, 3)
-	executeActions(t, stateClient, createActions)
-
-	createVersionResp := doRequest(t, http.MethodPost, env.Server.URL+"/v1/data-products/daily-orders/versions", env.Keys.Admin, map[string]any{
-		"compatibility_level": "BACKWARD_COMPATIBLE",
-		"created_by":          "admin_user",
-	})
-	require.Equal(t, http.StatusCreated, createVersionResp.StatusCode)
-	_ = createVersionResp.Body.Close()
-
-	actualWithExtraVersion, err := stateClient.ReadState(context.Background())
-	require.NoError(t, err)
-	require.Len(t, actualWithExtraVersion.DataProducts, 1)
-	require.Len(t, actualWithExtraVersion.DataProducts[0].Spec.Versions, 2)
-
-	desiredForRemoval := *desired
-	desiredForRemoval.DataProducts = append([]declarative.DataProductResource(nil), desired.DataProducts...)
-	desiredForRemoval.DataProducts[0].Spec.Versions = nil
-	desiredForRemoval.DataProducts[0].Spec.PublicationIntent = actualWithExtraVersion.DataProducts[0].Spec.PublicationIntent
-
-	planUpdate := declarative.Diff(&desiredForRemoval, actualWithExtraVersion)
-	productUpdates := actionsOfKindAndOp(planUpdate, declarative.KindDataProduct, declarative.OpUpdate)
-	require.Len(t, productUpdates, 1)
-	executeActions(t, stateClient, productUpdates)
-
-	actualAfterApply, err := stateClient.ReadState(context.Background())
-	require.NoError(t, err)
-	require.Len(t, actualAfterApply.DataProducts, 1)
-	assert.Empty(t, actualAfterApply.DataProducts[0].Spec.Versions)
-
-	replan := declarative.Diff(&desiredForRemoval, actualAfterApply)
-	assert.Empty(t, actionsOfKindAndOp(replan, declarative.KindDataProduct, declarative.OpUpdate))
-	assert.Empty(t, actionsOfKindAndOp(replan, declarative.KindDataProduct, declarative.OpDelete))
-	assert.Empty(t, replan.Errors)
 }
 
 func TestDeclarative_MacroLifecycle(t *testing.T) {

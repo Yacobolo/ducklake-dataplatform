@@ -400,7 +400,6 @@ schemas_assets: {
 		example: {
 			asset_key:    "mart.orders_daily"
 			asset_type:   "TABLE"
-			product_slug: "orders-analytics"
 			owner:        "team-analytics"
 			description:  "Daily order fact table powering revenue and fulfillment reporting."
 			tags:         ["finance", "orders", "gold"]
@@ -435,7 +434,6 @@ schemas_assets: {
 		#fields: {
 			asset_key:               #stringProperty
 			asset_type:              #refProperty & {#ref: "AssetType"}
-			product_slug:            #stringProperty
 			owner:                   #ownerProperty
 			description:             #descriptionProperty
 			tags:                    #stringArrayProperty
@@ -447,7 +445,7 @@ schemas_assets: {
 			upstream_asset_keys:     #stringArrayProperty
 			checks:                  #arrayRefProperty & {#ref: "AssetCheckInput"}
 		}
-		#required: ["asset_key", "asset_type", "product_slug", "owner"]
+		#required: ["asset_key", "asset_type", "owner"]
 	}
 
 	TriggerAssetMaterializationRequest: #objectSchema & {
@@ -461,7 +459,6 @@ schemas_assets: {
 	UpdateAssetRequest: #objectSchema & {
 		#fields: {
 			asset_type:              #refProperty & {#ref: "AssetType"}
-			product_slug:            #stringProperty
 			owner:                   #ownerProperty
 			description:             #descriptionProperty
 			tags:                    #stringArrayProperty

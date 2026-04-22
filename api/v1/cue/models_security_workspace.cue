@@ -107,7 +107,7 @@ schemas_security_workspace: {
     example: {
       name:                   "Revenue Analytics"
       kind:                   "shared"
-      owner_team_id:          "team_analytics"
+      owner_group_id:         "group_analytics"
       owner_principal:        "alice@example.com"
       default_environment_id: "env_prod"
       default_project_id:     "prj_revenue"
@@ -117,7 +117,7 @@ schemas_security_workspace: {
     #fields: {
       name: #nameProperty,
       kind: #refProperty & {#ref: "WorkspaceKind"},
-      owner_team_id: #stringProperty,
+      owner_group_id: #stringProperty,
       owner_principal: #stringProperty,
       default_environment_id: #stringProperty,
       default_project_id: #stringProperty,
@@ -286,9 +286,8 @@ schemas_security_workspace: {
       name: #nameProperty,
       kind: #refProperty & {#ref: "ProjectKind"},
       description: #descriptionProperty,
-      owner_team_id: #stringProperty,
+      owner_group_id: #stringProperty,
       owner_principal: #stringProperty,
-      product_id: #stringProperty,
       default_branch: #stringProperty,
       created_at: #createdAtProperty,
       updated_at: #updatedAtProperty,
@@ -540,7 +539,7 @@ schemas_security_workspace: {
       id:                     "ws_01hzyrevenue"
       name:                   "Revenue Analytics"
       kind:                   "shared"
-      owner_team_id:          "team_analytics"
+      owner_group_id:         "group_analytics"
       owner_principal:        "alice@example.com"
       default_project_id:     "prj_revenue"
       default_environment_id: "env_prod"
@@ -553,7 +552,7 @@ schemas_security_workspace: {
       id: #idProperty,
       name: #nameProperty,
       kind: #refProperty & {#ref: "WorkspaceKind"},
-      owner_team_id: #stringProperty,
+      owner_group_id: #stringProperty,
       owner_principal: #stringProperty,
       default_project_id: #stringProperty,
       default_environment_id: #stringProperty,

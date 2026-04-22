@@ -14,12 +14,6 @@ func TestExportDirectory_CUERoundTrip(t *testing.T) {
 		Principals: []PrincipalSpec{
 			{Name: "admin", Type: "user", IsAdmin: true},
 		},
-		Domains: []DomainResource{
-			{Name: "revenue", Spec: DomainSpec{Description: "Revenue domain"}},
-		},
-		Teams: []TeamResource{
-			{Name: "analytics", Spec: TeamSpec{DomainRef: "revenue", ContactChannel: "#rev"}},
-		},
 		Catalogs: []CatalogResource{
 			{CatalogName: "main", Spec: CatalogSpec{MetastoreType: "sqlite", DSN: "meta.sqlite", DataPath: "data"}},
 		},

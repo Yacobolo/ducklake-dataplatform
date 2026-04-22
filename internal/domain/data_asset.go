@@ -60,7 +60,6 @@ type DataAsset struct {
 	ID                    string
 	AssetKey              string
 	AssetType             string
-	ProductID             string
 	Owner                 string
 	Description           string
 	Tags                  []string

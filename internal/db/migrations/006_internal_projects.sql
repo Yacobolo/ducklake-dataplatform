@@ -3,7 +3,7 @@ CREATE TABLE workspaces (
     id TEXT PRIMARY KEY,
     name TEXT NOT NULL UNIQUE,
     kind TEXT NOT NULL,
-    owner_team_id TEXT REFERENCES teams(id) ON DELETE RESTRICT,
+    owner_group_id TEXT REFERENCES groups(id) ON DELETE RESTRICT,
     owner_principal TEXT,
     default_project_id TEXT,
     default_environment_id TEXT,
@@ -29,9 +29,8 @@ CREATE TABLE projects (
     name TEXT NOT NULL UNIQUE,
     kind TEXT NOT NULL,
     description TEXT NOT NULL DEFAULT '',
-    owner_team_id TEXT REFERENCES teams(id) ON DELETE RESTRICT,
+    owner_group_id TEXT REFERENCES groups(id) ON DELETE RESTRICT,
     owner_principal TEXT,
-    product_id TEXT REFERENCES data_products(id) ON DELETE SET NULL,
     default_branch TEXT NOT NULL DEFAULT 'main',
     created_by TEXT NOT NULL DEFAULT '',
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -56,22 +55,20 @@ CREATE TABLE environments (
     UNIQUE(project_id, name)
 );
 
-CREATE INDEX idx_workspaces_owner_team ON workspaces(owner_team_id);
+CREATE INDEX idx_workspaces_owner_group ON workspaces(owner_group_id);
 CREATE INDEX idx_workspaces_owner_principal ON workspaces(owner_principal);
 CREATE INDEX idx_workspace_members_principal ON workspace_members(principal_name);
 CREATE INDEX idx_projects_workspace ON projects(workspace_id);
-CREATE INDEX idx_projects_owner_team ON projects(owner_team_id);
-CREATE INDEX idx_projects_product ON projects(product_id);
+CREATE INDEX idx_projects_owner_group ON projects(owner_group_id);
 CREATE INDEX idx_environments_project ON environments(project_id);
 
 -- +goose Down
 DROP INDEX IF EXISTS idx_environments_project;
 DROP INDEX IF EXISTS idx_projects_workspace;
-DROP INDEX IF EXISTS idx_projects_product;
-DROP INDEX IF EXISTS idx_projects_owner_team;
+DROP INDEX IF EXISTS idx_projects_owner_group;
 DROP INDEX IF EXISTS idx_workspace_members_principal;
 DROP INDEX IF EXISTS idx_workspaces_owner_principal;
-DROP INDEX IF EXISTS idx_workspaces_owner_team;
+DROP INDEX IF EXISTS idx_workspaces_owner_group;
 DROP TABLE IF EXISTS environments;
 DROP TABLE IF EXISTS projects;
 DROP TABLE IF EXISTS workspace_members;

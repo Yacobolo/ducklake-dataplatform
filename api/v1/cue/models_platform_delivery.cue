@@ -8,10 +8,9 @@ schemas_platform_delivery: {
       id:                  "build_01hzyprod123"
       project_id:          "prj_revenue"
       project_name:        "revenue"
-      product_id:          "prd_01hzycust360"
       environment_id:      "env_prod"
       environment_name:    "prod"
-      state:               "released"
+      state:               "ready"
       git_ref:             "refs/heads/main"
       commit_sha:          "8f3d9e2a"
       selector:            "tag:daily"
@@ -32,7 +31,6 @@ schemas_platform_delivery: {
       id: #idProperty,
       project_id: #stringProperty,
       project_name: #stringProperty,
-      product_id: #stringProperty,
       environment_id: #stringProperty,
       environment_name: #stringProperty,
       state: #refProperty & {#ref: "BuildState"},
@@ -98,9 +96,7 @@ schemas_platform_delivery: {
   BuildState: #enumSchema & {
     #values: [
       "draft",
-      "ready",
-      "released",
-      "superseded"
+      "ready"
     ]
   },
   CreateBuildRequest: #objectSchema & {

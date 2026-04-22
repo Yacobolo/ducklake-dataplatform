@@ -136,10 +136,6 @@ func buildStateLabel(state string) string {
 		return "Draft"
 	case domain.BuildStateReady:
 		return "Ready"
-	case domain.BuildStateReleased:
-		return "Released"
-	case domain.BuildStateSuperseded:
-		return "Superseded"
 	default:
 		return valueOrDash(state)
 	}
@@ -149,18 +145,11 @@ func ownerSummary(project domain.Project) string {
 	switch {
 	case project.OwnerPrincipal != nil && strings.TrimSpace(*project.OwnerPrincipal) != "":
 		return *project.OwnerPrincipal
-	case project.OwnerTeamID != nil && strings.TrimSpace(*project.OwnerTeamID) != "":
-		return *project.OwnerTeamID
+	case project.OwnerGroupID != nil && strings.TrimSpace(*project.OwnerGroupID) != "":
+		return *project.OwnerGroupID
 	default:
 		return "-"
 	}
-}
-
-func productSummary(project domain.Project) string {
-	if project.ProductID == nil || strings.TrimSpace(*project.ProductID) == "" {
-		return "Unlinked"
-	}
-	return *project.ProductID
 }
 
 func modelsListURL(projectName string) string {

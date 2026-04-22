@@ -637,7 +637,6 @@ func domainCreateAssetRequest(req *CreateAssetJSONRequestBody) domain.CreateAsse
 	return domain.CreateAssetRequest{
 		AssetKey:              req.AssetKey,
 		AssetType:             string(req.AssetType),
-		ProductSlug:           req.ProductSlug,
 		Owner:                 req.Owner,
 		Description:           derefString(req.Description),
 		Tags:                  derefStringSlice(req.Tags),
@@ -657,7 +656,6 @@ func domainUpdateAssetRequest(req *UpdateAssetJSONRequestBody) domain.UpdateAsse
 	}
 	return domain.UpdateAssetRequest{
 		AssetType:             derefStringEnum(req.AssetType),
-		ProductSlug:           derefString(req.ProductSlug),
 		Owner:                 derefString(req.Owner),
 		Description:           derefString(req.Description),
 		Tags:                  derefStringSlice(req.Tags),
