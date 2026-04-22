@@ -7,9 +7,6 @@ type cuePlatform struct {
 	Storage      cueStorageSection          `yaml:"storage,omitempty"`
 	Compute      cueComputeSection          `yaml:"compute,omitempty"`
 	Catalogs     map[string]cueCatalog      `yaml:"catalogs,omitempty"`
-	Domains      map[string]DomainSpec      `yaml:"domains,omitempty"`
-	Teams        map[string]TeamSpec        `yaml:"teams,omitempty"`
-	DataProducts map[string]DataProductSpec `yaml:"data_products,omitempty"`
 	Workspaces   map[string]cueWorkspace    `yaml:"workspaces,omitempty"`
 	Projects     map[string]cueProject      `yaml:"projects,omitempty"`
 	Assets       map[string]AssetSpec       `yaml:"assets,omitempty"`

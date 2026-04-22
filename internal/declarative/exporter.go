@@ -59,9 +59,6 @@ func ExportDirectory(dir string, state *DesiredState, overwrite bool) error {
 	if err := exportCatalogs(dir, state); err != nil {
 		return err
 	}
-	if err := exportProductControlPlane(dir, state); err != nil {
-		return err
-	}
 	if err := exportWorkspaces(dir, state); err != nil {
 		return err
 	}
@@ -350,31 +347,6 @@ func exportCatalogs(dir string, state *DesiredState) error {
 		}
 		if err := writeCueFile(filepath.Join(dir, "catalogs", catalogName, "catalog.cue"), map[string]any{
 			"catalogs": map[string]cueCatalog{catalogName: *catalog},
-		}); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func exportProductControlPlane(dir string, state *DesiredState) error {
-	for _, item := range state.Domains {
-		if err := writeCueFile(filepath.Join(dir, "domains", slugPath(item.Name)+".cue"), map[string]any{
-			"domains": map[string]DomainSpec{item.Name: item.Spec},
-		}); err != nil {
-			return err
-		}
-	}
-	for _, item := range state.Teams {
-		if err := writeCueFile(filepath.Join(dir, "teams", slugPath(item.Name)+".cue"), map[string]any{
-			"teams": map[string]TeamSpec{item.Name: item.Spec},
-		}); err != nil {
-			return err
-		}
-	}
-	for _, item := range state.DataProducts {
-		if err := writeCueFile(filepath.Join(dir, "data-products", slugPath(item.Slug)+".cue"), map[string]any{
-			"data_products": map[string]DataProductSpec{item.Slug: item.Spec},
 		}); err != nil {
 			return err
 		}

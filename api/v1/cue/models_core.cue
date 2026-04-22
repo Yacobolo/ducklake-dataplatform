@@ -89,7 +89,6 @@ schemas_core: {
       name: #nameProperty,
       kind: #refProperty & {#ref: "ProjectKind"},
       description: #descriptionProperty,
-      product_id: #stringProperty,
       default_branch: #stringProperty
     },
     #required: [
@@ -161,7 +160,6 @@ schemas_core: {
   UpdateProjectRequest: #objectSchema & {
     #fields: {
       description: #descriptionProperty,
-      product_id: #stringProperty,
       default_branch: #stringProperty
     }
   },

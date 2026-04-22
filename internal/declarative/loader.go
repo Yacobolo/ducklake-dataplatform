@@ -56,13 +56,10 @@ const cuePlatformSchemaSource = `
 		defaults?: _
 	}
 	catalogs?: [string]: _
-	domains?: [string]: _
-	teams?: [string]: _
-	data_products?: [string]: _
 	workspaces?: [string]: {
 		kind: #WorkspaceKind
 		owner_principal?: string
-		owner_team_id?: string
+		owner_group_id?: string
 		default_project_ref?: string
 		default_environment_ref?: string
 		git_repo_id?: string
@@ -75,7 +72,6 @@ const cuePlatformSchemaSource = `
 		workspace_ref: string
 		kind: #ProjectKind
 		description?: string
-		product_id?: string
 		default_branch?: string
 		environments?: [string]: {
 			kind: #EnvironmentKind
@@ -324,16 +320,6 @@ func normalizeCuePlatform(compiled cuePlatform) (*DesiredState, error) {
 	})
 	state.ComputeAssignments = append(state.ComputeAssignments, compiled.Compute.Assignments...)
 	state.ComputeDefaults = compiled.Compute.Defaults
-
-	appendNamedMap(compiled.Domains, func(name string, item DomainSpec) {
-		state.Domains = append(state.Domains, DomainResource{Name: name, Spec: item})
-	})
-	appendNamedMap(compiled.Teams, func(name string, item TeamSpec) {
-		state.Teams = append(state.Teams, TeamResource{Name: name, Spec: item})
-	})
-	appendNamedMap(compiled.DataProducts, func(name string, item DataProductSpec) {
-		state.DataProducts = append(state.DataProducts, DataProductResource{Slug: name, Spec: item})
-	})
 
 	for _, catalogName := range sortedKeys(compiled.Catalogs) {
 		catalog := compiled.Catalogs[catalogName]

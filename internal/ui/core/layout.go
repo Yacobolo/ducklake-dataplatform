@@ -46,7 +46,6 @@ var navGroups = []navGroup{
 		Items: []navItem{
 			{Label: "Overview", Href: "/ui", Key: "home", Icon: "house"},
 			{Label: "Explore", Href: "/ui/explore", Key: "explore", Icon: "compass"},
-			{Label: "Products", Href: "/ui/products", Key: "products", Icon: "package-open"},
 			{Label: "Catalogs", Href: "/ui/catalogs", Key: "catalogs", Icon: "database"},
 			{Label: "Runtime Assets", Href: "/ui/assets", Key: "assets", Icon: "git-fork"},
 			{Label: "Dashboards", Href: "/ui/dashboards", Key: "dashboards", Icon: "chart-column"},

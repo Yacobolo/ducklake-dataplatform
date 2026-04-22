@@ -21,11 +21,6 @@ type Service struct {
 	events     domain.OrchestrationEventRepository
 	audit      domain.AuditRepository
 	auth       domain.AuthorizationService
-	products   productLookup
-}
-
-type productLookup interface {
-	GetBySlug(ctx context.Context, slug string) (*domain.DataProductDetail, error)
 }
 
 func NewService(
@@ -38,12 +33,7 @@ func NewService(
 	events domain.OrchestrationEventRepository,
 	audit domain.AuditRepository,
 	auth domain.AuthorizationService,
-	products ...productLookup,
 ) *Service {
-	var productRepo productLookup
-	if len(products) > 0 {
-		productRepo = products[0]
-	}
 	return &Service{
 		assets:     assets,
 		deps:       deps,
@@ -54,7 +44,6 @@ func NewService(
 		events:     events,
 		audit:      audit,
 		auth:       auth,
-		products:   productRepo,
 	}
 }
 

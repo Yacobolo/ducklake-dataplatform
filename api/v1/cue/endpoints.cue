@@ -18,7 +18,6 @@ endpoints: list.Concat([
   endpoints_models,
   endpoints_notebooks,
   endpoints_pipelines,
-  endpoints_products,
   endpoints_projects,
   endpoints_queries,
   endpoints_resources,

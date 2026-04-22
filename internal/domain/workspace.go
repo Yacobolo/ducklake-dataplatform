@@ -8,7 +8,7 @@ import (
 const (
 	// WorkspaceKindPersonal is a user-owned authoring workspace.
 	WorkspaceKindPersonal = "personal"
-	// WorkspaceKindShared is a team-owned collaborative authoring workspace.
+	// WorkspaceKindShared is a group-owned collaborative authoring workspace.
 	WorkspaceKindShared = "shared"
 	// WorkspaceKindLibrary is a reusable shared authoring workspace.
 	WorkspaceKindLibrary = "library"
@@ -19,7 +19,7 @@ type Workspace struct {
 	ID                   string
 	Name                 string
 	Kind                 string
-	OwnerTeamID          *string
+	OwnerGroupID         *string
 	OwnerPrincipal       *string
 	DefaultProjectID     *string
 	DefaultEnvironmentID *string
@@ -43,7 +43,7 @@ type WorkspaceMember struct {
 type CreateWorkspaceRequest struct {
 	Name                 string
 	Kind                 string
-	OwnerTeamID          *string
+	OwnerGroupID         *string
 	OwnerPrincipal       *string
 	DefaultProjectID     *string
 	DefaultEnvironmentID *string
@@ -82,7 +82,7 @@ func ValidateCreateWorkspaceRequest(req CreateWorkspaceRequest) error {
 		return ErrValidation("unsupported workspace kind %q", req.Kind)
 	}
 
-	ownerTeam := trimmedPtr(req.OwnerTeamID)
+	ownerGroup := trimmedPtr(req.OwnerGroupID)
 	ownerPrincipal := trimmedPtr(req.OwnerPrincipal)
 
 	switch normalizeWorkspaceKind(req.Kind) {
@@ -90,12 +90,12 @@ func ValidateCreateWorkspaceRequest(req CreateWorkspaceRequest) error {
 		if ownerPrincipal == nil {
 			return ErrValidation("personal workspaces require owner_principal")
 		}
-		if ownerTeam != nil {
-			return ErrValidation("personal workspaces cannot set owner_team_id")
+		if ownerGroup != nil {
+			return ErrValidation("personal workspaces cannot set owner_group_id")
 		}
 	case WorkspaceKindShared, WorkspaceKindLibrary:
-		if ownerTeam == nil {
-			return ErrValidation("%s workspaces require owner_team_id", normalizeWorkspaceKind(req.Kind))
+		if ownerGroup == nil {
+			return ErrValidation("%s workspaces require owner_group_id", normalizeWorkspaceKind(req.Kind))
 		}
 		if ownerPrincipal != nil {
 			return ErrValidation("%s workspaces cannot set owner_principal", normalizeWorkspaceKind(req.Kind))

@@ -31,62 +31,6 @@ type GroupRepository interface {
 	GetGroupsForMember(ctx context.Context, memberType string, memberID string) ([]Group, error)
 }
 
-// DomainRepository provides CRUD operations for product domains.
-//
-//nolint:revive // Repository interfaces follow the package-wide naming convention.
-type DomainRepository interface {
-	Create(ctx context.Context, d *Domain) (*Domain, error)
-	GetByID(ctx context.Context, id string) (*Domain, error)
-	GetByName(ctx context.Context, name string) (*Domain, error)
-	List(ctx context.Context, page PageRequest) ([]Domain, int64, error)
-	Update(ctx context.Context, name string, d *Domain) (*Domain, error)
-	Delete(ctx context.Context, name string) error
-}
-
-// TeamRepository provides CRUD operations for owning teams.
-type TeamRepository interface {
-	Create(ctx context.Context, t *Team) (*Team, error)
-	GetByID(ctx context.Context, id string) (*Team, error)
-	GetByDomainAndName(ctx context.Context, domainID, name string) (*Team, error)
-	List(ctx context.Context, page PageRequest) ([]Team, int64, error)
-	Update(ctx context.Context, domainID, name string, t *Team) (*Team, error)
-	Delete(ctx context.Context, domainID, name string) error
-}
-
-// DataProductRepository provides CRUD operations for products and their linked resources.
-type DataProductRepository interface {
-	Create(ctx context.Context, p *DataProduct) (*DataProduct, error)
-	GetByID(ctx context.Context, productID string) (*DataProduct, error)
-	GetBySlug(ctx context.Context, slug string) (*DataProductDetail, error)
-	List(ctx context.Context, filter DataProductFilter) ([]DataProductListItem, int64, error)
-	Update(ctx context.Context, p *DataProduct) (*DataProduct, error)
-	Delete(ctx context.Context, productID string) error
-	CreateVersion(ctx context.Context, version *DataProductVersion) (*DataProductVersion, error)
-	GetVersionByNumber(ctx context.Context, productID string, version int) (*DataProductVersion, error)
-	ListVersions(ctx context.Context, productID string) ([]DataProductVersion, error)
-	DeleteVersion(ctx context.Context, versionID string) error
-	UpdateVersionReleaseState(ctx context.Context, versionID string, releaseState string) error
-	UpdatePublicationIntent(ctx context.Context, productID string, publicationIntent string) error
-	UpsertStatus(ctx context.Context, status *DataProductStatus) error
-	GetStatus(ctx context.Context, productID string) (*DataProductStatus, error)
-	AddOutput(ctx context.Context, output *ProductOutput) error
-	ListOutputs(ctx context.Context, productVersionID string) ([]ProductOutput, error)
-	ReplaceOutputs(ctx context.Context, productVersionID string, outputs []ProductOutput) error
-	AddSemanticEntrypoint(ctx context.Context, entrypoint *ProductSemanticEntrypoint) error
-	ListSemanticEntrypoints(ctx context.Context, productVersionID string) ([]ProductSemanticEntrypoint, error)
-	ReplaceSemanticEntrypoints(ctx context.Context, productVersionID string, entrypoints []ProductSemanticEntrypoint) error
-	AddDependency(ctx context.Context, dependency *ProductDependency) error
-	ListDependencies(ctx context.Context, productID string) ([]DataProductListItem, error)
-	AddSubscription(ctx context.Context, subscription *ProductSubscription) (*ProductSubscription, error)
-	ListSubscriptions(ctx context.Context, productID string) ([]ProductSubscription, error)
-	AddEvent(ctx context.Context, event *ProductEvent) (*ProductEvent, error)
-	ListEvents(ctx context.Context, productID string, page PageRequest) ([]ProductEvent, int64, error)
-	CountDependents(ctx context.Context, productID string) (int64, error)
-	ListOrphanAssets(ctx context.Context) ([]OrphanResource, error)
-	ListOrphanSemanticModels(ctx context.Context) ([]OrphanResource, error)
-	GetByAssetID(ctx context.Context, assetID string) (*DataProductListItem, error)
-}
-
 // WorkspaceRepository provides CRUD operations for top-level authoring workspaces and memberships.
 type WorkspaceRepository interface {
 	Create(ctx context.Context, workspace *Workspace) (*Workspace, error)
@@ -109,7 +53,6 @@ type ProjectRepository interface {
 	GetByName(ctx context.Context, name string) (*Project, error)
 	List(ctx context.Context, page PageRequest) ([]Project, int64, error)
 	ListByWorkspace(ctx context.Context, workspaceID string, page PageRequest) ([]Project, int64, error)
-	ListByProduct(ctx context.Context, productID string, page PageRequest) ([]Project, int64, error)
 	Update(ctx context.Context, id string, req UpdateProjectRequest) (*Project, error)
 	Delete(ctx context.Context, id string) error
 }

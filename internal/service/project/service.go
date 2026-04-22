@@ -1,4 +1,4 @@
-// Package project implements the internal authoring control plane used by products.
+// Package project implements the internal authoring control plane.
 package project
 
 import (
@@ -22,8 +22,6 @@ type Service struct {
 	macros       domain.MacroRepository
 	builds       domain.BuildRepository
 	releases     domain.ProjectReleaseRepository
-	teams        domain.TeamRepository
-	products     domain.DataProductRepository
 	audit        domain.AuditRepository
 }
 
@@ -39,8 +37,6 @@ func NewService(
 	macros domain.MacroRepository,
 	builds domain.BuildRepository,
 	releases domain.ProjectReleaseRepository,
-	teams domain.TeamRepository,
-	products domain.DataProductRepository,
 	audit ...domain.AuditRepository,
 ) *Service {
 	var auditRepo domain.AuditRepository
@@ -58,13 +54,11 @@ func NewService(
 		macros:       macros,
 		builds:       builds,
 		releases:     releases,
-		teams:        teams,
-		products:     products,
 		audit:        auditRepo,
 	}
 }
 
-// CreateProject creates an internal project after validating team and product linkage.
+// CreateProject creates an internal project after validating workspace linkage.
 func (s *Service) CreateProject(ctx context.Context, principal string, req domain.CreateProjectRequest) (*domain.Project, error) {
 	if err := req.Validate(); err != nil {
 		return nil, err
@@ -84,33 +78,16 @@ func (s *Service) CreateProject(ctx context.Context, principal string, req domai
 	if normalizedKind != workspace.Kind {
 		return nil, domain.ErrValidation("project kind must match workspace kind")
 	}
-	ownerTeamID := normalizedStringPtr(workspace.OwnerTeamID)
+	ownerGroupID := normalizedStringPtr(workspace.OwnerGroupID)
 	ownerPrincipal := normalizedStringPtr(workspace.OwnerPrincipal)
-	productID := normalizedStringPtr(req.ProductID)
-
-	if ownerTeamID != nil {
-		if _, err := s.teams.GetByID(ctx, *ownerTeamID); err != nil {
-			return nil, err
-		}
-	}
-	if productID != nil {
-		product, err := s.products.GetByID(ctx, *productID)
-		if err != nil {
-			return nil, err
-		}
-		if ownerTeamID != nil && product.OwnerTeamID != *ownerTeamID {
-			return nil, domain.ErrValidation("project owner_team_id must match the attached product owner team")
-		}
-	}
 
 	project := &domain.Project{
 		WorkspaceID:    workspace.ID,
 		Name:           strings.TrimSpace(req.Name),
 		Kind:           normalizedKind,
 		Description:    strings.TrimSpace(req.Description),
-		OwnerTeamID:    ownerTeamID,
+		OwnerGroupID:   ownerGroupID,
 		OwnerPrincipal: ownerPrincipal,
-		ProductID:      productID,
 		DefaultBranch:  defaultBranch(req.DefaultBranch),
 		CreatedBy:      principal,
 	}
@@ -158,15 +135,6 @@ func (s *Service) UpdateProjectForPrincipal(ctx context.Context, principal strin
 	if !isAdmin {
 		if err := s.requireWorkspaceWrite(ctx, principal, project.WorkspaceID); err != nil {
 			return nil, err
-		}
-	}
-	if productID := normalizedStringPtr(req.ProductID); productID != nil {
-		product, err := s.products.GetByID(ctx, *productID)
-		if err != nil {
-			return nil, err
-		}
-		if project.OwnerTeamID != nil && product.OwnerTeamID != *project.OwnerTeamID {
-			return nil, domain.ErrValidation("project owner_team_id must match the attached product owner team")
 		}
 	}
 	updated, err := s.projects.Update(ctx, project.ID, req)
@@ -953,7 +921,6 @@ func (s *Service) createBuildForProject(ctx context.Context, principal string, p
 	}
 	created, err := s.builds.Create(ctx, &domain.Build{
 		ProjectID:          project.ID,
-		ProductID:          project.ProductID,
 		EnvironmentID:      environment.ID,
 		State:              domain.BuildStateReady,
 		GitRef:             strings.TrimSpace(req.GitRef),

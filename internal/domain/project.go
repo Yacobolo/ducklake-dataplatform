@@ -30,10 +30,6 @@ const (
 	BuildStateDraft = "draft"
 	// BuildStateReady means a build can be used for validation or publication.
 	BuildStateReady = "ready"
-	// BuildStateReleased marks the build currently backing a published product version.
-	BuildStateReleased = "released"
-	// BuildStateSuperseded marks a build replaced by a newer released product version.
-	BuildStateSuperseded = "superseded"
 )
 
 // Project is an internal execution/build unit within a workspace.
@@ -43,9 +39,8 @@ type Project struct {
 	Name           string
 	Kind           string
 	Description    string
-	OwnerTeamID    *string
+	OwnerGroupID   *string
 	OwnerPrincipal *string
-	ProductID      *string
 	DefaultBranch  string
 	CreatedBy      string
 	CreatedAt      time.Time
@@ -58,9 +53,8 @@ type CreateProjectRequest struct {
 	Name           string
 	Kind           string
 	Description    string
-	OwnerTeamID    *string
+	OwnerGroupID   *string
 	OwnerPrincipal *string
-	ProductID      *string
 	DefaultBranch  string
 }
 
@@ -68,7 +62,6 @@ type CreateProjectRequest struct {
 type UpdateProjectRequest struct {
 	Description   *string
 	DefaultBranch *string
-	ProductID     *string
 }
 
 // Environment is an internal execution context for a project.
@@ -176,12 +169,11 @@ type UpdateEnvironmentRequest struct {
 	SourceOverrides    *map[string]string
 }
 
-// Build is an internal immutable compilation snapshot used to back product versions.
+// Build is an internal immutable compilation snapshot.
 type Build struct {
 	ID                 string
 	ProjectID          string
 	ProjectName        string
-	ProductID          *string
 	EnvironmentID      string
 	EnvironmentName    string
 	State              string
@@ -297,13 +289,6 @@ func ValidateCreateProjectRequest(req CreateProjectRequest) error {
 		return ErrValidation("default branch is required")
 	}
 
-	productID := trimmedPtr(req.ProductID)
-	if normalizeProjectKind(req.Kind) == ProjectKindPersonal && productID != nil {
-		return ErrValidation("personal projects cannot attach to a product")
-	}
-	if normalizeProjectKind(req.Kind) == ProjectKindLibrary && productID != nil {
-		return ErrValidation("library projects cannot attach to a product")
-	}
 	return nil
 }
 
@@ -311,9 +296,6 @@ func ValidateCreateProjectRequest(req CreateProjectRequest) error {
 func ValidateUpdateProjectRequest(req UpdateProjectRequest) error {
 	if req.DefaultBranch != nil && strings.TrimSpace(*req.DefaultBranch) == "" {
 		return ErrValidation("default branch cannot be empty")
-	}
-	if req.ProductID != nil && strings.TrimSpace(*req.ProductID) == "" {
-		return ErrValidation("product_id cannot be empty")
 	}
 	return nil
 }

@@ -29,7 +29,6 @@ import (
 	"github.com/Yacobolo/quackstack/internal/ui/notebooks"
 	"github.com/Yacobolo/quackstack/internal/ui/overview"
 	"github.com/Yacobolo/quackstack/internal/ui/pipelines"
-	"github.com/Yacobolo/quackstack/internal/ui/products"
 	uiprojects "github.com/Yacobolo/quackstack/internal/ui/projects"
 	"github.com/Yacobolo/quackstack/internal/ui/runtimeassets"
 	"github.com/Yacobolo/quackstack/internal/ui/security"
@@ -56,7 +55,6 @@ type Handler struct {
 	Notebooks     *notebooks.Handler
 	Pipelines     *pipelines.Handler
 	Projects      *uiprojects.Handler
-	Products      *products.Handler
 	RuntimeAssets *runtimeassets.Handler
 	Security      *security.Handler
 	Semantic      *semantic.Handler
@@ -128,7 +126,6 @@ func NewHandler(
 	handler.Notebooks = notebookHandler
 	handler.Pipelines = pipelines.New(handler.Dependencies)
 	handler.Projects = uiprojects.New(handler.Dependencies)
-	handler.Products = products.New(handler.Dependencies)
 	handler.RuntimeAssets = runtimeassets.New(handler.Dependencies)
 	handler.Security = security.New(handler.Dependencies)
 	handler.Semantic = semantic.New(handler.Dependencies)

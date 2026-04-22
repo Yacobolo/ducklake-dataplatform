@@ -79,7 +79,6 @@ type resourceIndex struct {
 	notebookIDByName      map[string]string                                   // "kpi_walkthrough" → UUID
 	notebookCellRefByID   map[string]declarative.DashboardNotebookCellRefSpec // "notebookID/cellID" -> names
 	dashboardIDByName     map[string]string                                   // "revenue-overview" -> UUID
-	productDomainNameByID map[string]string                                   // product domain UUID -> domain name
 }
 
 func newResourceIndex() *resourceIndex {
@@ -111,7 +110,6 @@ func newResourceIndex() *resourceIndex {
 		notebookIDByName:      make(map[string]string),
 		notebookCellRefByID:   make(map[string]declarative.DashboardNotebookCellRefSpec),
 		dashboardIDByName:     make(map[string]string),
-		productDomainNameByID: make(map[string]string),
 	}
 }
 
@@ -253,15 +251,6 @@ func (c *APIStateClient) ReadState(ctx context.Context) (*declarative.DesiredSta
 	}
 	if err := c.readWorkspaces(ctx, state); err != nil {
 		return nil, fmt.Errorf("read workspaces: %w", err)
-	}
-	if err := c.readDomains(ctx, state); err != nil {
-		return nil, fmt.Errorf("read domains: %w", err)
-	}
-	if err := c.readTeams(ctx, state); err != nil {
-		return nil, fmt.Errorf("read teams: %w", err)
-	}
-	if err := c.readDataProducts(ctx, state); err != nil {
-		return nil, fmt.Errorf("read data products: %w", err)
 	}
 	if err := c.readAssets(ctx, state); err != nil {
 		return nil, fmt.Errorf("read assets: %w", err)
@@ -1350,7 +1339,7 @@ type apiWorkspace struct {
 	Name                 string `json:"name"`
 	Kind                 string `json:"kind"`
 	OwnerPrincipal       string `json:"owner_principal"`
-	OwnerTeamID          string `json:"owner_team_id"`
+	OwnerGroupID         string `json:"owner_group_id"`
 	DefaultProjectID     string `json:"default_project_id"`
 	DefaultEnvironmentID string `json:"default_environment_id"`
 	GitRepoID            string `json:"git_repo_id"`
@@ -1375,7 +1364,6 @@ type apiProject struct {
 	Name          string `json:"name"`
 	Kind          string `json:"kind"`
 	Description   string `json:"description"`
-	ProductID     string `json:"product_id"`
 	DefaultBranch string `json:"default_branch"`
 }
 
@@ -1426,7 +1414,7 @@ func (c *APIStateClient) readWorkspaces(ctx context.Context, state *declarative.
 		spec := declarative.WorkspaceSpec{
 			Kind:                  item.Kind,
 			OwnerPrincipal:        item.OwnerPrincipal,
-			OwnerTeamID:           item.OwnerTeamID,
+			OwnerGroupID:          item.OwnerGroupID,
 			DefaultProjectRef:     c.reverseLookupProjectKey(item.DefaultProjectID),
 			DefaultEnvironmentRef: c.reverseLookupEnvironmentKey(item.DefaultEnvironmentID),
 			GitRepoID:             item.GitRepoID,
@@ -1467,7 +1455,6 @@ func (c *APIStateClient) readWorkspaceProjects(ctx context.Context, workspaceID,
 				WorkspaceRef:  workspaceName,
 				Kind:          item.Kind,
 				Description:   item.Description,
-				ProductID:     item.ProductID,
 				DefaultBranch: item.DefaultBranch,
 			},
 		})
@@ -1755,315 +1742,6 @@ func (c *APIStateClient) readNotebooks(ctx context.Context, state *declarative.D
 	return nil
 }
 
-type apiProductDomain struct {
-	ID          string `json:"id"`
-	Name        string `json:"name"`
-	Description string `json:"description"`
-}
-
-type apiProductTeam struct {
-	ID             string `json:"id"`
-	DomainID       string `json:"domain_id"`
-	Name           string `json:"name"`
-	ContactChannel string `json:"contact_channel"`
-}
-
-type apiProductContract struct {
-	DataGrain            string   `json:"data_grain"`
-	PrimaryKeys          []string `json:"primary_keys"`
-	JoinKeys             []string `json:"join_keys"`
-	Dimensions           []string `json:"dimensions"`
-	Measures             []string `json:"measures"`
-	RetentionWindow      string   `json:"retention_window"`
-	UpdateCadence        string   `json:"update_cadence"`
-	QualityExpectations  []string `json:"quality_expectations"`
-	BreakingChangePolicy string   `json:"breaking_change_policy"`
-	SampleQueries        []string `json:"sample_queries"`
-}
-
-type apiProductSLO struct {
-	FreshnessSLO string `json:"freshness_slo"`
-	LatencySLO   string `json:"latency_slo"`
-}
-
-type apiDataProduct struct {
-	ID                  string             `json:"id"`
-	Slug                string             `json:"slug"`
-	Name                string             `json:"name"`
-	Description         string             `json:"description"`
-	StewardPrincipal    string             `json:"steward_principal"`
-	ContactChannel      string             `json:"contact_channel"`
-	Visibility          string             `json:"visibility"`
-	ConsumerAudience    string             `json:"consumer_audience"`
-	DocsURL             string             `json:"docs_url"`
-	AccessRequestPath   string             `json:"access_request_path"`
-	BusinessDefinitions map[string]string  `json:"business_definitions"`
-	Contract            apiProductContract `json:"contract"`
-	SLO                 apiProductSLO      `json:"slo"`
-	PublicationIntent   string             `json:"publication_intent"`
-}
-
-type apiDataProductVersion struct {
-	Version            int                `json:"version"`
-	ReleaseState       string             `json:"release_state"`
-	CompatibilityLevel string             `json:"compatibility_level"`
-	Contract           apiProductContract `json:"contract"`
-	SLO                apiProductSLO      `json:"slo"`
-	DocsURL            string             `json:"docs_url"`
-	AccessRequestPath  string             `json:"access_request_path"`
-}
-
-type apiProductOutput struct {
-	AssetKey  string `json:"asset_key"`
-	IsPrimary bool   `json:"is_primary"`
-}
-
-type apiProductSemanticEntrypoint struct {
-	ModelName string `json:"model_name"`
-}
-
-type apiDataProductListItem struct {
-	Product apiDataProduct `json:"product"`
-}
-
-type apiDataProductDetail struct {
-	Product             apiDataProduct                 `json:"product"`
-	Domain              apiProductDomain               `json:"domain"`
-	OwnerTeam           apiProductTeam                 `json:"owner_team"`
-	Versions            []apiDataProductVersion        `json:"versions"`
-	Outputs             []apiProductOutput             `json:"outputs"`
-	SemanticEntrypoints []apiProductSemanticEntrypoint `json:"semantic_entrypoints"`
-	Dependencies        []apiDataProductListItem       `json:"dependencies"`
-}
-
-type apiDataProductVersionDetail struct {
-	Version             apiDataProductVersion          `json:"version"`
-	Outputs             []apiProductOutput             `json:"outputs"`
-	SemanticEntrypoints []apiProductSemanticEntrypoint `json:"semantic_entrypoints"`
-}
-
-func (c *APIStateClient) readDomains(ctx context.Context, state *declarative.DesiredState) error {
-	pages, err := c.fetchAllPages(ctx, "/product-domains")
-	if err != nil {
-		return err
-	}
-	if len(pages) == 0 {
-		return nil
-	}
-
-	var items []apiProductDomain
-	if err := mergePages(pages, &items); err != nil {
-		return err
-	}
-
-	for _, item := range items {
-		state.Domains = append(state.Domains, declarative.DomainResource{
-			Name: item.Name,
-			Spec: declarative.DomainSpec{Description: item.Description},
-		})
-		if c.index != nil && item.ID != "" {
-			c.index.productDomainNameByID[item.ID] = item.Name
-		}
-	}
-	return nil
-}
-
-func (c *APIStateClient) readTeams(ctx context.Context, state *declarative.DesiredState) error {
-	for _, domainItem := range state.Domains {
-		pages, err := c.fetchAllPages(ctx, "/product-domains/"+url.PathEscape(domainItem.Name)+"/teams")
-		if err != nil {
-			return err
-		}
-		if len(pages) == 0 {
-			continue
-		}
-
-		var items []apiProductTeam
-		if err := mergePages(pages, &items); err != nil {
-			return err
-		}
-
-		for _, item := range items {
-			state.Teams = append(state.Teams, declarative.TeamResource{
-				Name: item.Name,
-				Spec: declarative.TeamSpec{
-					DomainRef:      domainItem.Name,
-					ContactChannel: item.ContactChannel,
-				},
-			})
-		}
-	}
-	return nil
-}
-
-func (c *APIStateClient) readDataProducts(ctx context.Context, state *declarative.DesiredState) error {
-	pages, err := c.fetchAllPages(ctx, "/data-products")
-	if err != nil {
-		return err
-	}
-	if len(pages) == 0 {
-		return nil
-	}
-
-	var items []apiDataProductListItem
-	if err := mergePages(pages, &items); err != nil {
-		return err
-	}
-
-	for _, item := range items {
-		if item.Product.Slug == "" {
-			continue
-		}
-		detail, err := c.readDataProductDetail(ctx, item.Product.Slug)
-		if err != nil {
-			return fmt.Errorf("read data product %q: %w", item.Product.Slug, err)
-		}
-		spec := declarative.DataProductSpec{
-			Name:                detail.Product.Name,
-			Description:         detail.Product.Description,
-			DomainRef:           detail.Domain.Name,
-			OwnerTeamRef:        detail.OwnerTeam.Name,
-			StewardPrincipal:    detail.Product.StewardPrincipal,
-			ContactChannel:      detail.Product.ContactChannel,
-			Visibility:          detail.Product.Visibility,
-			ConsumerAudience:    detail.Product.ConsumerAudience,
-			DocsURL:             detail.Product.DocsURL,
-			AccessRequestPath:   detail.Product.AccessRequestPath,
-			BusinessDefinitions: cloneStringMap(detail.Product.BusinessDefinitions),
-			Contract:            declarativeProductContract(detail.Product.Contract),
-			SLO:                 declarativeProductSLO(detail.Product.SLO),
-			Outputs:             productOutputKeys(detail.Outputs),
-			SemanticEntrypoints: semanticEntrypointRefs(detail.SemanticEntrypoints),
-			Dependencies:        productDependencySlugs(detail.Dependencies),
-			PublicationIntent:   detail.Product.PublicationIntent,
-		}
-
-		for _, version := range detail.Versions {
-			versionDetail, err := c.readDataProductVersionDetail(ctx, item.Product.Slug, version.Version)
-			if err != nil {
-				return fmt.Errorf("read data product %q version %d: %w", item.Product.Slug, version.Version, err)
-			}
-			spec.Versions = append(spec.Versions, declarative.DataProductVersionSpec{
-				Version:             version.Version,
-				ReleaseState:        version.ReleaseState,
-				CompatibilityLevel:  version.CompatibilityLevel,
-				Contract:            declarativeProductContract(version.Contract),
-				SLO:                 declarativeProductSLO(version.SLO),
-				DocsURL:             version.DocsURL,
-				AccessRequestPath:   version.AccessRequestPath,
-				Outputs:             productOutputKeys(versionDetail.Outputs),
-				SemanticEntrypoints: semanticEntrypointRefs(versionDetail.SemanticEntrypoints),
-			})
-		}
-		sort.Slice(spec.Versions, func(i, j int) bool {
-			return spec.Versions[i].Version < spec.Versions[j].Version
-		})
-		if len(spec.Versions) == 1 && isImplicitProductVersion(spec, spec.Versions[0]) {
-			spec.Versions = nil
-		}
-
-		state.DataProducts = append(state.DataProducts, declarative.DataProductResource{
-			Slug: item.Product.Slug,
-			Spec: spec,
-		})
-	}
-	return nil
-}
-
-func (c *APIStateClient) readDataProductDetail(_ context.Context, slug string) (*apiDataProductDetail, error) {
-	resp, err := c.client.Do(http.MethodGet, "/data-products/"+slug, nil, nil)
-	if err != nil {
-		return nil, err
-	}
-	body, err := apiruntime.ReadBody(resp)
-	if err != nil {
-		return nil, err
-	}
-	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return nil, fmt.Errorf("GET /data-products/%s: HTTP %d: %s", slug, resp.StatusCode, string(body))
-	}
-	var detail apiDataProductDetail
-	if err := json.Unmarshal(body, &detail); err != nil {
-		return nil, err
-	}
-	return &detail, nil
-}
-
-func (c *APIStateClient) readDataProductVersionDetail(_ context.Context, slug string, version int) (*apiDataProductVersionDetail, error) {
-	resp, err := c.client.Do(http.MethodGet, fmt.Sprintf("/data-products/%s/versions/%d", slug, version), nil, nil)
-	if err != nil {
-		return nil, err
-	}
-	body, err := apiruntime.ReadBody(resp)
-	if err != nil {
-		return nil, err
-	}
-	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return nil, fmt.Errorf("GET /data-products/%s/versions/%d: HTTP %d: %s", slug, version, resp.StatusCode, string(body))
-	}
-	var detail apiDataProductVersionDetail
-	if err := json.Unmarshal(body, &detail); err != nil {
-		return nil, err
-	}
-	return &detail, nil
-}
-
-func declarativeProductContract(item apiProductContract) declarative.ProductContractSpec {
-	return declarative.ProductContractSpec{
-		DataGrain:            item.DataGrain,
-		PrimaryKeys:          append([]string(nil), item.PrimaryKeys...),
-		JoinKeys:             append([]string(nil), item.JoinKeys...),
-		Dimensions:           append([]string(nil), item.Dimensions...),
-		Measures:             append([]string(nil), item.Measures...),
-		RetentionWindow:      item.RetentionWindow,
-		UpdateCadence:        item.UpdateCadence,
-		QualityExpectations:  append([]string(nil), item.QualityExpectations...),
-		BreakingChangePolicy: item.BreakingChangePolicy,
-		SampleQueries:        append([]string(nil), item.SampleQueries...),
-	}
-}
-
-func declarativeProductSLO(item apiProductSLO) declarative.ProductSLOSpec {
-	return declarative.ProductSLOSpec{
-		FreshnessSLO: item.FreshnessSLO,
-		LatencySLO:   item.LatencySLO,
-	}
-}
-
-func productOutputKeys(outputs []apiProductOutput) []string {
-	keys := make([]string, 0, len(outputs))
-	for _, output := range outputs {
-		if output.AssetKey != "" {
-			keys = append(keys, output.AssetKey)
-		}
-	}
-	sort.Strings(keys)
-	return keys
-}
-
-func semanticEntrypointRefs(entrypoints []apiProductSemanticEntrypoint) []string {
-	refs := make([]string, 0, len(entrypoints))
-	for _, entrypoint := range entrypoints {
-		if entrypoint.ModelName == "" {
-			continue
-		}
-		refs = append(refs, semanticModelPath("", entrypoint.ModelName))
-	}
-	sort.Strings(refs)
-	return refs
-}
-
-func productDependencySlugs(items []apiDataProductListItem) []string {
-	slugs := make([]string, 0, len(items))
-	for _, item := range items {
-		if item.Product.Slug != "" {
-			slugs = append(slugs, item.Product.Slug)
-		}
-	}
-	sort.Strings(slugs)
-	return slugs
-}
-
 func normalizeAssetTypeForConfig(assetType string) string {
 	return strings.ToLower(strings.TrimSpace(assetType))
 }
@@ -2083,18 +1761,6 @@ func cloneStringMap(values map[string]string) map[string]string {
 	return cloned
 }
 
-func isImplicitProductVersion(spec declarative.DataProductSpec, version declarative.DataProductVersionSpec) bool {
-	return version.Version == 1 &&
-		version.ReleaseState == domain.ProductReleaseStateDraft &&
-		(version.CompatibilityLevel == "" || version.CompatibilityLevel == domain.ProductCompatibilityBackwardCompatible) &&
-		reflect.DeepEqual(spec.Contract, version.Contract) &&
-		reflect.DeepEqual(spec.SLO, version.SLO) &&
-		spec.DocsURL == version.DocsURL &&
-		spec.AccessRequestPath == version.AccessRequestPath &&
-		reflect.DeepEqual(spec.Outputs, version.Outputs) &&
-		reflect.DeepEqual(spec.SemanticEntrypoints, version.SemanticEntrypoints)
-}
-
 func (c *APIStateClient) readAssets(ctx context.Context, state *declarative.DesiredState) error {
 	pages, err := c.fetchAllPages(ctx, "/assets")
 	if err != nil {
@@ -2109,27 +1775,9 @@ func (c *APIStateClient) readAssets(ctx context.Context, state *declarative.Desi
 		return err
 	}
 
-	productRefByAssetKey := map[string]string{}
-	for _, product := range state.DataProducts {
-		for _, assetKey := range product.Spec.Outputs {
-			productRefByAssetKey[assetKey] = product.Slug
-		}
-		for _, version := range product.Spec.Versions {
-			for _, assetKey := range version.Outputs {
-				productRefByAssetKey[assetKey] = product.Slug
-			}
-		}
-	}
-
 	for _, asset := range items {
-		productRef := productRefByAssetKey[asset.AssetKey]
-		if productRef == "" {
-			productRef = inferManagedRuntimeProductRef(asset)
-		}
-
 		spec := declarative.AssetSpec{
 			AssetType:    normalizeAssetTypeForConfig(asset.AssetType),
-			ProductRef:   productRef,
 			Owner:        asset.Owner,
 			Description:  asset.Description,
 			Tags:         append([]string(nil), asset.Tags...),
@@ -2201,23 +1849,6 @@ func (c *APIStateClient) readAssetChecks(ctx context.Context, assetKey string) (
 		})
 	}
 	return out, nil
-}
-
-func inferManagedRuntimeProductRef(asset apiAsset) string {
-	switch normalizeAssetTypeForConfig(asset.AssetType) {
-	case "dashboard":
-		return "runtime-dashboards"
-	case "metric", "semantic_model":
-		return "runtime-semantic"
-	case "model":
-		return "runtime-models"
-	case "notebook":
-		return "runtime-notebooks"
-	case "notebook_output":
-		return "runtime-notebook-outputs"
-	default:
-		return ""
-	}
 }
 
 func (c *APIStateClient) reverseLookupWorkspaceName(ctx *apiNotebookContext) string {
@@ -3668,10 +3299,6 @@ func (c *APIStateClient) Execute(ctx context.Context, action declarative.Action)
 		return c.executeGroupMembership(ctx, action)
 	case declarative.KindPrivilegeGrant:
 		return c.executeGrant(ctx, action)
-	case declarative.KindDomain:
-		return c.executeDomain(ctx, action)
-	case declarative.KindTeam:
-		return c.executeTeam(ctx, action)
 	case declarative.KindCatalogRegistration:
 		return c.executeCatalog(ctx, action)
 	case declarative.KindSchema:
@@ -3698,8 +3325,6 @@ func (c *APIStateClient) Execute(ctx context.Context, action declarative.Action)
 		return c.executeAPIKey(ctx, action)
 	case declarative.KindNotebook:
 		return c.executeNotebook(ctx, action)
-	case declarative.KindDataProduct:
-		return c.executeDataProduct(ctx, action)
 	case declarative.KindAsset:
 		return c.executeAsset(ctx, action)
 	case declarative.KindMacro:
@@ -4066,8 +3691,8 @@ func (c *APIStateClient) executeWorkspace(_ context.Context, action declarative.
 		if item.Spec.OwnerPrincipal != "" {
 			body["owner_principal"] = item.Spec.OwnerPrincipal
 		}
-		if item.Spec.OwnerTeamID != "" {
-			body["owner_team_id"] = item.Spec.OwnerTeamID
+		if item.Spec.OwnerGroupID != "" {
+			body["owner_group_id"] = item.Spec.OwnerGroupID
 		}
 		if item.Spec.GitRepoID != "" {
 			body["git_repo_id"] = item.Spec.GitRepoID
@@ -4287,9 +3912,6 @@ func (c *APIStateClient) executeProject(_ context.Context, action declarative.Ac
 		if item.Spec.Description != "" {
 			body["description"] = item.Spec.Description
 		}
-		if item.Spec.ProductID != "" {
-			body["product_id"] = item.Spec.ProductID
-		}
 		if item.Spec.DefaultBranch != "" {
 			body["default_branch"] = item.Spec.DefaultBranch
 		}
@@ -4316,9 +3938,6 @@ func (c *APIStateClient) executeProject(_ context.Context, action declarative.Ac
 		body := map[string]interface{}{}
 		if item.Spec.Description != "" {
 			body["description"] = item.Spec.Description
-		}
-		if item.Spec.ProductID != "" {
-			body["product_id"] = item.Spec.ProductID
 		}
 		if item.Spec.DefaultBranch != "" {
 			body["default_branch"] = item.Spec.DefaultBranch
@@ -4702,483 +4321,16 @@ func (c *APIStateClient) applyNotebookContext(_ context.Context, notebookID stri
 	return nil
 }
 
-func (c *APIStateClient) executeDomain(_ context.Context, action declarative.Action) error {
-	switch action.Operation {
-	case declarative.OpCreate:
-		item := action.Desired.(declarative.DomainResource)
-		resp, err := c.client.Do(http.MethodPost, "/product-domains", nil, map[string]interface{}{
-			"name":        item.Name,
-			"description": item.Spec.Description,
-		})
-		if err != nil {
-			return err
-		}
-		if resp.StatusCode == http.StatusConflict {
-			return nil
-		}
-		return apiruntime.CheckError(resp)
-	case declarative.OpUpdate:
-		item := action.Desired.(declarative.DomainResource)
-		resp, err := c.client.Do(http.MethodPatch, "/product-domains/"+item.Name, nil, map[string]interface{}{
-			"description": item.Spec.Description,
-		})
-		if err != nil {
-			return err
-		}
-		return apiruntime.CheckError(resp)
-	case declarative.OpDelete:
-		name := action.ResourceName
-		if actual, ok := action.Actual.(declarative.DomainResource); ok && actual.Name != "" {
-			name = actual.Name
-		}
-		resp, err := c.client.Do(http.MethodDelete, "/product-domains/"+name, nil, nil)
-		if err != nil {
-			return err
-		}
-		return apiruntime.CheckError(resp)
-	default:
-		return fmt.Errorf("unsupported operation %s for domain", action.Operation)
-	}
-}
-
-func (c *APIStateClient) executeTeam(_ context.Context, action declarative.Action) error {
-	switch action.Operation {
-	case declarative.OpCreate:
-		item := action.Desired.(declarative.TeamResource)
-		resp, err := c.client.Do(http.MethodPost, "/product-domains/"+item.Spec.DomainRef+"/teams", nil, map[string]interface{}{
-			"name":            item.Name,
-			"contact_channel": item.Spec.ContactChannel,
-		})
-		if err != nil {
-			return err
-		}
-		if resp.StatusCode == http.StatusConflict {
-			return nil
-		}
-		return apiruntime.CheckError(resp)
-	case declarative.OpUpdate:
-		item := action.Desired.(declarative.TeamResource)
-		resp, err := c.client.Do(http.MethodPatch, "/product-domains/"+item.Spec.DomainRef+"/teams/"+item.Name, nil, map[string]interface{}{
-			"contact_channel": item.Spec.ContactChannel,
-		})
-		if err != nil {
-			return err
-		}
-		return apiruntime.CheckError(resp)
-	case declarative.OpDelete:
-		item := action.Actual.(declarative.TeamResource)
-		resp, err := c.client.Do(http.MethodDelete, "/product-domains/"+item.Spec.DomainRef+"/teams/"+item.Name, nil, nil)
-		if err != nil {
-			return err
-		}
-		return apiruntime.CheckError(resp)
-	default:
-		return fmt.Errorf("unsupported operation %s for team", action.Operation)
-	}
-}
-
-func (c *APIStateClient) executeDataProduct(ctx context.Context, action declarative.Action) error {
-	switch action.Operation {
-	case declarative.OpCreate:
-		return c.applyDataProductCreate(ctx, action.Desired.(declarative.DataProductResource))
-	case declarative.OpUpdate:
-		return c.applyDataProductUpdate(ctx, action.Desired.(declarative.DataProductResource), action.Actual.(declarative.DataProductResource))
-	case declarative.OpDelete:
-		slug := action.ResourceName
-		if actual, ok := action.Actual.(declarative.DataProductResource); ok && actual.Slug != "" {
-			slug = actual.Slug
-		}
-		resp, err := c.client.Do(http.MethodDelete, "/data-products/"+slug, nil, nil)
-		if err != nil {
-			return err
-		}
-		return apiruntime.CheckError(resp)
-	default:
-		return fmt.Errorf("unsupported operation %s for data-product", action.Operation)
-	}
-}
-
-func (c *APIStateClient) applyDataProductCreate(ctx context.Context, item declarative.DataProductResource) error {
-	createSpec, topLevelPatch, err := c.prepareCreateDataProduct(item)
-	if err != nil {
-		return err
-	}
-	resp, err := c.client.Do(http.MethodPost, "/data-products", nil, createSpec)
-	if err != nil {
-		return err
-	}
-	if resp.StatusCode != http.StatusConflict {
-		if err := apiruntime.CheckError(resp); err != nil {
-			return err
-		}
-	}
-	if len(topLevelPatch) > 0 {
-		resp, err = c.client.Do(http.MethodPatch, "/data-products/"+item.Slug, nil, topLevelPatch)
-		if err != nil {
-			return err
-		}
-		if err := apiruntime.CheckError(resp); err != nil {
-			return err
-		}
-	}
-	for _, version := range sortedProductVersions(item.Spec.Versions) {
-		if version.Version == 1 {
-			if err := c.applyProductVersionState(ctx, item.Slug, domain.ProductReleaseStateDraft, version.ReleaseState, version.Version); err != nil {
-				return err
-			}
-			continue
-		}
-		resp, err := c.client.Do(http.MethodPost, "/data-products/"+item.Slug+"/versions", nil, dataProductVersionBody(version))
-		if err != nil {
-			return err
-		}
-		if err := apiruntime.CheckError(resp); err != nil {
-			return err
-		}
-		if err := c.applyProductVersionState(ctx, item.Slug, domain.ProductReleaseStateDraft, version.ReleaseState, version.Version); err != nil {
-			return err
-		}
-	}
-	for _, dependency := range item.Spec.Dependencies {
-		resp, err := c.client.Do(http.MethodPost, "/data-products/"+item.Slug+"/dependencies", nil, map[string]interface{}{
-			"depends_on_slug": dependency,
-		})
-		if err != nil {
-			return err
-		}
-		if resp.StatusCode == http.StatusConflict {
-			continue
-		}
-		if err := apiruntime.CheckError(resp); err != nil {
-			return err
-		}
-	}
-	if len(item.Spec.Versions) == 0 && item.Spec.PublicationIntent == domain.ProductPublicationIntentPublished {
-		if err := c.applyProductVersionState(ctx, item.Slug, domain.ProductReleaseStateDraft, domain.ProductReleaseStatePublished, 1); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func (c *APIStateClient) applyDataProductUpdate(ctx context.Context, desired, actual declarative.DataProductResource) error {
-	resp, err := c.client.Do(http.MethodPatch, "/data-products/"+desired.Slug, nil, dataProductUpdateBody(desired.Slug, desired.Spec))
-	if err != nil {
-		return err
-	}
-	if err := apiruntime.CheckError(resp); err != nil {
-		return err
-	}
-
-	if len(desired.Spec.Versions) > 0 {
-		actualVersions := map[int]declarative.DataProductVersionSpec{}
-		for _, version := range actual.Spec.Versions {
-			actualVersions[version.Version] = version
-		}
-		for _, version := range sortedProductVersions(desired.Spec.Versions) {
-			current, exists := actualVersions[version.Version]
-			if !exists {
-				resp, err := c.client.Do(http.MethodPost, "/data-products/"+desired.Slug+"/versions", nil, dataProductVersionBody(version))
-				if err != nil {
-					return err
-				}
-				if err := apiruntime.CheckError(resp); err != nil {
-					return err
-				}
-				if err := c.applyProductVersionState(ctx, desired.Slug, domain.ProductReleaseStateDraft, version.ReleaseState, version.Version); err != nil {
-					return err
-				}
-				continue
-			}
-			if !reflect.DeepEqual(normalizeProductVersionForMutation(current), normalizeProductVersionForMutation(version)) {
-				return fmt.Errorf("data product %q version %d is immutable; create a new version instead of modifying it", desired.Slug, version.Version)
-			}
-			if err := c.applyProductVersionState(ctx, desired.Slug, current.ReleaseState, version.ReleaseState, version.Version); err != nil {
-				return err
-			}
-			delete(actualVersions, version.Version)
-		}
-		if len(actualVersions) > 0 {
-			extra := make([]int, 0, len(actualVersions))
-			for version := range actualVersions {
-				extra = append(extra, version)
-			}
-			sort.Ints(extra)
-			for _, version := range extra {
-				resp, err := c.client.Do(http.MethodDelete, fmt.Sprintf("/data-products/%s/versions/%d", desired.Slug, version), nil, nil)
-				if err != nil {
-					return err
-				}
-				if err := apiruntime.CheckError(resp); err != nil {
-					return err
-				}
-			}
-		}
-	} else {
-		if len(actual.Spec.Versions) > 0 {
-			extra := make([]int, 0, len(actual.Spec.Versions))
-			for _, version := range actual.Spec.Versions {
-				if version.Version != 1 {
-					extra = append(extra, version.Version)
-				}
-			}
-			sort.Ints(extra)
-			for _, version := range extra {
-				resp, err := c.client.Do(http.MethodDelete, fmt.Sprintf("/data-products/%s/versions/%d", desired.Slug, version), nil, nil)
-				if err != nil {
-					return err
-				}
-				if err := apiruntime.CheckError(resp); err != nil {
-					return err
-				}
-			}
-		}
-		if desired.Spec.PublicationIntent == domain.ProductPublicationIntentPublished {
-			if versionOne, ok := findProductVersion(actual.Spec.Versions, 1); ok {
-				if err := c.applyProductVersionState(ctx, desired.Slug, versionOne.ReleaseState, domain.ProductReleaseStatePublished, 1); err != nil {
-					return err
-				}
-			}
-		}
-	}
-
-	desiredDeps := make(map[string]struct{}, len(desired.Spec.Dependencies))
-	for _, dependency := range desired.Spec.Dependencies {
-		desiredDeps[dependency] = struct{}{}
-	}
-	actualDeps := make(map[string]struct{}, len(actual.Spec.Dependencies))
-	for _, dependency := range actual.Spec.Dependencies {
-		actualDeps[dependency] = struct{}{}
-	}
-	for dependency := range desiredDeps {
-		if _, ok := actualDeps[dependency]; ok {
-			continue
-		}
-		resp, err := c.client.Do(http.MethodPost, "/data-products/"+desired.Slug+"/dependencies", nil, map[string]interface{}{
-			"depends_on_slug": dependency,
-		})
-		if err != nil {
-			return err
-		}
-		if resp.StatusCode == http.StatusConflict {
-			continue
-		}
-		if err := apiruntime.CheckError(resp); err != nil {
-			return err
-		}
-	}
-	var removedDeps []string
-	for dependency := range actualDeps {
-		if _, ok := desiredDeps[dependency]; !ok {
-			removedDeps = append(removedDeps, dependency)
-		}
-	}
-	if len(removedDeps) > 0 {
-		sort.Strings(removedDeps)
-		return fmt.Errorf("data product %q dependencies %v cannot be removed with the current public API", desired.Slug, removedDeps)
-	}
-	return nil
-}
-
-func (c *APIStateClient) applyProductVersionState(_ context.Context, slug, actualState, desiredState string, version int) error {
-	if desiredState == "" || desiredState == actualState {
-		return nil
-	}
-	switch desiredState {
-	case domain.ProductReleaseStateDraft:
-		if actualState == "" || actualState == domain.ProductReleaseStateDraft {
-			return nil
-		}
-		return fmt.Errorf("data product %q version %d cannot transition back to DRAFT", slug, version)
-	case domain.ProductReleaseStatePublished:
-		switch actualState {
-		case "", domain.ProductReleaseStateDraft:
-			resp, err := c.client.Do(http.MethodPost, fmt.Sprintf("/data-products/%s/versions/%d/publications", slug, version), nil, map[string]interface{}{})
-			if err != nil {
-				return err
-			}
-			return apiruntime.CheckError(resp)
-		case domain.ProductReleaseStatePublished:
-			return nil
-		default:
-			return fmt.Errorf("data product %q version %d cannot transition from %s to PUBLISHED", slug, version, actualState)
-		}
-	case domain.ProductReleaseStateDeprecated:
-		switch actualState {
-		case "", domain.ProductReleaseStateDraft, domain.ProductReleaseStatePublished:
-			resp, err := c.client.Do(http.MethodPost, fmt.Sprintf("/data-products/%s/versions/%d/deprecations", slug, version), nil, map[string]interface{}{})
-			if err != nil {
-				return err
-			}
-			return apiruntime.CheckError(resp)
-		case domain.ProductReleaseStateDeprecated:
-			return nil
-		default:
-			return fmt.Errorf("data product %q version %d cannot transition from %s to DEPRECATED", slug, version, actualState)
-		}
-	case domain.ProductReleaseStateRetired:
-		if actualState == domain.ProductReleaseStateRetired {
-			return nil
-		}
-		resp, err := c.client.Do(http.MethodPost, fmt.Sprintf("/data-products/%s/versions/%d/retirements", slug, version), nil, map[string]interface{}{})
-		if err != nil {
-			return err
-		}
-		return apiruntime.CheckError(resp)
-	default:
-		return fmt.Errorf("unsupported product release state %q for %s version %d", desiredState, slug, version)
-	}
-}
-
-func (c *APIStateClient) prepareCreateDataProduct(item declarative.DataProductResource) (map[string]interface{}, map[string]interface{}, error) {
-	name := item.Spec.Name
-	if name == "" {
-		name = item.Slug
-	}
-	body := dataProductCreateBody(item.Slug, item.Spec)
-	topLevelPatch := map[string]interface{}{}
-	if versionOne, ok := findProductVersion(item.Spec.Versions, 1); ok {
-		body["contract"] = apiProductContractFromDeclarative(versionOne.Contract)
-		body["slo"] = apiProductSLOFromDeclarative(versionOne.SLO)
-		body["docs_url"] = versionOne.DocsURL
-		body["access_request_path"] = versionOne.AccessRequestPath
-		body["semantic_model_refs"] = versionOne.SemanticEntrypoints
-		delete(body, "primary_asset_key")
-		if len(versionOne.Outputs) > 0 {
-			body["primary_asset_key"] = versionOne.Outputs[0]
-		}
-
-		if !reflect.DeepEqual(versionOne.Contract, item.Spec.Contract) ||
-			!reflect.DeepEqual(versionOne.SLO, item.Spec.SLO) ||
-			versionOne.DocsURL != item.Spec.DocsURL ||
-			versionOne.AccessRequestPath != item.Spec.AccessRequestPath {
-			topLevelPatch = dataProductUpdateBody(item.Slug, item.Spec)
-		}
-	}
-	body["name"] = name
-	return body, topLevelPatch, nil
-}
-
-func dataProductCreateBody(slug string, spec declarative.DataProductSpec) map[string]interface{} {
-	name := spec.Name
-	if name == "" {
-		name = slug
-	}
-	body := map[string]interface{}{
-		"slug":                 slug,
-		"name":                 name,
-		"description":          spec.Description,
-		"domain_name":          spec.DomainRef,
-		"team_name":            spec.OwnerTeamRef,
-		"steward_principal":    spec.StewardPrincipal,
-		"contact_channel":      spec.ContactChannel,
-		"visibility":           spec.Visibility,
-		"consumer_audience":    spec.ConsumerAudience,
-		"docs_url":             spec.DocsURL,
-		"access_request_path":  spec.AccessRequestPath,
-		"business_definitions": spec.BusinessDefinitions,
-		"contract":             apiProductContractFromDeclarative(spec.Contract),
-		"slo":                  apiProductSLOFromDeclarative(spec.SLO),
-		"semantic_model_refs":  spec.SemanticEntrypoints,
-		"created_by":           "declarative",
-	}
-	if len(spec.Outputs) > 0 {
-		body["primary_asset_key"] = spec.Outputs[0]
-	}
-	return body
-}
-
-func dataProductUpdateBody(slug string, spec declarative.DataProductSpec) map[string]interface{} {
-	name := spec.Name
-	if name == "" {
-		name = slug
-	}
-	return map[string]interface{}{
-		"name":                 name,
-		"description":          spec.Description,
-		"domain_name":          spec.DomainRef,
-		"team_name":            spec.OwnerTeamRef,
-		"steward_principal":    spec.StewardPrincipal,
-		"contact_channel":      spec.ContactChannel,
-		"visibility":           spec.Visibility,
-		"consumer_audience":    spec.ConsumerAudience,
-		"docs_url":             spec.DocsURL,
-		"access_request_path":  spec.AccessRequestPath,
-		"business_definitions": spec.BusinessDefinitions,
-		"contract":             apiProductContractFromDeclarative(spec.Contract),
-		"slo":                  apiProductSLOFromDeclarative(spec.SLO),
-		"publication_intent":   spec.PublicationIntent,
-	}
-}
-
-func dataProductVersionBody(spec declarative.DataProductVersionSpec) map[string]interface{} {
-	return map[string]interface{}{
-		"compatibility_level": spec.CompatibilityLevel,
-		"contract":            apiProductContractFromDeclarative(spec.Contract),
-		"slo":                 apiProductSLOFromDeclarative(spec.SLO),
-		"docs_url":            spec.DocsURL,
-		"access_request_path": spec.AccessRequestPath,
-		"output_asset_keys":   spec.Outputs,
-		"semantic_model_refs": spec.SemanticEntrypoints,
-		"created_by":          "declarative",
-	}
-}
-
-func apiProductContractFromDeclarative(item declarative.ProductContractSpec) apiProductContract {
-	return apiProductContract{
-		DataGrain:            item.DataGrain,
-		PrimaryKeys:          append([]string(nil), item.PrimaryKeys...),
-		JoinKeys:             append([]string(nil), item.JoinKeys...),
-		Dimensions:           append([]string(nil), item.Dimensions...),
-		Measures:             append([]string(nil), item.Measures...),
-		RetentionWindow:      item.RetentionWindow,
-		UpdateCadence:        item.UpdateCadence,
-		QualityExpectations:  append([]string(nil), item.QualityExpectations...),
-		BreakingChangePolicy: item.BreakingChangePolicy,
-		SampleQueries:        append([]string(nil), item.SampleQueries...),
-	}
-}
-
-func apiProductSLOFromDeclarative(item declarative.ProductSLOSpec) apiProductSLO {
-	return apiProductSLO{
-		FreshnessSLO: item.FreshnessSLO,
-		LatencySLO:   item.LatencySLO,
-	}
-}
-
-func sortedProductVersions(versions []declarative.DataProductVersionSpec) []declarative.DataProductVersionSpec {
-	cloned := append([]declarative.DataProductVersionSpec(nil), versions...)
-	sort.Slice(cloned, func(i, j int) bool {
-		return cloned[i].Version < cloned[j].Version
-	})
-	return cloned
-}
-
-func findProductVersion(versions []declarative.DataProductVersionSpec, version int) (declarative.DataProductVersionSpec, bool) {
-	for _, item := range versions {
-		if item.Version == version {
-			return item, true
-		}
-	}
-	return declarative.DataProductVersionSpec{}, false
-}
-
-func normalizeProductVersionForMutation(spec declarative.DataProductVersionSpec) declarative.DataProductVersionSpec {
-	spec.ReleaseState = ""
-	return spec
-}
-
 func (c *APIStateClient) executeAsset(_ context.Context, action declarative.Action) error {
 	toAssetBody := func(asset declarative.AssetResource) map[string]interface{} {
 		body := map[string]interface{}{
-			"asset_key":    asset.Name,
-			"asset_type":   normalizeAssetTypeForAPI(asset.Spec.AssetType),
-			"product_slug": asset.Spec.ProductRef,
-			"owner":        asset.Spec.Owner,
-			"description":  asset.Spec.Description,
-			"tags":         asset.Spec.Tags,
-			"io_profile":   asset.Spec.IOProfile,
-			"is_active":    true,
+			"asset_key":   asset.Name,
+			"asset_type":  normalizeAssetTypeForAPI(asset.Spec.AssetType),
+			"owner":       asset.Spec.Owner,
+			"description": asset.Spec.Description,
+			"tags":        asset.Spec.Tags,
+			"io_profile":  asset.Spec.IOProfile,
+			"is_active":   true,
 		}
 		if len(asset.Spec.DependsOn) > 0 {
 			body["upstream_asset_keys"] = asset.Spec.DependsOn

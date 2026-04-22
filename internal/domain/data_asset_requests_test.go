@@ -11,10 +11,9 @@ func TestValidateCreateAssetRequest_RejectsExecutionPoliciesForLogicalAssets(t *
 	t.Parallel()
 
 	err := ValidateCreateAssetRequest(CreateAssetRequest{
-		AssetKey:    "dashboard.exec",
-		AssetType:   AssetTypeDashboard,
-		ProductSlug: "dashboards",
-		Owner:       "analytics",
+		AssetKey:  "dashboard.exec",
+		AssetType: AssetTypeDashboard,
+		Owner:     "analytics",
 		MaterializationPolicy: &AssetMaterializationPolicy{
 			Mode: "TABLE",
 		},
@@ -27,10 +26,9 @@ func TestValidateCreateAssetRequest_AcceptsFreshnessForLogicalAssets(t *testing.
 	t.Parallel()
 
 	err := ValidateCreateAssetRequest(CreateAssetRequest{
-		AssetKey:    "dashboard.kpi",
-		AssetType:   AssetTypeDashboard,
-		ProductSlug: "dashboards",
-		Owner:       "analytics",
+		AssetKey:  "dashboard.kpi",
+		AssetType: AssetTypeDashboard,
+		Owner:     "analytics",
 		FreshnessPolicy: &AssetFreshnessPolicy{
 			MaxLagSeconds: 1800,
 		},
@@ -42,10 +40,9 @@ func TestValidateCreateAssetRequest_AcceptsExecutionPoliciesForExecutableAssets(
 	t.Parallel()
 
 	err := ValidateCreateAssetRequest(CreateAssetRequest{
-		AssetKey:    "semantic.preagg.daily_orders",
-		AssetType:   AssetTypeSemanticPreAggregation,
-		ProductSlug: "semantic-daily-orders",
-		Owner:       "analytics",
+		AssetKey:  "semantic.preagg.daily_orders",
+		AssetType: AssetTypeSemanticPreAggregation,
+		Owner:     "analytics",
 		FreshnessPolicy: &AssetFreshnessPolicy{
 			MaxLagSeconds: 900,
 		},
@@ -65,10 +62,9 @@ func TestValidateCreateAssetRequest_RejectsUnknownAssetType(t *testing.T) {
 	t.Parallel()
 
 	err := ValidateCreateAssetRequest(CreateAssetRequest{
-		AssetKey:    "bad.asset",
-		AssetType:   "BLOB",
-		ProductSlug: "unknown",
-		Owner:       "analytics",
+		AssetKey:  "bad.asset",
+		AssetType: "BLOB",
+		Owner:     "analytics",
 	})
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "not supported")
@@ -78,10 +74,9 @@ func TestValidateCreateAssetRequest_AcceptsLowercaseAssetType(t *testing.T) {
 	t.Parallel()
 
 	err := ValidateCreateAssetRequest(CreateAssetRequest{
-		AssetKey:    "warehouse.orders",
-		AssetType:   "table",
-		ProductSlug: "warehouse",
-		Owner:       "analytics",
+		AssetKey:  "warehouse.orders",
+		AssetType: "table",
+		Owner:     "analytics",
 	})
 	require.NoError(t, err)
 }

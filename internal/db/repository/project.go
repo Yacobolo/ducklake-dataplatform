@@ -32,11 +32,11 @@ func (r *ProjectRepo) Create(ctx context.Context, p *domain.Project) (*domain.Pr
 	id := newID()
 	_, err := r.db.ExecContext(ctx, `
 		INSERT INTO projects (
-			id, workspace_id, name, kind, description, owner_team_id, owner_principal, product_id,
+			id, workspace_id, name, kind, description, owner_group_id, owner_principal,
 			default_branch, created_by, created_at, updated_at
-		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-		id, p.WorkspaceID, p.Name, p.Kind, p.Description, nullableStringValue(p.OwnerTeamID), nullableStringValue(p.OwnerPrincipal),
-		nullableStringValue(p.ProductID), p.DefaultBranch, p.CreatedBy, now.Format(time.RFC3339), now.Format(time.RFC3339),
+		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		id, p.WorkspaceID, p.Name, p.Kind, p.Description, nullableStringValue(p.OwnerGroupID), nullableStringValue(p.OwnerPrincipal),
+		p.DefaultBranch, p.CreatedBy, now.Format(time.RFC3339), now.Format(time.RFC3339),
 	)
 	if err != nil {
 		return nil, mapDBError(err)
@@ -111,34 +111,6 @@ func (r *ProjectRepo) ListByWorkspace(ctx context.Context, workspaceID string, p
 	return items, total, nil
 }
 
-// ListByProduct returns projects attached to a product.
-func (r *ProjectRepo) ListByProduct(ctx context.Context, productID string, page domain.PageRequest) ([]domain.Project, int64, error) {
-	var total int64
-	if err := r.db.QueryRowContext(ctx, `SELECT COUNT(*) FROM projects WHERE product_id = ?`, productID).Scan(&total); err != nil {
-		return nil, 0, mapDBError(err)
-	}
-	rows, err := r.db.QueryContext(ctx, projectSelectSQL+`
-		WHERE p.product_id = ?
-		ORDER BY p.name
-		LIMIT ? OFFSET ?`, productID, page.Limit(), page.Offset())
-	if err != nil {
-		return nil, 0, mapDBError(err)
-	}
-	defer func() { _ = rows.Close() }()
-	items := make([]domain.Project, 0)
-	for rows.Next() {
-		item, err := scanProject(rows)
-		if err != nil {
-			return nil, 0, err
-		}
-		items = append(items, *item)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, 0, err
-	}
-	return items, total, nil
-}
-
 // Update applies mutable project fields and returns the updated row.
 func (r *ProjectRepo) Update(ctx context.Context, id string, req domain.UpdateProjectRequest) (*domain.Project, error) {
 	current, err := r.GetByID(ctx, id)
@@ -153,15 +125,11 @@ func (r *ProjectRepo) Update(ctx context.Context, id string, req domain.UpdatePr
 	if req.DefaultBranch != nil {
 		defaultBranch = *req.DefaultBranch
 	}
-	productID := current.ProductID
-	if req.ProductID != nil {
-		productID = req.ProductID
-	}
 	_, err = r.db.ExecContext(ctx, `
 		UPDATE projects
-		SET description = ?, default_branch = ?, product_id = ?, updated_at = ?
+		SET description = ?, default_branch = ?, updated_at = ?
 		WHERE id = ?`,
-		description, defaultBranch, nullableStringValue(productID), time.Now().UTC().Format(time.RFC3339), id,
+		description, defaultBranch, time.Now().UTC().Format(time.RFC3339), id,
 	)
 	if err != nil {
 		return nil, mapDBError(err)
@@ -187,7 +155,7 @@ func (r *ProjectRepo) Delete(ctx context.Context, id string) error {
 
 const projectSelectSQL = `
 	SELECT
-		p.id, p.workspace_id, p.name, p.kind, p.description, p.owner_team_id, p.owner_principal, p.product_id,
+		p.id, p.workspace_id, p.name, p.kind, p.description, p.owner_group_id, p.owner_principal,
 		p.default_branch, p.created_by, p.created_at, p.updated_at
 	FROM projects p`
 
@@ -355,9 +323,8 @@ type projectRowScanner interface {
 
 func scanProject(scanner projectRowScanner) (*domain.Project, error) {
 	var item domain.Project
-	var ownerTeamID sql.NullString
+	var ownerGroupID sql.NullString
 	var ownerPrincipal sql.NullString
-	var productID sql.NullString
 	var createdAt time.Time
 	var updatedAt time.Time
 	if err := scanner.Scan(
@@ -366,9 +333,8 @@ func scanProject(scanner projectRowScanner) (*domain.Project, error) {
 		&item.Name,
 		&item.Kind,
 		&item.Description,
-		&ownerTeamID,
+		&ownerGroupID,
 		&ownerPrincipal,
-		&productID,
 		&item.DefaultBranch,
 		&item.CreatedBy,
 		&createdAt,
@@ -376,14 +342,11 @@ func scanProject(scanner projectRowScanner) (*domain.Project, error) {
 	); err != nil {
 		return nil, mapDBError(err)
 	}
-	if ownerTeamID.Valid {
-		item.OwnerTeamID = &ownerTeamID.String
+	if ownerGroupID.Valid {
+		item.OwnerGroupID = &ownerGroupID.String
 	}
 	if ownerPrincipal.Valid {
 		item.OwnerPrincipal = &ownerPrincipal.String
-	}
-	if productID.Valid {
-		item.ProductID = &productID.String
 	}
 	item.CreatedAt = createdAt
 	item.UpdatedAt = updatedAt
@@ -481,13 +444,12 @@ func (r *BuildRepo) Create(ctx context.Context, b *domain.Build) (*domain.Build,
 	id := newID()
 	_, err := r.db.ExecContext(ctx, `
 		INSERT INTO builds (
-			id, project_id, product_id, environment_id, state, git_ref, commit_sha, selector,
+			id, project_id, environment_id, state, git_ref, commit_sha, selector,
 			target_catalog, target_schema, source_model_run_id, resolved_release_id, compile_manifest,
 			compile_diagnostics, state_snapshot, created_by, created_at
-		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 		id,
 		b.ProjectID,
-		nullableStringValue(b.ProductID),
 		b.EnvironmentID,
 		defaultBuildState(b.State),
 		b.GitRef,
@@ -589,7 +551,7 @@ func (r *BuildRepo) UpdateState(ctx context.Context, id string, state string) er
 
 const buildSelectSQL = `
 	SELECT
-		b.id, b.project_id, p.name, b.product_id, b.environment_id, e.name, b.state, b.git_ref,
+		b.id, b.project_id, p.name, b.environment_id, e.name, b.state, b.git_ref,
 		b.commit_sha, b.selector, b.target_catalog, b.target_schema, b.source_model_run_id,
 		b.resolved_release_id, b.compile_manifest, b.compile_diagnostics, b.state_snapshot,
 		b.created_by, b.created_at
@@ -599,7 +561,6 @@ const buildSelectSQL = `
 
 func scanBuild(scanner projectRowScanner) (*domain.Build, error) {
 	var item domain.Build
-	var productID sql.NullString
 	var commitSHA sql.NullString
 	var sourceModelRunID sql.NullString
 	var resolvedReleaseID sql.NullString
@@ -609,7 +570,6 @@ func scanBuild(scanner projectRowScanner) (*domain.Build, error) {
 		&item.ID,
 		&item.ProjectID,
 		&item.ProjectName,
-		&productID,
 		&item.EnvironmentID,
 		&item.EnvironmentName,
 		&item.State,
@@ -627,9 +587,6 @@ func scanBuild(scanner projectRowScanner) (*domain.Build, error) {
 		&item.CreatedAt,
 	); err != nil {
 		return nil, mapDBError(err)
-	}
-	if productID.Valid {
-		item.ProductID = &productID.String
 	}
 	if commitSHA.Valid {
 		item.CommitSHA = &commitSHA.String
@@ -651,7 +608,7 @@ func scanBuild(scanner projectRowScanner) (*domain.Build, error) {
 
 func defaultBuildState(state string) string {
 	switch state {
-	case domain.BuildStateDraft, domain.BuildStateReleased, domain.BuildStateSuperseded:
+	case domain.BuildStateDraft:
 		return state
 	default:
 		return domain.BuildStateReady

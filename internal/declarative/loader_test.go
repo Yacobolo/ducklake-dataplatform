@@ -133,7 +133,7 @@ package duckconfig
 
 platform: workspaces: personal: {
 	kind: "shared"
-	owner_team_id: "team-1"
+	owner_group_id: "group-1"
 }
 `)
 

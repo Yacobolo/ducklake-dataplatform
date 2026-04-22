@@ -18,7 +18,6 @@ type projectListRowData struct {
 	WorkspaceName  string
 	DefaultBranch  string
 	OwnerSummary   string
-	ProductSummary string
 	CreatedAt      string
 	URL            string
 }
@@ -58,7 +57,6 @@ type projectHubPageData struct {
 	Project           domain.Project
 	WorkspaceName     string
 	OwnerSummary      string
-	ProductSummary    string
 	ActiveTab         string
 	ModelsURL         string
 	MacrosURL         string
@@ -90,7 +88,6 @@ func projectsListPage(principal domain.ContextPrincipal, rows []projectListRowDa
 				Td(core.TableMetaText(row.WorkspaceName)),
 				Td(core.TableMetaText(row.DefaultBranch)),
 				Td(core.TableMetaText(row.OwnerSummary)),
-				Td(core.TableMetaText(row.ProductSummary)),
 				Td(core.TableMetaText(row.CreatedAt)),
 			))
 		}
@@ -102,7 +99,6 @@ func projectsListPage(principal domain.ContextPrincipal, rows []projectListRowDa
 					Th(Text("Workspace")),
 					Th(Text("Branch")),
 					Th(Text("Owner")),
-					Th(Text("Product")),
 					Th(Text("Created")),
 				)),
 				TBody(Group(tableRows)),
@@ -311,7 +307,6 @@ func projectHero(d projectHubPageData) Node {
 			core.ViewField("Workspace", core.ViewFieldText(valueOrDash(d.WorkspaceName))),
 			core.ViewField("Branch", core.ViewFieldCode(valueOrDash(d.Project.DefaultBranch))),
 			core.ViewField("Owner", core.ViewFieldText(valueOrDash(d.OwnerSummary))),
-			core.ViewField("Product", projectHeaderProductValue(d.ProductSummary)),
 			core.ViewField("Identifier", projectHeaderIDValue(d.Project.ID)),
 		),
 	)
@@ -323,13 +318,6 @@ func projectMetaInline(label, value string) Node {
 		Span(Class("text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--fgColor-muted)]"), Text(label)),
 		Span(Class("min-w-0 truncate text-sm text-[var(--fgColor-default)]"), Text(value)),
 	)
-}
-
-func projectHeaderProductValue(value string) Node {
-	if value == "Unlinked" {
-		return core.ViewFieldMutedText(value)
-	}
-	return core.ViewFieldText(valueOrDash(value))
 }
 
 func projectHeaderIDValue(value string) Node {

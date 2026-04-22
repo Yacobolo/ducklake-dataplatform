@@ -71,7 +71,6 @@ func (h *Handler) ProjectsList(w http.ResponseWriter, r *http.Request) {
 			WorkspaceName:  valueOrDash(workspaceName),
 			DefaultBranch:  valueOrDash(item.DefaultBranch),
 			OwnerSummary:   ownerSummary(item),
-			ProductSummary: productSummary(item),
 			CreatedAt:      formatTime(item.CreatedAt),
 			URL:            "/ui/projects/" + item.ID,
 		})
@@ -200,7 +199,6 @@ func (h *Handler) ProjectsDetail(w http.ResponseWriter, r *http.Request) {
 		Project:           *project,
 		WorkspaceName:     valueOrDash(workspaceName),
 		OwnerSummary:      ownerSummary(*project),
-		ProductSummary:    productSummary(*project),
 		ActiveTab:         tab,
 		ModelsURL:         modelsListURL(project.Name),
 		MacrosURL:         macrosListURL(project.Name),

@@ -68,7 +68,7 @@ func (h *APIHandler) CreateWorkspace(ctx context.Context, req GenCreateWorkspace
 	item, err := h.workspaces.CreateWorkspace(ctx, cp.Name, cp.IsAdmin, domain.CreateWorkspaceRequest{
 		Name:                 req.Body.Name,
 		Kind:                 derefStringEnum(req.Body.Kind),
-		OwnerTeamID:          req.Body.OwnerTeamId,
+		OwnerGroupID:         req.Body.OwnerGroupId,
 		OwnerPrincipal:       req.Body.OwnerPrincipal,
 		DefaultProjectID:     req.Body.DefaultProjectId,
 		DefaultEnvironmentID: req.Body.DefaultEnvironmentId,
@@ -315,7 +315,7 @@ func workspaceToAPI(item domain.Workspace) Workspace {
 		Id:                   optStr(item.ID),
 		Name:                 item.Name,
 		Kind:                 WorkspaceKind(item.Kind),
-		OwnerTeamId:          item.OwnerTeamID,
+		OwnerGroupId:         item.OwnerGroupID,
 		OwnerPrincipal:       item.OwnerPrincipal,
 		DefaultProjectId:     item.DefaultProjectID,
 		DefaultEnvironmentId: item.DefaultEnvironmentID,

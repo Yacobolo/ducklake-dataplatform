@@ -158,15 +158,6 @@ func (r *fakeProjectRepo) ListByWorkspace(_ context.Context, workspaceID string,
 	}
 	return out, int64(len(out)), nil
 }
-func (r *fakeProjectRepo) ListByProduct(_ context.Context, productID string, _ domain.PageRequest) ([]domain.Project, int64, error) {
-	out := make([]domain.Project, 0)
-	for _, item := range r.items {
-		if item.ProductID != nil && *item.ProductID == productID {
-			out = append(out, *item)
-		}
-	}
-	return out, int64(len(out)), nil
-}
 func (r *fakeProjectRepo) Update(_ context.Context, id string, _ domain.UpdateProjectRequest) (*domain.Project, error) {
 	return r.GetByID(context.Background(), id)
 }
@@ -646,7 +637,6 @@ func TestProjectsPage_RenderIncludesNavigationState(t *testing.T) {
 			WorkspaceName:  "Team workspace",
 			DefaultBranch:  "main",
 			OwnerSummary:   "alice",
-			ProductSummary: "Unlinked",
 			CreatedAt:      "2026-04-14 10:00 UTC",
 			URL:            "/ui/projects/prj_123",
 		},

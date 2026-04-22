@@ -23,7 +23,6 @@ func (s *Service) CreateAsset(ctx context.Context, req domain.CreateAssetRequest
 	asset := &domain.DataAsset{
 		AssetKey:              strings.TrimSpace(req.AssetKey),
 		AssetType:             strings.ToUpper(strings.TrimSpace(req.AssetType)),
-		ProductID:             "",
 		Owner:                 strings.TrimSpace(req.Owner),
 		Description:           strings.TrimSpace(req.Description),
 		Tags:                  normalizedTags(req.Tags),
@@ -35,14 +34,6 @@ func (s *Service) CreateAsset(ctx context.Context, req domain.CreateAssetRequest
 		CreatedBy:             servicepolicy.CallerName(ctx),
 		SchemaJSON:            map[string]any{},
 	}
-	if s.products == nil {
-		return nil, domain.ErrValidation("product linkage is not configured")
-	}
-	product, err := s.products.GetBySlug(ctx, strings.TrimSpace(req.ProductSlug))
-	if err != nil {
-		return nil, fmt.Errorf("resolve product %q: %w", strings.TrimSpace(req.ProductSlug), err)
-	}
-	asset.ProductID = product.Product.ID
 
 	created, err := s.assets.Create(ctx, asset)
 	if err != nil {
@@ -82,19 +73,11 @@ func (s *Service) UpdateAsset(ctx context.Context, assetKey string, req domain.U
 	if err != nil {
 		return nil, err
 	}
-	if s.products == nil {
-		return nil, domain.ErrValidation("product linkage is not configured")
-	}
-	product, err := s.products.GetBySlug(ctx, strings.TrimSpace(req.ProductSlug))
-	if err != nil {
-		return nil, fmt.Errorf("resolve product %q: %w", strings.TrimSpace(req.ProductSlug), err)
-	}
 
 	updated, err := s.assets.Update(ctx, existing.ID, &domain.DataAsset{
 		ID:                    existing.ID,
 		AssetKey:              existing.AssetKey,
 		AssetType:             strings.ToUpper(strings.TrimSpace(req.AssetType)),
-		ProductID:             product.Product.ID,
 		Owner:                 strings.TrimSpace(req.Owner),
 		Description:           strings.TrimSpace(req.Description),
 		Tags:                  normalizedTags(req.Tags),

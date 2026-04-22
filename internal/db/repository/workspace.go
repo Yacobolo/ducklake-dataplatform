@@ -30,14 +30,14 @@ func (r *WorkspaceRepo) Create(ctx context.Context, workspace *domain.Workspace)
 	}
 	_, err := r.db.ExecContext(ctx, `
 		INSERT INTO workspaces (
-			id, name, kind, owner_team_id, owner_principal, default_project_id,
+			id, name, kind, owner_group_id, owner_principal, default_project_id,
 			default_environment_id, git_repo_id, git_root_path, created_by, created_at, updated_at
 		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`,
 		id,
 		workspace.Name,
 		workspace.Kind,
-		nullableStringValue(workspace.OwnerTeamID),
+		nullableStringValue(workspace.OwnerGroupID),
 		nullableStringValue(workspace.OwnerPrincipal),
 		nullableStringValue(workspace.DefaultProjectID),
 		nullableStringValue(workspace.DefaultEnvironmentID),
@@ -267,7 +267,7 @@ func (r *WorkspaceRepo) GetMemberRole(ctx context.Context, workspaceID string, p
 
 const workspaceSelectSQL = `
 	SELECT
-		w.id, w.name, w.kind, w.owner_team_id, w.owner_principal, w.default_project_id,
+		w.id, w.name, w.kind, w.owner_group_id, w.owner_principal, w.default_project_id,
 		w.default_environment_id, w.git_repo_id, w.git_root_path, w.created_by, w.created_at, w.updated_at
 	FROM workspaces w`
 
@@ -276,7 +276,7 @@ func scanWorkspace(row interface{ Scan(dest ...any) error }) (*domain.Workspace,
 		id                   string
 		name                 string
 		kind                 string
-		ownerTeamID          sql.NullString
+		ownerGroupID         sql.NullString
 		ownerPrincipal       sql.NullString
 		defaultProjectID     sql.NullString
 		defaultEnvironmentID sql.NullString
@@ -286,14 +286,14 @@ func scanWorkspace(row interface{ Scan(dest ...any) error }) (*domain.Workspace,
 		createdAtRaw         string
 		updatedAtRaw         string
 	)
-	if err := row.Scan(&id, &name, &kind, &ownerTeamID, &ownerPrincipal, &defaultProjectID, &defaultEnvironmentID, &gitRepoID, &gitRootPath, &createdBy, &createdAtRaw, &updatedAtRaw); err != nil {
+	if err := row.Scan(&id, &name, &kind, &ownerGroupID, &ownerPrincipal, &defaultProjectID, &defaultEnvironmentID, &gitRepoID, &gitRootPath, &createdBy, &createdAtRaw, &updatedAtRaw); err != nil {
 		return nil, mapDBError(err)
 	}
 	return &domain.Workspace{
 		ID:                   id,
 		Name:                 name,
 		Kind:                 kind,
-		OwnerTeamID:          ptrFromNullString(ownerTeamID),
+		OwnerGroupID:         ptrFromNullString(ownerGroupID),
 		OwnerPrincipal:       ptrFromNullString(ownerPrincipal),
 		DefaultProjectID:     ptrFromNullString(defaultProjectID),
 		DefaultEnvironmentID: ptrFromNullString(defaultEnvironmentID),

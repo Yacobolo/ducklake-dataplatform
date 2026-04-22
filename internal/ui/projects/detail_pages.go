@@ -71,7 +71,6 @@ func projectBuildDetailPage(d projectBuildDetailPageData) Node {
 						projectDetailMetaItem("Commit SHA", valueOrDash(valueOrPtr(d.Build.CommitSHA))),
 						projectDetailMetaItem("Selector", valueOrDash(d.Build.Selector)),
 						projectDetailMetaItem("Target", valueOrDash(d.Build.TargetCatalog+"."+d.Build.TargetSchema)),
-						projectDetailMetaItem("Product", buildProductSummary(d.Build.ProductID)),
 						projectDetailMetaItem("Created by", valueOrDash(d.Build.CreatedBy)),
 						projectDetailMetaItem("Created", formatTime(d.Build.CreatedAt)),
 					),
@@ -144,7 +143,6 @@ func projectBuildHero(d projectBuildDetailPageData) Node {
 				projectMetaInline("Project", d.Project.Name),
 				projectMetaInline("Environment", valueOrDash(d.EnvironmentName)),
 				projectMetaInline("Git ref", valueOrDash(d.Build.GitRef)),
-				projectMetaInline("Product", buildProductSummary(d.Build.ProductID)),
 			),
 		),
 		P(
@@ -255,13 +253,6 @@ func projectCodeBlockOrEmpty(value, emptyTitle, emptyMessage string) Node {
 		return core.EmptyState("file-stack", emptyTitle, emptyMessage, nil)
 	}
 	return projectCodeBlock(value)
-}
-
-func buildProductSummary(productID *string) string {
-	if productID == nil || strings.TrimSpace(*productID) == "" {
-		return "Unlinked"
-	}
-	return *productID
 }
 
 func optionSelected(value, current string) Node {

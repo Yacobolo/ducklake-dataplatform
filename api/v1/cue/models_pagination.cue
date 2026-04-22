@@ -60,9 +60,6 @@ schemas_pagination: {
   PaginatedDashboards: #paginatedItemsSchema & {
     #item_ref: "Dashboard"
   },
-  PaginatedDataProducts: #paginatedItemsSchema & {
-    #item_ref: "DataProductListItem"
-  },
   PaginatedEnvironments: #paginatedItemsSchema & {
     #item_ref: "Environment"
   },
@@ -113,12 +110,6 @@ schemas_pagination: {
   },
   PaginatedPrincipals: #paginatedItemsSchema & {
     #item_ref: "Principal"
-  },
-  PaginatedProductDomains: #paginatedItemsSchema & {
-    #item_ref: "ProductDomain"
-  },
-  PaginatedProductTeams: #paginatedItemsSchema & {
-    #item_ref: "ProductTeam"
   },
   PaginatedProjects: #paginatedItemsSchema & {
     #item_ref: "Project"

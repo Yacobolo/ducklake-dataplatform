@@ -19,7 +19,6 @@ import (
 	"github.com/Yacobolo/quackstack/internal/ui/notebooks"
 	"github.com/Yacobolo/quackstack/internal/ui/overview"
 	"github.com/Yacobolo/quackstack/internal/ui/pipelines"
-	"github.com/Yacobolo/quackstack/internal/ui/products"
 	"github.com/Yacobolo/quackstack/internal/ui/projects"
 	"github.com/Yacobolo/quackstack/internal/ui/runtimeassets"
 	"github.com/Yacobolo/quackstack/internal/ui/security"
@@ -47,7 +46,6 @@ func MountRoutes(r chi.Router, h *Handler) {
 		storage.MountRoutes(r, h.Storage)
 		compute.MountRoutes(r, h.Compute)
 		governance.MountRoutes(r, h.Governance)
-		products.MountRoutes(r, h.Products)
 		runtimeassets.MountRoutes(r, h.RuntimeAssets)
 		projects.MountRoutes(r, h.Projects)
 		explore.MountRoutes(r, h.Explore)

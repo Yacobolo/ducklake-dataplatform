@@ -815,7 +815,7 @@ func TestPipelineService_SyncPipelinesToAssets_GetAssetUnexpectedError(t *testin
 
 	svc := newTestService(pipeRepo, &testutil.MockPipelineRunRepo{}, &testutil.MockAuditRepo{}, &testutil.MockNotebookProvider{})
 	assetRepo := &mockDataAssetRepo{getByIDErr: errors.New("temporary db issue")}
-	svc.SetAssetOrchestration(assetRepo, &mockAssetDependencyRepo{}, nil, "prod-pipelines")
+	svc.SetAssetOrchestration(assetRepo, &mockAssetDependencyRepo{}, nil)
 
 	err := svc.SyncPipelinesToAssets(context.Background())
 	require.Error(t, err)
