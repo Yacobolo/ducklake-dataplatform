@@ -457,6 +457,27 @@ type ComputeRoutingRepository interface {
 	UpdateDefaults(ctx context.Context, defaults ComputeRoutingDefaults) (*ComputeRoutingDefaults, error)
 }
 
+// ComputeClusterTemplateRepository manages platform-owned managed compute templates.
+type ComputeClusterTemplateRepository interface {
+	Create(ctx context.Context, tpl *ComputeClusterTemplate) (*ComputeClusterTemplate, error)
+	GetByID(ctx context.Context, id string) (*ComputeClusterTemplate, error)
+	GetByName(ctx context.Context, name string) (*ComputeClusterTemplate, error)
+	List(ctx context.Context, page PageRequest) ([]ComputeClusterTemplate, int64, error)
+	Delete(ctx context.Context, id string) error
+}
+
+// ManagedComputeClusterRepository manages provider-backed clusters behind logical compute endpoints.
+type ManagedComputeClusterRepository interface {
+	Create(ctx context.Context, cluster *ManagedComputeCluster) (*ManagedComputeCluster, error)
+	GetByID(ctx context.Context, id string) (*ManagedComputeCluster, error)
+	GetByName(ctx context.Context, name string) (*ManagedComputeCluster, error)
+	GetByEndpointID(ctx context.Context, endpointID string) (*ManagedComputeCluster, error)
+	List(ctx context.Context, page PageRequest) ([]ManagedComputeCluster, int64, error)
+	UpdateDesiredState(ctx context.Context, id string, desiredState string) error
+	UpdateObservedState(ctx context.Context, id string, observedState string, endpointURL *string, lastActivityAt *time.Time) error
+	Delete(ctx context.Context, id string) error
+}
+
 // NotebookRepository provides CRUD operations for notebooks and cells.
 type NotebookRepository interface {
 	CreateNotebook(ctx context.Context, nb *Notebook) (*Notebook, error)

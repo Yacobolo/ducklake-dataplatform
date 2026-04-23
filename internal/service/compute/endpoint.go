@@ -11,6 +11,7 @@ import (
 	workercompute "github.com/Yacobolo/quackstack/internal/compute"
 	computeproto "github.com/Yacobolo/quackstack/internal/compute/proto"
 	"github.com/Yacobolo/quackstack/internal/domain"
+	"github.com/Yacobolo/quackstack/internal/platform"
 	"github.com/Yacobolo/quackstack/internal/service/auditutil"
 	servicepolicy "github.com/Yacobolo/quackstack/internal/service/policy"
 
@@ -25,12 +26,15 @@ import (
 //
 //nolint:revive // Name chosen for clarity across package boundaries
 type ComputeEndpointService struct {
-	repo        domain.ComputeEndpointRepository
-	routingRepo domain.ComputeRoutingRepository
-	principals  domain.PrincipalRepository
-	groups      domain.GroupRepository
-	auth        domain.AuthorizationService
-	audit       domain.AuditRepository
+	repo         domain.ComputeEndpointRepository
+	routingRepo  domain.ComputeRoutingRepository
+	templateRepo domain.ComputeClusterTemplateRepository
+	clusterRepo  domain.ManagedComputeClusterRepository
+	principals   domain.PrincipalRepository
+	groups       domain.GroupRepository
+	auth         domain.AuthorizationService
+	audit        domain.AuditRepository
+	provider     platform.Provider
 }
 
 // NewComputeEndpointService creates a new ComputeEndpointService.
@@ -51,6 +55,16 @@ func (s *ComputeEndpointService) SetRoutingRepository(repo domain.ComputeRouting
 	s.routingRepo = repo
 }
 
+// SetClusterTemplateRepository configures managed compute template storage.
+func (s *ComputeEndpointService) SetClusterTemplateRepository(repo domain.ComputeClusterTemplateRepository) {
+	s.templateRepo = repo
+}
+
+// SetManagedClusterRepository configures managed compute cluster storage.
+func (s *ComputeEndpointService) SetManagedClusterRepository(repo domain.ManagedComputeClusterRepository) {
+	s.clusterRepo = repo
+}
+
 // SetPrincipalRepository configures principal lookup for principal-facing compute APIs.
 func (s *ComputeEndpointService) SetPrincipalRepository(repo domain.PrincipalRepository) {
 	s.principals = repo
@@ -59,6 +73,11 @@ func (s *ComputeEndpointService) SetPrincipalRepository(repo domain.PrincipalRep
 // SetGroupRepository configures group lookup for principal-facing compute APIs.
 func (s *ComputeEndpointService) SetGroupRepository(repo domain.GroupRepository) {
 	s.groups = repo
+}
+
+// SetPlatformProvider configures the platform provider used for managed cluster lifecycle.
+func (s *ComputeEndpointService) SetPlatformProvider(provider platform.Provider) {
+	s.provider = provider
 }
 
 // Create validates and persists a new compute endpoint.
@@ -108,6 +127,9 @@ func (s *ComputeEndpointService) GetByName(ctx context.Context, principal, name 
 	if err != nil {
 		return nil, err
 	}
+	if err := s.hydrateEndpointManagedBacking(ctx, ep); err != nil {
+		return nil, err
+	}
 	if err := s.requireEndpointPrivilege(ctx, principal, ep.ID, domain.PrivManageCompute); err != nil {
 		s.logAuditDenied(ctx, principal, "GET_COMPUTE_ENDPOINT", fmt.Sprintf("Denied get compute endpoint %q", name))
 		return nil, err
@@ -120,7 +142,14 @@ func (s *ComputeEndpointService) List(ctx context.Context, principal string, pag
 	if err := s.requirePrivilege(ctx, principal, domain.PrivManageCompute, "LIST_COMPUTE_ENDPOINTS", "Denied list compute endpoints"); err != nil {
 		return nil, 0, err
 	}
-	return s.repo.List(ctx, page)
+	eps, total, err := s.repo.List(ctx, page)
+	if err != nil {
+		return nil, 0, err
+	}
+	if err := s.hydrateEndpointsManagedBacking(ctx, eps); err != nil {
+		return nil, 0, err
+	}
+	return eps, total, nil
 }
 
 // Update updates a compute endpoint by name.

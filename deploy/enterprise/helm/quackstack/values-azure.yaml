@@ -1,0 +1,25 @@
+platformProvider: azure
+
+serviceAccount:
+  annotations:
+    azure.workload.identity/use: "true"
+
+ingress:
+  enabled: true
+  className: nginx
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt
+
+controlDB:
+  driver: postgres
+
+env:
+  AUTH_MODE: oidc_only
+  FEATURE_REMOTE_ROUTING: "true"
+  FEATURE_INTERNAL_GRPC: "true"
+  TRUST_DOWNSTREAM_PROXY: "true"
+
+computeWorkers:
+  enabled: true
+  replicaCount: 2
+

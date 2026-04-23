@@ -25,6 +25,9 @@ func TestLoadFromEnv_AllVarsSet(t *testing.T) {
 	assert.Equal(t, "testkey", *cfg.S3KeyID)
 	require.NotNil(t, cfg.S3Bucket)
 	assert.Equal(t, "test-bucket", *cfg.S3Bucket)
+	assert.Equal(t, "simple", cfg.DeploymentProfile)
+	assert.Equal(t, "sqlite", cfg.ControlDBDriver)
+	assert.Equal(t, "manual", cfg.PlatformProvider)
 	assert.Equal(t, "/tmp/test.sqlite", cfg.MetaDBPath)
 }
 
@@ -42,6 +45,9 @@ func TestLoadFromEnv_Defaults(t *testing.T) {
 
 	assert.Nil(t, cfg.S3KeyID)
 	assert.Nil(t, cfg.S3Bucket)
+	assert.Equal(t, "simple", cfg.DeploymentProfile)
+	assert.Equal(t, "sqlite", cfg.ControlDBDriver)
+	assert.Equal(t, "manual", cfg.PlatformProvider)
 	assert.Equal(t, "quackstack_meta.sqlite", cfg.MetaDBPath)
 	assert.Equal(t, ":8080", cfg.ListenAddr)
 	assert.Equal(t, ":32010", cfg.FlightSQLAddr)
@@ -98,6 +104,58 @@ func TestLoadFromEnv_ProductionRejectsUIDevBypass(t *testing.T) {
 	_, err := LoadFromEnv()
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "AUTH_UI_DEV_BYPASS is not allowed in production")
+}
+
+func TestLoadFromEnv_EnterpriseRequiresPostgres(t *testing.T) {
+	t.Setenv("DEPLOYMENT_PROFILE", "enterprise")
+	t.Setenv("CONTROL_DB_DRIVER", "sqlite")
+	t.Setenv("AUTH_JWKS_URL", "https://auth.example.com/jwks.json")
+
+	_, err := LoadFromEnv()
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "enterprise deployments require CONTROL_DB_DRIVER=postgres")
+}
+
+func TestLoadFromEnv_EnterpriseRequiresOIDC(t *testing.T) {
+	t.Setenv("DEPLOYMENT_PROFILE", "enterprise")
+	t.Setenv("CONTROL_DB_DRIVER", "postgres")
+	t.Setenv("CONTROL_DB_DSN", "postgres://quack:secret@example.com/quack?sslmode=disable")
+
+	_, err := LoadFromEnv()
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "enterprise deployments require OIDC")
+}
+
+func TestLoadFromEnv_EnterpriseUsesAzureDefaults(t *testing.T) {
+	t.Setenv("DEPLOYMENT_PROFILE", "enterprise")
+	t.Setenv("CONTROL_DB_DRIVER", "postgres")
+	t.Setenv("CONTROL_DB_DSN", "postgres://quack:secret@example.com/quack?sslmode=disable")
+	t.Setenv("AUTH_JWKS_URL", "https://auth.example.com/jwks.json")
+
+	cfg, err := LoadFromEnv()
+	require.NoError(t, err)
+	assert.Equal(t, "enterprise", cfg.DeploymentProfile)
+	assert.Equal(t, "postgres", cfg.ControlDBDriver)
+	assert.Equal(t, "azure", cfg.PlatformProvider)
+	assert.True(t, cfg.IsEnterpriseProfile())
+}
+
+func TestLoadFromEnv_PostgresDriverRequiresDSN(t *testing.T) {
+	t.Setenv("CONTROL_DB_DRIVER", "postgres")
+
+	_, err := LoadFromEnv()
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "CONTROL_DB_DSN is required when CONTROL_DB_DRIVER=postgres")
+}
+
+func TestLoadFromEnv_PostgresDriverWarnsWhenSQLitePathSet(t *testing.T) {
+	t.Setenv("CONTROL_DB_DRIVER", "postgres")
+	t.Setenv("CONTROL_DB_DSN", "postgres://quack:secret@example.com/quack?sslmode=disable")
+	t.Setenv("META_DB_PATH", "/tmp/legacy.sqlite")
+
+	cfg, err := LoadFromEnv()
+	require.NoError(t, err)
+	assert.Contains(t, cfg.Warnings, "META_DB_PATH is set but CONTROL_DB_DRIVER=postgres; SQLite metadata path is ignored")
 }
 
 func TestLoadFromEnv_WebSessionInvalidBounds(t *testing.T) {

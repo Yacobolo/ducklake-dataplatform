@@ -116,6 +116,11 @@ func (a *AuthConfig) ValidateMode() error {
 
 // Config holds the configuration for the HTTP API and optional S3/DuckLake storage.
 type Config struct {
+	DeploymentProfile string // deployment profile: simple or enterprise
+	ControlDBDriver   string // sqlite or postgres
+	ControlDBDSN      string // DSN for Postgres control-plane metadata
+	PlatformProvider  string // manual, azure, aws, gcp
+
 	// S3 fields are optional — nil when not configured.
 	S3KeyID              *string
 	S3Secret             *string
@@ -207,6 +212,10 @@ func LoadFromEnv() (*Config, error) {
 	}
 
 	cfg := &Config{
+		DeploymentProfile:       os.Getenv("DEPLOYMENT_PROFILE"),
+		ControlDBDriver:         os.Getenv("CONTROL_DB_DRIVER"),
+		ControlDBDSN:            os.Getenv("CONTROL_DB_DSN"),
+		PlatformProvider:        os.Getenv("PLATFORM_PROVIDER"),
 		MetaDBPath:              os.Getenv("META_DB_PATH"),
 		ListenAddr:              os.Getenv("LISTEN_ADDR"),
 		TLSCertFile:             os.Getenv("TLS_CERT_FILE"),
@@ -353,7 +362,10 @@ func LoadFromEnv() (*Config, error) {
 	}
 
 	// Defaults
-	if cfg.MetaDBPath == "" {
+	cfg.DeploymentProfile = normalizeDeploymentProfile(cfg.DeploymentProfile)
+	cfg.ControlDBDriver = normalizeControlDBDriver(cfg.ControlDBDriver)
+	cfg.PlatformProvider = normalizePlatformProvider(cfg.PlatformProvider, cfg.DeploymentProfile)
+	if cfg.ControlDBDriver == "sqlite" && cfg.MetaDBPath == "" {
 		cfg.MetaDBPath = "quackstack_meta.sqlite"
 	}
 	if cfg.ListenAddr == "" {
@@ -397,7 +409,11 @@ func LoadFromEnv() (*Config, error) {
 	if err := cfg.Auth.ValidateWebSessions(); err != nil {
 		return nil, err
 	}
+	if err := cfg.validateDeploymentProfile(); err != nil {
+		return nil, err
+	}
 	cfg.Warnings = append(cfg.Warnings, cfg.modeConflictWarnings()...)
+	cfg.Warnings = append(cfg.Warnings, cfg.profileWarnings()...)
 
 	// Production mode: insecure defaults are fatal errors.
 	if cfg.IsProduction() {
@@ -445,6 +461,84 @@ func compactNonEmpty(values []string) []string {
 	return out
 }
 
+func normalizeDeploymentProfile(profile string) string {
+	switch strings.ToLower(strings.TrimSpace(profile)) {
+	case "", "simple":
+		return "simple"
+	case "enterprise":
+		return "enterprise"
+	default:
+		return strings.ToLower(strings.TrimSpace(profile))
+	}
+}
+
+func normalizeControlDBDriver(driver string) string {
+	switch strings.ToLower(strings.TrimSpace(driver)) {
+	case "", "sqlite":
+		return "sqlite"
+	case "postgres":
+		return "postgres"
+	default:
+		return strings.ToLower(strings.TrimSpace(driver))
+	}
+}
+
+func normalizePlatformProvider(provider, profile string) string {
+	provider = strings.ToLower(strings.TrimSpace(provider))
+	if provider != "" {
+		return provider
+	}
+	if normalizeDeploymentProfile(profile) == "enterprise" {
+		return "azure"
+	}
+	return "manual"
+}
+
+// IsEnterpriseProfile returns true when the process is configured for enterprise deployment.
+func (c *Config) IsEnterpriseProfile() bool {
+	return c.DeploymentProfile == "enterprise"
+}
+
+func (c *Config) validateDeploymentProfile() error {
+	switch c.DeploymentProfile {
+	case "simple", "enterprise":
+	default:
+		return fmt.Errorf("DEPLOYMENT_PROFILE must be simple or enterprise, got %q", c.DeploymentProfile)
+	}
+
+	switch c.ControlDBDriver {
+	case "sqlite", "postgres":
+	default:
+		return fmt.Errorf("CONTROL_DB_DRIVER must be sqlite or postgres, got %q", c.ControlDBDriver)
+	}
+
+	if c.ControlDBDriver == "sqlite" && strings.TrimSpace(c.MetaDBPath) == "" {
+		return fmt.Errorf("META_DB_PATH is required when CONTROL_DB_DRIVER=sqlite")
+	}
+	if c.ControlDBDriver == "postgres" && strings.TrimSpace(c.ControlDBDSN) == "" {
+		return fmt.Errorf("CONTROL_DB_DSN is required when CONTROL_DB_DRIVER=postgres")
+	}
+
+	if !c.IsEnterpriseProfile() {
+		return nil
+	}
+
+	if c.ControlDBDriver != "postgres" {
+		return fmt.Errorf("enterprise deployments require CONTROL_DB_DRIVER=postgres")
+	}
+	if !c.Auth.OIDCEnabled() {
+		return fmt.Errorf("enterprise deployments require OIDC; set AUTH_ISSUER_URL or AUTH_JWKS_URL")
+	}
+	if c.Auth.UIDevBypass {
+		return fmt.Errorf("enterprise deployments do not allow AUTH_UI_DEV_BYPASS=true")
+	}
+	if !c.FeatureRemoteRouting || !c.FeatureInternalGRPC {
+		return fmt.Errorf("enterprise deployments require FEATURE_REMOTE_ROUTING=true and FEATURE_INTERNAL_GRPC=true")
+	}
+
+	return nil
+}
+
 // AuthPosture returns a concise description of active auth posture.
 func (c *Config) AuthPosture() string {
 	mode := strings.ToLower(strings.TrimSpace(c.Auth.Mode))
@@ -469,7 +563,7 @@ func (c *Config) AuthPosture() string {
 
 // ConfigDoctorWarnings returns safety findings that operators should address.
 func (c *Config) ConfigDoctorWarnings() []string {
-	warnings := make([]string, 0, 4)
+	warnings := make([]string, 0, 6)
 	if c.EncryptionKey == "0000000000000000000000000000000000000000000000000000000000000000" {
 		warnings = append(warnings, "ENCRYPTION_KEY uses insecure default; set a 64-char hex key")
 	}
@@ -485,6 +579,9 @@ func (c *Config) ConfigDoctorWarnings() []string {
 	}
 	if !c.Auth.HasEnabledMethod() {
 		warnings = append(warnings, "no auth method enabled")
+	}
+	if c.IsEnterpriseProfile() && c.ControlDBDriver != "postgres" {
+		warnings = append(warnings, "enterprise deployment is not using postgres control-plane metadata")
 	}
 	return warnings
 }
@@ -520,6 +617,17 @@ func (c *Config) modeConflictWarnings() []string {
 		}
 	}
 
+	return warnings
+}
+
+func (c *Config) profileWarnings() []string {
+	warnings := make([]string, 0, 3)
+	if c.ControlDBDriver == "postgres" && strings.TrimSpace(c.MetaDBPath) != "" {
+		warnings = append(warnings, "META_DB_PATH is set but CONTROL_DB_DRIVER=postgres; SQLite metadata path is ignored")
+	}
+	if c.DeploymentProfile == "simple" && c.PlatformProvider != "manual" {
+		warnings = append(warnings, fmt.Sprintf("PLATFORM_PROVIDER=%s set with DEPLOYMENT_PROFILE=simple; simple deployments typically use manual provider", c.PlatformProvider))
+	}
 	return warnings
 }
 

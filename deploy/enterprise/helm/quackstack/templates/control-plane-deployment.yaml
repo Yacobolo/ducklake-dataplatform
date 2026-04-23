@@ -1,0 +1,73 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "quackstack.fullname" . }}
+  labels:
+    {{- include "quackstack.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "quackstack.name" . }}
+      app.kubernetes.io/instance: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        {{- include "quackstack.labels" . | nindent 8 }}
+    spec:
+      serviceAccountName: {{ include "quackstack.serviceAccountName" . }}
+      containers:
+        - name: control-plane
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.service.port }}
+            - name: flightsql
+              containerPort: {{ .Values.service.flightSQLPort }}
+            - name: pgwire
+              containerPort: {{ .Values.service.pgWirePort }}
+          envFrom:
+            - configMapRef:
+                name: {{ include "quackstack.fullname" . }}-config
+          env:
+            - name: CONTROL_DB_DSN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.controlDB.dsnSecretName }}
+                  key: {{ .Values.controlDB.dsnSecretKey }}
+            - name: ENCRYPTION_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secrets.controlPlane.name }}
+                  key: ENCRYPTION_KEY
+                  optional: true
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secrets.controlPlane.name }}
+                  key: JWT_SECRET
+                  optional: true
+          readinessProbe:
+            httpGet:
+              path: /v1/healthz
+              port: http
+          livenessProbe:
+            httpGet:
+              path: /v1/healthz
+              port: http
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+

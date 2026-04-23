@@ -194,5 +194,9 @@ func (s *ComputeEndpointService) collectPrincipalEndpoints(ctx context.Context, 
 		}
 	}
 
+	if err := s.hydrateEndpointsManagedBacking(ctx, candidates); err != nil {
+		return nil, nil, err
+	}
+
 	return candidates, defaultEndpointName, nil
 }

@@ -222,3 +222,140 @@ func TestValidateCreateComputeAssignmentRequest(t *testing.T) {
 		})
 	}
 }
+
+func TestValidateCreateComputeClusterTemplateRequest(t *testing.T) {
+	tests := []struct {
+		name    string
+		req     CreateComputeClusterTemplateRequest
+		wantErr bool
+		errMsg  string
+	}{
+		{
+			name: "valid_template",
+			req: CreateComputeClusterTemplateRequest{
+				Name:                "analytics-heavy",
+				Provider:            ComputeProviderAzure,
+				WorkloadClass:       ComputeEndpointWorkloadHeavy,
+				MinReplicas:         1,
+				MaxReplicas:         4,
+				IdleAutoStopSeconds: 900,
+			},
+		},
+		{
+			name: "missing_name",
+			req: CreateComputeClusterTemplateRequest{
+				Provider:      ComputeProviderAzure,
+				WorkloadClass: ComputeEndpointWorkloadHeavy,
+				MinReplicas:   1,
+				MaxReplicas:   2,
+			},
+			wantErr: true,
+			errMsg:  "name is required",
+		},
+		{
+			name: "invalid_provider",
+			req: CreateComputeClusterTemplateRequest{
+				Name:          "bad",
+				Provider:      "digitalocean",
+				WorkloadClass: ComputeEndpointWorkloadHeavy,
+				MinReplicas:   1,
+				MaxReplicas:   2,
+			},
+			wantErr: true,
+			errMsg:  "provider must be manual, azure, aws, or gcp",
+		},
+		{
+			name: "max_less_than_min",
+			req: CreateComputeClusterTemplateRequest{
+				Name:          "bad-scale",
+				Provider:      ComputeProviderAzure,
+				WorkloadClass: ComputeEndpointWorkloadHeavy,
+				MinReplicas:   3,
+				MaxReplicas:   2,
+			},
+			wantErr: true,
+			errMsg:  "max_replicas must be greater than or equal to min_replicas",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := ValidateCreateComputeClusterTemplateRequest(tt.req)
+			if tt.wantErr {
+				require.Error(t, err)
+				assert.Contains(t, err.Error(), tt.errMsg)
+			} else {
+				require.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestValidateCreateManagedComputeClusterRequest(t *testing.T) {
+	tests := []struct {
+		name    string
+		req     CreateManagedComputeClusterRequest
+		wantErr bool
+		errMsg  string
+	}{
+		{
+			name: "valid_cluster",
+			req: CreateManagedComputeClusterRequest{
+				Name:         "analytics-heavy-a",
+				TemplateID:   "tpl-1",
+				EndpointID:   "ep-1",
+				Provider:     ComputeProviderAzure,
+				DesiredState: ManagedClusterDesiredRunning,
+				MinReplicas:  1,
+				MaxReplicas:  3,
+			},
+		},
+		{
+			name: "valid_cluster_inherits_template_defaults",
+			req: CreateManagedComputeClusterRequest{
+				Name:       "analytics-heavy-b",
+				TemplateID: "tpl-1",
+				EndpointID: "ep-1",
+			},
+		},
+		{
+			name: "missing_template",
+			req: CreateManagedComputeClusterRequest{
+				Name:         "cluster-a",
+				EndpointID:   "ep-1",
+				Provider:     ComputeProviderAzure,
+				DesiredState: ManagedClusterDesiredRunning,
+				MinReplicas:  1,
+				MaxReplicas:  3,
+			},
+			wantErr: true,
+			errMsg:  "template_id is required",
+		},
+		{
+			name: "invalid_state",
+			req: CreateManagedComputeClusterRequest{
+				Name:         "cluster-a",
+				TemplateID:   "tpl-1",
+				EndpointID:   "ep-1",
+				Provider:     ComputeProviderAzure,
+				DesiredState: "PAUSED",
+				MinReplicas:  1,
+				MaxReplicas:  3,
+			},
+			wantErr: true,
+			errMsg:  "desired_state must be RUNNING, STOPPED, DRAINING, or DELETING",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := ValidateCreateManagedComputeClusterRequest(tt.req)
+			if tt.wantErr {
+				require.Error(t, err)
+				assert.Contains(t, err.Error(), tt.errMsg)
+			} else {
+				require.NoError(t, err)
+			}
+		})
+	}
+}
